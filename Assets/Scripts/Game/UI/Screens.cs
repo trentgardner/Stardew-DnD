@@ -30,7 +30,7 @@ namespace DnD.Game
             if (In.Confirm || In.Cancel || In.MouseLeft) { Close(); }
         }
 
-        public override void OnClose() => _onClose?.Invoke();
+        public override void OnClose() { if (!Hud.ClosingAll) _onClose?.Invoke(); }
     }
 
     public class ChoiceScreen : GameScreen

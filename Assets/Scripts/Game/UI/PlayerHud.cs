@@ -155,10 +155,22 @@ namespace DnD.Game
             Sfx.Play("ui");
         }
 
+        /// <summary>True while CloseAll runs: screens skip follow-up callbacks (no new popups mid-teardown).</summary>
+        public bool ClosingAll { get; private set; }
+
         public void CloseAll()
         {
-            foreach (var s in _screens) { s.OnClose(); if (s.Root) Destroy(s.Root.gameObject); }
+            var copy = new List<GameScreen>(_screens);
             _screens.Clear();
+            ClosingAll = true;
+            for (int i = copy.Count - 1; i >= 0; i--)
+            {
+                copy[i].Closed = true;
+                try { copy[i].OnClose(); }
+                catch (System.Exception e) { Debug.LogException(e); }
+                if (copy[i].Root) Destroy(copy[i].Root.gameObject);
+            }
+            ClosingAll = false;
         }
 
         public T Find<T>() where T : GameScreen
@@ -170,6 +182,7 @@ namespace DnD.Game
         void Update()
         {
             if (Slot == null) return;
+            if (Slot.Character == null && !(Top is CharacterCreationScreen)) { if (HasScreen && !(Top is MessageScreen)) CloseAll(); }
             Dice.Update();
             if (!Dice.IsOpen && _screens.Count > 0)
             {

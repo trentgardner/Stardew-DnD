@@ -147,6 +147,7 @@ namespace DnD.Game
 
         public void Goto(string nodeId)
         {
+            if (Root == null || _speaker == null) return; // window already gone
             if (nodeId == null || !_d.Nodes.TryGetValue(nodeId, out _node)) { Close(); return; }
             _speaker.text = _node.Speaker ?? "";
             _node.OnEnter?.Invoke(_ctx);   // may override the speaker (recruits) or close the window
@@ -206,6 +207,7 @@ namespace DnD.Game
             Hud.Dice.RollD20($"{SkillUtil.Name(skill)} Check", sub, () => Checks.RollSkill(pc, skill, adv), dc, true, r =>
             {
                 _rolling = false;
+                if (Closed || Root == null) return; // conversation was interrupted
                 var outcome = Checks.ResolveCheck(r, dc);
                 _ctx.LastOutcome = outcome;
                 _ctx.LastRoll = r;

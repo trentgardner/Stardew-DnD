@@ -131,6 +131,7 @@ namespace DnD.Game
             if (d == null) return;
             var device = Players.FirstOrDefault()?.Input ?? new HybridInput();
             ResetWorld();
+            RemovePlayers(); // loading mid-game: start from a clean slate (P2 rejoins with Start)
             PlaythroughId = d.PlaythroughId; PlaythroughName = d.PlaythroughName;
             Settings.Difficulty = (Difficulty)d.Difficulty;
             Settings.DayLengthMinutes = d.DayLength > 0 ? d.DayLength : 30;
@@ -155,6 +156,12 @@ namespace DnD.Game
         public void QuitToTitle()
         {
             ResetWorld();
+            RemovePlayers();
+            ShowTitle();
+        }
+
+        void RemovePlayers()
+        {
             foreach (var p in Players)
             {
                 if (p.Hud) Destroy(p.Hud.gameObject);
@@ -162,11 +169,13 @@ namespace DnD.Game
             }
             foreach (var d in FindObjectsByType<DarknessOverlay>()) Destroy(d.gameObject);
             Players.Clear();
-            ShowTitle();
         }
 
         void ResetWorld()
         {
+            InGame = false;
+            // Close menus first, while characters still exist (screens may tidy up the inventory on close).
+            foreach (var p in Players) p.Hud?.CloseAll();
             foreach (var c in Combats) c.Finished = true;
             Combats.Clear();
             StopAllCoroutines();
@@ -177,7 +186,7 @@ namespace DnD.Game
             Quests = new QuestLog();
             Clock = new GameClock();
             Clock.HourChanged += OnHourChanged;
-            foreach (var p in Players) { if (p.Avatar) Destroy(p.Avatar.gameObject); p.Avatar = null; p.Character = null; p.Combat = null; p.Hud?.CloseAll(); }
+            foreach (var p in Players) { if (p.Avatar) Destroy(p.Avatar.gameObject); p.Avatar = null; p.Character = null; p.Combat = null; }
             if (_title) { Destroy(_title.gameObject); _title = null; }
         }
 
@@ -322,7 +331,8 @@ namespace DnD.Game
             {
                 if (p.Avatar == null) continue;
                 var target = p.Avatar.transform.position;
-                if (p.InCombat && p.Combat.Current != null && !p.Combat.Current.IsHuman) target = Vector3.Lerp(target, p.Combat.Current.A.transform.position, 0.5f);
+                var cur = p.InCombat ? p.Combat.Current : null;
+                if (cur != null && !cur.IsHuman && cur.A != null) target = Vector3.Lerp(target, cur.A.transform.position, 0.5f);
                 var want = ClampCam(p, new Vector3(target.x, target.y, -10));
                 p.Cam.transform.position = Vector3.Lerp(p.Cam.transform.position, want, 1 - Mathf.Exp(-10 * Time.deltaTime));
             }
@@ -474,6 +484,7 @@ namespace DnD.Game
 
         public void StartGroupCombat(string groupId, PlayerSlot instigator)
         {
+            if (Combats.Any(x => x.GroupId == groupId && !x.Finished)) return; // already fighting this group
             if (!_groups.TryGetValue(groupId, out var agents) || agents.All(a => a == null || a.Monster.IsDown)) return;
             var zone = agents.First(a => a != null).Zone;
             var c = new CombatInstance(this, zone, groupId);

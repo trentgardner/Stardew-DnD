@@ -324,6 +324,7 @@ namespace DnD.Game
 
         public override void OnClose()
         {
+            if (_held != null && Slot.Character == null) { _held = null; return; }
             if (_held != null)
             {
                 int left = Bag.ReturnHeld(_held);
