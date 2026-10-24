@@ -1,0 +1,8 @@
+* text=auto
+*.cs text eol=lf
+*.md text eol=lf
+*.png binary
+*.aseprite binary
+*.ase binary
+*.wav binary
+*.ogg binary

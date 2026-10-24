@@ -423,6 +423,9 @@ namespace DnD.Rules
             log?.Add($"{Name} gasps back to life!");
         }
 
+        /// <summary>Restores the dead state when loading a save.</summary>
+        public void MarkDead() { HP = 0; IsDead = true; }
+
         public void Stabilize()
         {
             if (HP == 0 && !IsDead) { Stable = true; DeathSuccesses = DeathFailures = 0; }

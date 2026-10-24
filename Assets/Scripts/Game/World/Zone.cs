@@ -1,0 +1,246 @@
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Tilemaps;
+
+namespace DnD.Game
+{
+    /// <summary>
+    /// A built map. Zones sit side by side in world space (each at its own X offset) so two players
+    /// can be in different zones with independent split-screen cameras. Only occupied zones run AI.
+    /// One tile = one Unity unit = 5 feet.
+    /// </summary>
+    public class Zone : MonoBehaviour
+    {
+        public ZoneDef Def;
+        public Vector2Int Origin;
+        public bool[,] Blocked;   // [col,row] map coords
+        public readonly List<GameObject> Objects = new List<GameObject>();
+
+        Tilemap _ground, _solid;
+        static readonly Dictionary<string, Tile> TileCache = new Dictionary<string, Tile>();
+
+        public int W => Def.Width;
+        public int H => Def.Height;
+
+        // ------------------------------------------------------------ coordinates
+
+        public Vector3 ToWorld(Vector2Int map) => new Vector3(Origin.x + map.x + 0.5f, Origin.y + (H - 1 - map.y) + 0.5f, 0);
+
+        public Vector2Int ToMap(Vector3 world)
+        {
+            int col = Mathf.FloorToInt(world.x - Origin.x);
+            int rowFromBottom = Mathf.FloorToInt(world.y - Origin.y);
+            return new Vector2Int(col, H - 1 - rowFromBottom);
+        }
+
+        public bool InBounds(Vector2Int m) => m.x >= 0 && m.y >= 0 && m.x < W && m.y < H;
+        public bool Contains(Vector3 world) => InBounds(ToMap(world));
+        public bool IsWalkable(Vector2Int m) => InBounds(m) && !Blocked[m.x, m.y];
+        public char CharAt(Vector2Int m) => InBounds(m) ? Def.Map[m.y][m.x] : 'X';
+
+        public Bounds WorldBounds => new Bounds(new Vector3(Origin.x + W / 2f, Origin.y + H / 2f), new Vector3(W, H, 1));
+
+        // ------------------------------------------------------------ building
+
+        static Tile GetTile(string spriteId, bool solid)
+        {
+            string key = spriteId + (solid ? "#s" : "");
+            if (TileCache.TryGetValue(key, out var t)) return t;
+            t = ScriptableObject.CreateInstance<Tile>();
+            t.sprite = spriteId != null ? ArtRegistry.Get(spriteId) : null;
+            t.colliderType = solid ? Tile.ColliderType.Grid : Tile.ColliderType.None;
+            TileCache[key] = t;
+            return t;
+        }
+
+        public static Zone Build(ZoneDef def, int index, Transform parent)
+        {
+            var go = new GameObject("Zone_" + def.Id);
+            go.transform.SetParent(parent, false);
+            var zone = go.AddComponent<Zone>();
+            zone.Def = def;
+            zone.Origin = new Vector2Int(index * 100, 0);
+            zone.Blocked = new bool[def.Width, def.Height];
+
+            var grid = go.AddComponent<Grid>();
+            grid.cellSize = Vector3.one;
+            go.transform.position = new Vector3(zone.Origin.x, zone.Origin.y, 0);
+
+            zone._ground = MakeLayer(go.transform, "Ground", -1000, false);
+            zone._solid = MakeLayer(go.transform, "Solid", -999, true);
+
+            for (int row = 0; row < def.Height; row++)
+                for (int col = 0; col < def.Width; col++)
+                    zone.BuildCell(new Vector2Int(col, row), def.Map[row][col]);
+
+            zone._ground.CompressBounds();
+            zone._solid.CompressBounds();
+            return zone;
+        }
+
+        static Tilemap MakeLayer(Transform parent, string name, int order, bool collide)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            var tm = go.AddComponent<Tilemap>();
+            var r = go.AddComponent<TilemapRenderer>();
+            r.sortingOrder = order;
+            if (collide)
+            {
+                var rb = go.AddComponent<Rigidbody2D>();
+                rb.bodyType = RigidbodyType2D.Static;
+                var col = go.AddComponent<TilemapCollider2D>();
+                col.compositeOperation = Collider2D.CompositeOperation.Merge;
+                go.AddComponent<CompositeCollider2D>();
+            }
+            return tm;
+        }
+
+        Vector3Int Cell(Vector2Int m) => new Vector3Int(m.x, H - 1 - m.y, 0);
+
+        string FloorFor(Vector2Int m)
+        {
+            if (Def.Id == "mine") return "tile_cave_floor";
+            if (Def.Id == "temple") return "tile_stone_floor";
+            if (Def.Indoors) return "tile_wood_floor";
+            return ((m.x * 7 + m.y * 13) % 5 == 0) ? "tile_grass_v1" : "tile_grass";
+        }
+
+        void Ground(Vector2Int m, string sprite) => _ground.SetTile(Cell(m), GetTile(sprite, false));
+        void Wall(Vector2Int m, string sprite) { _solid.SetTile(Cell(m), GetTile(sprite, true)); Blocked[m.x, m.y] = true; }
+        /// <summary>Invisible blocker under props (trees, tables...).</summary>
+        void Solid(Vector2Int m) { _solid.SetTile(Cell(m), GetTile("tile_none", true)); Blocked[m.x, m.y] = true; }
+
+        void BuildCell(Vector2Int m, char c)
+        {
+            string floor = FloorFor(m);
+            switch (c)
+            {
+                case '.': Ground(m, floor); break;
+                case ',': Ground(m, "tile_path"); break;
+                case '*': Ground(m, "tile_flowers"); break;
+                case ':': Ground(m, floor); break;
+                case '=': Ground(m, "tile_wood_floor"); break;
+                case '_': Ground(m, "tile_rug"); break;
+                case '~': Wall(m, "tile_water"); break;
+                case 'X': Wall(m, "tile_cave_wall"); break;
+                case 'W': Wall(m, Def.Id == "temple" ? "tile_stone_wall" : "tile_house_wall"); break;
+                case 'w': Wall(m, "tile_window"); break;
+                case 'U': Wall(m, "tile_roof_blue"); break;
+                case 'R': Wall(m, "tile_roof"); break;
+                case 'G': Wall(m, "tile_roof_gold"); break;
+                case 'C': Wall(m, "tile_counter"); break;
+                case 'D': Ground(m, Def.Indoors ? floor : "tile_door"); break;
+                case 'M': Ground(m, "tile_mine_entrance"); break;
+                case 'E': Ground(m, "tile_exit_up"); break;
+                case 'T': Ground(m, floor); Solid(m); Prop(m, "obj_tree"); break;
+                case 't': Ground(m, floor); Solid(m); Prop(m, "obj_tree"); break;
+                case 'h': Ground(m, floor); Solid(m); Prop(m, "obj_bush"); break;
+                case 'r': Ground(m, floor); Solid(m); Prop(m, "obj_rock"); break;
+                case 'f': Ground(m, floor); Wall(m, "tile_fence"); break;
+                case 'l': Ground(m, floor); Solid(m); Prop(m, "obj_lantern", true); break;
+                case 'x': Ground(m, floor); Solid(m); Prop(m, (m.x + m.y) % 2 == 0 ? "obj_crate" : "obj_barrel"); break;
+                case 'a': Ground(m, floor); Solid(m); Prop(m, "obj_table"); break;
+                case 'A': Ground(m, floor); Solid(m); Prop(m, "obj_altar", true); break;
+                case 's':
+                case 'n':
+                    Ground(m, floor); Solid(m);
+                    var sign = Prop(m, "obj_sign");
+                    var s = sign.AddComponent<SignInteractable>();
+                    s.Text = Def.Signs.TryGetValue(m, out var txt) ? txt : "The sign is too weathered to read.";
+                    break;
+                case 'B':
+                    Ground(m, floor); Solid(m);
+                    Prop(m, "obj_bed").AddComponent<BedInteractable>();
+                    break;
+                case 'c':
+                    Ground(m, floor); Solid(m);
+                    var chestDef = Def.Chests.Find(ch => ch.Pos == m);
+                    var chest = Prop(m, "obj_chest").AddComponent<ChestInteractable>();
+                    chest.Def = chestDef;
+                    break;
+                case 'g':
+                    Ground(m, floor); Solid(m);
+                    Prop(m, "obj_egg_glow", true).AddComponent<EggInteractable>();
+                    break;
+                default: Ground(m, floor); break;
+            }
+        }
+
+        GameObject Prop(Vector2Int m, string sprite, bool glow = false)
+        {
+            var go = new GameObject(sprite);
+            go.transform.SetParent(transform, false);
+            go.transform.position = ToWorld(m) + new Vector3(0, -0.4f, 0);
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = ArtRegistry.Get(sprite);
+            sr.sortingOrder = YSort.OrderFor(go.transform.position.y);
+            Objects.Add(go);
+            if (glow) LightSource.Attach(go, 3f, new Color(1f, 0.85f, 0.5f, 1f));
+            return go;
+        }
+
+        // ------------------------------------------------------------ queries
+
+        /// <summary>Breadth-first path on walkable tiles (4-way + diagonals not cutting corners).</summary>
+        public List<Vector2Int> FindPath(Vector2Int from, Vector2Int to, System.Func<Vector2Int, bool> extraBlocked = null, int maxNodes = 4000)
+        {
+            var result = new List<Vector2Int>();
+            if (!InBounds(from) || !InBounds(to)) return result;
+            var prev = new Dictionary<Vector2Int, Vector2Int>();
+            var q = new Queue<Vector2Int>();
+            q.Enqueue(from);
+            prev[from] = from;
+            Vector2Int[] dirs = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right, new Vector2Int(1, 1), new Vector2Int(-1, 1), new Vector2Int(1, -1), new Vector2Int(-1, -1) };
+            int n = 0;
+            while (q.Count > 0 && n++ < maxNodes)
+            {
+                var cur = q.Dequeue();
+                if (cur == to) break;
+                foreach (var d in dirs)
+                {
+                    var nx = cur + d;
+                    if (prev.ContainsKey(nx) || !IsWalkable(nx)) continue;
+                    if (d.x != 0 && d.y != 0 && (!IsWalkable(new Vector2Int(cur.x + d.x, cur.y)) || !IsWalkable(new Vector2Int(cur.x, cur.y + d.y)))) continue;
+                    if (extraBlocked != null && nx != to && extraBlocked(nx)) continue;
+                    prev[nx] = cur;
+                    q.Enqueue(nx);
+                }
+            }
+            if (!prev.ContainsKey(to)) return result;
+            var p = to;
+            while (p != from) { result.Add(p); p = prev[p]; }
+            result.Reverse();
+            return result;
+        }
+
+        /// <summary>Straight-line visibility between tiles (walls block sight).</summary>
+        public bool LineOfSight(Vector2Int a, Vector2Int b)
+        {
+            int steps = Mathf.Max(Mathf.Abs(b.x - a.x), Mathf.Abs(b.y - a.y));
+            for (int i = 1; i < steps; i++)
+            {
+                float t = i / (float)steps;
+                var p = new Vector2Int(Mathf.RoundToInt(Mathf.Lerp(a.x, b.x, t)), Mathf.RoundToInt(Mathf.Lerp(a.y, b.y, t)));
+                char c = CharAt(p);
+                if (c == 'X' || c == 'W' || c == 'w' || c == 'T' || c == 'U' || c == 'R' || c == 'G') return false;
+            }
+            return true;
+        }
+
+        public WarpDef WarpAt(Vector2Int m) => Def.Warps.Find(w => w.At == m);
+
+        /// <summary>Chebyshev distance in feet (2024 grid rule: diagonals cost 5 ft).</summary>
+        public static int DistanceFt(Vector2Int a, Vector2Int b) => Mathf.Max(Mathf.Abs(a.x - b.x), Mathf.Abs(a.y - b.y)) * 5;
+    }
+
+    /// <summary>Keeps sprites drawn in the right front-to-back order (lower on screen = in front).</summary>
+    public class YSort : MonoBehaviour
+    {
+        SpriteRenderer _sr;
+        public int Offset;
+        public static int OrderFor(float y) => Mathf.RoundToInt(-y * 16);
+        void Awake() { _sr = GetComponent<SpriteRenderer>(); }
+        void LateUpdate() { if (_sr) _sr.sortingOrder = OrderFor(transform.position.y) + Offset; }
+    }
+}

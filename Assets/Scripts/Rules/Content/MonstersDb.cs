@@ -68,7 +68,7 @@ namespace DnD.Rules.Content
                 Attacks = { Melee("Spear", 4, "1d6+2", DamageType.Piercing), Ranged("Sling", 4, "1d4+2", DamageType.Bludgeoning, 30, 120) },
                 PackTactics = true, SunlightSensitivity = true, ProficientSkills = { Skill.Intimidation },
                 Traits = { "Pack Tactics", "Sunlight Sensitivity", "Devoted: can be reasoned with if you show respect to the Egg." },
-                Loot = { new KeyValuePair<string, float>("gemstone", 1f), new KeyValuePair<string, float>("emberwrought_blade", 1f) },
+                Loot = { new KeyValuePair<string, float>("gemstone", 1f), new KeyValuePair<string, float>("emberwrought_blade", 1f), new KeyValuePair<string, float>("copper_kettle", 1f) },
                 CopperMin = 200, CopperMax = 600,
             };
         }
