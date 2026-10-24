@@ -36,7 +36,8 @@ namespace DnD.Game
             tex.filterMode = FilterMode.Point;
             tex.wrapMode = TextureWrapMode.Clamp;
             tex.Apply();
-            return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), pivot, ArtRegistry.PixelsPerUnit);
+            var border = id == "ui_panel" || id == "ui_panel_dark" || id == "ui_slot" ? new Vector4(4, 4, 4, 4) : Vector4.zero;
+            return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), pivot, ArtRegistry.PixelsPerUnit, 0, SpriteMeshType.FullRect, border);
         }
 
         static Texture2D NewTex(int w = N, int h = N)

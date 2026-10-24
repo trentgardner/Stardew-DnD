@@ -71,7 +71,7 @@ namespace DnD.Game
             hud.Canvas.renderMode = RenderMode.ScreenSpaceCamera;
             hud.Canvas.worldCamera = slot.Cam;
             hud.Canvas.planeDistance = 1f;
-            hud.Canvas.sortingOrder = 10;
+            hud.Canvas.sortingOrder = short.MaxValue; // above darkness and floating text
             hud.Canvas.pixelPerfect = true;
             var scaler = go.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -139,6 +139,7 @@ namespace DnD.Game
             // Combat / event log (bottom-left)
             _log = UIKit.Box(Root, "Log", new Vector2(0, 0), new Vector2(200, 90), new Vector2(6, 40));
             UIKit.Panel(_log, true);
+            _log.gameObject.AddComponent<RectMask2D>(); // clip old lines instead of spilling out
             _logText = UIKit.Label(UIKit.Rect(_log, "Text", Vector2.zero, Vector2.one, new Vector2(6, 4), new Vector2(-6, -4)), "", 8, UIKit.Parchment, TextAnchor.LowerLeft);
             _log.gameObject.SetActive(false);
 
@@ -279,6 +280,9 @@ namespace DnD.Game
             var box = UIKit.Box(_toasts, "Toast", new Vector2(1, 1), new Vector2(170, 18), Vector2.zero);
             UIKit.Panel(box, true);
             var t = UIKit.Label(box, text, 9, color ?? UIKit.Parchment, TextAnchor.MiddleCenter);
+            t.resizeTextForBestFit = true; t.resizeTextMinSize = 6; t.resizeTextMaxSize = 9;
+            t.verticalOverflow = VerticalWrapMode.Truncate;
+            t.rectTransform.offsetMin = new Vector2(4, 1); t.rectTransform.offsetMax = new Vector2(-4, -1);
             _toastItems.Insert(0, (t, Time.unscaledTime + 4f));
             AddLog(text);
         }

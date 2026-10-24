@@ -50,6 +50,7 @@ namespace DnD.Game
             rt.pivot = anchor;
             rt.sizeDelta = size;
             rt.anchoredPosition = offset;
+            if (size.x > 120) rt.gameObject.AddComponent<FitWidth>().Max = size.x;
             return rt;
         }
 
@@ -67,6 +68,7 @@ namespace DnD.Game
             var img = rt.gameObject.AddComponent<Image>();
             img.sprite = ArtRegistry.Get(dark ? "ui_panel_dark" : "ui_panel");
             img.type = UnityEngine.UI.Image.Type.Sliced;
+            img.pixelsPerUnitMultiplier = 8f; // keeps the 4px pixel-art frame thin on a 640x360 canvas
             img.raycastTarget = false;
             if (img.sprite.border == Vector4.zero) img.type = UnityEngine.UI.Image.Type.Simple;
             return img;
@@ -97,6 +99,22 @@ namespace DnD.Game
         }
 
         public static string Colorize(string s, Color c) => $"<color=#{ColorUtility.ToHtmlStringRGB(c)}>{s}</color>";
+    }
+
+    /// <summary>Shrinks a box to fit its parent (e.g. a half-width split-screen canvas).</summary>
+    public class FitWidth : MonoBehaviour
+    {
+        public float Max;
+        void LateUpdate()
+        {
+            var rt = (RectTransform)transform;
+            var parent = rt.parent as RectTransform;
+            if (parent == null || parent.rect.width <= 0) return;
+            float w = Mathf.Min(Max, parent.rect.width - 12);
+            if (Mathf.Abs(rt.sizeDelta.x - w) > 0.5f) rt.sizeDelta = new Vector2(w, rt.sizeDelta.y);
+            // keep edge-anchored boxes on screen
+            if (rt.anchorMin.x == 0 && rt.anchoredPosition.x + w > parent.rect.width) rt.anchoredPosition = new Vector2(Mathf.Max(6, parent.rect.width - w - 6), rt.anchoredPosition.y);
+        }
     }
 
     /// <summary>

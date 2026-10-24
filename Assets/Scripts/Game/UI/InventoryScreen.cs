@@ -48,7 +48,7 @@ namespace DnD.Game
             float h = other != null ? 330 : 250;
             Window(new Vector2(320, h), other != null ? null : "Inventory");
 
-            float y = -8;
+            float y = other != null ? -8 : -26;
             if (other != null)
             {
                 var title = UIKit.Rect(Root, "OtherTitle", new Vector2(0, 1), new Vector2(1, 1), new Vector2(10, y - 16), new Vector2(-10, y));
