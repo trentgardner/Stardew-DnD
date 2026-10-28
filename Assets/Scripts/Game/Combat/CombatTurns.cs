@@ -10,11 +10,14 @@ namespace DnD.Game
 {
     public enum ActionCost { Action, Bonus, Free }
     public enum Targeting { None, Enemy, Ally, AllyDown, AllyDead, Tile }
+    /// <summary>Which action-bar button an action lives under (see CombatHud).</summary>
+    public enum ActionGroup { Main, Spells, Abilities, Actions, Items, End }
 
     public class CombatAction
     {
         public string Name;
         public ActionCost Cost;
+        public ActionGroup Group;
         public Targeting Target;
         public int RangeFt;
         public int AreaTiles;          // sphere radius / cone length in tiles (0 = single target)
@@ -23,6 +26,7 @@ namespace DnD.Game
         public string Why;             // reason it's disabled
         public Func<Unit, Vector2Int, IEnumerator> Run;
         public string Tooltip;
+        public bool EndsTurn;          // End Turn, Auto: the turn is over once it runs
     }
 
     public partial class CombatInstance
@@ -31,11 +35,11 @@ namespace DnD.Game
 
         IEnumerator PlayerTurn(Unit u)
         {
-            var p = u.Owner;
+            var p = u.Ctrl;
             var pc = (PlayerCharacter)u.C;
             var hud = p.Hud.Find<CombatHud>();
             if (hud == null) { hud = new CombatHud(this); p.Hud.Push(hud); }
-            p.Hud.Narrate($"Your turn, {pc.Name}!", false);
+            p.Hud.Narrate(u.Owner != null ? $"Your turn, {pc.Name}!" : $"{pc.Name}'s turn. Your orders?", u.Owner == null);
             Vector2Int cursor = u.Pos;
             int selected = 0;
             bool ended = false;
@@ -54,7 +58,8 @@ namespace DnD.Game
                 if (input.UsesMouse)
                 {
                     var w = p.Cam.ScreenToWorldPoint(input.MouseScreen);
-                    var m = Zone.ToMap(new Vector3(w.x, w.y, 0));
+                    var hit = UnitUnderPoint(w);
+                    var m = hit != null && hit != u ? hit.Pos : Zone.ToMap(new Vector3(w.x, w.y, 0));
                     if (Zone.InBounds(m)) cursor = m;
                 }
                 else
@@ -74,7 +79,7 @@ namespace DnD.Game
                     var target = UnitAt(cursor);
                     bool attackable = target != null && Hostile(u, target) && target.Active && turn.AttacksLeftInAction + (turn.ActionUsed ? 0 : 1) > 0;
                     ShowCursor(cursor, attackable ? new Color(1f, 0.4f, 0.3f) : reach.Contains(cursor) ? Color.white : new Color(1, 1, 1, 0.35f));
-                    hint = attackable ? $"Attack {target.Name} with {pc.GetAttacks()[0].Name}" : reach.Contains(cursor) ? $"Move here ({Zone.DistanceFt(u.Pos, cursor)} ft)" : $"Movement left: {turn.MovementLeftFt} ft";
+                    hint = attackable ? $"Attack {target.Name} with {pc.GetAttacks()[0].Name}" : reach.Contains(cursor) ? $"Move here ({Zone.DistanceFt(u.Pos, cursor)} ft)" : "Pick a tile to move, or an enemy to attack";
                 }
                 else
                 {
@@ -96,17 +101,18 @@ namespace DnD.Game
                     if (input.NextTab) selected = (selected + 1) % actions.Count;
                     if (input.PrevTab) selected = (selected - 1 + actions.Count) % actions.Count;
                 }
+                if (clickedAction == -2) { yield return null; continue; }
                 if (clickedAction >= 0 && clickedAction < actions.Count)
                 {
                     var a = actions[clickedAction];
                     if (!a.Enabled) { p.Hud.Toast(a.Why ?? "Not available.", UIKit.Bad); yield return null; continue; }
-                    if (a.Target == Targeting.None) { busy = true; yield return a.Run(u, u.Pos); busy = false; selected = 0; continue; }
+                    if (a.Target == Targeting.None) { busy = true; yield return a.Run(u, u.Pos); busy = false; selected = 0; if (a.EndsTurn) break; continue; }
                     selected = clickedAction;
                     yield return null;
                     continue;
                 }
                 if (input.EndTurn) { ended = true; break; }
-                if (input.Cancel || input.MouseRight) { selected = 0; yield return null; continue; }
+                if (input.Cancel || input.MouseRight) { if (!hud.CloseFlyout()) selected = 0; yield return null; continue; }
 
                 bool confirm = input.UsesMouse ? input.MouseLeft && !hud.PointerOverUi(input) : input.Confirm;
                 if (input.UsesMouse && input.Confirm) confirm = true;
@@ -131,7 +137,7 @@ namespace DnD.Game
                     }
                     else if (act.Enabled)
                     {
-                        if (act.Target == Targeting.None) yield return act.Run(u, u.Pos);
+                        if (act.Target == Targeting.None) { yield return act.Run(u, u.Pos); if (act.EndsTurn) break; }
                         else if (ValidTarget(u, act, cursor)) { yield return act.Run(u, cursor); selected = 0; }
                         else p.Hud.Toast("Invalid target.", UIKit.Bad);
                     }
@@ -174,45 +180,59 @@ namespace DnD.Game
                     var s = SpellsDb.Get(id);
                     if (s == null || !CombatUsable(s)) continue;
                     var a = SpellAction(u, pc, s);
+                    a.Group = ActionGroup.Spells;
                     list.Add(a);
                 }
             }
             if (pc.HasEffect("spiritual_weapon"))
-                list.Add(Need(new CombatAction { Name = "Spiritual Weapon strike", Cost = ActionCost.Bonus, Target = Targeting.Enemy, RangeFt = 60,
+                list.Add(Need(new CombatAction { Name = "Spiritual Weapon strike", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.Enemy, RangeFt = 60,
                     Run = (me, tile) => SpellAttack(me, pc, UnitAt(tile), SpellsDb.Get("spiritual_weapon"), 2) }, t, pc));
 
             if (pc.ResourceMax("second_wind") > 0)
-                list.Add(Need(new CombatAction { Name = $"Second Wind ({pc.ResourceLeft("second_wind")})", Cost = ActionCost.Bonus, Target = Targeting.None,
+                list.Add(Need(new CombatAction { Name = $"Second Wind ({pc.ResourceLeft("second_wind")})", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
                     Run = (me, tile) => SecondWind(me, pc) }, t, pc, pc.ResourceLeft("second_wind") > 0));
             if (pc.ResourceMax("action_surge") > 0)
-                list.Add(new CombatAction { Name = "Action Surge", Cost = ActionCost.Free, Target = Targeting.None, Enabled = pc.ResourceLeft("action_surge") > 0 && t.ActionUsed,
+                list.Add(new CombatAction { Name = "Action Surge", Group = ActionGroup.Abilities, Cost = ActionCost.Free, Target = Targeting.None, Enabled = pc.ResourceLeft("action_surge") > 0 && t.ActionUsed,
                     Why = "Use your action first; once per short rest.", Run = (me, tile) => ActionSurge(me, pc) });
             if (pc.ResourceMax("bardic_inspiration") > 0)
-                list.Add(Need(new CombatAction { Name = $"Bardic Inspiration ({pc.ResourceLeft("bardic_inspiration")})", Cost = ActionCost.Bonus, Target = Targeting.Ally, RangeFt = 60,
+                list.Add(Need(new CombatAction { Name = $"Bardic Inspiration ({pc.ResourceLeft("bardic_inspiration")})", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.Ally, RangeFt = 60,
                     Run = (me, tile) => BardicInspiration(me, pc, UnitAt(tile)) }, t, pc, pc.ResourceLeft("bardic_inspiration") > 0));
             if (pc.ResourceMax("channel_divinity") > 0)
             {
-                list.Add(Need(new CombatAction { Name = $"Divine Spark ({pc.ResourceLeft("channel_divinity")})", Cost = ActionCost.Action, Target = Targeting.Ally, RangeFt = 30,
+                list.Add(Need(new CombatAction { Name = $"Divine Spark ({pc.ResourceLeft("channel_divinity")})", Group = ActionGroup.Abilities, Cost = ActionCost.Action, Target = Targeting.Ally, RangeFt = 30,
                     Tooltip = "Heal an ally 1d8+WIS, or target an enemy for radiant damage.", Run = (me, tile) => DivineSpark(me, pc, UnitAt(tile)) }, t, pc, pc.ResourceLeft("channel_divinity") > 0));
                 if (pc.HasFeature("Preserve Life"))
-                    list.Add(Need(new CombatAction { Name = "Preserve Life", Cost = ActionCost.Action, Target = Targeting.None,
+                    list.Add(Need(new CombatAction { Name = "Preserve Life", Group = ActionGroup.Abilities, Cost = ActionCost.Action, Target = Targeting.None,
                         Run = (me, tile) => PreserveLife(me, pc) }, t, pc, pc.ResourceLeft("channel_divinity") > 0));
             }
 
-            list.Add(Need(new CombatAction { Name = "Dash", Cost = ActionCost.Action, Target = Targeting.None, Run = (me, tile) => Simple(me, "Dash") }, t, pc));
-            list.Add(Need(new CombatAction { Name = "Disengage", Cost = ActionCost.Action, Target = Targeting.None, Run = (me, tile) => Simple(me, "Disengage") }, t, pc));
-            list.Add(Need(new CombatAction { Name = "Dodge", Cost = ActionCost.Action, Target = Targeting.None, Run = (me, tile) => Simple(me, "Dodge") }, t, pc));
+            list.Add(Need(new CombatAction { Name = "Dash", Group = ActionGroup.Actions, Cost = ActionCost.Action, Target = Targeting.None, Run = (me, tile) => Simple(me, "Dash") }, t, pc));
+            list.Add(Need(new CombatAction { Name = "Disengage", Group = ActionGroup.Actions, Cost = ActionCost.Action, Target = Targeting.None, Run = (me, tile) => Simple(me, "Disengage") }, t, pc));
+            list.Add(Need(new CombatAction { Name = "Dodge", Group = ActionGroup.Actions, Cost = ActionCost.Action, Target = Targeting.None, Run = (me, tile) => Simple(me, "Dodge") }, t, pc));
 
             if (pc.CountOf("potion_healing") > 0 || pc.CountOf("potion_greater_healing") > 0)
-                list.Add(Need(new CombatAction { Name = "Drink Potion", Cost = ActionCost.Bonus, Target = Targeting.None, Run = (me, tile) => DrinkPotion(me, pc) }, t, pc));
+            {
+                list.Add(Need(new CombatAction { Name = "Drink Potion", Group = ActionGroup.Items, Cost = ActionCost.Bonus, Target = Targeting.None, Run = (me, tile) => DrinkPotion(me, pc) }, t, pc));
+                list.Add(Need(new CombatAction { Name = "Give Potion to Ally", Group = ActionGroup.Items, Cost = ActionCost.Bonus, Target = Targeting.Ally, RangeFt = 5,
+                    Tooltip = "Pour a healing potion down an adjacent ally's throat (2024 rules: a Bonus Action, within 5 ft). Works on allies who are down, too.",
+                    Run = (me, tile) => GivePotion(me, pc, UnitAt(tile)) }, t, pc));
+            }
             if (Units.Any(o => o != u && o.C.Team == Team.Players && o.C.IsDown && !o.C.IsDead))
-                list.Add(Need(new CombatAction { Name = "Stabilize (Medicine DC 10)", Cost = ActionCost.Action, Target = Targeting.AllyDown, RangeFt = 5,
+                list.Add(Need(new CombatAction { Name = "Stabilize (Medicine DC 10)", Group = ActionGroup.Actions, Cost = ActionCost.Action, Target = Targeting.AllyDown, RangeFt = 5,
                     Run = (me, tile) => StabilizeAlly(me, pc, UnitAt(tile)) }, t, pc));
             if ((pc.CountOf("ember_of_return") > 0 || pc.CountOf("scroll_revivify") > 0) && Units.Any(o => o.C.Team == Team.Players && o.C.IsDead))
-                list.Add(Need(new CombatAction { Name = "Ember of Return", Cost = ActionCost.Action, Target = Targeting.AllyDead, RangeFt = 5,
+                list.Add(Need(new CombatAction { Name = "Ember of Return", Group = ActionGroup.Actions, Cost = ActionCost.Action, Target = Targeting.AllyDead, RangeFt = 5,
                     Run = (me, tile) => Revive(me, pc, UnitAt(tile)) }, t, pc));
 
-            list.Add(new CombatAction { Name = "End Turn", Cost = ActionCost.Free, Target = Targeting.None, Run = (me, tile) => EndTurnNow(me) });
+            list.Add(Need(new CombatAction { Name = "Retreat", Group = ActionGroup.Actions, Cost = ActionCost.Action, Target = Targeting.None,
+                Tooltip = "Call a retreat. Roll Athletics or Acrobatics (your best) vs DC 10 + the number of enemies still standing (max 15). Succeed and the whole party breaks away: no XP, but nobody dies. The monsters stay put, wounds and all.",
+                Run = (me, tile) => RetreatAttempt(me, pc) }, t, pc));
+
+            if (u.Owner == null)
+                list.Add(new CombatAction { Name = "Auto", Group = ActionGroup.End, Cost = ActionCost.Free, Target = Targeting.None, EndsTurn = true,
+                    Tooltip = $"Let {pc.Name} decide this turn (they fight on their own). To hand them over for good, talk to them outside of combat.",
+                    Run = (me, tile) => AiTurn(me) });
+            list.Add(new CombatAction { Name = "End Turn", Group = ActionGroup.End, Cost = ActionCost.Free, Target = Targeting.None, EndsTurn = true, Run = (me, tile) => EndTurnNow(me) });
             return list;
         }
 
@@ -412,7 +432,7 @@ namespace DnD.Game
             me.A.Face(target.A.transform.position);
             var ctx = Context(me, target);
             var res = AttackResolver.RollAttack(me.C, target.C, atk, ctx);
-            if (res.OutOfRange) { me.Owner?.Hud.Toast("Out of range!", UIKit.Bad); yield break; }
+            if (res.OutOfRange) { me.Ctrl?.Hud.Toast("Out of range!", UIKit.Bad); yield break; }
 
             // Bardic Inspiration held: add it if it could turn a miss into a hit.
             if (!res.Hit && res.Roll.Natural != 1 && me.C is PlayerCharacter holder && holder.HeldInspirationDie > 0 && res.TargetAC - res.Roll.Total <= holder.HeldInspirationDie)
@@ -438,7 +458,7 @@ namespace DnD.Game
                 if (me.IsHuman)
                 {
                     bool done = false;
-                    me.Owner.Hud.Dice.RollDamage(res.Critical ? "CRITICAL! Roll damage!" : "Roll damage!", $"{atk.Name}: {atk.Damage}{(atk.DamageMod != 0 ? AbilityUtil.Fmt(atk.DamageMod) : "")}{(res.Critical ? " (dice doubled)" : "")}", dmg, DieColor.Damage, () => done = true);
+                    me.Ctrl.Hud.Dice.RollDamage(res.Critical ? "CRITICAL! Roll damage!" : "Roll damage!", $"{atk.Name}: {atk.Damage}{(atk.DamageMod != 0 ? AbilityUtil.Fmt(atk.DamageMod) : "")}{(res.Critical ? " (dice doubled)" : "")}", dmg, DieColor.Damage, () => done = true);
                     while (!done) yield return null;
                 }
                 ApplyHitResults(me, target, res, dmg);
@@ -478,7 +498,8 @@ namespace DnD.Game
         {
             if (target.C.IsDead && target.DeathRound < 0) target.DeathRound = Enc.Round;
             if (target.C.IsDown && target.C.Team == Team.Enemies) { target.A.Popup("Defeated!", UIKit.Gold); }
-            if (target.C.IsDown && target.IsHuman) target.Owner.Hud.Narrate(target.C.IsDead ? "Everything goes dark..." : "You fall unconscious! Death saves begin on your turn...");
+            if (target.C.IsDown && target.Owner != null) target.Owner.Hud.Narrate(target.C.IsDead ? "Everything goes dark..." : "You fall unconscious! Death saves begin on your turn...");
+            else if (target.C.IsDown && target.Comp != null) target.Comp.Leader?.Hud.Narrate(target.C.IsDead ? $"{target.Name} has fallen..." : $"{target.Name} is down! Get a potion or a healing spell to them (Items: Give Potion to Ally).");
         }
 
         // ================================================================== spells
@@ -487,7 +508,7 @@ namespace DnD.Game
         {
             var turn = me.Cb.Turn;
             int slot = s.IsCantrip ? 0 : pc.LowestAvailableSlot(s.Level);
-            if (!SpellResolver.PaySlot(pc, s, slot)) { me.Owner?.Hud.Toast("No slot available.", UIKit.Bad); yield break; }
+            if (!SpellResolver.PaySlot(pc, s, slot)) { me.Ctrl?.Hud.Toast("No slot available.", UIKit.Bad); yield break; }
             if (s.CastTime == CastTime.BonusAction) turn.BonusActionUsed = true; else turn.ActionUsed = true;
             if (!s.IsCantrip) turn.CastLeveledSpellThisTurn = true;
             var log = new List<string>();
@@ -659,7 +680,7 @@ namespace DnD.Game
                 yield break;
             }
             bool done = false;
-            me.Owner.Hud.Dice.RollDamage(title, sub, roll, color, () => done = true);
+            me.Ctrl.Hud.Dice.RollDamage(title, sub, roll, color, () => done = true);
             while (!done) yield return null;
         }
 
@@ -687,13 +708,13 @@ namespace DnD.Game
 
         IEnumerator BardicInspiration(Unit me, PlayerCharacter pc, Unit target)
         {
-            if (target == null || target == me) { me.Owner?.Hud.Toast("Inspire someone else!", UIKit.Bad); yield break; }
+            if (target == null || target == me) { me.Ctrl?.Hud.Toast("Inspire someone else!", UIKit.Bad); yield break; }
             pc.SpendResource("bardic_inspiration");
             me.Cb.Turn.BonusActionUsed = true;
             if (target.C is PlayerCharacter t) t.HeldInspirationDie = pc.BardicDie;
             target.A.Popup($"Inspired! d{pc.BardicDie}", UIKit.UtilityBlue);
             Log($"{pc.Name} inspires {target.Name} (d{pc.BardicDie}).");
-            target.Owner?.Hud.Toast($"You hold a Bardic Inspiration d{pc.BardicDie}! It's offered when you fail a roll.", UIKit.UtilityBlue);
+            target.Ctrl?.Hud.Toast($"You hold a Bardic Inspiration d{pc.BardicDie}! It's offered when you fail a roll.", UIKit.UtilityBlue);
         }
 
         IEnumerator DivineSpark(Unit me, PlayerCharacter pc, Unit target)
@@ -773,7 +794,7 @@ namespace DnD.Game
             if (!(target?.C is PlayerCharacter down)) yield break;
             me.Cb.Turn.ActionUsed = true;
             D20Result res = null;
-            if (me.IsHuman) me.Owner.Hud.Dice.RollD20("Medicine Check", $"Stabilize {target.Name} · DC 10", () => Checks.RollSkill(pc, Skill.Medicine, AdvantageState.Normal), 10, true, r => res = r);
+            if (me.IsHuman) me.Ctrl.Hud.Dice.RollD20("Medicine Check", $"Stabilize {target.Name} · DC 10", () => Checks.RollSkill(pc, Skill.Medicine, AdvantageState.Normal), 10, true, r => res = r);
             else res = Checks.RollSkill(pc, Skill.Medicine, AdvantageState.Normal);
             while (res == null) yield return null;
             if (Checks.IsSuccess(Checks.ResolveCheck(res, 10))) { down.Stabilize(); target.A.Popup("Stable", UIKit.HealGreen); Log($"{target.Name} is stabilized."); }
@@ -785,7 +806,7 @@ namespace DnD.Game
             if (!(target?.C is PlayerCharacter dead) || !dead.IsDead) yield break;
             var diff = G.Settings.Difficulty;
             if (diff >= Difficulty.Hard && target.DeathRound >= 0 && Enc.Round - target.DeathRound > 10)
-            { me.Owner?.Hud.Toast("Too late. More than a minute has passed. (Hard difficulty)", UIKit.Bad); yield break; }
+            { me.Ctrl?.Hud.Toast("Too late. More than a minute has passed. (Hard difficulty)", UIKit.Bad); yield break; }
             string item = pc.CountOf("ember_of_return") > 0 ? "ember_of_return" : "scroll_revivify";
             pc.RemoveItem(item);
             me.Cb.Turn.ActionUsed = true;
@@ -796,6 +817,44 @@ namespace DnD.Game
             Sfx.Play("heal");
         }
 
+        IEnumerator GivePotion(Unit me, PlayerCharacter pc, Unit target)
+        {
+            if (target == null || target.C.IsDead) yield break;
+            if (target == me) { yield return DrinkPotion(me, pc); yield break; }
+            string id = pc.CountOf("potion_greater_healing") > 0 ? "potion_greater_healing" : "potion_healing";
+            if (!pc.RemoveItem(id)) yield break;
+            me.Cb.Turn.BonusActionUsed = true;
+            var def = (ConsumableDef)ItemsDb.Get(id);
+            me.A.Face(target.A.transform.position);
+            var roll = Dice.RollDamage(def.Amount);
+            yield return WaitDamageRoll(me, def.Name, $"{pc.Name} tips it into {target.Name}'s mouth", roll, DieColor.Healing);
+            bool wasDown = target.C.IsDown;
+            int healed = target.C.Heal(roll.Total);
+            target.A.Popup("+" + healed, UIKit.HealGreen);
+            Sfx.Play("heal");
+            Ticker($"{pc.Name} gives {target.Name} a {def.Name}: +{healed} HP{(wasDown ? $". {target.Name} is back on their feet!" : "")}");
+            RefreshTracker();
+        }
+
+        IEnumerator RetreatAttempt(Unit me, PlayerCharacter pc)
+        {
+            me.Cb.Turn.ActionUsed = true;
+            int foes = Units.Count(o => o.Active && Hostile(o, me));
+            int dc = Math.Min(15, 10 + foes);
+            var skill = pc.SkillBonus(Skill.Athletics) >= pc.SkillBonus(Skill.Acrobatics) ? Skill.Athletics : Skill.Acrobatics;
+            D20Result res = null;
+            me.Ctrl.Hud.Dice.RollD20("Retreat!", $"{SkillUtil.Name(skill)} {AbilityUtil.Fmt(pc.SkillBonus(skill))} · DC {dc} ({foes} enemies standing)",
+                () => Checks.RollSkill(pc, skill, AdvantageState.Normal), dc, true, r => res = r);
+            while (res == null) yield return null;
+            if (Checks.IsSuccess(Checks.ResolveCheck(res, dc)))
+            {
+                Ticker($"{pc.Name} shouts \"FALL BACK!\" and the party breaks away!");
+                yield return new WaitForSeconds(0.6f);
+                Retreat();
+            }
+            else Ticker($"{pc.Name} looks for a way out, but the enemy cuts off the escape!");
+        }
+
         IEnumerator EndTurnNow(Unit me) { me.Cb.Turn.ActionUsed = true; me.Cb.Turn.BonusActionUsed = true; me.Cb.Turn.MovementLeftFt = 0; yield break; }
 
         // ================================================================== death saves
@@ -804,14 +863,14 @@ namespace DnD.Game
         {
             D20Result res = null;
             if (u.IsHuman)
-                u.Owner.Hud.Dice.RollD20("Death Saving Throw", $"10+ succeeds · {pc.DeathSuccesses} successes, {pc.DeathFailures} failures", pc.RollDeathSave, 10, false, r => res = r);
+                u.Ctrl.Hud.Dice.RollD20("Death Saving Throw", $"10+ succeeds · {pc.DeathSuccesses} successes, {pc.DeathFailures} failures", pc.RollDeathSave, 10, false, r => res = r);
             else res = pc.RollDeathSave();
             while (res == null) yield return null;
             var log = new List<string>();
             var outcome = pc.ApplyDeathSave(res, log);
             log.ForEach(Log);
             Ticker($"{pc.Name} death save: {res.Natural} → {outcome}");
-            if (outcome == PlayerCharacter.DeathSaveOutcome.Died) { u.DeathRound = Enc.Round; u.Owner?.Hud.Narrate("Your spirit slips free of your body. Your friends can still bring you back..."); }
+            if (outcome == PlayerCharacter.DeathSaveOutcome.Died) { u.DeathRound = Enc.Round; u.Ctrl?.Hud.Narrate(u.Owner != null ? "Your spirit slips free of your body. Your friends can still bring you back..." : $"{u.Name}'s spirit slips free. An Ember of Return or the temple can still bring them back..."); }
             if (outcome == PlayerCharacter.DeathSaveOutcome.Revived) { u.A.Popup("NAT 20! Back up!", UIKit.D20Gold); Sfx.Play("crit"); }
             yield return new WaitForSeconds(0.4f);
         }
@@ -857,9 +916,16 @@ namespace DnD.Game
                 var cantrip = caster.Cantrips.Select(SpellsDb.Get).FirstOrDefault(s => s != null && s.Kind == SpellKind.Attack && s.RangeFt > 5);
                 if (cantrip != null) ranged = SpellResolver.AsAttack(caster, cantrip);
             }
-            bool prefersRange = ranged != null && (monster == null || monster.Def.Behavior == MonsterBehavior.Ranged || melee == null || u.C is PlayerCharacter);
+            bool frontline = u.Comp != null && u.Comp.IsFrontline;
+            bool prefersRange = ranged != null && (monster != null ? monster.Def.Behavior == MonsterBehavior.Ranged || melee == null : !frontline || melee == null);
 
             var target = foes.OrderBy(f => Zone.DistanceFt(u.Pos, f.Pos)).First();
+            if (frontline)
+            {
+                // Bodyguard: go for whichever enemy is closest to the most hurt friend (usually whoever is being swarmed).
+                var ward = Units.Where(o => o != u && o.Active && !Hostile(u, o)).OrderBy(o => o.C.HP / (float)Math.Max(1, o.C.EffectiveMaxHP)).FirstOrDefault();
+                if (ward != null) target = foes.OrderBy(f => Zone.DistanceFt(f.Pos, ward.Pos) * 2 + Zone.DistanceFt(u.Pos, f.Pos)).First();
+            }
             if (prefersRange)
             {
                 int dist = Zone.DistanceFt(u.Pos, target.Pos);
@@ -912,7 +978,7 @@ namespace DnD.Game
                 && !target.Cb.Turn.ReactionUsed && res.Roll.Total < res.TargetAC + 5)
             {
                 bool? yes = null;
-                target.Owner.Hud.Push(new ChoiceScreen("Reaction: Shield?", $"{me.Name} hits you with a {res.Roll.Total}. Cast Shield for +5 AC (uses a spell slot)?",
+                target.Ctrl.Hud.Push(new ChoiceScreen("Reaction: Shield?", $"{me.Name} hits you with a {res.Roll.Total}. Cast Shield for +5 AC (uses a spell slot)?",
                     new List<(string, Action)> { ("Cast Shield!", () => yes = true), ("Take the hit", () => yes = false) }, false));
                 while (yes == null) yield return null;
                 if (yes == true)
@@ -933,7 +999,7 @@ namespace DnD.Game
                 {
                     var bpc = (PlayerCharacter)bard.C;
                     bool? yes = null;
-                    bard.Owner.Hud.Push(new ChoiceScreen("Reaction: Cutting Words?", $"{me.Name} rolled {res.Roll.Total} to hit {target.Name}. Spend Bardic Inspiration to subtract a d{bpc.BardicDie}?",
+                    bard.Ctrl.Hud.Push(new ChoiceScreen("Reaction: Cutting Words?", $"{me.Name} rolled {res.Roll.Total} to hit {target.Name}. Spend Bardic Inspiration to subtract a d{bpc.BardicDie}?",
                         new List<(string, Action)> { ("Mock them mercilessly!", () => yes = true), ("Hold your tongue", () => yes = false) }, false));
                     while (yes == null) yield return null;
                     if (yes == true)

@@ -66,6 +66,47 @@ namespace DnD.Tests
         protected override Vector2 NavRaw() { Tick(); return _nav; }
     }
 
+    /// <summary>Presses exactly the keys a test asks for, for one frame (Esc = Cancel + Pause, like the real keyboard).</summary>
+    public class ScriptInput : DnD.Game.PlayerInput
+    {
+        int _frame = -1;
+        public bool Esc, Inv;
+        bool _esc, _inv;
+
+        void Tick()
+        {
+            if (_frame == Time.frameCount) return;
+            _frame = Time.frameCount;
+            _esc = Esc; _inv = Inv;
+            Esc = Inv = false;
+        }
+
+        public override string DeviceName => "Script";
+        public override bool IsConnected => true;
+        public override bool UsesMouse => true;
+        public override Vector2 Move => Vector2.zero;
+        public override bool Confirm => false;
+        public override bool Cancel { get { Tick(); return _esc; } }
+        public override bool Pause { get { Tick(); return _esc; } }
+        public override bool Inventory { get { Tick(); return _inv; } }
+        public override bool CharacterSheet => false;
+        public override bool Spells => false;
+        public override bool Journal => false;
+        public override bool EndTurn => false;
+        public override bool NextTab => false;
+        public override bool PrevTab => false;
+        public override bool AltAction => false;
+        public override bool QuickModifier => false;
+        public override bool SneakToggle => false;
+        public override bool Highlight => false;
+        public override int HotbarPressed => -1;
+        public override Vector2 Cursor => Vector2.zero;
+        public override bool UseItem => false;
+        public override bool Sort => false;
+        public override bool Give => false;
+        protected override Vector2 NavRaw() => Vector2.zero;
+    }
+
     public class SmokeTests
     {
         string _tempSaves;
@@ -113,18 +154,86 @@ namespace DnD.Tests
         {
             var g = GameRoot.I;
             var p = g.DebugStart(new FuzzInput(7), "bard", "half_elf");
-            g.Warp(p, "town", new Vector2Int(19, 16), false);
+            g.Warp(p, "town", new Vector2Int(25, 19), false);
             Time.timeScale = 4;
             yield return Frames(2500);
             Assert.IsTrue(g.InGame);
         }
 
         [UnityTest]
+        public IEnumerator FuzzTheForest()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new FuzzInput(11), "fighter", "human");
+            g.Warp(p, "forest", new Vector2Int(40, 18), false);
+            Time.timeScale = 4;
+            yield return Frames(2500);
+            Assert.IsTrue(g.InGame);
+        }
+
+        /// <summary>Searching a hidden spot rolls the visible d20 and either rewards once or locks until tomorrow.</summary>
+        [UnityTest]
+        public IEnumerator SecretSearchRollsAndRewardsOnce()
+        {
+            var g = GameRoot.I;
+            var input = new FuzzInput(5) { ConfirmChance = 1, CancelChance = 0, EndTurnChance = 0, MenuChance = 0 };
+            var p = g.DebugStart(input, "bard", "human");
+            g.Warp(p, "forest", new Vector2Int(19, 25), false);
+            yield return null;
+            var log = System.Array.Find(Object.FindObjectsByType<SecretInteractable>(), s => s.Def.Id == "forest_log");
+            Assert.IsNotNull(log, "hollow log secret was not built");
+            int potions = p.Character.CountOf("potion_healing");
+
+            log.Interact(p);
+            Assert.IsTrue(p.Hud.Dice.IsOpen, "the search should open the dice roller");
+            for (int i = 0; i < 600 && (p.Hud.Dice.IsOpen || !p.Hud.HasScreen); i++) yield return null;
+            Assert.IsTrue(p.Hud.Top is MessageScreen, "a result message should follow the roll");
+            bool found = g.World.Flag("secret:forest_log");
+            Assert.AreEqual(found ? potions + 2 : potions, p.Character.CountOf("potion_healing"));
+            p.Hud.CloseAll();
+
+            // A second attempt never pays out twice: either "already found" or "come back tomorrow".
+            log.Interact(p);
+            Assert.IsFalse(p.Hud.Dice.IsOpen, "no second roll on the same day");
+            Assert.AreEqual(found ? potions + 2 : potions, p.Character.CountOf("potion_healing"));
+        }
+
+        /// <summary>Hand-edited maps drift: every warp, spawn, NPC spot and secret must land on a sensible tile.</summary>
+        [UnityTest]
+        public IEnumerator WorldDataIsConsistent()
+        {
+            var g = GameRoot.I;
+            g.DebugStart(new FuzzInput(1), "cleric", "dwarf");
+            yield return null;
+            foreach (var z in g.Zones.Values)
+            {
+                Assert.IsTrue(z.IsWalkable(z.Def.DefaultSpawn), $"{z.Def.Id} default spawn {z.Def.DefaultSpawn}");
+                foreach (var w in z.Def.Warps)
+                {
+                    Assert.IsTrue(g.Zones.ContainsKey(w.ToZone), $"{z.Def.Id} warp to unknown zone {w.ToZone}");
+                    Assert.IsTrue(g.Zones[w.ToZone].IsWalkable(w.ToPos), $"{z.Def.Id} warp {w.At} lands on blocked {w.ToZone} {w.ToPos}");
+                    Assert.AreEqual(null, g.Zones[w.ToZone].WarpAt(w.ToPos), $"{z.Def.Id} warp {w.At} lands on another warp");
+                }
+                foreach (var grp in z.Def.EnemyGroups)
+                    foreach (var m in grp.Members)
+                        Assert.IsTrue(z.IsWalkable(m.Pos), $"{z.Def.Id} {grp.Id} spawn {m.Pos}");
+                foreach (var kv in z.Def.Secrets)
+                    Assert.IsTrue("qOY".IndexOf(z.CharAt(kv.Key)) >= 0, $"{z.Def.Id} secret {kv.Value.Id} at {kv.Key} is not on a secret tile");
+                foreach (var c in z.Def.Chests)
+                    Assert.AreEqual('c', z.CharAt(c.Pos), $"{z.Def.Id} chest {c.Id}");
+            }
+            foreach (var npc in WorldDb.Npcs.Values)
+                foreach (var e in npc.Schedule)
+                    if (e.Zone != null)
+                        Assert.IsTrue(g.Zones[e.Zone].IsWalkable(e.Pos), $"{npc.Id} at {e.Zone} {e.Pos} ({e.Activity})");
+        }
+
+        [UnityTest, Timeout(400000)] // 9 conversations x 3 rounds of 400 frames
         public IEnumerator FuzzEveryConversation()
         {
             var g = GameRoot.I;
             var p = g.DebugStart(new FuzzInput(11) { ConfirmChance = 0.12f, CancelChance = 0.005f }, "cleric", "dwarf");
-            foreach (var id in new[] { "brannoc", "elowen", "pip", "rhoswen", "tobin", "maddie", "snik" })
+            foreach (var id in new[] { "brannoc", "elowen", "pip", "rhoswen", "tobin", "maddie", "snik", "wren", "hobb" })
             {
                 for (int round = 0; round < 3; round++)
                 {
@@ -260,6 +369,206 @@ namespace DnD.Tests
             g.Warp(p2, "shop", new Vector2Int(6, 7), false);
             Time.timeScale = 4;
             yield return Frames(1500);
+        }
+
+        [UnityTest]
+        public IEnumerator FuzzTheFord()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new FuzzInput(13), "cleric", "elf");
+            g.Warp(p, "ford", new Vector2Int(1, 14), false);
+            Time.timeScale = 4;
+            yield return Frames(2500);
+            Assert.IsTrue(g.InGame);
+        }
+
+        /// <summary>Playtest bug: Esc closed a menu and the same key press opened the pause menu (menus felt impossible to leave).</summary>
+        [UnityTest]
+        public IEnumerator EscClosesMenusWithoutOpeningAnother()
+        {
+            var g = GameRoot.I;
+            var input = new ScriptInput();
+            var p = g.DebugStart(input, "bard", "human");
+            yield return Frames(2);
+            var screens = new GameScreen[] { new InventoryScreen(null, null), new CharacterSheetScreen(), new SpellbookScreen(), new JournalScreen(), new ShopScreen("general"), new RestScreen(true) };
+            foreach (var s in screens)
+            {
+                p.Hud.Push(s);
+                yield return Frames(2);
+                input.Esc = true;
+                yield return Frames(3);
+                Assert.IsFalse(p.Hud.HasScreen, $"Esc should close {s.GetType().Name} and nothing else should open");
+            }
+            input.Inv = true;
+            yield return Frames(3);
+            Assert.IsTrue(p.Hud.Top is InventoryScreen, "I opens the inventory");
+            input.Inv = true;
+            yield return Frames(3);
+            Assert.IsFalse(p.Hud.HasScreen, "I again closes it (and doesn't reopen it)");
+            input.Esc = true;
+            yield return Frames(3);
+            Assert.IsTrue(p.Hud.Top is PauseScreen, "Esc in the world opens the menu");
+            input.Esc = true;
+            yield return Frames(3);
+            Assert.IsFalse(p.Hud.HasScreen, "Esc again closes the menu");
+        }
+
+        /// <summary>"Reward all playstyles": talking a group down pays exactly the XP of beating them, and companions never dilute it.</summary>
+        [UnityTest]
+        public IEnumerator TalkingAndFightingPayTheSameXp()
+        {
+            var g = GameRoot.I;
+            int expected = 3 * DnD.Rules.Content.MonstersDb.Get("goblin").XP;
+            var input = new FuzzInput(4) { ConfirmChance = 1, CancelChance = 0, EndTurnChance = 0, MenuChance = 0 };
+            int[] gained = new int[2], compGained = new int[2];
+            for (int run = 0; run < 2; run++)
+            {
+                var p = g.DebugStart(input, "bard", "human");
+                yield return null;
+                g.HireRecruit(p, Object.FindObjectsByType<RecruitAgent>().First());
+                var comp = g.CompanionsOf(p).First();
+                g.Warp(p, "forest", new Vector2Int(19, 25), false);
+                yield return null;
+                p.Hud.CloseAll();
+                int before = p.Character.XP, compBefore = comp.Character.XP;
+                if (run == 0) g.PacifyGroup("forest_goblins", p);
+                else
+                {
+                    g.StartGroupCombat("forest_goblins", p);
+                    foreach (var u in g.Combats.Single().Units) if (u.C.Team == Team.Enemies) u.C.HP = 0;
+                    Time.timeScale = 4;
+                    float start = Time.realtimeSinceStartup;
+                    while (g.AnyInCombat && Time.realtimeSinceStartup - start < 60f) yield return null;
+                    Time.timeScale = 1;
+                    Assert.IsFalse(g.AnyInCombat, "the fight should end once every goblin is down");
+                }
+                gained[run] = p.Character.XP - before;
+                compGained[run] = comp.Character.XP - compBefore;
+                g.QuitToTitle();
+                yield return null;
+            }
+            Assert.AreEqual(expected, gained[0], "peaceful XP = the group's full XP");
+            Assert.AreEqual(expected, gained[1], "combat XP = the group's full XP (the companion doesn't take a share)");
+            Assert.AreEqual(gained[0], compGained[0], "companions earn what their leader earns");
+            Assert.AreEqual(gained[1], compGained[1]);
+        }
+
+        [UnityTest]
+        public IEnumerator BeingSpottedOffersChoicesAndSneakingAllowsAmbush()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new FuzzInput(3) { ConfirmChance = 0, CancelChance = 0, MenuChance = 0, EndTurnChance = 0 }, "fighter", "human");
+            g.Warp(p, "forest", new Vector2Int(19, 25), false);
+            yield return null;
+            p.Hud.CloseAll();
+            var gob = Object.FindObjectsByType<EnemyAgent>().First(e => e.Group.Id == "forest_goblins");
+            g.OnEnemyNoticed(gob, p);
+            Assert.IsFalse(g.AnyInCombat, "being spotted asks what you do instead of starting a fight");
+            Assert.IsTrue(p.Hud.Top is DialogueScreen, "the encounter choice is shown");
+            var first = p.Hud.Top;
+            g.OnEnemyNoticed(gob, p);
+            Assert.AreSame(first, p.Hud.Top, "a second sighting mid-conversation doesn't stack another one");
+            yield return Frames(3);
+
+            p.Hud.CloseAll();
+            p.Avatar.Sneaking = true;
+            var amb = gob.GetComponent<AmbushInteractable>();
+            Assert.IsTrue(amb.Available(p), "sneaking players can ambush an unaware enemy");
+            amb.Interact(p);
+            Assert.IsTrue(g.AnyInCombat, "the ambush starts the fight");
+        }
+
+        [UnityTest]
+        public IEnumerator CompanionsTakeOrdersCanBeHealedAndThePartyCanRetreat()
+        {
+            var g = GameRoot.I;
+            var input = new FuzzInput(17) { ConfirmChance = 1, CancelChance = 0, MenuChance = 0, EndTurnChance = 0 };
+            var p = g.DebugStart(input, "bard", "human");
+            yield return null;
+            g.HireRecruit(p, Object.FindObjectsByType<RecruitAgent>().First());
+            var comp = g.CompanionsOf(p).First();
+            Assert.IsTrue(comp.Manual, "by default you command your companions in combat");
+
+            // Out of combat: hand them a potion.
+            comp.Character.HP = 1;
+            p.Character.AddItem("potion_healing");
+            int idx = System.Array.FindIndex(p.Character.Bag.Slots, s => s != null && s.ItemId == "potion_healing");
+            int potions = p.Character.CountOf("potion_healing");
+            Assert.IsTrue(g.GivePotionTo(p, comp.Character, idx));
+            for (int i = 0; i < 300 && p.Hud.Dice.IsOpen; i++) yield return null;
+            Assert.Greater(comp.Character.HP, 1, "the potion healed the companion");
+            Assert.AreEqual(potions - 1, p.Character.CountOf("potion_healing"));
+
+            // In combat: the companion's unit is driven by its leader.
+            g.Warp(p, "mine", new Vector2Int(19, 20), false);
+            yield return null;
+            p.Hud.CloseAll();
+            g.StartGroupCombat("mine_hub", p);
+            var c = g.Combats.Single();
+            var cu = c.Units.First(u => u.Comp == comp);
+            Assert.AreSame(p, cu.Ctrl, "the leader controls the companion's turns");
+            Assert.IsTrue(cu.IsHuman);
+
+            // Retreat: once it's someone's turn, a successful retreat ends the fight with no winner.
+            float until = Time.realtimeSinceStartup + 30;
+            while (!(c.Current != null && c.Current.IsHuman && p.Hud.Top is CombatHud && !p.Hud.Dice.IsOpen) && !c.Finished && Time.realtimeSinceStartup < until) yield return null;
+            if (!c.Finished)
+            {
+                c.Retreat();
+                yield return Frames(5);
+                Assert.IsFalse(g.AnyInCombat);
+                Assert.IsFalse(p.InCombat);
+                Assert.IsTrue(g.World.IsLocked("calm:mine_hub"), "the group loses track of you for a while");
+                Assert.IsFalse(g.World.DefeatedGroups.Contains("mine_hub"), "retreating isn't winning");
+                Assert.IsFalse(p.Hud.Find<CombatHud>() != null, "combat UI closed");
+            }
+        }
+
+        /// <summary>Playtest 3: companions walked on top of each other, and the player wanted them in front when a fight starts.</summary>
+        [UnityTest]
+        public IEnumerator CompanionsKeepFormationAndTakePointIntoFights()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new FuzzInput(9) { ConfirmChance = 0, CancelChance = 0, MenuChance = 0, EndTurnChance = 0 }, "bard", "human");
+            yield return null;
+            foreach (var r in Object.FindObjectsByType<RecruitAgent>().Take(2).ToList()) g.HireRecruit(p, r);
+            var comps = g.CompanionsOf(p).Where(c => !c.IsDragon).ToList();
+            Assert.AreEqual(2, comps.Count);
+            g.Warp(p, "town", new Vector2Int(25, 19), false);
+            yield return Frames(90);
+            Assert.Greater(Vector2.Distance(comps[0].transform.position, comps[1].transform.position), 0.6f, "companions keep separate spots instead of stacking");
+
+            comps[0].TakePoint = true;
+            comps[0].Stance = CompanionStance.Ranged; // only taking point should put them in front
+            comps[1].Stance = CompanionStance.Ranged;
+            g.Warp(p, "mine", new Vector2Int(19, 24), false);
+            yield return null;
+            p.Hud.CloseAll();
+            g.StartGroupCombat("mine_hub", p);
+            var c = g.Combats.Single();
+            var me = c.Units.First(u => u.Owner == p);
+            var point = c.Units.First(u => u.Comp == comps[0]);
+            var foe = c.Units.Where(u => u.C.Team == Team.Enemies).OrderBy(u => Zone.DistanceFt(u.Pos, me.Pos)).First();
+            Assert.Less(Zone.DistanceFt(point.Pos, foe.Pos), Zone.DistanceFt(me.Pos, foe.Pos), "the point companion starts the fight between you and the enemy");
+        }
+
+        [UnityTest]
+        public IEnumerator TheFordQuestCanBeSolvedByTalking()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new FuzzInput(2) { ConfirmChance = 0, CancelChance = 0, MenuChance = 0 }, "bard", "human");
+            g.Warp(p, "ford", new Vector2Int(1, 14), false);
+            yield return null;
+            Assert.AreEqual(1, g.Quests.Stage("east_road"), "arriving at the ford starts the quest");
+            int before = p.Character.XP;
+            g.World.SetFlag("wren_legit");
+            g.PacifyGroup("ford_toll", p);
+            Assert.AreEqual(2, g.Quests.Stage("east_road"));
+            int expected = new[] { "wren", "bandit", "bandit" }.Sum(id => DnD.Rules.Content.MonstersDb.Get(id).XP);
+            Assert.AreEqual(expected, p.Character.XP - before, "talking Wren's crew down pays their full XP");
+            g.CompleteEastRoad(p);
+            Assert.AreEqual(3, g.Quests.Stage("east_road"));
+            Assert.IsTrue(g.Quests.Done("east_road"));
         }
 
         [UnityTest]

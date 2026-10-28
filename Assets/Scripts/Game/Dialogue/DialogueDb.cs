@@ -24,6 +24,8 @@ namespace DnD.Game
                 case "tobin": d = Tobin(); break;
                 case "maddie": d = Maddie(); break;
                 case "snik": d = Snik(); break;
+                case "wren": d = Wren(); break;
+                case "hobb": d = Hobb(); break;
                 case "recruit": d = Recruit(); break;
                 case "companion": d = Companion(); break;
                 default: d = new Dialogue(id, c => "start"); d.Node("start", null, c => "...").Bye(); break;
@@ -330,6 +332,80 @@ namespace DnD.Game
             return d;
         }
 
+        // =================================================================== Miller's Ford: Wren (parley) and Old Hobb
+
+        static Dialogue Wren()
+        {
+            var d = new Dialogue("wren", c => "start");
+            const string who = "Wren, Toll-Captain";
+            System.Action<DCtx> fight = c => { c.Screen.Close(); c.G.StartGroupCombat("ford_toll", c.P); };
+            d.Node("start", who, c => "Hold it right there, travelers! This is an OFFICIAL toll ford. Ten silver for the lot of you, payable to the Ford Wardens. That's us. We're the Ford Wardens.",
+                    c => "A wiry woman in a patched green coat leans on a long boathook. Behind her, two big bargemen hold crossbows like they've only just been told which end is which.")
+                .Roll(Skill.Insight, 12, "(Read her) Who are these people, really?", "insight_yes", "insight_no", social: false)
+                .Roll(Skill.Persuasion, 14, "You're river folk, not bandits. Old Hobb needs hands to rebuild that bridge. He'd pay you.", "legit", "fight_fail",
+                      adv: c => c.G.World.Flag("wren_read") || c.G.World.Flag("met_hobb") ? AdvantageState.Advantage : AdvantageState.Normal,
+                      onSuccess: c => { c.G.World.SetFlag("wren_legit"); c.G.PacifyGroup("ford_toll", c.P); })
+                .Roll(Skill.Intimidation, 14, "Step aside, or you're going for a swim.", "fled", "fight_fail",
+                      onSuccess: c => c.G.PacifyGroup("ford_toll", c.P, fled: true))
+                .Roll(Skill.Deception, 15, "We're from the Port Varrel tax office. We'll be needing our cut of these 'tolls'.", "fled_tax", "fight_fail",
+                      show: c => c.Bg("criminal") || c.Is("bard"), role: "Silver tongue", onSuccess: c => c.G.PacifyGroup("ford_toll", c.P, fled: true))
+                .Roll(Skill.Performance, 13, "A crossing this fine deserves a song. (Sing the ballad of the Old Bridge)", "legit_song", "fight_fail",
+                      show: c => c.Is("bard"), role: "Bard", onSuccess: c => { c.G.World.SetFlag("wren_legit"); c.G.PacifyGroup("ford_toll", c.P); })
+                .Say("(Pay the toll: 1 gp)", "paid", show: c => c.PC.Copper >= 100, doIt: c => { c.PC.Copper -= 100; c.G.GrantPassage("ford_toll"); })
+                .Say("(Attack!)", doIt: fight, end: true);
+            d.Node("insight_yes", who, c => "...",
+                c => "That boathook is for poling barges, not fighting. Their boots are patched twice over, and the 'toll box' is mostly empty. These are river folk whose living washed away with the bridge. They're scared, and hungry. (Advantage on Persuasion.)",
+                c => c.G.World.SetFlag("wren_read")).Say("I see.", "start");
+            d.Node("insight_no", who, c => "Are you SQUINTING at me? Stop that. That's an official squint-free crossing.").Say("Sorry.", "start");
+            d.Node("legit", who, c => "...Hobb would PAY us? To do real work? With our hands?",
+                c => "Wren looks at her crew. The bigger bargeman is already nodding so hard his hat falls off. \"Fine. FINE. We'll go talk to the old grump. Ford's free, travelers. Go on.\"")
+                .Say("(Continue)", end: true);
+            d.Node("legit_song", who, c => "...Oh, that's not fair. You can't sing about the Old Bridge, that's not FAIR...",
+                c => "By the second verse the bargemen are sniffling. By the third, Wren is too. \"Alright! Alright. We'll go see Hobb about rebuilding it. Happy?\"")
+                .Say("(Continue)", end: true);
+            d.Node("fled", who, c => "...Right. Toll's waived. Today. Special promotion. Lads, RUN.",
+                c => "The Ford Wardens scatter into the woods, leaving their cookpot bubbling and a purse on the ground.")
+                .Say("(Continue)", end: true);
+            d.Node("fled_tax", who, c => "TAX? Nobody said anything about TAX. Lads! We were never here!",
+                c => "They bolt so fast one of them leaves a boot behind. And a purse.")
+                .Say("(Continue)", end: true);
+            d.Node("paid", who, c => "Pleasure doing business! Mind the slippy stones.",
+                c => "Wren bites the coin, nods, and waves you through. (They'll let you pass from now on, but they're still here...)")
+                .Say("(Continue)", end: true);
+            d.Node("fight_fail", who, c => "Oh, it's like THAT, is it? Wardens! Defend the... the toll!",
+                c => "Crossbows come up, wobbly but loaded. Roll initiative!")
+                .Say("(Fight!)", doIt: fight, end: true);
+            return d;
+        }
+
+        static Dialogue Hobb()
+        {
+            var d = new Dialogue("hobb", c => c.G.Quests.Stage("east_road") >= 3 ? "done" : c.G.Quests.Stage("east_road") == 2 ? "clear" : "start");
+            const string who = "Old Hobb";
+            d.Node("start", who, c => "Visitors! From the WEST side! How'd you cross? ...Ah. The Wardens. Did they charge you? They charge ME to cross my own river.",
+                    c => "A stooped old miller dusted with flour from eyebrows to boots. Behind him, the great mill wheel sits still in the current.",
+                    c => c.G.World.SetFlag("met_hobb"))
+                .Say("What happened to the bridge?", "bridge")
+                .Say("Who are the Wardens?", "wardens")
+                .Say("I'll sort it out.", "promise")
+                .Bye("Take care, Hobb.");
+            d.Node("bridge", who, c => "Spring flood. Took the middle span clean out. No bridge, no barges, no grain, and no grain means my wheel turns for nothing. Forty years I've milled for Thistledown.").Say("I see.", "start");
+            d.Node("wardens", who, c => "Wren's lot. Barge crew. When the bridge went, so did their work. Can't blame 'em for trying, but a man can't pay ten silver every time he wants to buy cheese. If I had a few strong hands, I'd rebuild that bridge myself.").Say("Hm.", "start");
+            d.Node("promise", who, c => "Would you? However you manage it, I'll make it worth your while. Talk sense into them, chase 'em off... I won't ask.").Bye("Leave it to me.");
+            d.Node("clear", who, c => c.G.World.Flag("wren_legit")
+                    ? "You did it! Wren's whole crew turned up at my door asking for WORK. We'll have planks across by next week, and a proper bridge by summer!"
+                    : "The ford's clear? Well. I won't ask how. Thank you, friend.",
+                    c => "Hobb shakes your hand with both of his, leaving two floury prints.")
+                .Say("Glad to help.", "reward", doIt: c => c.G.CompleteEastRoad(c.P));
+            d.Node("reward", who, c => "Here: twenty-five gold, and the best healing draught in the valley. My late wife's recipe. Don't tell the temple.").Bye("Thank you, Hobb.");
+            d.Node("done", who, c => c.G.World.Flag("wren_legit") ? "Wheel's turning, bridge is coming along, and Wren's crew eat me out of house and home. Best problem I've had in years." : "Wheel's turning again! Come by any time.")
+                .Roll(Skill.Persuasion, 10, "Any chance of a sack of flour for the road?", "flour", "noflour", onSuccess: c => c.G.GiveItem(c.P, "rations", 2))
+                .Bye();
+            d.Node("flour", who, c => "For you? Always. Here, some biscuits too.").Bye("Thanks!");
+            d.Node("noflour", who, c => "Flour costs money, friend. Even for heroes.").Bye("Fair.");
+            return d;
+        }
+
         // =================================================================== recruits & companions
 
         static Dialogue Recruit()
@@ -369,14 +445,99 @@ namespace DnD.Game
             }
         }
 
+        static string RoleName(CompanionAgent a) =>
+            a.Stance == CompanionStance.Frontline ? "front line" : a.Stance == CompanionStance.Ranged ? "hang back" : a.IsFrontline ? "front line (their call)" : "hang back (their call)";
+
+        static int PotionIndex(PlayerCharacter pc)
+        {
+            for (int i = 0; i < pc.Bag.Size; i++)
+            {
+                var st = pc.Bag.Slots[i];
+                if (st != null && (st.ItemId == "potion_healing" || st.ItemId == "potion_greater_healing")) return i;
+            }
+            return -1;
+        }
+
         static Dialogue Companion()
         {
             var d = new Dialogue("companion", c => "start");
-            d.Node("start", "", c => "Ready when you are, boss.", onEnter: c => c.Screen.SetSpeaker(c.Comp.Character.Name))
+            d.Node("start", "", c =>
+                    c.Comp.Character.HP < c.Comp.Character.EffectiveMaxHP / 2 ? $"I've been better, boss. ({c.Comp.Character.HP}/{c.Comp.Character.EffectiveMaxHP} HP)"
+                    : c.Comp.Waiting ? "Still here. Holding the spot, like you said."
+                    : "Ready when you are, boss.",
+                    c => $"In fights: {(c.Comp.Manual ? "you call their moves" : "they act on their own")} · Role: {RoleName(c.Comp)} · Walking {(c.Comp.TakePoint ? "ahead of you" : "behind you")}",
+                    onEnter: c => c.Screen.SetSpeaker(c.Comp.Character.Name))
+                .Say("Here, drink this. (Give a healing potion)", "drank", show: c => PotionIndex(c.PC) >= 0 && c.Comp.Character.HP < c.Comp.Character.EffectiveMaxHP,
+                     doIt: c => c.G.GivePotionTo(c.P, c.Comp.Character, PotionIndex(c.PC)))
+                .Say("In a fight, I'll call your moves.", "manual", show: c => !c.Comp.Manual, doIt: c => c.Comp.Manual = true)
+                .Say("In a fight, use your own judgment.", "auto", show: c => c.Comp.Manual, doIt: c => c.Comp.Manual = false)
+                .Say("About your place in a fight...", "role")
+                .Say("Take point. Walk ahead of me.", "point", show: c => !c.Comp.TakePoint, doIt: c => c.Comp.TakePoint = true)
+                .Say("Fall in behind me.", "behind", show: c => c.Comp.TakePoint, doIt: c => c.Comp.TakePoint = false)
+                .Say("Wait here.", show: c => !c.Comp.Waiting, doIt: c => { c.Comp.Waiting = true; c.P.Hud.Toast($"{c.Comp.Character.Name} waits here.", UIKit.UtilityBlue); }, end: true)
+                .Say("Come with me.", show: c => c.Comp.Waiting, doIt: c => { c.Comp.Waiting = false; c.P.Hud.Toast($"{c.Comp.Character.Name} follows you again.", UIKit.UtilityBlue); }, end: true)
                 .Say("Tell me about yourself.", "about")
                 .Say("Wait at the Sleeping Drake. (Leave the party)", doIt: c => c.G.DismissCompanion(c.Comp), end: true)
                 .Bye("Let's go.");
+            d.Node("drank", "", c => "Ahh. That's the stuff. Tastes like cherries and regret.").Say("Better?", "start");
+            d.Node("point", "", c => "Anything jumps out, it jumps at me first. That's the job.",
+                    c => "They'll walk a few steps ahead of you. When a fight starts, they step in between you and the enemy.").Say("Good.", "start");
+            d.Node("behind", "", c => "Right behind you, boss.",
+                    c => "They'll follow behind you again. (Front-line fighters and clerics still step up when a fight starts.)").Say("Good.", "start");
+            d.Node("manual", "", c => "You're the boss. Point, and I'll swing.",
+                    c => "On their turn you'll get their action bar, just like yours. Press Auto any turn to let them decide.").Say("Good.", "start");
+            d.Node("auto", "", c => "Leave it to me.",
+                    c => "They'll take their own turns now, following the role you gave them.").Say("Good.", "start");
+            d.Node("role", "", c => $"Where do you want me? Right now I'm planning to {RoleName(c.Comp)}.")
+                .Say("Front line: get between the enemies and the rest of us.", "start", doIt: c => c.Comp.Stance = CompanionStance.Frontline)
+                .Say("Hang back: use ranged attacks and spells, stay safe.", "start", doIt: c => c.Comp.Stance = CompanionStance.Ranged)
+                .Say("Your call. (Fighters and clerics take the front, others hang back.)", "start", doIt: c => c.Comp.Stance = CompanionStance.Auto);
             d.Node("about", "", c => $"Me? Not much to tell. I'm a {c.Comp.Character.Species.Name.ToLower()} {c.Comp.Character.Class.Name.ToLower()}. And yes, I {c.Comp.Quirk}. Don't make it weird.").Say("Fair enough.", "start");
+            return d;
+        }
+
+        // =================================================================== encounters (any hostile group that spots you)
+
+        /// <summary>
+        /// Built fresh for each group (its DCs differ). Every way out pays the same: peaceful or scared off = the group's
+        /// full XP and loot (GameRoot.PacifyGroup); slipping away = nothing yet, they're still there.
+        /// </summary>
+        public static Dialogue Encounter(EnemyGroupDef g)
+        {
+            var d = new Dialogue("encounter", c => "start");
+            bool beasts = g.Style == EncounterStyle.Beasts;
+            string them = g.Label;
+            string Them = char.ToUpper(them[0]) + them.Substring(1);
+            int stealthDc = GameRoot.I.GroupPassivePerception(g.Id);
+            System.Action<DCtx> fight = c => { c.Screen.Close(); c.G.StartGroupCombat(g.Id, c.P); };
+
+            d.Node("start", null, c => "What do you do?",
+                    c => g.Spotted ?? $"{Them} spot you! Weapons come up... but nobody has moved yet.")
+                .Roll(Skill.Persuasion, g.TalkDC, "Easy. Nobody needs to get hurt today.", "befriended", "fail",
+                      show: c => !beasts, onSuccess: c => c.G.PacifyGroup(g.Id, c.P))
+                .Roll(Skill.Performance, g.TalkDC - 1, "(Strike up a song) ...Who wants to hear a ballad?", "befriended", "fail",
+                      show: c => !beasts && c.Is("bard"), role: "Bard", onSuccess: c => c.G.PacifyGroup(g.Id, c.P))
+                .Roll(Skill.Deception, g.TalkDC + 2, "Careful. The Watch is right behind us. All of them. With dogs.", "fled", "fail",
+                      show: c => !beasts, onSuccess: c => c.G.PacifyGroup(g.Id, c.P, fled: true))
+                .Roll(Skill.AnimalHandling, g.TalkDC, "(Slow movements, soft voice) Easy... easy now...", "befriended", "fail",
+                      show: c => beasts, onSuccess: c => c.G.PacifyGroup(g.Id, c.P))
+                .Roll(Skill.Intimidation, g.ScareDC, beasts ? "(Make yourself HUGE and roar)" : "Leave. Now. While you still can.", "fled", "fail",
+                      onSuccess: c => c.G.PacifyGroup(g.Id, c.P, fled: true))
+                .Roll(Skill.Stealth, stealthDc, "(Back away slowly into cover...)", "slipped", "fail", social: false,
+                      onSuccess: c => { c.G.CalmGroup(g.Id); c.P.Avatar.Sneaking = true; })
+                .Say("(Draw your weapon and fight!)", doIt: fight, end: true);
+            d.Node("befriended", null, c => "",
+                    c => g.Befriended ?? $"{Them} exchange looks, then lower their weapons. Nobody has to bleed today.")
+                .Say("(Continue)", end: true);
+            d.Node("fled", null, c => "",
+                    c => $"{Them} take one look at you and BOLT, scattering into the {(c.P.Zone.Def.Dark ? "tunnels" : "trees")}. Whatever they were carrying, they drop.")
+                .Say("(Continue)", end: true);
+            d.Node("slipped", null, c => "",
+                    c => $"You melt back into cover. {Them} blink, grumble, and lose track of you. (You're sneaking now. Creep around them, or get close unseen and press Interact to AMBUSH.)")
+                .Say("(Continue)", end: true);
+            d.Node("fail", null, c => "",
+                    c => c.LastRoll != null && c.LastRoll.Natural == 1 ? "...That could NOT have gone worse. Roll for initiative!" : "It doesn't land. Roll for initiative!")
+                .Say("(Fight!)", doIt: fight, end: true);
             return d;
         }
     }

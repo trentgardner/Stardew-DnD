@@ -43,9 +43,12 @@ namespace DnD.Game
             _prompt = UIKit.Label(prRt, "", 11, UIKit.Gold, TextAnchor.MiddleCenter);
             _tray.gameObject.SetActive(false);
 
-            _ticker = UIKit.Box(_hud.Root, "RollTicker", new Vector2(0.5f, 1f), new Vector2(330, 44), new Vector2(0, -34));
+            _ticker = UIKit.Box(_hud.Root, "RollTicker", new Vector2(0.5f, 1f), new Vector2(330, 26), new Vector2(0, -26));
             UIKit.Panel(_ticker, true);
-            _tickerText = UIKit.Label(_ticker, "", 11, UIKit.Parchment, TextAnchor.MiddleCenter);
+            _tickerText = UIKit.Label(_ticker, "", 10, UIKit.Parchment, TextAnchor.MiddleCenter);
+            _tickerText.rectTransform.offsetMin = new Vector2(6, 2); _tickerText.rectTransform.offsetMax = new Vector2(-6, -2);
+            _tickerText.resizeTextForBestFit = true; _tickerText.resizeTextMinSize = 7; _tickerText.resizeTextMaxSize = 10;
+            _tickerText.verticalOverflow = VerticalWrapMode.Truncate;
             _ticker.gameObject.SetActive(false);
         }
 
@@ -70,26 +73,29 @@ namespace DnD.Game
         /// </summary>
         public void RollD20(string title, string subtitle, Func<D20Result> roll, int? dc, bool isAbilityCheck, Action<D20Result> done)
         {
-            _hud.StartCoroutine(D20Flow(title, subtitle, roll, dc, isAbilityCheck, done));
+            _hud.StartCoroutine(Queued(D20Flow(title, subtitle, roll, dc, isAbilityCheck, done)));
         }
 
         /// <summary>Damage or healing the player rolls by pressing a button.</summary>
         public void RollDamage(string title, string subtitle, DamageRoll roll, DieColor color, Action done)
         {
-            _hud.StartCoroutine(DamageFlow(title, subtitle, roll, color, done));
+            _hud.StartCoroutine(Queued(DamageFlow(title, subtitle, roll, color, done)));
         }
 
         /// <summary>Generic "roll these dice" for ability scores etc.</summary>
         public void RollDice(string title, List<DieRoll> dice, DieColor color, string resultText, bool requirePress, Action done)
         {
-            _hud.StartCoroutine(GenericFlow(title, dice, color, resultText, requirePress, done));
+            _hud.StartCoroutine(Queued(GenericFlow(title, dice, color, resultText, requirePress, done)));
         }
 
         /// <summary>Small, non-blocking combat readout ("d20: 14 +5 = 19 vs AC 15, HIT").</summary>
         public void Ticker(string text, float seconds = 3.2f)
         {
             _ticker.gameObject.SetActive(true);
+            _ticker.SetAsLastSibling();
             _tickerText.text = text;
+            // Sits just under the combat turn-order strip (which is lower on half-width screens).
+            _ticker.anchoredPosition = new Vector2(0, _hud.Root.rect.width >= 600 ? -26 : -90);
             _tickerTimer = seconds;
         }
 
@@ -224,6 +230,17 @@ namespace DnD.Game
         }
 
         // ------------------------------------------------------------------ helpers
+
+        bool _flowRunning;
+
+        /// <summary>Rolls share one tray, so a roll asked for while another is up waits its turn.</summary>
+        IEnumerator Queued(IEnumerator flow)
+        {
+            while (_flowRunning) yield return null;
+            _flowRunning = true;
+            try { yield return _hud.StartCoroutine(flow); }
+            finally { _flowRunning = false; }
+        }
 
         void Open(string title, string subtitle)
         {

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DnD.Rules;
 using UnityEngine;
 
 namespace DnD.Game
@@ -35,8 +36,71 @@ namespace DnD.Game
     public class SignInteractable : Interactable
     {
         public string Text;
-        public override string PromptText(PlayerSlot p) => "Read";
-        public override void Interact(PlayerSlot p) => p.Hud.Push(new MessageScreen("Sign", Text));
+        public string Title = "Sign";
+        public string Prompt = "Read";
+        public override string PromptText(PlayerSlot p) => Prompt;
+        public override void Interact(PlayerSlot p) => p.Hud.Push(new MessageScreen(Title, Text));
+    }
+
+    /// <summary>
+    /// A hidden spot or special place (hollow log, fairy ring...). The player rolls the skill check on screen;
+    /// success gives the reward once (or once a day), failure can be retried the next day.
+    /// </summary>
+    public class SecretInteractable : Interactable
+    {
+        public SecretDef Def;
+        public override float Range => 1.5f;
+        string FoundKey => "secret:" + Def.Id;
+        string TodayKey(PlayerSlot p) => $"secret:{Def.Id}:{p.Index}";
+
+        public override string PromptText(PlayerSlot p) => Def.Prompt;
+
+        public override void Interact(PlayerSlot p)
+        {
+            if (p.IsBusy) return; // one roll at a time (two inputs in the same frame must not open two dice trays)
+            var g = GameRoot.I;
+            var w = g.World;
+            if (!Def.Daily && w.Flag(FoundKey)) { p.Hud.Narrate(Def.AlreadyFound, false); return; }
+            if (w.IsLocked(TodayKey(p)))
+            {
+                p.Hud.Narrate(Def.Daily ? Def.AlreadyFound : "You've already tried today. Come back tomorrow with fresh eyes.", false);
+                return;
+            }
+
+            var pc = p.Character;
+            string sub = $"{SkillUtil.Name(Def.Skill)} ({SkillUtil.AbilityOf(Def.Skill)}) {AbilityUtil.Fmt(pc.SkillBonus(Def.Skill))} · DC hidden";
+            p.Hud.Dice.RollD20($"{SkillUtil.Name(Def.Skill)} Check", sub, () => Checks.RollSkill(pc, Def.Skill, AdvantageState.Normal), Def.DC, true, r =>
+            {
+                var outcome = Checks.ResolveCheck(r, Def.DC);
+                bool success = Checks.IsSuccess(outcome);
+                if (Def.Daily || !success) w.Lock(TodayKey(p), 24 * 60 - g.Clock.Minutes); // until midnight
+                if (!success)
+                {
+                    Sfx.Play("fail");
+                    p.Hud.Push(new MessageScreen(Def.Prompt, Def.Failure));
+                    return;
+                }
+
+                Sfx.Play("success");
+                bool first = !w.Flag(FoundKey);
+                w.SetFlag(FoundKey);
+                g.AwardOnce(p, FoundKey, Def.DC * (outcome == CheckOutcome.CriticalSuccess ? 3 : 2), "finding a secret");
+                foreach (var kv in Def.Items) g.GiveItem(p, kv.Key, kv.Value);
+                if (Def.Copper > 0)
+                {
+                    pc.Copper += Def.Copper;
+                    p.Hud.Toast($"+{Currency.Format(Def.Copper)}", UIKit.Gold);
+                }
+                if (Def.HeroicInspiration) pc.HeroicInspiration = true;
+                string text = Def.Success;
+                if (first && Def.FirstTimeItem != null)
+                {
+                    g.GiveItem(p, Def.FirstTimeItem);
+                    text += "\n\n" + Def.FirstTimeText;
+                }
+                p.Hud.Push(new MessageScreen(Def.Prompt, text));
+            });
+        }
     }
 
     public class BedInteractable : Interactable
@@ -72,12 +136,12 @@ namespace DnD.Game
             g.World.OpenedChests.Add(Def.Id);
             _sr.sprite = ArtRegistry.Get("obj_chest_open");
             Sfx.Play("coin");
-            var loot = new Rules.Inventory(12);
+            var loot = new Inventory(12);
             foreach (var kv in Def.Items) loot.Add(kv.Key, kv.Value);
             if (Def.Copper > 0)
             {
                 p.Character.Copper += Def.Copper;
-                p.Hud.Toast($"+{Rules.Currency.Format(Def.Copper)}", UIKit.Gold);
+                p.Hud.Toast($"+{Currency.Format(Def.Copper)}", UIKit.Gold);
             }
             p.Hud.Push(new InventoryScreen(loot, "Chest"));
         }

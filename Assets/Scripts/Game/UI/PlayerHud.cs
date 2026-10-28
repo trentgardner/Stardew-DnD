@@ -12,6 +12,11 @@ namespace DnD.Game
         public PlayerHud Hud;
         public RectTransform Root;
         public bool Closed;
+        /// <summary>Frame this screen opened on: it ignores input until the next frame, so the key that opened it can't also close it.</summary>
+        public int OpenedFrame = -1;
+        /// <summary>Most windows get a ✕ button (and close on Esc / B). Screens that must be finished (creation, forced choices) say no.</summary>
+        public virtual bool ShowCloseButton => true;
+        RectTransform _closeBtn;
         protected PlayerSlot Slot => Hud.Slot;
         protected PlayerInput In => Hud.Slot.Input;
         protected Camera Cam => Hud.Slot.Cam;
@@ -20,6 +25,19 @@ namespace DnD.Game
         public abstract void Tick();
         public virtual void OnClose() { }
         public void Close() { Closed = true; }
+
+        /// <summary>A ✕ in the window's top-right corner, labelled with the device's back button.</summary>
+        protected void AddCloseButton()
+        {
+            if (!ShowCloseButton || Root == null) return;
+            bool mouse = Hud.Slot.Input.UsesMouse;
+            _closeBtn = UIKit.Rect(Root, "Close", new Vector2(1, 1), new Vector2(1, 1), new Vector2(mouse ? -48 : -36, -18), new Vector2(-4, -4));
+            UIKit.Image(_closeBtn, new Color32(120, 50, 45, 220));
+            UIKit.Label(_closeBtn, mouse ? "✕ Esc" : "✕ (B)", 8, UIKit.Parchment, TextAnchor.MiddleCenter);
+        }
+
+        public bool CloseClicked(PlayerInput input) =>
+            _closeBtn != null && input.UsesMouse && input.MouseLeft && UIKit.Contains(_closeBtn, input.MouseScreen, Hud.Slot.Cam);
 
         protected RectTransform Window(Vector2 size, string title)
         {
@@ -31,6 +49,7 @@ namespace DnD.Game
                 var lbl = UIKit.Label(t, title, 15, UIKit.Ink, TextAnchor.MiddleCenter);
                 lbl.fontStyle = FontStyle.Bold;
             }
+            AddCloseButton();
             return Root;
         }
     }
@@ -47,11 +66,13 @@ namespace DnD.Game
 
         readonly List<GameScreen> _screens = new List<GameScreen>();
         public bool HasScreen => _screens.Count > 0;
+        /// <summary>Frame a screen last closed on. The world ignores menu keys that frame (Esc closing a menu must not reopen the pause menu).</summary>
+        public int LastClosedFrame = -1;
         public GameScreen Top => _screens.Count > 0 ? _screens[_screens.Count - 1] : null;
 
         Image _tint, _flash;
         RectTransform _status, _clock, _hotbar, _prompt, _narrator, _toasts, _log;
-        Text _statusText, _clockText, _promptText, _narratorText, _logText;
+        Text _statusText, _hpText, _statsText, _clockText, _promptText, _narratorText, _logText;
         Image _hpFill;
         readonly List<Image> _hotIcons = new List<Image>();
         readonly List<Text> _hotCounts = new List<Text>();
@@ -60,6 +81,8 @@ namespace DnD.Game
         float _narratorTimer, _flashTimer;
         readonly List<string> _logLines = new List<string>();
         readonly List<(Text t, float time)> _toastItems = new List<(Text, float)>();
+        RectTransform _party;
+        readonly List<(Text name, Image fill, Text hp)> _partyRows = new List<(Text, Image, Text)>();
 
         public static PlayerHud Create(PlayerSlot slot)
         {
@@ -87,17 +110,26 @@ namespace DnD.Game
         {
             _tint = UIKit.Image(UIKit.Fill(Root, "NightTint"), new Color(0, 0, 0, 0));
 
-            // Status (top-left)
-            _status = UIKit.Box(Root, "Status", new Vector2(0, 1), new Vector2(170, 58), new Vector2(6, -6));
+            // Status (top-left): name line, HP bar with the numbers inside it, then stats and conditions.
+            _status = UIKit.Box(Root, "Status", new Vector2(0, 1), new Vector2(170, 50), new Vector2(6, -6));
             UIKit.Panel(_status, true);
-            var stRt = UIKit.Rect(_status, "Text", Vector2.zero, Vector2.one, new Vector2(8, 4), new Vector2(-8, -4));
-            _statusText = UIKit.Label(stRt, "", 10, UIKit.Parchment);
-            var hpBack = UIKit.Rect(_status, "HPBack", new Vector2(0, 1), new Vector2(1, 1), new Vector2(8, -30), new Vector2(-8, -24));
+            _statusText = UIKit.Label(UIKit.Rect(_status, "Name", new Vector2(0, 1), new Vector2(1, 1), new Vector2(8, -18), new Vector2(-8, -5)), "", 10, UIKit.Parchment, TextAnchor.MiddleLeft);
+            _statusText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            var hpBack = UIKit.Rect(_status, "HPBack", new Vector2(0, 1), new Vector2(1, 1), new Vector2(8, -31), new Vector2(-8, -20));
             UIKit.Image(hpBack, new Color(0.25f, 0.08f, 0.08f, 1));
             var hpFillRt = UIKit.Fill(hpBack, "Fill");
             _hpFill = UIKit.Image(hpFillRt, UIKit.DamageRed, ArtRegistry.Get("ui_white"));
             _hpFill.type = Image.Type.Filled;
             _hpFill.fillMethod = Image.FillMethod.Horizontal;
+            _hpText = UIKit.Label(hpBack, "", 8, Color.white, TextAnchor.MiddleCenter);
+            _hpText.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.8f);
+            _statsText = UIKit.Label(UIKit.Rect(_status, "Stats", Vector2.zero, new Vector2(1, 1), new Vector2(8, 4), new Vector2(-8, -33)), "", 9, UIKit.Parchment, TextAnchor.UpperLeft);
+            _statsText.verticalOverflow = VerticalWrapMode.Overflow;
+
+            // Party frames (under the status panel): companions' and co-op partners' HP.
+            _party = UIKit.Rect(Root, "Party", new Vector2(0, 1), new Vector2(0, 1), Vector2.zero, Vector2.zero);
+            _party.pivot = new Vector2(0, 1);
+            _party.sizeDelta = new Vector2(170, 0);
 
             // Clock (top-right)
             _clock = UIKit.Box(Root, "Clock", new Vector2(1, 1), new Vector2(120, 46), new Vector2(-6, -6));
@@ -136,8 +168,8 @@ namespace DnD.Game
             // Toasts (right)
             _toasts = UIKit.Box(Root, "Toasts", new Vector2(1, 1), new Vector2(170, 200), new Vector2(-6, -56));
 
-            // Combat / event log (bottom-left)
-            _log = UIKit.Box(Root, "Log", new Vector2(0, 0), new Vector2(200, 90), new Vector2(6, 40));
+            // Combat / event log (bottom-left, small: the battlefield matters more)
+            _log = UIKit.Box(Root, "Log", new Vector2(0, 0), new Vector2(160, 50), new Vector2(6, 4));
             UIKit.Panel(_log, true);
             _log.gameObject.AddComponent<RectMask2D>(); // clip old lines instead of spilling out
             _logText = UIKit.Label(UIKit.Rect(_log, "Text", Vector2.zero, Vector2.one, new Vector2(6, 4), new Vector2(-6, -4)), "", 8, UIKit.Parchment, TextAnchor.LowerLeft);
@@ -151,6 +183,7 @@ namespace DnD.Game
         public void Push(GameScreen s)
         {
             s.Hud = this;
+            s.OpenedFrame = Time.frameCount;
             s.Build();
             _screens.Add(s);
             Sfx.Play("ui");
@@ -162,6 +195,7 @@ namespace DnD.Game
         public void CloseAll()
         {
             var copy = new List<GameScreen>(_screens);
+            if (copy.Count > 0) LastClosedFrame = Time.frameCount;
             _screens.Clear();
             ClosingAll = true;
             for (int i = copy.Count - 1; i >= 0; i--)
@@ -188,10 +222,15 @@ namespace DnD.Game
             if (!Dice.IsOpen && _screens.Count > 0)
             {
                 var top = Top;
-                top.Tick();
+                if (top.OpenedFrame != Time.frameCount)
+                {
+                    if (top.CloseClicked(Slot.Input)) top.Close();
+                    else top.Tick();
+                }
                 for (int i = _screens.Count - 1; i >= 0; i--)
                 {
                     if (!_screens[i].Closed) continue;
+                    LastClosedFrame = Time.frameCount;
                     _screens[i].OnClose();
                     if (_screens[i].Root) Destroy(_screens[i].Root.gameObject);
                     _screens.RemoveAt(i);
@@ -218,8 +257,12 @@ namespace DnD.Game
             var g = GameRoot.I;
             bool show = pc != null && g != null && g.InGame;
             _status.gameObject.SetActive(show);
+            _party.gameObject.SetActive(show);
             _clock.gameObject.SetActive(show);
             _hotbar.gameObject.SetActive(show && !Slot.InCombat);
+            // Half-width screens: the combat bar fills the bottom edge, so the log sits above it.
+            _log.anchoredPosition = new Vector2(6, Root.rect.width >= 600 ? 4 : 44);
+            if (Slot.InCombat && _narrator.gameObject.activeSelf) _narrator.gameObject.SetActive(false); // narration moves to the ticker in a fight
             if (!show) { _tint.color = new Color(0, 0, 0, 0); return; }
 
             string cond = "";
@@ -228,15 +271,22 @@ namespace DnD.Game
             if (pc.Exhaustion > 0) cond += UIKit.Colorize($" Exhaustion {pc.Exhaustion}", UIKit.Gold);
             if (pc.IsOverloaded) cond += UIKit.Colorize(" Overloaded", UIKit.Gold);
             if (pc.HeroicInspiration) cond += UIKit.Colorize(" ✦Insp", UIKit.D20Gold);
-            string slots = "";
+            if (pc.CanLevelUp) cond += UIKit.Colorize($" ★ Level up! ({(Slot.Input.UsesMouse ? "C" : "View")})", UIKit.D20Gold);
+            var slotParts = new List<string>();
             if (pc.IsCaster)
-            {
-                for (int l = 1; l <= 2; l++) if (pc.SlotsMax(l) > 0) slots += $"  L{l}: {pc.SlotsLeft(l)}/{pc.SlotsMax(l)}";
-            }
-            string light = Slot.Avatar != null && Slot.Avatar.TorchMinutes > 0 ? $"  Torch {Mathf.CeilToInt(Slot.Avatar.TorchMinutes)}m" : "";
-            _statusText.text = $"<b>{pc.Name}</b>  Lv{pc.Level} {pc.Class.Name}\n\n" +
-                               $"HP {pc.HP}/{pc.EffectiveMaxHP}{(pc.TempHP > 0 ? $" (+{pc.TempHP})" : "")}  AC {pc.ArmorClass}{slots}\n{cond}{light}";
+                for (int l = 1; l <= 2; l++) if (pc.SlotsMax(l) > 0) slotParts.Add($"{pc.SlotsLeft(l)}/{pc.SlotsMax(l)}");
+            string slots = slotParts.Count > 0 ? "   Slots " + string.Join(" · ", slotParts) : "";
+            // The torch goes on the second line with conditions: the first line is full (AC, XP, slots).
+            if (Slot.Avatar != null && Slot.Avatar.TorchMinutes > 0) cond = $" Torch {Mathf.CeilToInt(Slot.Avatar.TorchMinutes)}m" + cond;
+            _statusText.text = $"<b>{pc.Name}</b>  <color=#c8b48c>Lv{pc.Level} {pc.Class.Name}</color>";
+            _hpText.text = $"{pc.HP} / {pc.EffectiveMaxHP}{(pc.TempHP > 0 ? $"  +{pc.TempHP}" : "")}";
+            int next = pc.Level < PlayerCharacter.XpThresholds.Length - 1 ? PlayerCharacter.XpThresholds[pc.Level + 1] : 0;
+            string xp = next > 0 ? $"   XP {pc.XP}/{next}" : "";
+            _statsText.text = $"AC {pc.ArmorClass}{xp}{slots}" + (cond.Length > 0 ? "\n" + cond.TrimStart() : "");
+            _status.sizeDelta = new Vector2(_status.sizeDelta.x, cond.Length > 0 ? 61 : 50);
             _hpFill.fillAmount = pc.EffectiveMaxHP > 0 ? Mathf.Clamp01(pc.HP / (float)pc.EffectiveMaxHP) : 0;
+
+            RefreshParty(_status.sizeDelta.y);
 
             var c = g.Clock;
             _clockText.text = $"{c.Weekday}, Day {c.Day}\n<b>{c.TimeText()}</b>\n{Currency.Format(pc.Copper)}";
@@ -254,6 +304,47 @@ namespace DnD.Game
             _tint.color = zone != null && !zone.Def.Indoors && !zone.Def.Dark ? g.Clock.AmbientTint() : new Color(0, 0, 0, 0);
         }
 
+        /// <summary>Everyone fighting beside you: your companions, then other players. Name, HP bar, numbers.</summary>
+        void RefreshParty(float statusH)
+        {
+            var g = GameRoot.I;
+            var members = new List<(string name, Creature c)>();
+            foreach (var comp in g.CompanionsOf(Slot)) if (comp.Character != null) members.Add((comp.Character.Name + (comp.Manual ? "" : " (auto)"), comp.Character));
+            foreach (var p in g.Players) if (p != Slot && p.IsReady) members.Add((p.Character.Name, p.Character));
+            if (members.Count != _partyRows.Count)
+            {
+                UIKit.Clear(_party);
+                _partyRows.Clear();
+                for (int i = 0; i < members.Count; i++)
+                {
+                    var row = UIKit.Rect(_party, "Member" + i, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -(i + 1) * 15), new Vector2(0, -i * 15 - 1));
+                    UIKit.Panel(row, true);
+                    var name = UIKit.Label(UIKit.Rect(row, "Name", Vector2.zero, new Vector2(0.5f, 1), new Vector2(6, 0), Vector2.zero), "", 8, UIKit.Parchment, TextAnchor.MiddleLeft);
+                    name.horizontalOverflow = HorizontalWrapMode.Overflow;
+                    var bar = UIKit.Rect(row, "Bar", new Vector2(0.5f, 0), new Vector2(1, 1), new Vector2(0, 3), new Vector2(-5, -3));
+                    UIKit.Image(bar, new Color(0.25f, 0.08f, 0.08f, 1));
+                    var fill = UIKit.Image(UIKit.Fill(bar, "Fill"), UIKit.DamageRed, ArtRegistry.Get("ui_white"));
+                    fill.type = Image.Type.Filled;
+                    fill.fillMethod = Image.FillMethod.Horizontal;
+                    var hp = UIKit.Label(bar, "", 7, Color.white, TextAnchor.MiddleCenter);
+                    hp.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.8f);
+                    _partyRows.Add((name, fill, hp));
+                }
+            }
+            for (int i = 0; i < members.Count; i++)
+            {
+                var (name, c) = members[i];
+                var row = _partyRows[i];
+                row.name.text = name;
+                row.fill.fillAmount = c.EffectiveMaxHP > 0 ? Mathf.Clamp01(c.HP / (float)c.EffectiveMaxHP) : 0;
+                row.fill.color = c.IsDead ? UIKit.Dim : c.HP <= c.EffectiveMaxHP / 3 ? UIKit.Gold : UIKit.DamageRed;
+                row.hp.text = c.IsDead ? "fallen" : c.IsDown ? "DOWN" : $"{c.HP}/{c.EffectiveMaxHP}";
+            }
+            // Half-width combat: the turn-order strip sits under the status panel, so the party goes below it.
+            float y = -6 - statusH - 2 - (Slot.InCombat && Root.rect.width < 600 ? 20 : 0);
+            _party.anchoredPosition = new Vector2(6, y);
+        }
+
         // ------------------------------------------------------------------ messages
 
         public void SetPrompt(string text)
@@ -268,11 +359,13 @@ namespace DnD.Game
         {
             var g = GameRoot.I;
             if (!keyMoment && g != null && g.Settings.NarratorKeyMomentsOnly) return;
+            AddLog("<i>" + text + "</i>");
+            // In combat the DM's line goes in the small roll ticker up top instead of a box over the fight.
+            if (Slot.InCombat) { Dice.Ticker("<i>" + text + "</i>", 2.5f); return; }
             _narrator.gameObject.SetActive(true);
             _narrator.SetAsLastSibling();
             _narratorText.text = text;
             _narratorTimer = 4f + text.Length * 0.045f;
-            AddLog("<i>" + text + "</i>");
         }
 
         public void Toast(string text, Color? color = null)

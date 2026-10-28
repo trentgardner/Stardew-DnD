@@ -69,6 +69,7 @@ namespace DnD.Game
         // Mouse (KB/M only)
         public virtual Vector2 MouseScreen => Vector2.zero;
         public virtual bool MouseLeft => false;
+        public virtual bool MouseLeftUp => false;   // released this frame (drag-and-drop)
         public virtual bool MouseRight => false;
         public virtual float Scroll => 0;
     }
@@ -149,6 +150,7 @@ namespace DnD.Game
 
         public override Vector2 MouseScreen => M != null ? M.position.ReadValue() : Vector2.zero;
         public override bool MouseLeft => M != null && M.leftButton.wasPressedThisFrame;
+        public override bool MouseLeftUp => M != null && M.leftButton.wasReleasedThisFrame;
         public override bool MouseRight => M != null && M.rightButton.wasPressedThisFrame;
         public override float Scroll => M != null ? M.scroll.ReadValue().y : 0;
     }
@@ -314,6 +316,7 @@ namespace DnD.Game
 
         public override Vector2 MouseScreen => _kb.MouseScreen;
         public override bool MouseLeft => UsesMouse && _kb.MouseLeft;
+        public override bool MouseLeftUp => UsesMouse && _kb.MouseLeftUp;
         public override bool MouseRight => UsesMouse && _kb.MouseRight;
         public override float Scroll => _kb.Scroll;
     }

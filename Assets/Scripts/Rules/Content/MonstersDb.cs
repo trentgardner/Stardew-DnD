@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace DnD.Rules.Content
 {
-    /// <summary>Stat blocks for the playtest (SRD 5.2 creatures plus a custom kobold leader).</summary>
+    /// <summary>Stat blocks for the playtest (SRD 5.2 creatures plus custom leaders: Snik, Wren).</summary>
     public static class MonstersDb
     {
         public static readonly Dictionary<string, MonsterDef> All = new Dictionary<string, MonsterDef>();
@@ -70,6 +70,33 @@ namespace DnD.Rules.Content
                 Traits = { "Pack Tactics", "Sunlight Sensitivity", "Devoted: can be reasoned with if you show respect to the Egg." },
                 Loot = { new KeyValuePair<string, float>("gemstone", 1f), new KeyValuePair<string, float>("emberwrought_blade", 1f), new KeyValuePair<string, float>("copper_kettle", 1f) },
                 CopperMin = 200, CopperMax = 600,
+            };
+            All["bandit"] = new MonsterDef
+            {
+                Id = "bandit", Name = "Ford Warden", SpriteId = "mon_bandit", AC = 12, HitDice = DiceExpr.Parse("2d8+2"),
+                Scores = new[] { 11, 12, 12, 10, 10, 10 }, CR = 0.125, XP = 25,
+                Description = "An out-of-work bargeman with a crossbow and a 'toll' business. (SRD Bandit.)",
+                Attacks = { Melee("Scimitar", 3, "1d6+1", DamageType.Slashing), Ranged("Light Crossbow", 3, "1d8+1", DamageType.Piercing, 80, 320) },
+                Behavior = MonsterBehavior.Ranged, CopperMin = 10, CopperMax = 80,
+            };
+            All["wren"] = new MonsterDef
+            {
+                Id = "wren", Name = "Wren, Toll-Captain", SpriteId = "mon_wren", AC = 14, HitDice = DiceExpr.Parse("5d8+5"),
+                Scores = new[] { 12, 15, 12, 11, 13, 14 }, CR = 0.5, XP = 100,
+                Description = "Captain of a barge that hasn't sailed since the bridge fell. Quick with a boathook, quicker with her mouth.",
+                Attacks = { Melee("Boathook", 4, "1d8+2", DamageType.Piercing, 10), Ranged("Hand Crossbow", 4, "1d6+2", DamageType.Piercing, 30, 120) },
+                ProficientSkills = { Skill.Perception, Skill.Persuasion }, Behavior = MonsterBehavior.Skirmisher,
+                Traits = { "Reach (boathook)", "Desperate, not cruel: can be reasoned with." },
+                Loot = { new KeyValuePair<string, float>("potion_healing", 1f), new KeyValuePair<string, float>("gemstone", 0.5f) },
+                CopperMin = 300, CopperMax = 700,
+            };
+            All["boar"] = new MonsterDef
+            {
+                Id = "boar", Name = "Boar", SpriteId = "mon_boar", AC = 11, HitDice = DiceExpr.Parse("2d8+4"),
+                Scores = new[] { 13, 11, 14, 2, 9, 5 }, CR = 0.25, XP = 50, Speed = 40,
+                Description = "Bristly, bad-tempered and very protective of its meadow. (SRD Boar.)",
+                Attacks = { Melee("Gore", 3, "1d6+1", DamageType.Piercing) },
+                Traits = { "Bad temper" },
             };
         }
 

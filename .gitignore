@@ -41,3 +41,6 @@ tools/RulesTests/obj/
 # OS
 .DS_Store
 Thumbs.db
+
+# Unity test runner leftovers
+/Assets/InitTestScene*.unity*

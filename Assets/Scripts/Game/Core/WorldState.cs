@@ -105,6 +105,10 @@ namespace DnD.Game
                 "", "Brannoc's copper kettle was stolen by something with small scaly feet.", "Complete. Brannoc has his kettle back (and you have a permanent discount)." } } },
             { "spoon", new QuestDef { Id = "spoon", Title = "Tobin's Lucky Spoon", StageText = new[] {
                 "", "Old Tobin's lucky spoon was stolen by 'a tiny lizard man in a cape.'", "Complete. The soup is lucky again." } } },
+            { "east_road", new QuestDef { Id = "east_road", Title = "The Broken Bridge", StageText = new[] {
+                "", "The bridge at Miller's Ford is out, and a crew calling themselves the Ford Wardens charges a 'toll' at the ford upstream. Old Hobb the miller is stuck on the far bank. Deal with the Wardens however you like.",
+                "The ford is clear. Let Old Hobb know (across the river, by the mill).",
+                "Complete. The east road is open and Hobb's mill is turning again." } } },
         };
 
         public int Stage(string id) => Stages.TryGetValue(id, out var s) ? s : 0;

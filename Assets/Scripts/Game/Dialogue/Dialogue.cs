@@ -11,11 +11,13 @@ namespace DnD.Game
         public NpcAgent Npc;
         public CompanionAgent Comp;
         public RecruitAgent Recruit;
+        /// <summary>The enemy group you're facing (encounters and story parleys).</summary>
+        public EnemyGroupDef Group;
         public DialogueScreen Screen;
         public CheckOutcome LastOutcome;
         public D20Result LastRoll;
         public PlayerCharacter PC => P.Character;
-        public string NpcId => Npc != null ? Npc.Def.Id : Recruit != null ? "recruit_" + Recruit.Data.Character.Name : Comp != null ? "comp" : "none";
+        public string NpcId => Npc != null ? Npc.Def.Id : Recruit != null ? "recruit_" + Recruit.Data.Character.Name : Comp != null ? "comp" : Group != null ? "grp:" + Group.Id : "none";
         public GameRoot G => GameRoot.I;
         public string Name => PC.Name;
         public bool Is(string classId) => PC.Class.Id == classId;
@@ -115,17 +117,22 @@ namespace DnD.Game
         List<DOption> _visible = new List<DOption>();
         bool _rolling;
 
-        public DialogueScreen(string dialogueId, NpcAgent npc, CompanionAgent comp, RecruitAgent recruit = null)
+        public DialogueScreen(string dialogueId, NpcAgent npc, CompanionAgent comp, RecruitAgent recruit = null, EnemyGroupDef group = null)
         {
             _dialogueId = dialogueId;
-            _ctx = new DCtx { Npc = npc, Comp = comp, Recruit = recruit };
+            _ctx = new DCtx { Npc = npc, Comp = comp, Recruit = recruit, Group = group };
         }
+
+        /// <summary>Facing hostiles you must pick something (talk, sneak, fight...), so there's no walking away mid-standoff.</summary>
+        public override bool ShowCloseButton => _ctx.Group == null;
+
+        public override void OnClose() { if (_ctx.Group != null) GameRoot.I.EndParley(_ctx.Group.Id); }
 
         public override void Build()
         {
             _ctx.P = Slot;
             _ctx.Screen = this;
-            _d = DialogueDb.Get(_dialogueId);
+            _d = _dialogueId == "encounter" ? DialogueDb.Encounter(_ctx.Group) : DialogueDb.Get(_dialogueId);
             Root = UIKit.Box(Hud.Root, "Dialogue", new Vector2(0.5f, 0), new Vector2(420, 190), new Vector2(0, 40));
             UIKit.Panel(Root);
             var sp = UIKit.Rect(Root, "Speaker", new Vector2(0, 1), new Vector2(1, 1), new Vector2(10, -22), new Vector2(-10, -4));
@@ -139,7 +146,8 @@ namespace DnD.Game
             _line = UIKit.Label(line, "", 11, UIKit.Ink, TextAnchor.UpperLeft);
             var opts = UIKit.Rect(Root, "Options", new Vector2(0, 0), new Vector2(1, 0), new Vector2(8, 6), new Vector2(-8, 90));
             _menu = new MenuList(opts) { RowHeight = 16, FontSize = 10 };
-            GameRoot.I.World.MetToday(_ctx.NpcId);
+            AddCloseButton();
+            if (_ctx.Group == null) GameRoot.I.World.MetToday(_ctx.NpcId);
             Goto(_d.Start(_ctx));
         }
 
@@ -213,7 +221,8 @@ namespace DnD.Game
                 _ctx.LastRoll = r;
                 var w = GameRoot.I.World;
                 // XP for overcoming a real challenge the first time (DC 12+), more for a natural 20.
-                if (Checks.IsSuccess(outcome) && o.DC >= 12)
+                // Not for encounters: there the reward is the group's own XP, the same as defeating them.
+                if (Checks.IsSuccess(outcome) && o.DC >= 12 && _ctx.Group == null)
                     GameRoot.I.AwardOnce(Slot, $"check:{_ctx.NpcId}:{o.Check}:{o.Text.GetHashCode()}", o.DC * 2 * (outcome == CheckOutcome.CriticalSuccess ? 3 : 2) / 2, "a clever check");
                 string next;
                 switch (outcome)
@@ -254,7 +263,7 @@ namespace DnD.Game
         {
             if (_rolling) return;
             _menu.Tick(In, Cam);
-            if (In.Cancel && !Closed) Close();
+            if (In.Cancel && !Closed && ShowCloseButton) Close();
         }
     }
 }

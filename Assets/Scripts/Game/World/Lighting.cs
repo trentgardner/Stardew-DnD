@@ -25,14 +25,17 @@ namespace DnD.Game
     }
 
     /// <summary>
-    /// Per-player darkness for dark zones: a grid of black squares whose opacity depends on nearby lights
-    /// and on the viewing player's darkvision. Lives on a layer only that player's camera renders.
+    /// Per-player darkness for dark zones: one texel per tile whose opacity depends on nearby lights and on the
+    /// viewing player's darkvision, stretched over the zone with bilinear filtering so light fades smoothly
+    /// instead of in hard tile-sized squares. Lives on a layer only that player's camera renders.
     /// </summary>
     public class DarknessOverlay : MonoBehaviour
     {
         PlayerSlot _slot;
         Zone _zone;
-        SpriteRenderer[,] _cells;
+        Texture2D _tex;
+        Color32[] _px;
+        GameObject _quad;
 
         public static DarknessOverlay Create(PlayerSlot slot)
         {
@@ -45,31 +48,32 @@ namespace DnD.Game
 
         void Rebuild(Zone z)
         {
-            foreach (Transform c in transform) Destroy(c.gameObject);
+            if (_quad) Destroy(_quad);
+            if (_tex) Destroy(_tex);
             _zone = z;
-            _cells = null;
+            _tex = null;
             if (z == null || !z.Def.Dark) return;
-            _cells = new SpriteRenderer[z.W, z.H];
-            var spr = ArtRegistry.Get("tile_dark");
-            for (int x = 0; x < z.W; x++)
-                for (int y = 0; y < z.H; y++)
-                {
-                    var go = new GameObject("d");
-                    go.layer = _slot.DarkLayer;
-                    go.transform.SetParent(transform, false);
-                    go.transform.position = z.ToWorld(new Vector2Int(x, y));
-                    var sr = go.AddComponent<SpriteRenderer>();
-                    sr.sprite = spr;
-                    sr.sortingOrder = 30000;
-                    _cells[x, y] = sr;
-                }
+            _tex = new Texture2D(z.W, z.H, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+            _px = new Color32[z.W * z.H];
+            _quad = new GameObject("dark");
+            _quad.layer = _slot.DarkLayer;
+            _quad.transform.SetParent(transform, false);
+            _quad.transform.position = new Vector3(z.Origin.x, z.Origin.y, 0);
+            var sr = _quad.AddComponent<SpriteRenderer>();
+            sr.sprite = Sprite.Create(_tex, new Rect(0, 0, z.W, z.H), Vector2.zero, 1f, 0, SpriteMeshType.FullRect);
+            sr.sortingOrder = 30000;
+        }
+
+        void OnDestroy()
+        {
+            if (_tex) Destroy(_tex);
         }
 
         void LateUpdate()
         {
             var z = _slot.Zone;
             if (z != _zone) Rebuild(z);
-            if (_cells == null) return;
+            if (_tex == null) return;
 
             var lights = new List<(Vector3 pos, float r)>();
             foreach (var l in LightSource.All)
@@ -95,10 +99,17 @@ namespace DnD.Game
                         float v = d < r * 0.5f ? 1f : Mathf.Lerp(1f, 0.45f, (d - r * 0.5f) / (r * 0.5f));
                         if (v > vis) vis = v;
                     }
-                    // Darkvision: see in darkness as if dim light (shown as a gloomy half-light).
-                    if (dv > 0 && Vector2.Distance(p, eye) <= dv && vis < 0.55f) vis = 0.55f;
-                    _cells[x, y].color = new Color(0.02f, 0.01f, 0.03f, Mathf.Clamp01(1f - vis) * 0.97f);
+                    // Darkvision: see in darkness as if dim light (shown as a gloomy half-light), fading at the edge.
+                    if (dv > 0)
+                    {
+                        float d = Vector2.Distance(p, eye);
+                        if (d <= dv) vis = Mathf.Max(vis, Mathf.Lerp(0.55f, 0.35f, Mathf.InverseLerp(dv - 2f, dv, d)));
+                    }
+                    // Texture rows run bottom-up; map rows run top-down.
+                    _px[(z.H - 1 - y) * z.W + x] = new Color(0.02f, 0.01f, 0.03f, Mathf.Clamp01(1f - vis) * 0.97f);
                 }
+            _tex.SetPixels32(_px);
+            _tex.Apply(false);
         }
     }
 }

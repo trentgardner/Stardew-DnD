@@ -15,6 +15,7 @@ namespace DnD.Game
         readonly string _title, _text;
         readonly Action _onClose;
         public MessageScreen(string title, string text, Action onClose = null) { _title = title; _text = text; _onClose = onClose; }
+        public override bool ShowCloseButton => false; // any key or click closes it
 
         public override void Build()
         {
@@ -42,6 +43,7 @@ namespace DnD.Game
 
         public ChoiceScreen(string title, string text, List<(string, Action)> options, bool cancellable = true)
         { _title = title; _text = text; _opts = options; _cancellable = cancellable; }
+        public override bool ShowCloseButton => _cancellable;
 
         public override void Build()
         {
@@ -657,8 +659,8 @@ namespace DnD.Game
                     _info.text = "";
                     var c = UIKit.Rect(Root, "ControlsText", new Vector2(0, 0), new Vector2(1, 1), new Vector2(14, 60), new Vector2(-14, -50));
                     UIKit.Label(c, In.UsesMouse
-                        ? "WASD move · E/click interact · I inventory · C character · K spells · J journal · Esc menu\n1-0 use hotbar item · Ctrl sneak · Alt highlight\nCombat: click tile to move, click enemy to attack, 1-9 actions, Space end turn, Esc cancel"
-                        : "Left stick move · A interact · Y inventory · View character · RT spells · LT journal · Menu pause\nLB/RB hotbar · X use item · L3 sneak\nCombat: stick moves cursor, A confirm, B cancel, LB/RB actions, X end turn", 9, UIKit.Ink).name = "ControlsText";
+                        ? "WASD move · E/click interact · I inventory · C character · K spells · J journal · Esc menu\nAny window: Esc, its ✕ button, or its own key again closes it.\n1-0 hotbar · Ctrl sneak (creep up unseen, then E to AMBUSH) · Alt highlight\nInventory: drag items · right-click for options (use, equip, give a potion to an ally) · double-click to use\nCombat: click a tile to move, an enemy to attack · 1-9 actions · Space end turn · Esc cancel\nCompanions: you pick their moves on their turn (or press Auto). Talk to them to change it."
+                        : "Left stick move · A interact · Y inventory · View character · RT spells · LT journal · Menu pause\nB closes any window.\nLB/RB hotbar · X use item · L3 sneak (creep up unseen, then A to AMBUSH)\nInventory: A move · X options (use, equip, give a potion to an ally) · Y use/equip\nCombat: stick moves cursor · A confirm · B cancel · LB/RB actions · X end turn\nCompanions: you pick their moves on their turn (or Auto). Talk to them to change it.", 8, UIKit.Ink).name = "ControlsText";
                     break;
             }
             _menu.Build();

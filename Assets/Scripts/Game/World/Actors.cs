@@ -22,6 +22,8 @@ namespace DnD.Game
         int _frame;
         string _lastId;
         public Color BaseColor = Color.white;
+        /// <summary>Pulsing tint while this actor is hovered as a target in combat (null = none).</summary>
+        public Color? Highlight;
 
         public Vector2Int MapPos => Zone != null ? Zone.ToMap(transform.position) : Vector2Int.zero;
 
@@ -74,6 +76,7 @@ namespace DnD.Game
             var c = BaseColor;
             if (Creature != null && Creature.IsDead) c = new Color(0.7f, 0.85f, 1f, 0.45f); // spirit
             else if (Creature != null && Creature.IsDown) c = new Color(0.8f, 0.6f, 0.6f, 1f);
+            if (Highlight.HasValue) c = Color.Lerp(c, Highlight.Value, 0.35f + 0.25f * Mathf.Sin(Time.unscaledTime * 8f));
             Sr.color = c;
             transform.localRotation = Creature != null && Creature.IsDown && !Creature.IsDead ? Quaternion.Euler(0, 0, 90) : Quaternion.identity;
         }
@@ -175,7 +178,8 @@ namespace DnD.Game
 
         public static string LookFor(PlayerCharacter pc) => $"hero_{pc.Class.Id}_{pc.Species.Id}";
 
-        public bool CanControl => Slot.Character != null && !Slot.IsBusy && !Slot.Character.IsDown && GameRoot.I.InGame;
+        // Not on the frame a menu closed: the key that closed it (Esc, I, C...) must not reopen something.
+        public bool CanControl => Slot.Character != null && !Slot.IsBusy && !Slot.Character.IsDown && GameRoot.I.InGame && Slot.Hud.LastClosedFrame != Time.frameCount;
 
         void Update()
         {
@@ -334,6 +338,7 @@ namespace DnD.Game
             a.Creature = a.Monster;
             a.Group = group;
             a.Home = spawn.Pos;
+            a.gameObject.AddComponent<AmbushInteractable>().Enemy = a;
             return a;
         }
 
@@ -354,6 +359,7 @@ namespace DnD.Game
             _think -= Time.deltaTime;
             if (_think > 0) return;
             _think = 0.25f;
+            if (g.World.IsLocked("calm:" + Group.Id)) return; // the party slipped away or retreated: they've lost track of you for a while
             foreach (var p in g.Players)
             {
                 if (!p.IsReady || p.Zone != Zone || p.InCombat || p.Character.IsDown || p.IsBusy) continue;
@@ -362,9 +368,26 @@ namespace DnD.Game
                 if (Zone.Def.Dark && Monster.Darkvision <= 0 && !p.Avatar.HasLight) sight = Mathf.Min(sight, 1.5f);
                 var pp = p.MapPos;
                 float dist = Vector2.Distance(pp, MapPos);
+                if (!p.Avatar.Sneaking && dist <= Group.SightTiles + 4 && !g.World.Flag("tip_sneak:" + p.Index))
+                {
+                    g.World.SetFlag("tip_sneak:" + p.Index);
+                    p.Hud.Toast($"Enemies ahead! Sneak ({(p.Input.UsesMouse ? "Ctrl" : "L3")}) to slip past or ambush them.", UIKit.Gold);
+                }
                 if (dist > sight || !Zone.LineOfSight(MapPos, pp)) continue;
-                if (p.Avatar.Sneaking && dist > 1.5f && !StealthBeaten(p)) continue;
+                if (p.Avatar.Sneaking && !StealthBeaten(p)) continue;
                 g.OnEnemyNoticed(this, p);
+                return;
+            }
+            // A companion walking point gets spotted first, so the encounter starts with them out in front.
+            foreach (var c in g.Companions)
+            {
+                if (c == null || !c.TakePoint || c.Waiting || c.Character == null || c.Character.IsDown || c.Actor.Zone != Zone) continue;
+                var leader = c.Leader;
+                if (leader == null || !leader.IsReady || leader.Zone != Zone || leader.InCombat || leader.IsBusy || leader.Avatar.Sneaking) continue;
+                var cp = c.Actor.MapPos;
+                if (Vector2.Distance(cp, MapPos) > Group.SightTiles || !Zone.LineOfSight(MapPos, cp)) continue;
+                if (Zone.Def.Dark && Monster.Darkvision <= 0 && !leader.Avatar.HasLight) continue;
+                g.OnEnemyNoticed(this, leader);
                 return;
             }
         }
@@ -383,7 +406,21 @@ namespace DnD.Game
         }
     }
 
+    /// <summary>Sneaking up on an enemy who hasn't noticed you lets you start the fight on your terms (they're surprised).</summary>
+    public class AmbushInteractable : Interactable
+    {
+        public EnemyAgent Enemy;
+        public override float Range => 2.6f;
+        public override bool Available(PlayerSlot p) =>
+            p.Avatar != null && p.Avatar.Sneaking && Enemy.enabled && !Enemy.InCombat && !Enemy.Monster.IsDown && Enemy.Monster.Team == Team.Enemies;
+        public override string PromptText(PlayerSlot p) => $"Ambush the {Enemy.Monster.Name.ToLower()}! (they're surprised)";
+        public override void Interact(PlayerSlot p) => GameRoot.I.Ambush(Enemy.Group.Id, p);
+    }
+
     // ===================================================================== companions
+
+    /// <summary>How a companion fights when left to its own judgment.</summary>
+    public enum CompanionStance { Auto, Frontline, Ranged }
 
     /// <summary>A recruited NPC adventurer or the dragonling. Follows its leader; fights alongside in combat.</summary>
     public class CompanionAgent : Interactable
@@ -393,7 +430,18 @@ namespace DnD.Game
         public PlayerCharacter Character; // null for the dragonling
         public string Quirk;
         public bool IsDragon;
+        /// <summary>In combat, the leader picks this companion's moves (BG3 style). Off = the companion plays its own turns.</summary>
+        public bool Manual = true;
+        public CompanionStance Stance;
+        /// <summary>"Wait here": stays put instead of following (and won't be pulled into fights elsewhere).</summary>
+        public bool Waiting;
+        /// <summary>"Take point": walks a few steps ahead of the leader instead of behind, and steps up front when a fight starts.</summary>
+        public bool TakePoint;
         public override float Range => 1.2f;
+
+        /// <summary>Gets between the enemies and the party: fighters and clerics by default, or anyone told to.</summary>
+        public bool IsFrontline => Stance == CompanionStance.Frontline ||
+            Stance == CompanionStance.Auto && Character != null && (Character.Class.Id == "fighter" || Character.Class.Id == "cleric");
 
         public static CompanionAgent Create(PlayerSlot leader, string look, bool directional, PlayerCharacter pc)
         {
@@ -409,8 +457,9 @@ namespace DnD.Game
         void Update()
         {
             if (Leader == null || Leader.Avatar == null || Leader.InCombat && Character != null) return;
+            if (Waiting) { Actor.Moving = false; return; }
             if (Actor.Zone != Leader.Zone) { Actor.PlaceAt(Leader.Zone, Leader.MapPos); return; }
-            var target = Leader.Avatar.transform.position - (Vector3)(Leader.Avatar.Facing * 1.2f) + (IsDragon ? new Vector3(0.6f, 0.2f) : new Vector3(-0.6f, 0));
+            var target = FollowSpot();
             float d = Vector2.Distance(transform.position, target);
             Actor.Moving = d > 0.25f;
             if (d > 6f) transform.position = target;
@@ -419,6 +468,27 @@ namespace DnD.Game
                 Actor.Face(target);
                 transform.position = Vector3.MoveTowards(transform.position, target, Mathf.Max(3.5f, d * 2f) * Time.deltaTime);
             }
+        }
+
+        /// <summary>
+        /// Each companion keeps its own spot in a loose formation (spread sideways, staggered rows) so they never stack
+        /// on one tile. Point-takers walk ahead of the leader, everyone else behind; the dragonling rides at your side.
+        /// </summary>
+        Vector3 FollowSpot()
+        {
+            var leader = Leader.Avatar.transform.position;
+            Vector2 f = Leader.Avatar.Facing.sqrMagnitude > 0.01f ? Leader.Avatar.Facing.normalized : Vector2.down;
+            var side = new Vector2(-f.y, f.x);
+            if (IsDragon) return leader + (Vector3)(side * 0.7f + f * 0.2f);
+            var squad = new List<CompanionAgent>();
+            foreach (var c in GameRoot.I.CompanionsOf(Leader)) if (!c.IsDragon && !c.Waiting && c.TakePoint == TakePoint) squad.Add(c);
+            int i = Mathf.Max(0, squad.IndexOf(this)), n = Mathf.Max(1, squad.Count);
+            float lateral = (i - (n - 1) / 2f) * 1.1f;
+            float along = TakePoint ? 2f + (i % 2) * 0.4f : -(1.3f + (i % 2) * 0.5f);
+            var spot = leader + (Vector3)(f * along + side * lateral);
+            // Don't park inside a wall or a tree: fall back to straight behind the leader.
+            if (!Leader.Zone.IsWalkable(Leader.Zone.ToMap(spot))) spot = leader - (Vector3)(f * (1.2f + i * 0.8f));
+            return spot;
         }
 
         public override string PromptText(PlayerSlot p) => IsDragon ? $"Pet {GameRoot.I.World.DragonName}" : $"Talk to {Character.Name}";

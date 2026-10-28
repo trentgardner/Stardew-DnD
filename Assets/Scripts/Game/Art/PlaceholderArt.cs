@@ -30,7 +30,7 @@ namespace DnD.Game
             else if (id.StartsWith("hero_") || id.StartsWith("npc_") || id.StartsWith("ally_")) { tex = Humanoid(id); pivot = new Vector2(0.5f, 0.1f); }
             else if (id.StartsWith("mon_")) { tex = Monster(id); pivot = new Vector2(0.5f, 0.1f); }
             else if (id.StartsWith("item_")) tex = Item(id.Substring(5));
-            else if (id.StartsWith("obj_")) { tex = Obj(id.Substring(4)); pivot = new Vector2(0.5f, 0.1f); }
+            else if (id.StartsWith("obj_")) { tex = Obj(id.Substring(4)); pivot = new Vector2(0.5f, 1.6f / tex.height); }
             else if (id.StartsWith("ui_")) tex = Ui(id.Substring(3));
             else tex = Missing();
             tex.filterMode = FilterMode.Point;
@@ -123,8 +123,9 @@ namespace DnD.Game
                     return t;
                 }
                 case "flowers":
+                case "forest_flowers":
                 {
-                    var t = Tile("grass");
+                    var t = Tile(kind == "flowers" ? "grass" : "forest_grass");
                     Color32[] petals = { C("f2d14e"), C("e86a8a"), C("ffffff"), C("9b7fe0") };
                     for (int i = 0; i < 4; i++)
                     {
@@ -133,6 +134,52 @@ namespace DnD.Game
                         t.SetPixel(x, y + 1, p); t.SetPixel(x - 1, y, p); t.SetPixel(x + 1, y, p); t.SetPixel(x, y - 1, p);
                         t.SetPixel(x, y, C("f7e08a"));
                     }
+                    return t;
+                }
+                case "forest_grass":
+                case "forest_grass_v1":
+                {
+                    var t = Noise(C("3f7f3a"), C("346c31"), C("4b8f43"), seed, 0.14f, 0.07f);
+                    if (kind.EndsWith("v1"))
+                        for (int i = 0; i < 4; i++) t.SetPixel(2 + (int)(Rand(i, 4, seed) * 12), 2 + (int)(Rand(i, 5, seed) * 12), C("8a6a3a")); // fallen leaves
+                    return t;
+                }
+                case "reeds":
+                {
+                    var t = Tile("grass");
+                    for (int i = 0; i < 5; i++)
+                    {
+                        int x = 1 + (int)(Rand(i, 3, seed) * 13), h = 5 + (int)(Rand(i, 6, seed) * 6);
+                        for (int y = 1; y < h; y++) t.SetPixel(x, y, y > h - 3 ? C("8a6a3a") : C("6f9a3a"));
+                    }
+                    return t;
+                }
+                case "crops":
+                {
+                    var t = Noise(C("7a5634"), C("6a4a2c"), C("8a643e"), seed, 0.12f, 0.08f);
+                    for (int x = 2; x < N; x += 4)
+                        for (int y = 3; y < 13; y++) t.SetPixel(x, y, (y % 3 == 0) ? C("8fcf5a") : C("5aa03c"));
+                    return t;
+                }
+                case "mushrooms":
+                {
+                    var t = Tile(Rand(1, 1, seed) < 0.5f ? "forest_grass" : "forest_grass_v1");
+                    for (int i = 0; i < 2; i++)
+                    {
+                        int x = 3 + (int)(Rand(i, 8, seed) * 9), y = 3 + (int)(Rand(i, 9, seed) * 8);
+                        t.SetPixel(x + 1, y, C("eae4d6")); t.SetPixel(x + 1, y + 1, C("eae4d6"));
+                        for (int dx = 0; dx < 3; dx++) t.SetPixel(x + dx, y + 2, C("d24a4a"));
+                        t.SetPixel(x + 1, y + 3, C("d24a4a")); t.SetPixel(x + 1, y + 2, C("ffffff"));
+                    }
+                    return t;
+                }
+                case "cobbles":
+                {
+                    var t = Noise(C("a39a8c"), C("8e8577"), C("b3aa9b"), seed, 0.1f, 0.1f);
+                    for (int y = 0; y < N; y += 4)
+                        for (int x = 0; x < N; x++) t.SetPixel(x, y, C("7a7266"));
+                    for (int y = 0; y < N; y++)
+                        for (int x = ((y / 4) % 2) * 3; x < N; x += 6) t.SetPixel(x, y, C("7a7266"));
                     return t;
                 }
                 case "path": return Noise(C("c9a46a"), C("b38f58"), C("d8b67e"), seed, 0.15f, 0.1f);
@@ -354,6 +401,9 @@ namespace DnD.Game
                     case "pip": L.Short = true; L.Hair = C("c25247"); L.Tunic = C("e8c87a"); L.Apron = true; L.Accent = C("ffffff"); break;
                     case "rhoswen": L.Ears = true; L.Hair = C("2b2b3a"); L.Tunic = C("4a6fa5"); L.Accent = C("e8c87a"); L.Helmet = true; break;
                     case "villager": L.Tunic = new[] { C("7a9a5a"), C("a86a4a"), C("6a7aa8") }[(int)(Hash(2, 3, seed) % 3)]; break;
+                    case "hobb": L.Beard = true; L.Hair = C("d8d0c0"); L.Tunic = C("a8946a"); L.Apron = true; L.Accent = C("f2ecd8"); break;
+                    case "bandit": L.Hood = true; L.Hat = C("4a3a2a"); L.Tunic = C("6a2a2a"); L.Accent = C("3b2a1e"); L.Pants = C("3b3b3b"); break;
+                    case "wren": L.Hair = C("c27a3a"); L.Tunic = C("3f6a4a"); L.Accent = C("e8c87a"); L.Pants = C("4a3a2a"); break;
                     default:
                         L.Tunic = C("7a6a5a");
                         // generic recruits: npc_fighter / npc_wizard...
@@ -526,6 +576,18 @@ namespace DnD.Game
                     Stamp(t, Quadruped, pal, 0, -2);
                     return t;
                 }
+                case "bandit":
+                case "wren":
+                    // People, not creatures: drawn with the humanoid generator (facing the camera).
+                    return Humanoid($"npc_{m}_down_{(id.EndsWith("_1") ? 1 : 0)}");
+                case "boar":
+                {
+                    var pal = new Dictionary<char, Color32> { { 'O', Outline }, { 'F', C("7a4f2c") }, { 'E', C("2b1d24") } };
+                    Stamp(t, Quadruped, pal);
+                    t.SetPixel(1, 7, C("f2ecd8")); t.SetPixel(2, 6, C("f2ecd8")); // tusks
+                    for (int x = 6; x < 11; x++) t.SetPixel(x, 9, C("4a2f1c"));   // bristly back
+                    return t;
+                }
                 case "wolf":
                 {
                     var pal = new Dictionary<char, Color32> { { 'O', Outline }, { 'F', C("9a9a9a") }, { 'E', C("f2d14e") } };
@@ -663,6 +725,94 @@ namespace DnD.Game
                 {
                     for (int y = 0; y < 14; y++) t.SetPixel(7, y, C("3b2a1e"));
                     for (int y = 10; y < 15; y++) for (int x = 5; x < 10; x++) t.SetPixel(x, y, C("f7c86a"));
+                    return t;
+                }
+                case "statue":
+                {
+                    t = NewTex(N, 26);
+                    // plinth
+                    for (int y = 0; y < 8; y++) for (int x = 3; x < 13; x++) t.SetPixel(x, y, (x == 3 || x == 12 || y == 7) ? C("7a7266") : C("b3aa9b"));
+                    for (int x = 4; x < 12; x++) t.SetPixel(x, 3, C("d9a441")); // plaque
+                    // dragon: body, neck, head, wings, tail
+                    Color s1 = C("8e9a8a"), s2 = C("6f7a6c"), ol = Outline;
+                    for (int y = 8; y < 15; y++) for (int x = 4; x < 12; x++) t.SetPixel(x, y, (x == 4 || x == 11) ? ol : (y < 10 ? s2 : s1));
+                    for (int y = 15; y < 21; y++) for (int x = 7; x < 10; x++) t.SetPixel(x, y, x == 7 ? s2 : s1);
+                    for (int y = 20; y < 24; y++) for (int x = 6; x < 12; x++) t.SetPixel(x, y, (y == 23 || x == 6 || x == 11) ? ol : s1);
+                    t.SetPixel(9, 22, C("2b1d24")); t.SetPixel(10, 21, C("e8c87a"));
+                    for (int i = 0; i < 6; i++) { t.SetPixel(3 - i / 2, 12 + i, s2); t.SetPixel(12 + i / 2, 12 + i, s2); t.SetPixel(2 - i / 3, 12 + i, ol); t.SetPixel(13 + i / 3, 12 + i, ol); }
+                    for (int x = 11; x < 15; x++) t.SetPixel(x, 9, s2);
+                    return t;
+                }
+                case "pillar":
+                {
+                    t = NewTex(N, 24);
+                    for (int y = 0; y < 20; y++) for (int x = 4; x < 12; x++)
+                            t.SetPixel(x, y, (x == 4 || x == 11) ? (Color)C("6f6a62") : (Rand(x, y, 21) < 0.15f ? (Color)C("4f8a3a") : (Color)C("a39a8c")));
+                    for (int x = 3; x < 13; x++) { t.SetPixel(x, 0, C("6f6a62")); t.SetPixel(x, 19, C("6f6a62")); }
+                    for (int x = 4; x < 9; x++) t.SetPixel(x, 20 + (x % 2), C("a39a8c")); // broken top
+                    return t;
+                }
+                case "well":
+                {
+                    for (int y = 0; y < 7; y++) for (int x = 2; x < 14; x++) t.SetPixel(x, y, (y % 3 == 0 || (x + y) % 4 == 0) ? C("6f6a62") : C("a39a8c"));
+                    for (int x = 3; x < 13; x++) t.SetPixel(x, 6, C("2a4a6a"));
+                    for (int y = 7; y < 14; y++) { t.SetPixel(2, y, C("6e4423")); t.SetPixel(13, y, C("6e4423")); }
+                    for (int x = 1; x < 15; x++) { t.SetPixel(x, 14, C("8e3b46")); t.SetPixel(x, 13, C("b04a52")); }
+                    for (int y = 9; y < 13; y++) t.SetPixel(8, y, C("c8b89a"));
+                    t.SetPixel(7, 9, C("8a5a32")); t.SetPixel(8, 8, C("8a5a32")); t.SetPixel(9, 9, C("8a5a32"));
+                    return t;
+                }
+                case "stall":
+                {
+                    for (int y = 0; y < 7; y++) for (int x = 1; x < 15; x++) t.SetPixel(x, y, y == 6 ? C("c08a52") : C("8a5a32"));
+                    for (int x = 3; x < 13; x += 3) { t.SetPixel(x, 7, C("e86a3a")); t.SetPixel(x + 1, 7, C("8fcf5a")); }
+                    for (int y = 7; y < 12; y++) { t.SetPixel(1, y, C("6e4423")); t.SetPixel(14, y, C("6e4423")); }
+                    for (int y = 12; y < 16; y++) for (int x = 0; x < 16; x++) t.SetPixel(x, y, ((x / 2) % 2 == 0) ? C("e8e0d0") : C("c24a4a"));
+                    return t;
+                }
+                case "campfire":
+                {
+                    for (int i = 0; i < 4; i++) { Line(t, 3, 1 + i % 2, 12, 3 - i % 2, C("6e4423")); }
+                    for (int y = 3; y < 11; y++)
+                        for (int x = 5; x < 11; x++)
+                        {
+                            float w = (11 - y) * 0.45f;
+                            if (Mathf.Abs(x - 7.5f) < w) t.SetPixel(x, y, y < 6 ? C("f7c86a") : y < 8 ? C("f08a3a") : C("d24a2a"));
+                        }
+                    for (int x = 2; x < 14; x += 3) t.SetPixel(x, 0, C("8a857e"));
+                    return t;
+                }
+                case "fae_ring":
+                {
+                    // a glowing toadstool in the middle of the ring
+                    for (int y = 0; y < 6; y++) { t.SetPixel(7, y, C("eae4d6")); t.SetPixel(8, y, C("eae4d6")); }
+                    for (int y = 5; y < 11; y++)
+                        for (int x = 2; x < 14; x++)
+                        {
+                            float dx = x - 7.5f, dy = y - 6f;
+                            if (dx * dx / 30f + dy * dy / 20f < 1f && dy >= 0) t.SetPixel(x, y, (Rand(x, y, 31) < 0.2f) ? C("ffffff") : C("b46ad2"));
+                        }
+                    t.SetPixel(3, 13, C("f7e08a")); t.SetPixel(12, 12, C("9fd3e8")); t.SetPixel(9, 14, C("f7e08a"));
+                    return t;
+                }
+                case "stump":
+                {
+                    for (int y = 0; y < 7; y++) for (int x = 3; x < 13; x++) t.SetPixel(x, y, (x == 3 || x == 12) ? (Color)C("5a3a22") : (Color)C("7a4f2c"));
+                    for (int x = 3; x < 13; x++) t.SetPixel(x, 7, C("c08a52"));
+                    for (int x = 6; x < 10; x++) t.SetPixel(x, 7, C("2b1d24"));
+                    t.SetPixel(2, 0, C("5a3a22")); t.SetPixel(13, 0, C("5a3a22")); t.SetPixel(11, 4, C("4f9a3a"));
+                    return t;
+                }
+                case "log":
+                {
+                    for (int y = 0; y < 6; y++) for (int x = 1; x < 15; x++) t.SetPixel(x, y, (y == 0 || y == 5) ? (Color)C("5a3a22") : (Rand(x, y, 41) < 0.2f ? (Color)C("4f9a3a") : (Color)C("7a4f2c")));
+                    for (int y = 1; y < 5; y++) { t.SetPixel(14, y, C("c08a52")); t.SetPixel(1, y, C("2b1d24")); t.SetPixel(2, y, C("2b1d24")); }
+                    return t;
+                }
+                case "flagstone":
+                {
+                    for (int y = 0; y < 6; y++) for (int x = 2; x < 14; x++) t.SetPixel(x, y + (x > 8 ? 1 : 0), (y == 0 || x == 2 || x == 13) ? C("6f6a62") : C("b3aa9b"));
+                    t.SetPixel(5, 3, C("4f8a3a")); t.SetPixel(10, 2, C("4f8a3a"));
                     return t;
                 }
                 case "crate":

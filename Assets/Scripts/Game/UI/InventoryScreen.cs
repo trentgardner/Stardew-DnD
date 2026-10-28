@@ -8,9 +8,10 @@ namespace DnD.Game
 {
     /// <summary>
     /// Stardew-style inventory. Optional second panel: a chest, loot, home storage, or your co-op partner (trade).
-    ///   Mouse:   left-click pick up / place / swap / merge · right-click pick half / place one ·
-    ///            Shift+click quick-transfer · U or middle-click use/equip · T sort · G give 1 gp (Shift: 10)
-    ///   Gamepad: D-pad/stick move · A pick/place · X half/one · R3+A quick-transfer · Y use/equip ·
+    ///   Mouse:   drag, or click to pick up / place / swap / merge · right-click an item for its options menu
+    ///            (use, equip, give a potion to an ally, move, split) · while holding: right-click places one ·
+    ///            double-click use/equip · Shift+click quick-transfer · T sort · G give 1 gp (Shift: 10)
+    ///   Gamepad: D-pad/stick move · A pick/place · X options (holding: place one) · R3+A quick-transfer · Y use/equip ·
     ///            View sort · LB/RB switch panel · B close
     /// Closing while holding a stack puts it back.
     /// </summary>
@@ -28,6 +29,10 @@ namespace DnD.Game
         int _panel; // 0 bag, 1 other, 2 equipment
         int _cursor;
         ItemStack _held;
+        (int panel, int cell)? _dragFrom;   // where the held stack was picked up by a mouse press (for drag-and-drop)
+        Vector2 _pressPos;
+        float _lastClickTime = -1;
+        (int panel, int cell) _lastClickCell = (-1, -1);
         Image _heldIcon;
         Text _heldCount, _info, _footer;
 
@@ -45,7 +50,7 @@ namespace DnD.Game
                         _partner = p;
             }
             var other = OtherInv;
-            float h = other != null ? 330 : 250;
+            float h = other != null ? 345 : 265;
             Window(new Vector2(320, h), other != null ? null : "Inventory");
 
             float y = other != null ? -8 : -26;
@@ -80,8 +85,8 @@ namespace DnD.Game
             var foot = UIKit.Rect(Root, "Footer", new Vector2(0, 0), new Vector2(1, 0), new Vector2(8, 4), new Vector2(-8, 20));
             _footer = UIKit.Label(foot, "", 8, UIKit.Dim, TextAnchor.MiddleCenter);
             _footer.text = In.UsesMouse
-                ? "Click: move · Right-click: split · Shift+click: send · U: use/equip · T: sort" + (_partner != null ? " · G: give gold" : "") + " · Esc: close"
-                : "A: move · X: split · R3+A: send · Y: use/equip · View: sort · LB/RB: panel · B: close";
+                ? "Drag/click: move · <b>Right-click: options</b> · Double-click: use/equip · Shift+click: send · T: sort" + (_partner != null ? " · G: gold" : "")
+                : "A: move · <b>X: options</b> · Y: use/equip · R3+A: send · View: sort · LB/RB: panel · B: close";
 
             var held = UIKit.Box(Root, "Held", new Vector2(0, 1), new Vector2(18, 18), Vector2.zero);
             _heldIcon = UIKit.Image(held, Color.white);
@@ -110,7 +115,7 @@ namespace DnD.Game
             c.Bg = UIKit.Image(rt, Color.white, ArtRegistry.Get("ui_slot"));
             c.Icon = UIKit.Image(UIKit.Fill(rt, "Icon", 2), Color.white);
             c.Count = UIKit.Label(rt, "", 8, UIKit.Ink, TextAnchor.LowerRight);
-            if (label != null) { c.Count.text = ""; c.Count.alignment = TextAnchor.UpperLeft; }
+            if (label != null) { c.Count.fontSize = 6; c.Count.color = UIKit.Dim; c.Count.alignment = TextAnchor.MiddleCenter; } // empty equipment slots show their name
             return c;
         }
 
@@ -141,6 +146,7 @@ namespace DnD.Game
                     c.Icon.enabled = id != null;
                     if (id != null) c.Icon.sprite = ArtRegistry.Get(ItemsDb.Get(id)?.Icon ?? "missing");
                     if (c.EquipSlot == null) c.Count.text = count > 1 ? count.ToString() : "";
+                    else c.Count.text = id == null ? SlotShort(c.EquipSlot) : "";
                     bool sel = panel == _panel && i == _cursor;
                     bool hot = panel == 0 && i < Inventory.HotbarSize;
                     c.Bg.color = sel ? new Color(1f, 0.8f, 0.35f) : hot ? new Color(0.95f, 0.92f, 0.8f) : (c.EquipSlot != null ? new Color(0.85f, 0.9f, 1f) : Color.white);
@@ -162,6 +168,7 @@ namespace DnD.Game
             var pc = Slot.Character;
             string hoveredId = HoveredId();
             var def = hoveredId != null ? ItemsDb.Get(hoveredId) : null;
+            var hc = Current;
             string head = $"{Currency.Format(pc.Copper)}   Weight {pc.CarriedWeight:0.#}/{pc.CarryCapacity} lb" + (pc.IsOverloaded ? UIKit.Colorize("  OVERLOADED (Speed 5 ft)", UIKit.Bad) : "");
             if (_partner != null) head += $"\n{_partner.Character.Name}: {Currency.Format(_partner.Character.Copper)}";
             if (def != null)
@@ -170,8 +177,12 @@ namespace DnD.Game
                 if (def is WeaponDef w) extra = $"{w.Category} weapon · {w.Damage}{(w.Has(WeaponProperty.Versatile) ? $" ({w.VersatileDamage} two-handed)" : "")} {w.DamageType.ToString().ToLower()}{(w.MagicBonus > 0 ? $" · +{w.MagicBonus}" : "")}{(!w.ExtraDamage.IsNone ? $" · +{w.ExtraDamage} {w.ExtraDamageType.ToString().ToLower()}" : "")}\n{w.PropertyText()}\nMastery: {MasteryText.Describe(w.Mastery)}{(pc.MasteredWeapons.Contains(w.Id) ? "" : UIKit.Colorize(" (not mastered)", UIKit.Dim))}";
                 else if (def is ArmorDef a) extra = $"{a.Category} armor · AC {a.BaseAC}{(a.MaxDex < 0 ? " + DEX" : a.MaxDex > 0 ? $" + DEX (max {a.MaxDex})" : "")}{(a.StrengthRequirement > 0 ? $" · STR {a.StrengthRequirement}" : "")}{(a.StealthDisadvantage ? " · Stealth Disadvantage" : "")}";
                 else if (def is WondrousDef wd) extra = $"{wd.Rarity} wondrous item{(wd.RequiresAttunement ? " (requires attunement)" : "")}\n<i>{wd.Lore}</i>";
-                head += $"\n\n<b>{def.Name}</b>  ({def.Weight:0.#} lb, {def.PriceText})\n{def.Description}\n{extra}";
+                string hint = hc != null && hc.EquipSlot != null ? $"equipped: {(In.UsesMouse ? "click" : "A")} to take off"
+                    : _held == null ? $"{(In.UsesMouse ? "right-click" : "X")} for options" : "";
+                head += $"\n\n<b>{def.Name}</b>  ({def.Weight:0.#} lb, {def.PriceText})" + (hint.Length > 0 ? UIKit.Colorize("  · " + hint, UIKit.Dim) : "") + $"\n{def.Description}\n{extra}";
             }
+            else if (hc != null && hc.EquipSlot != null)
+                head += $"\n\n<b>{SlotLong(hc.EquipSlot)} slot</b>: empty.\n" + UIKit.Colorize($"Equip something from your backpack: {(In.UsesMouse ? "double-click it, or right-click → Equip" : "select it and press Y")}.", UIKit.Dim);
             _info.text = head;
         }
 
@@ -184,12 +195,17 @@ namespace DnD.Game
             return c.Inv.Slots[c.Index]?.ItemId;
         }
 
+        static string SlotShort(string slot) =>
+            slot == "weapon" ? "Wpn" : slot == "armor" ? "Armor" : slot == "shield" ? "Shld" : slot == "Cloak" ? "Cloak" : slot == "Ring" ? "Ring" : slot == "Amulet" ? "Amul" : slot == "Trinket" ? "Trnk" : slot == "Focus" ? "Focus" : slot;
+
+        static string SlotLong(string slot) => slot == "weapon" ? "Weapon" : slot == "armor" ? "Armor" : slot == "shield" ? "Shield" : slot;
+
         public override void Tick()
         {
             var cells = Panel(_panel);
 
-            // Mouse hover / click
-            bool clicked = false, rightClicked = false;
+            // Mouse hover / click / drag
+            bool clicked = false, rightClicked = false, overCell = false;
             if (In.UsesMouse)
             {
                 for (int p = 0; p < 3; p++)
@@ -198,10 +214,35 @@ namespace DnD.Game
                     for (int i = 0; i < list.Count; i++)
                     {
                         if (!UIKit.Contains(list[i].Rt, In.MouseScreen, Cam)) continue;
+                        overCell = true;
                         if (_panel != p || _cursor != i) { _panel = p; _cursor = i; Redraw(); }
                         if (In.MouseLeft) clicked = true;
                         if (In.MouseRight) rightClicked = true;
                     }
+                }
+                // Drag-and-drop: a stack picked up by a press drops where the button is released (a click without moving keeps holding it).
+                if (In.MouseLeftUp && _held != null && _dragFrom.HasValue)
+                {
+                    var from = _dragFrom.Value;
+                    bool moved = (In.MouseScreen - _pressPos).sqrMagnitude > 64;
+                    _dragFrom = null;
+                    if (overCell && (_panel != from.panel || _cursor != from.cell)) { PrimaryAction(); return; }
+                    if (!overCell && moved) { _panel = from.panel; _cursor = from.cell; PrimaryAction(); return; } // dropped outside: put it back
+                }
+                // Double-click: use / equip.
+                if (clicked && Current != null && Current.EquipSlot == null)
+                {
+                    var here = (_panel, _cursor);
+                    if (Time.unscaledTime - _lastClickTime < 0.35f && here == _lastClickCell)
+                    {
+                        _lastClickTime = -1;
+                        _dragFrom = null;
+                        if (_held != null) PrimaryAction(); // the first click picked it up: put it back first
+                        UseOrEquip();
+                        return;
+                    }
+                    _lastClickTime = Time.unscaledTime;
+                    _lastClickCell = here;
                 }
                 if (_held != null)
                 {
@@ -239,7 +280,13 @@ namespace DnD.Game
             bool alt = rightClicked || (!In.UsesMouse && In.AltAction) || (In.UsesMouse && In.AltAction && !rightClicked);
 
             if (confirm && In.QuickModifier) QuickTransfer();
-            else if (confirm) PrimaryAction();
+            else if (confirm)
+            {
+                bool wasEmpty = _held == null;
+                PrimaryAction();
+                if (clicked && wasEmpty && _held != null) { _dragFrom = (_panel, _cursor); _pressPos = In.MouseScreen; }
+            }
+            else if (alt && _held == null) OpenOptions();
             else if (alt) SecondaryAction();
 
             if (In.UseItem) UseOrEquip();
@@ -274,6 +321,56 @@ namespace DnD.Game
             else _held = c.Inv.Place(c.Index, _held);
             Sfx.Play("ui");
             Redraw();
+        }
+
+        /// <summary>Opens the options menu for a backpack slot, as if it were right-clicked (used by tests).</summary>
+        public void OpenOptionsFor(int bagIndex) { _panel = 0; _cursor = bagIndex; OpenOptions(); }
+
+        /// <summary>The item's options menu (right-click / X): everything you can do with it, spelled out.</summary>
+        void OpenOptions()
+        {
+            var c = Current;
+            if (c == null) return;
+            if (c.EquipSlot != null) { if (EquippedId(c.EquipSlot) != null) { Slot.Character.Unequip(c.EquipSlot); Redraw(); } return; }
+            var st = c.Inv.Slots[c.Index];
+            if (st == null) return;
+            var def = ItemsDb.Get(st.ItemId);
+            if (def == null) return;
+            var g = GameRoot.I;
+            int index = c.Index;
+            var inv = c.Inv;
+            var opts = new List<(string, System.Action)>();
+            bool mine = inv == Bag;
+            if (mine)
+            {
+                bool gear = def.Kind == ItemKind.Weapon || def.Kind == ItemKind.Armor || def.Kind == ItemKind.Shield || def.Kind == ItemKind.Wondrous;
+                var cons = def as ConsumableDef;
+                if (gear) opts.Add(("Equip", () => { ItemUse.UseFromBag(Slot, index); Redraw(); }));
+                else if (cons != null && cons.Effect == ConsumableEffect.Heal) opts.Add(("Drink it yourself", () => { ItemUse.UseFromBag(Slot, index); Redraw(); }));
+                else if (cons != null) opts.Add(("Use", () => { ItemUse.UseFromBag(Slot, index); Redraw(); }));
+                if (cons != null && cons.Effect == ConsumableEffect.Heal)
+                {
+                    foreach (var comp in g.CompanionsOf(Slot))
+                        if (comp.Character != null)
+                        {
+                            var who = comp.Character;
+                            opts.Add(($"Give to {who.Name} to drink ({who.HP}/{who.EffectiveMaxHP} HP)", () => { g.GivePotionTo(Slot, who, index); Redraw(); }));
+                        }
+                    foreach (var p in g.Players)
+                        if (p != Slot && p.IsReady && p.Zone == Slot.Zone && Vector2.Distance(p.MapPos, Slot.MapPos) <= 3)
+                        {
+                            var who = p.Character;
+                            opts.Add(($"Give to {who.Name} to drink ({who.HP}/{who.EffectiveMaxHP} HP)", () => { g.GivePotionTo(Slot, who, index); Redraw(); }));
+                        }
+                }
+            }
+            if (OtherInv != null)
+                opts.Add((mine ? $"Send to {(_partner != null ? _partner.Character.Name : _otherTitle)}" : "Take", () => { _panel = mine ? 0 : 1; _cursor = index; QuickTransfer(); }));
+            else if (mine)
+                opts.Add((index < Inventory.HotbarSize ? "Move to backpack" : "Move to hotbar", () => { _panel = 0; _cursor = index; QuickTransfer(); }));
+            if (st.Count > 1) opts.Add(("Split stack (pick up half)", () => { _held = inv.PickUpHalf(index); Redraw(); }));
+            opts.Add(("Cancel", null));
+            Hud.Push(new ChoiceScreen(def.Name + (st.Count > 1 ? $" ×{st.Count}" : ""), def.Description, opts));
         }
 
         void SecondaryAction()

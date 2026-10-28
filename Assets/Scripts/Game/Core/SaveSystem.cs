@@ -33,7 +33,12 @@ namespace DnD.Game
     }
 
     [Serializable]
-    public class CompanionData { public int Leader; public PcData Pc; public string Quirk; }
+    public class CompanionData
+    {
+        public int Leader; public PcData Pc; public string Quirk;
+        public bool AutoCombat; public int Stance; // old saves load as: you command them, default role
+        public bool TakePoint;
+    }
 
     [Serializable]
     public class SaveData
@@ -168,7 +173,7 @@ namespace DnD.Game
             foreach (var c in g.Companions)
             {
                 if (c.IsDragon) { d.DragonLeader = c.Leader.Index; continue; }
-                d.Companions.Add(new CompanionData { Leader = c.Leader.Index, Pc = ToData(c.Character), Quirk = c.Quirk });
+                d.Companions.Add(new CompanionData { Leader = c.Leader.Index, Pc = ToData(c.Character), Quirk = c.Quirk, AutoCombat = !c.Manual, Stance = (int)c.Stance, TakePoint = c.TakePoint });
             }
             var w = g.World;
             foreach (var kv in w.Friendship) d.Friendship.Add(new KV(kv.Key, kv.Value));

@@ -103,6 +103,7 @@ namespace DnD.Game
             if (Def.Id == "mine") return "tile_cave_floor";
             if (Def.Id == "temple") return "tile_stone_floor";
             if (Def.Indoors) return "tile_wood_floor";
+            if (Def.Id == "forest") return ((m.x * 5 + m.y * 11) % 4 == 0) ? "tile_forest_grass_v1" : "tile_forest_grass";
             return ((m.x * 7 + m.y * 13) % 5 == 0) ? "tile_grass_v1" : "tile_grass";
         }
 
@@ -118,11 +119,34 @@ namespace DnD.Game
             {
                 case '.': Ground(m, floor); break;
                 case ',': Ground(m, "tile_path"); break;
-                case '*': Ground(m, "tile_flowers"); break;
-                case ':': Ground(m, floor); break;
+                case '*': Ground(m, Def.Id == "forest" ? "tile_forest_flowers" : "tile_flowers"); break;
+                case ':': Ground(m, Def.Indoors || Def.Dark ? floor : "tile_cobbles"); break; // outdoors: old flagstones
                 case '=': Ground(m, "tile_wood_floor"); break;
                 case '_': Ground(m, "tile_rug"); break;
                 case '~': Wall(m, "tile_water"); break;
+                case 'b': Ground(m, "tile_bridge"); break;
+                case ';': Ground(m, "tile_sand"); break;
+                case 'j': Ground(m, "tile_reeds"); break;
+                case 'v': Ground(m, "tile_crops"); break;
+                case 'k': Ground(m, "tile_mushrooms"); break;
+                case 'o': Ground(m, "tile_cobbles"); break;
+                case 'm': Ground(m, "tile_cobbles"); Solid(m); Prop(m, "obj_stall"); break;
+                case 'P': Ground(m, floor); Solid(m); Prop(m, "obj_pillar"); break;
+                case 'F': Ground(m, floor); Solid(m); Prop(m, "obj_campfire", true); break;
+                case 'S':
+                    Ground(m, "tile_cobbles"); Solid(m);
+                    var statue = Prop(m, "obj_statue").AddComponent<SignInteractable>();
+                    statue.Title = "Dragon Statue"; statue.Prompt = "Look at the statue";
+                    statue.Text = Def.Signs.TryGetValue(m, out var st) ? st : "A stone dragon.";
+                    break;
+                case 'O':
+                case 'Y':
+                case 'q':
+                    Ground(m, c == 'O' ? "tile_cobbles" : c == 'Y' ? "tile_mushrooms" : floor); Solid(m);
+                    if (Def.Secrets.TryGetValue(m, out var secret))
+                        Prop(m, secret.Sprite, c == 'Y').AddComponent<SecretInteractable>().Def = secret;
+                    else Debug.LogWarning($"{Def.Id}: no SecretDef at {m}");
+                    break;
                 case 'X': Wall(m, "tile_cave_wall"); break;
                 case 'W': Wall(m, Def.Id == "temple" ? "tile_stone_wall" : "tile_house_wall"); break;
                 case 'w': Wall(m, "tile_window"); break;
@@ -130,7 +154,16 @@ namespace DnD.Game
                 case 'R': Wall(m, "tile_roof"); break;
                 case 'G': Wall(m, "tile_roof_gold"); break;
                 case 'C': Wall(m, "tile_counter"); break;
-                case 'D': Ground(m, Def.Indoors ? floor : "tile_door"); break;
+                case 'D':
+                    Ground(m, Def.Indoors ? floor : "tile_door");
+                    if (!Def.Indoors && WarpAt(m) == null)
+                    {
+                        Solid(m);
+                        var door = Prop(m, "tile_none").AddComponent<SignInteractable>();
+                        door.Title = "Door"; door.Prompt = "Knock";
+                        door.Text = "Locked. From inside, someone shouts: \"WE DON'T WANT ANY!\"";
+                    }
+                    break;
                 case 'M': Ground(m, "tile_mine_entrance"); break;
                 case 'E': Ground(m, "tile_exit_up"); break;
                 case 'T': Ground(m, floor); Solid(m); Prop(m, "obj_tree"); break;
@@ -144,9 +177,10 @@ namespace DnD.Game
                 case 'A': Ground(m, floor); Solid(m); Prop(m, "obj_altar", true); break;
                 case 's':
                 case 'n':
-                    Ground(m, floor); Solid(m);
+                    Ground(m, CharAt(new Vector2Int(m.x + 1, m.y)) == 'o' ? "tile_cobbles" : floor); Solid(m);
                     var sign = Prop(m, "obj_sign");
                     var s = sign.AddComponent<SignInteractable>();
+                    if (c == 'n') s.Title = "Notice Board";
                     s.Text = Def.Signs.TryGetValue(m, out var txt) ? txt : "The sign is too weathered to read.";
                     break;
                 case 'B':
@@ -223,7 +257,7 @@ namespace DnD.Game
                 float t = i / (float)steps;
                 var p = new Vector2Int(Mathf.RoundToInt(Mathf.Lerp(a.x, b.x, t)), Mathf.RoundToInt(Mathf.Lerp(a.y, b.y, t)));
                 char c = CharAt(p);
-                if (c == 'X' || c == 'W' || c == 'w' || c == 'T' || c == 'U' || c == 'R' || c == 'G') return false;
+                if (c == 'X' || c == 'W' || c == 'w' || c == 'T' || c == 'U' || c == 'R' || c == 'G' || c == 'S' || c == 'P') return false;
             }
             return true;
         }

@@ -34,6 +34,7 @@ namespace DnD.Game
         static readonly string[] Names = { "Arden", "Brynn", "Caspian", "Delphine", "Eamon", "Fiora", "Gideon", "Hazel", "Ivo", "Juniper", "Kestrel", "Lark", "Magnus", "Nessa", "Orrin", "Perrin", "Quinn", "Rowan", "Sorrel", "Talia", "Vesper", "Wynn" };
 
         public CharacterCreationScreen(Action<PlayerCharacter> done) { _done = done; }
+        public override bool ShowCloseButton => false; // Esc steps back instead
 
         public override void Build()
         {

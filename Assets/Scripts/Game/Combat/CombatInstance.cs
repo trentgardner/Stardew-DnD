@@ -13,13 +13,15 @@ namespace DnD.Game
     {
         public Creature C;
         public Actor A;
-        public PlayerSlot Owner;          // human-controlled
+        public PlayerSlot Owner;          // a human player's own character
         public EnemyAgent Enemy;
         public CompanionAgent Comp;
         public Combatant Cb;
         public int DeathRound = -1;
         public Vector2Int Pos => A.MapPos;
-        public bool IsHuman => Owner != null;
+        /// <summary>Who makes this unit's decisions and rolls its dice: its player, or the leader of a companion under manual command.</summary>
+        public PlayerSlot Ctrl => Owner ?? (Comp != null && Comp.Manual && Comp.Leader != null && Comp.Leader.InCombat ? Comp.Leader : null);
+        public bool IsHuman => Ctrl != null;
         public string Name => C.Name;
         public bool Active => !C.IsDead && !C.IsDown;
     }
@@ -39,7 +41,7 @@ namespace DnD.Game
         readonly GameRoot G;
         readonly List<GameObject> _gridTiles = new List<GameObject>();
         readonly List<string> _log = new List<string>();
-        bool _surprise;
+        bool _surprise, _enemiesSurprised;
 
         public CombatInstance(GameRoot g, Zone zone, string groupId) { G = g; Zone = zone; GroupId = groupId; }
 
@@ -76,11 +78,14 @@ namespace DnD.Game
             if (rb) rb.linearVelocity = Vector2.zero;
         }
 
-        public IEnumerator Run(bool playersSurprised)
+        /// <summary>Runs the fight. Surprised creatures roll initiative with Disadvantage (2024 rules).</summary>
+        public IEnumerator Run(bool playersSurprised, bool enemiesSurprised = false)
         {
             _surprise = playersSurprised;
+            _enemiesSurprised = enemiesSurprised;
             Sfx.Play("combat_start");
-            foreach (var h in Humans) { h.Hud.ShowLog(true); h.Hud.CloseAll(); h.Hud.Push(new CombatHud(this)); h.Hud.Narrate("Roll for initiative!"); }
+            foreach (var h in Humans) { h.Hud.ShowLog(true); h.Hud.CloseAll(); h.Hud.Push(new CombatHud(this)); h.Hud.Narrate(enemiesSurprised ? "AMBUSH! They never saw you coming. Roll for initiative!" : "Roll for initiative!"); }
+            DeployFrontline();
             DrawGrid(true);
 
             // Initiative: humans roll their own d20s, everyone else rolls on the ticker.
@@ -88,12 +93,13 @@ namespace DnD.Game
             {
                 var adv = u.C.InitiativeAdvantage ? AdvantageState.Advantage : AdvantageState.Normal;
                 if (_surprise && u.C.Team == Team.Players) adv = Dice.Combine(adv == AdvantageState.Advantage, true);
+                if (_enemiesSurprised && u.C.Team == Team.Enemies) adv = Dice.Combine(adv == AdvantageState.Advantage, true);
                 var terms = new List<RollTerm> { new RollTerm("initiative", u.C.InitiativeBonus) };
                 if (u.C.D20Penalty != 0) terms.Add(new RollTerm("exhaustion", u.C.D20Penalty));
                 if (u.IsHuman)
                 {
                     D20Result res = null;
-                    u.Owner.Hud.Dice.RollD20("Initiative!", $"DEX {AbilityUtil.Fmt(u.C.InitiativeBonus)}{(adv == AdvantageState.Disadvantage ? " · surprised (Disadvantage)" : adv == AdvantageState.Advantage ? " · Advantage" : "")}",
+                    u.Ctrl.Hud.Dice.RollD20(u.Owner != null ? "Initiative!" : $"Initiative: {u.Name}", $"DEX {AbilityUtil.Fmt(u.C.InitiativeBonus)}{(adv == AdvantageState.Disadvantage ? " · surprised (Disadvantage)" : adv == AdvantageState.Advantage ? " · Advantage" : "")}",
                         () => Dice.RollD20(adv, terms), null, false, r => res = r);
                     while (res == null) yield return null;
                     u.Cb = Enc.Add(u.C);
@@ -135,7 +141,44 @@ namespace DnD.Game
             }
         }
 
-        public IEnumerable<PlayerSlot> Humans => Units.Where(u => u.IsHuman).Select(u => u.Owner);
+        /// <summary>The human players in this fight (each has a combat HUD).</summary>
+        public IEnumerable<PlayerSlot> Humans => Units.Where(u => u.Owner != null).Select(u => u.Owner);
+
+        /// <summary>
+        /// As the fight starts, front-line companions (and any told to take point) step between their leader and
+        /// the nearest enemy, so the squishy party members start behind them.
+        /// </summary>
+        void DeployFrontline()
+        {
+            var foes = Units.Where(u => u.C.Team == Team.Enemies && u.Active).ToList();
+            if (foes.Count == 0) return;
+            foreach (var u in Units.Where(u => u.Comp != null && u.Active && (u.Comp.IsFrontline || u.Comp.TakePoint)).ToList())
+            {
+                var leader = Units.FirstOrDefault(o => o.Owner != null && o.Owner == u.Comp.Leader);
+                if (leader == null) continue;
+                var foe = foes.OrderBy(f => Zone.DistanceFt(f.Pos, leader.Pos)).First();
+                int gap = Zone.DistanceFt(foe.Pos, leader.Pos) / 5;
+                if (gap < 2) continue; // already toe to toe: no room to get in front
+                Vector2 dir = ((Vector2)(foe.Pos - leader.Pos)).normalized;
+                int step = Math.Min(2, gap - 1);
+                var want = leader.Pos + new Vector2Int(Mathf.RoundToInt(dir.x * step), Mathf.RoundToInt(dir.y * step));
+                Vector2Int? best = null;
+                float bestScore = float.MaxValue;
+                for (int dx = -2; dx <= 2; dx++)
+                    for (int dy = -2; dy <= 2; dy++)
+                    {
+                        var t = want + new Vector2Int(dx, dy);
+                        if (!Zone.IsWalkable(t) || Occupied(t, u)) continue;
+                        if (Zone.DistanceFt(t, foe.Pos) >= Zone.DistanceFt(leader.Pos, foe.Pos)) continue; // must actually be in front
+                        float score = Vector2.Distance(t, want) + (Zone.LineOfSight(leader.Pos, t) ? 0 : 3);
+                        if (score < bestScore) { bestScore = score; best = t; }
+                    }
+                if (!best.HasValue) continue;
+                u.A.PlaceAt(Zone, best.Value);
+                u.A.Face(foe.A.transform.position);
+                Log($"{u.Name} steps in front of {leader.Name}!");
+            }
+        }
 
         public void JoinLate(PlayerSlot p)
         {
@@ -212,35 +255,41 @@ namespace DnD.Game
             {
                 var foes = Units.Where(u => u.C.Team == Team.Enemies).ToList();
                 int xp = foes.Where(u => u.C.IsDown).Sum(u => ((Monster)u.C).Def.XP);
-                var party = Units.Where(u => u.C.Team == Team.Players && u.C is PlayerCharacter).ToList();
-                int share = party.Count > 0 ? xp / party.Count : 0;
-                foreach (var u in party) ((PlayerCharacter)u.C).XP += share;
-                int copper = 0;
-                var items = new List<string>();
-                foreach (var f in foes)
-                {
-                    var def = ((Monster)f.C).Def;
-                    copper += UnityEngine.Random.Range(def.CopperMin, def.CopperMax + 1);
-                    foreach (var kv in def.Loot) if (UnityEngine.Random.value <= kv.Value) items.Add(kv.Key);
-                    if (f.Enemy != null) f.Enemy.gameObject.SetActive(false);
-                }
                 var humans = Humans.Where(h => h.Character != null).ToList();
+                // XP is split between the players only. Companions earn the same as their leader (GiveXP),
+                // so recruiting help never shrinks your share, and talking a group down pays exactly the same.
+                int share = GameRoot.EncounterShare(xp, humans.Count);
+                foreach (var f in foes) if (f.Enemy != null) f.Enemy.gameObject.SetActive(false);
                 foreach (var h in humans)
                 {
-                    h.Character.Copper += copper / Math.Max(1, humans.Count);
-                    h.Hud.Narrate($"Victory! {(share > 0 ? $"+{share} XP each." : "")} {(copper > 0 ? $"You split {Currency.Format(copper)} in loot." : "")}");
-                    if (h.Character.CanLevelUp) h.Hud.Toast("★ You can level up! (Character sheet: C / View)", UIKit.D20Gold);
+                    h.Hud.Narrate($"Victory!{(share > 0 ? $" +{share} XP each." : "")}");
+                    G.GiveXP(h, share, "victory");
                 }
-                foreach (var it in items)
-                {
-                    var taker = humans.FirstOrDefault(h => h.Character.Bag.SpaceFor(it) > 0) ?? humans.FirstOrDefault();
-                    if (taker == null) continue;
-                    taker.Character.AddItem(it);
-                    foreach (var h in humans) h.Hud.Toast($"{taker.Character.Name} found: {ItemsDb.Get(it)?.Name}", UIKit.Gold);
-                    if (it == "copper_kettle" || it == "lucky_spoon") G.Quests.Set(it == "copper_kettle" ? "kettle" : "spoon", 1);
-                }
+                G.SplitLoot(humans, foes.Select(f => ((Monster)f.C).Def));
                 if (GroupId != null && foes.All(f => f.C.IsDown)) { G.World.DefeatedGroups.Add(GroupId); G.World.DefeatedDay[GroupId] = G.Clock.Day; }
             }
+            ReleaseUnits();
+            G.OnCombatFinished(this, victory);
+        }
+
+        /// <summary>The party got away: nobody wins, and the monsters stay where they are, wounds and all.</summary>
+        public void Retreat()
+        {
+            Finished = true;
+            DrawGrid(false);
+            ClearHighlights();
+            foreach (var h in Humans) { h.Hud.ShowLog(false); h.Hud.Find<CombatHud>()?.Close(); }
+            foreach (var u in Units) if (u.C is PlayerCharacter pc && pc.IsDown && !pc.IsDead) pc.Stable = true; // carried out by friends
+            // Enemies you dropped before pulling out still count: they won't be there when you come back.
+            var dropped = Units.Where(u => u.C.Team == Team.Enemies && u.C.IsDown).ToList();
+            int share = GameRoot.EncounterShare(dropped.Sum(u => ((Monster)u.C).Def.XP), Humans.Count());
+            if (share > 0) foreach (var h in Humans.Where(h => h.Character != null).ToList()) G.GiveXP(h, share, "the foes you dropped");
+            ReleaseUnits();
+            G.OnCombatRetreat(this);
+        }
+
+        void ReleaseUnits()
+        {
             foreach (var u in Units)
             {
                 if (u.Enemy != null) u.Enemy.InCombat = false;
@@ -248,7 +297,6 @@ namespace DnD.Game
                 // Out of combat, effects with round durations simply end.
                 u.C.Effects.RemoveAll(e => e.RoundsLeft > 0 && e.Id != "aid" && e.Id != "mage_armor");
             }
-            G.OnCombatFinished(this, victory);
         }
 
         // ================================================================== grid display
@@ -299,6 +347,33 @@ namespace DnD.Game
             foreach (var g in _highlights) if (g) UnityEngine.Object.Destroy(g);
             _highlights.Clear();
             if (_cursor) _cursor.SetActive(false);
+            SetHover(null, Color.clear);
+        }
+
+        Unit _hovered;
+
+        void SetHover(Unit u, Color c)
+        {
+            if (_hovered != null && _hovered != u && _hovered.A) _hovered.A.Highlight = null;
+            _hovered = u;
+            if (u != null && u.A) u.A.Highlight = c;
+        }
+
+        /// <summary>
+        /// The unit whose sprite is under a world point. Sprites stand on their tile but draw up into the tile
+        /// above, so picking by sprite (front-most first) is what makes clicking on a creature's body work.
+        /// </summary>
+        public Unit UnitUnderPoint(Vector3 w)
+        {
+            Unit best = null;
+            foreach (var u in Units)
+            {
+                if (u.C.IsDead || u.A == null || u.A.Sr == null || u.A.Sr.sprite == null) continue;
+                var b = u.A.Sr.bounds;
+                if (w.x < b.min.x || w.x > b.max.x || w.y < b.min.y || w.y > b.max.y) continue;
+                if (best == null || u.A.transform.position.y < best.A.transform.position.y) best = u;
+            }
+            return best;
         }
 
         void ShowCursor(Vector2Int t, Color c)
@@ -308,11 +383,14 @@ namespace DnD.Game
                 _cursor = new GameObject("CombatCursor");
                 var sr = _cursor.AddComponent<SpriteRenderer>();
                 sr.sprite = ArtRegistry.Get("tile_cursor");
-                sr.sortingOrder = 31000;
+                sr.sortingOrder = -750; // on the floor under creatures, not a box drawn over them
             }
             _cursor.SetActive(true);
             _cursor.transform.position = Zone.ToWorld(t);
             _cursor.GetComponent<SpriteRenderer>().color = c;
+            var cur = Current;
+            var under = UnitAt(t);
+            SetHover(under != null && under != cur && !under.C.IsDead && c.a > 0.5f && c != Color.white ? under : null, c);
         }
 
         public void RefreshTracker()

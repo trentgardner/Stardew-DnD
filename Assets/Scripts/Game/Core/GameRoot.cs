@@ -38,6 +38,8 @@ namespace DnD.Game
         readonly Dictionary<int, float> _deathTime = new Dictionary<int, float>();
         readonly HashSet<int> _sleeping = new HashSet<int>();
         readonly Dictionary<int, float> _lastLongRest = new Dictionary<int, float>();
+        /// <summary>Groups someone is currently talking to (one conversation per group, even in co-op).</summary>
+        readonly HashSet<string> _parley = new HashSet<string>();
         TitleScreen _title;
         Camera _idleCam;
         float _lastAutosave = -999;
@@ -147,7 +149,10 @@ namespace DnD.Game
             foreach (var c in d.Companions)
             {
                 var leader = Players.FirstOrDefault(p => p.Index == c.Leader) ?? p1;
-                SpawnCompanion(leader, SaveSystem.FromData(c.Pc), c.Quirk);
+                var comp = SpawnCompanion(leader, SaveSystem.FromData(c.Pc), c.Quirk);
+                comp.Manual = !c.AutoCombat;
+                comp.Stance = (CompanionStance)c.Stance;
+                comp.TakePoint = c.TakePoint;
             }
             if (World.EggHatched) SpawnDragon(Players.FirstOrDefault(p => p.Index == d.DragonLeader) ?? p1);
             p1.Hud.Narrate($"Welcome back. {Clock.Weekday}, day {Clock.Day}." + (_pendingPlayers.Count > 0 ? " Player 2: press Start (or Enter) to rejoin!" : ""));
@@ -181,7 +186,7 @@ namespace DnD.Game
             StopAllCoroutines();
             if (_worldRoot) Destroy(_worldRoot.gameObject);
             Zones.Clear(); _npcs.Clear(); _groups.Clear(); Companions.Clear(); _recruitAgents.Clear(); TavernRecruits.Clear();
-            _deathTime.Clear(); _sleeping.Clear(); _lastLongRest.Clear();
+            _deathTime.Clear(); _sleeping.Clear(); _lastLongRest.Clear(); _parley.Clear();
             World = new WorldState();
             Quests = new QuestLog();
             Clock = new GameClock();
@@ -263,7 +268,12 @@ namespace DnD.Game
             slot.Character = pc;
             Zone zone = Zones["home"];
             Vector2Int pos = zone.Def.DefaultSpawn;
-            if (saved != null && Zones.TryGetValue(saved.Zone ?? "", out var z)) { zone = z; pos = new Vector2Int(saved.X, saved.Y); }
+            if (saved != null && Zones.TryGetValue(saved.Zone ?? "", out var z))
+            {
+                zone = z;
+                pos = new Vector2Int(saved.X, saved.Y);
+                if (!zone.IsWalkable(pos)) pos = zone.Def.DefaultSpawn; // the map changed since this save
+            }
             else if (Players.Count > 1)
             {
                 var other = Players.FirstOrDefault(p => p != slot && p.IsReady);
@@ -332,7 +342,8 @@ namespace DnD.Game
                 if (p.Avatar == null) continue;
                 var target = p.Avatar.transform.position;
                 var cur = p.InCombat ? p.Combat.Current : null;
-                if (cur != null && !cur.IsHuman && cur.A != null) target = Vector3.Lerp(target, cur.A.transform.position, 0.5f);
+                // Watch whoever is acting: a monster, or a companion you're commanding.
+                if (cur != null && cur.A != null && cur.A != p.Avatar) target = Vector3.Lerp(target, cur.A.transform.position, 0.5f);
                 var want = ClampCam(p, new Vector3(target.x, target.y, -10));
                 p.Cam.transform.position = Vector3.Lerp(p.Cam.transform.position, want, 1 - Mathf.Exp(-10 * Time.deltaTime));
             }
@@ -425,12 +436,13 @@ namespace DnD.Game
             if (!Zones.TryGetValue(zoneId, out var zone)) return;
             if (sfx) Sfx.Play("door");
             p.Avatar.PlaceAt(zone, pos);
-            foreach (var c in CompanionsOf(p)) c.Actor.PlaceAt(zone, pos);
+            foreach (var c in CompanionsOf(p)) if (!c.Waiting) c.Actor.PlaceAt(zone, pos);
             SnapCamera(p);
             foreach (var g in zone.Def.EnemyGroups) SpawnGroupIfNeeded(zone, g);
             foreach (var n in _npcs) n.UpdateSchedule(false);
 
             AwardOnce(p, "zone:" + zoneId, 15, $"discovering {zone.Def.Name}");
+            if (zoneId == "ford") Quests.Start("east_road");
             string key = $"entered:{p.Index}:{zoneId}:{Clock.Day}";
             if (!World.IsLocked(key)) { World.Lock(key, 24 * 60); p.Hud.Narrate(zone.Def.EnterNarration, !World.Flag("seen:" + zoneId)); World.SetFlag("seen:" + zoneId); }
 
@@ -448,9 +460,13 @@ namespace DnD.Game
 
         void SpawnGroupIfNeeded(Zone z, EnemyGroupDef g)
         {
-            if (World.DefeatedGroups.Contains(g.Id) && g.Id != "mine_egg" && World.DefeatedDay.TryGetValue(g.Id, out var day) && Clock.Day - day >= WorldState.RespawnDays)
+            bool resolved = World.DefeatedGroups.Contains(g.Id) || World.PacifiedGroups.Contains(g.Id);
+            if (resolved && !g.Unique && World.DefeatedDay.TryGetValue(g.Id, out var day) && Clock.Day - day >= WorldState.RespawnDays)
             {
+                // A new band moves in (whether the last one was beaten, befriended or scared off).
                 World.DefeatedGroups.Remove(g.Id);
+                World.PacifiedGroups.Remove(g.Id);
+                World.Flags.Remove("fled:" + g.Id);
                 World.DefeatedDay.Remove(g.Id);
                 if (_groups.TryGetValue(g.Id, out var old)) foreach (var a in old) if (a) Destroy(a.gameObject);
                 _groups.Remove(g.Id);
@@ -467,22 +483,107 @@ namespace DnD.Game
             _groups[g.Id] = list;
         }
 
+        /// <summary>
+        /// Being spotted doesn't force a fight: the DM pauses and asks what you do (talk, scare, calm, slip away, or fight).
+        /// Groups with a story conversation (Snik) use theirs the first time.
+        /// </summary>
         public void OnEnemyNoticed(EnemyAgent e, PlayerSlot p)
         {
             var g = e.Group;
-            if (Combats.Any(c => c.GroupId == g.Id)) return;
+            if (Combats.Any(c => c.GroupId == g.Id) || _parley.Contains(g.Id) || World.Flag("passage:" + g.Id)) return;
+            if (_groups.TryGetValue(g.Id, out var agents)) foreach (var a in agents) if (a) a.Alerted = true;
             if (g.ParleyDialogue != null && !World.Flag("parley:" + g.Id))
             {
                 World.SetFlag("parley:" + g.Id);
-                foreach (var a in _groups[g.Id]) a.Alerted = true;
-                p.Hud.Push(new DialogueScreen(g.ParleyDialogue, null, null));
+                _parley.Add(g.Id);
+                p.Hud.Push(new DialogueScreen(g.ParleyDialogue, null, null, null, g));
+                return;
+            }
+            if (g.Style != EncounterStyle.None)
+            {
+                _parley.Add(g.Id);
+                p.Hud.Push(new DialogueScreen("encounter", null, null, null, g));
                 return;
             }
             p.Hud.Narrate($"A {e.Monster.Name.ToLower()} spots you!");
             StartGroupCombat(g.Id, p);
         }
 
-        public void StartGroupCombat(string groupId, PlayerSlot instigator)
+        public void EndParley(string groupId) => _parley.Remove(groupId);
+
+        /// <summary>Story hooks for a group being dealt with, whichever way it went (fight, talk, scare).</summary>
+        void OnGroupResolved(string groupId)
+        {
+            if (groupId == "mine_egg") Quests.Set("fallen_star", 2);
+            if (groupId == "ford_toll") Quests.Set("east_road", 2);
+        }
+
+        /// <summary>Paid off: the group lets you be (no XP, they're still there, and you can still deal with them later).</summary>
+        public void GrantPassage(string groupId)
+        {
+            World.SetFlag("passage:" + groupId);
+            CalmGroup(groupId);
+        }
+
+        /// <summary>The sharpest-eyed member's passive Perception: the DC to slip away from the group.</summary>
+        public int GroupPassivePerception(string groupId) =>
+            _groups.TryGetValue(groupId, out var agents) ? agents.Where(a => a != null && !a.Monster.IsDown).Select(a => a.Monster.PassivePerception).DefaultIfEmpty(10).Max() : 10;
+
+        /// <summary>You crept up unseen and struck first: the enemies are surprised (Disadvantage on initiative).</summary>
+        public void Ambush(string groupId, PlayerSlot p)
+        {
+            if (p.IsBusy) return;
+            p.Avatar.Sneaking = false;
+            StartGroupCombat(groupId, p, enemiesSurprised: true);
+        }
+
+        /// <summary>Slipped away: the group loses track of you for an hour of game time.</summary>
+        public void CalmGroup(string groupId, float minutes = 60)
+        {
+            World.Lock("calm:" + groupId, minutes);
+            if (_groups.TryGetValue(groupId, out var agents)) foreach (var a in agents) if (a) a.Alerted = false;
+        }
+
+        public void OnCombatRetreat(CombatInstance c)
+        {
+            Combats.Remove(c);
+            if (c.GroupId != null) CalmGroup(c.GroupId);
+            foreach (var h in c.Humans) h.Hud.Narrate("You got away! They've lost track of you for now. Rest up, then finish this however you like.");
+        }
+
+        /// <summary>Each player's share of an encounter's XP. Companions never take a share (they match their leader instead).</summary>
+        public static int EncounterShare(int xp, int players) => xp / Math.Max(1, players);
+
+        /// <summary>
+        /// Rolls the group's loot and splits it between players. Used for victories AND peaceful endings,
+        /// so talking a group down is worth exactly what fighting them is.
+        /// </summary>
+        public void SplitLoot(List<PlayerSlot> humans, IEnumerable<MonsterDef> defs)
+        {
+            if (humans.Count == 0) return;
+            int copper = 0;
+            var items = new List<string>();
+            foreach (var def in defs)
+            {
+                copper += UnityEngine.Random.Range(def.CopperMin, def.CopperMax + 1);
+                foreach (var kv in def.Loot) if (UnityEngine.Random.value <= kv.Value) items.Add(kv.Key);
+            }
+            foreach (var h in humans)
+            {
+                int cp = copper / humans.Count;
+                if (cp > 0) { h.Character.Copper += cp; h.Hud.Toast($"+{Currency.Format(cp)}", UIKit.Gold); }
+            }
+            foreach (var it in items)
+            {
+                var taker = humans.FirstOrDefault(h => h.Character.Bag.SpaceFor(it) > 0) ?? humans.First();
+                if (taker.Character.AddItem(it) > 0) World.Storage.Add(it, 1);
+                foreach (var h in humans) h.Hud.Toast($"{taker.Character.Name} got: {ItemsDb.Get(it)?.Name}", UIKit.Gold);
+                if (it == "copper_kettle") Quests.Start("kettle");
+                if (it == "lucky_spoon") Quests.Start("spoon");
+            }
+        }
+
+        public void StartGroupCombat(string groupId, PlayerSlot instigator, bool enemiesSurprised = false)
         {
             if (Combats.Any(x => x.GroupId == groupId && !x.Finished)) return; // already fighting this group
             if (!_groups.TryGetValue(groupId, out var agents) || agents.All(a => a == null || a.Monster.IsDown)) return;
@@ -494,10 +595,18 @@ namespace DnD.Game
                 if (p != instigator && Vector2.Distance(p.MapPos, instigator.MapPos) > 12) continue;
                 p.Hud.CloseAll();
                 c.AddUnit(p.Character, p.Avatar, p);
-                foreach (var comp in CompanionsOf(p)) if (comp.Character != null && !comp.Character.IsDead) c.AddUnit(comp.Character, comp.Actor, comp: comp);
+                foreach (var comp in CompanionsOf(p))
+                    if (comp.Character != null && !comp.Character.IsDead && comp.Actor.Zone == zone && Vector2.Distance(comp.Actor.MapPos, p.MapPos) <= 12)
+                        c.AddUnit(comp.Character, comp.Actor, comp: comp);
+            }
+            if (!c.Units.Any(u => u.Owner != null))
+            {
+                // Nobody's there to fight (e.g. a conversation ended in a threat while you stood elsewhere): don't run a fight with no heroes.
+                foreach (var u in c.Units) if (u.Enemy != null) u.Enemy.InCombat = false;
+                return;
             }
             Combats.Add(c);
-            StartCoroutine(c.Run(false));
+            StartCoroutine(c.Run(false, enemiesSurprised));
         }
 
         public void OnCombatFinished(CombatInstance c, bool victory)
@@ -505,7 +614,7 @@ namespace DnD.Game
             Combats.Remove(c);
             foreach (var u in c.Units.Where(u => u.C is PlayerCharacter pc && pc.IsDead)) _deathTime[u.C.Uid] = NowAbs;
             if (!victory) StartCoroutine(PartyWipe(c));
-            else if (c.GroupId == "mine_egg") Quests.Set("fallen_star", 2);
+            else if (c.GroupId != null) OnGroupResolved(c.GroupId);
         }
 
         IEnumerator PartyWipe(CombatInstance c)
@@ -545,29 +654,33 @@ namespace DnD.Game
         public bool EnemiesNear(PlayerSlot p, float tiles) =>
             _groups.Values.SelectMany(x => x).Any(a => a != null && a.isActiveAndEnabled && a.Zone == p.Zone && !a.Monster.IsDown && a.Monster.Team == Team.Enemies && Vector2.Distance(a.MapPos, p.MapPos) <= tiles);
 
+        /// <summary>
+        /// The group was talked down, calmed or scared off. Same XP and same loot as beating them:
+        /// befriended groups share their treasure, fleeing ones drop it.
+        /// </summary>
         public void PacifyGroup(string groupId, PlayerSlot p, bool fled = false)
         {
+            if (World.PacifiedGroups.Contains(groupId)) return;
             World.PacifiedGroups.Add(groupId);
+            World.DefeatedDay[groupId] = Clock.Day;
             int xp = 0;
+            var defs = new List<MonsterDef>();
             if (_groups.TryGetValue(groupId, out var agents))
                 foreach (var a in agents)
                 {
-                    if (a == null) continue;
+                    if (a == null || a.Monster.IsDead) continue;
                     xp += a.Monster.Def.XP;
+                    defs.Add(a.Monster.Def);
                     a.Monster.Team = Team.Neutral;
                     a.enabled = false;
                     if (fled) a.gameObject.SetActive(false);
                 }
             if (fled) World.SetFlag("fled:" + groupId);
             var here = Players.Where(x => x.IsReady && x.Zone == p.Zone).ToList();
-            foreach (var x in here) GiveXP(x, xp / Math.Max(1, here.Count), "resolving the encounter peacefully");
-            if (groupId == "mine_egg")
-            {
-                Quests.Set("fallen_star", 2);
-                GiveItem(p, "copper_kettle");
-                Quests.Start("kettle");
-                p.Hud.Toast("Snik returns the 'shinies': Brannoc's kettle!", UIKit.Gold);
-            }
+            int share = EncounterShare(xp, here.Count);
+            foreach (var x in here) GiveXP(x, share, fled ? "scaring them off" : "resolving it peacefully");
+            SplitLoot(here, defs); // fleeing groups drop it, friendly ones share it
+            OnGroupResolved(groupId);
         }
 
         // ================================================================== companions
@@ -584,14 +697,38 @@ namespace DnD.Game
             Destroy(r.gameObject);
             SpawnCompanion(p, pc, r.Data.Quirk);
             p.Hud.Toast($"{pc.Name} joins your party!", UIKit.Good);
+            if (!World.Flag("tip_companion:" + p.Index))
+            {
+                World.SetFlag("tip_companion:" + p.Index);
+                p.Hud.Narrate($"{pc.Name}'s health shows under yours. In a fight, you choose their moves on their turn (or press Auto). Talk to them to change that, set their role, or tell them to wait.");
+            }
         }
 
-        void SpawnCompanion(PlayerSlot leader, PlayerCharacter pc, string quirk)
+        CompanionAgent SpawnCompanion(PlayerSlot leader, PlayerCharacter pc, string quirk)
         {
             pc.Team = Team.Players;
             var c = CompanionAgent.Create(leader, $"ally_{pc.Class.Id}_{pc.Species.Id}", true, pc);
             c.Quirk = quirk;
             Companions.Add(c);
+            return c;
+        }
+
+        /// <summary>Out of combat: hand a healing potion to an ally to drink (the item goes from your bag to them).</summary>
+        public bool GivePotionTo(PlayerSlot giver, Creature target, int bagIndex)
+        {
+            var st = giver.Character.Bag.Slots[bagIndex];
+            if (st == null || !(ItemsDb.Get(st.ItemId) is ConsumableDef def) || def.Effect != ConsumableEffect.Heal) return false;
+            if (target.IsDead) { giver.Hud.Toast($"{target.Name} is beyond a potion's help. (Ember of Return, or the temple.)", UIKit.Bad); return false; }
+            if (target.HP >= target.EffectiveMaxHP) { giver.Hud.Toast($"{target.Name} is already at full health."); return false; }
+            giver.Character.Bag.PickUp(bagIndex, 1);
+            var roll = Dice.RollDamage(def.Amount);
+            giver.Hud.Dice.RollDamage(def.Name, $"{target.Name} drinks it", roll, DieColor.Healing, () =>
+            {
+                int healed = target.Heal(roll.Total);
+                giver.Hud.Toast($"{target.Name} regains {healed} HP", UIKit.HealGreen);
+                Sfx.Play("heal");
+            });
+            return true;
         }
 
         public void DismissCompanion(CompanionAgent c)
@@ -703,6 +840,15 @@ namespace DnD.Game
             foreach (var x in Players.Where(x => x.IsReady)) { GiveCopper(x, 5000); GiveXP(x, 300, "The Fallen Star"); }
         }
 
+        public void CompleteEastRoad(PlayerSlot p)
+        {
+            if (Quests.Stage("east_road") >= 3) return;
+            Quests.Set("east_road", 3);
+            World.AddFriendship("hobb", 100);
+            foreach (var x in Players.Where(x => x.IsReady)) { GiveCopper(x, 2500); GiveXP(x, 150, "Miller's Ford"); }
+            GiveItem(p, "potion_greater_healing");
+        }
+
         public void RentRoom(PlayerSlot p)
         {
             if (p.Character.Copper < 50) { p.Hud.Toast("You can't afford a room (5 sp).", UIKit.Bad); return; }
@@ -768,7 +914,7 @@ namespace DnD.Game
         void AmbushAt(PlayerSlot p)
         {
             var zone = p.Zone;
-            var g = new EnemyGroupDef { Id = "ambush_" + Clock.Day + "_" + UnityEngine.Random.Range(0, 9999) };
+            var g = new EnemyGroupDef { Id = "ambush_" + Clock.Day + "_" + UnityEngine.Random.Range(0, 9999), Style = EncounterStyle.None, Unique = true };
             var spots = new List<Vector2Int>();
             for (int dx = -4; dx <= 4 && spots.Count < 2; dx++)
                 for (int dy = -4; dy <= 4 && spots.Count < 2; dy++)
