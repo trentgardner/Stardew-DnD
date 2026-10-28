@@ -48,6 +48,11 @@ namespace DnD.Game
 
             while (!ended && !Finished && u.Active)
             {
+                if (p.StalledByDisconnect)
+                {
+                    foreach (var h in Humans) h.Hud.Narrate($"{p.Label}'s controller is disconnected; skipping {(u.Owner != null ? "their" : pc.Name + "'s")} turn.");
+                    break;
+                }
                 var actions = BuildActions(u);
                 selected = Mathf.Clamp(selected, 0, actions.Count - 1);
                 var act = actions[selected];

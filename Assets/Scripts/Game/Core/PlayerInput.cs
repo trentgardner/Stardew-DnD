@@ -157,8 +157,10 @@ namespace DnD.Game
 
     public sealed class GamepadInput : PlayerInput
     {
-        public readonly Gamepad Pad;
+        public Gamepad Pad { get; private set; }
         public GamepadInput(Gamepad pad) { Pad = pad; }
+        /// <summary>A disconnected player picks up a different controller.</summary>
+        public void Rebind(Gamepad pad) { Pad = pad; }
 
         public override string DeviceName => Pad != null ? Pad.displayName : "Gamepad";
         public override bool IsConnected => Pad != null && Pad.added;

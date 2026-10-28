@@ -81,7 +81,8 @@ namespace DnD.Game
         float _narratorTimer, _flashTimer;
         readonly List<string> _logLines = new List<string>();
         readonly List<(Text t, float time)> _toastItems = new List<(Text, float)>();
-        RectTransform _party;
+        RectTransform _party, _disconnect;
+        public bool DisconnectBannerVisible => _disconnect != null && _disconnect.gameObject.activeSelf;
         readonly List<(Text name, Image fill, Text hp)> _partyRows = new List<(Text, Image, Text)>();
 
         public static PlayerHud Create(PlayerSlot slot)
@@ -151,7 +152,14 @@ namespace DnD.Game
                 _hotCounts.Add(UIKit.Label(cnt, "", 8, UIKit.Ink, TextAnchor.LowerRight));
             }
 
+            // Lost controller banner (center)
+            _disconnect = UIKit.Box(Root, "Disconnected", new Vector2(0.5f, 0.5f), new Vector2(240, 40), Vector2.zero);
+            UIKit.Panel(_disconnect, true);
+            UIKit.Label(_disconnect, "Controller disconnected.\nPlug it back in, or press Start on any controller.", 10, UIKit.Parchment, TextAnchor.MiddleCenter);
+            _disconnect.gameObject.SetActive(false);
+
             // Interaction prompt
+
             _prompt = UIKit.Box(Root, "Prompt", new Vector2(0.5f, 0), new Vector2(220, 18), new Vector2(0, 40));
             UIKit.Panel(_prompt, true);
             _promptText = UIKit.Label(_prompt, "", 10, UIKit.Gold, TextAnchor.MiddleCenter);
@@ -218,6 +226,8 @@ namespace DnD.Game
         {
             if (Slot == null) return;
             if (Slot.Character == null && !(Top is CharacterCreationScreen)) { if (HasScreen && !(Top is MessageScreen)) CloseAll(); }
+            bool lost = Slot.Disconnected;
+            if (_disconnect.gameObject.activeSelf != lost) { _disconnect.gameObject.SetActive(lost); if (lost) _disconnect.SetAsLastSibling(); }
             Dice.Update();
             if (!Dice.IsOpen && _screens.Count > 0)
             {

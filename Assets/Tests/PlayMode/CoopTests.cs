@@ -185,6 +185,73 @@ namespace DnD.Tests
             Assert.Greater(g.Clock.Day, day, "P1 sleeps through the night alone");
         }
 
+        // ------------------------------------------------------------------ controller loss
+
+        [UnityTest]
+        public IEnumerator UnpluggedPadFreezesOnlyThatPlayerAndAnotherPadTakesOver()
+        {
+            var g = GameRoot.I;
+            PlayerSlot p1 = null, p2 = null; VirtualPad b = null;
+            yield return TwoPlayers((x, y, z) => { p1 = x; p2 = y; b = z; });
+            b.Unplug();
+            yield return Frames(2);
+            Assert.IsTrue(p2.Disconnected);
+            Assert.IsTrue(p2.IsBusy, "a player without a controller stands still");
+            Assert.IsTrue(p2.Hud.DisconnectBannerVisible);
+            Assert.IsFalse(p1.IsBusy);
+            float minutes = g.Clock.Minutes;
+            yield return Frames(60);
+            Assert.AreNotEqual(minutes, g.Clock.Minutes, "the clock keeps running for P1");
+
+            var c = NewPad();
+            yield return c.Tap(GamepadButton.Start);
+            yield return Frames(2);
+            Assert.AreEqual(2, g.Players.Count, "Start on another pad takes over P2 instead of adding a player");
+            Assert.IsFalse(p2.Disconnected);
+            Assert.AreEqual(c.Pad, ((GamepadInput)p2.Input).Pad);
+            Assert.IsFalse(p2.Hud.DisconnectBannerVisible);
+        }
+
+        [UnityTest]
+        public IEnumerator ReplugSamePadResumes()
+        {
+            PlayerSlot p1 = null, p2 = null; VirtualPad b = null;
+            yield return TwoPlayers((x, y, z) => { p1 = x; p2 = y; b = z; });
+            b.Unplug();
+            yield return Frames(2);
+            Assert.IsTrue(p2.Disconnected);
+            b.Replug();
+            yield return Frames(2);
+            Assert.IsFalse(p2.Disconnected);
+            Assert.IsFalse(p2.Hud.DisconnectBannerVisible);
+        }
+
+        [UnityTest]
+        public IEnumerator UnplugMidCombatDoesNotStallTheFight()
+        {
+            var g = GameRoot.I;
+            var p1 = g.DebugStart(new FuzzInput(4) { ConfirmChance = 0.35f, EndTurnChance = 0.01f, MenuChance = 0, CancelChance = 0.01f }, "fighter", "human");
+            var b = NewPad();
+            var p2 = g.DebugStart(new GamepadInput(b.Pad), "cleric", "elf");
+            g.Warp(p1, "forest", new Vector2Int(34, 8), false);
+            g.Warp(p2, "forest", new Vector2Int(33, 9), false);
+            yield return Frames(2);
+            float grace = PlayerSlot.DisconnectGraceSeconds;
+            PlayerSlot.DisconnectGraceSeconds = 0.5f;
+            try
+            {
+                g.StartGroupCombat("forest_wolves", p1);
+                Assert.IsTrue(p2.InCombat);
+                b.Unplug();
+                Time.timeScale = 6;
+                float start = Time.realtimeSinceStartup;
+                while (g.AnyInCombat && Time.realtimeSinceStartup - start < 120f) yield return null;
+                Time.timeScale = 1;
+                Assert.IsFalse(g.AnyInCombat, "the fight goes on without P2's controller and ends");
+            }
+            finally { PlayerSlot.DisconnectGraceSeconds = grace; }
+        }
+
         [UnityTest]
         public IEnumerator PartnerLeavingWhileYouWaitInBedEndsTheNight()
         {

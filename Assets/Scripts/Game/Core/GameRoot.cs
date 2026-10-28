@@ -390,6 +390,19 @@ namespace DnD.Game
 
         void TryDropIn()
         {
+            // A player whose controller dropped picks up whichever free controller presses Start.
+            var lost = Players.FirstOrDefault(p => p.Disconnected && p.Input is GamepadInput);
+            if (lost != null)
+            {
+                foreach (var pad in Gamepad.all)
+                    if (pad.startButton.wasPressedThisFrame && !Players.Any(p => p.Input is GamepadInput gi && gi.Pad == pad)
+                        && !Players.Any(p => p.Input is HybridInput h && h.ActivePad == pad && !h.UsesMouse))
+                    {
+                        ((GamepadInput)lost.Input).Rebind(pad);
+                        lost.Hud.Toast("Controller connected. Welcome back!", UIKit.Good);
+                        return;
+                    }
+            }
             if (Players.Count >= 4) return;
             PlayerInput joiner = null;
             foreach (var pad in Gamepad.all)

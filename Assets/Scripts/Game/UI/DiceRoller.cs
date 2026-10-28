@@ -108,7 +108,7 @@ namespace DnD.Game
             }
             if (!IsOpen) return;
             var input = _hud.Slot.Input;
-            if (_waitingPress && (input.Confirm || input.MouseLeft || input.EndTurn)) _pressed = true;
+            if (_waitingPress && (input.Confirm || input.MouseLeft || input.EndTurn || _hud.Slot.StalledByDisconnect)) _pressed = true;
             if (_choices != null)
             {
                 // choice hotkeys: E/A = first, R/X = second, Esc/B = last
