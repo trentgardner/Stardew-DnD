@@ -449,3 +449,32 @@ pattern egg
 end
 paint obj_egg_glow egg k=2a1010 r=c0392b R=ff7043 y=ffd54a d=8e2a20
 paint obj_egg      egg k=2a1010 r=a8322a R=d9593a y=e8b84a d=7a241c
+
+# ================================================================ music (Audio/Musics) — zone tracks are music_{zoneId}
+audio music_title       "Audio/Musics/38 - Intro.ogg"
+audio music_town        "Audio/Musics/36 - Village.ogg"
+audio music_town_night  "Audio/Musics/27 - Chill.ogg"
+audio music_home        "Audio/Musics/5 - Peaceful.ogg"
+audio music_shop        "Audio/Musics/33 - Calm Village.ogg"
+audio music_tavern      "Audio/Musics/20 - Good Time.ogg"
+audio music_temple      "Audio/Musics/12 - Temple.ogg"
+audio music_forest      "Audio/Musics/11 - Clearing.ogg"
+audio music_forest_night "Audio/Musics/13 - Mystical.ogg"
+audio music_ford        "Audio/Musics/23 - Road.ogg"
+audio music_mine        "Audio/Musics/2 - The Cave.ogg"
+audio music_fight       "Audio/Musics/17 - Fight.ogg"
+
+# ================================================================ sound effects (the dice keep their own code-made clatter)
+audio hit           "Audio/Sounds/Hit & Impact/Hit1.wav"
+audio miss          "Audio/Sounds/Whoosh & Slash/Whoosh.wav"
+audio crit          "Audio/Sounds/Hit & Impact/Impact.wav"
+audio heal          "Audio/Sounds/Magic & Skill/Heal.wav"
+audio spell         "Audio/Sounds/Magic & Skill/Magic1.wav"
+audio door          "Audio/Sounds/Menu/Accept2.wav"
+audio coin          "Audio/Sounds/Bonus/Coin.wav"
+audio ui            "Audio/Sounds/Menu/Menu5.wav"
+audio success       "Audio/Jingles/Success1.wav"
+audio fail          "Audio/Sounds/Menu/Cancel.wav"
+audio combat_start  "Audio/Sounds/Alert/Alert.wav"
+audio secret        "Audio/Jingles/Secret1.wav"
+audio levelup       "Audio/Jingles/LevelUp1.wav"

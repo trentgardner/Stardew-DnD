@@ -82,6 +82,7 @@ namespace DnD.Game
         void ShowTitle()
         {
             InGame = false;
+            Music.Play("music_title");
             if (_idleCam == null)
             {
                 var go = new GameObject("TitleCamera");
@@ -341,6 +342,7 @@ namespace DnD.Game
         void Update()
         {
             if (!InGame) return;
+            Music.Play(WantedMusic());
 
             // Drop-in: an unassigned controller (or the keyboard) presses Start / Enter.
             TryDropIn();
@@ -384,6 +386,17 @@ namespace DnD.Game
         }
 
         int _lastW, _lastH;
+
+        /// <summary>Fight music if anyone's fighting, otherwise Player 1's zone (the town has a quieter night tune).</summary>
+        string WantedMusic()
+        {
+            if (AnyInCombat) return "music_fight";
+            var lead = Players.FirstOrDefault(p => p.IsReady);
+            if (lead == null) return null;
+            var z = lead.Zone.Def;
+            bool night = Clock.Hour >= 20 || Clock.Hour < 6;
+            return night && !z.Indoors && !z.Dark && Music.HasRealClip(z.MusicId + "_night") ? z.MusicId + "_night" : z.MusicId;
+        }
 
         void TryDropIn()
         {
@@ -845,6 +858,7 @@ namespace DnD.Game
             bool could = p.Character.CanLevelUp;
             p.Character.XP += xp;
             p.Hud.Toast($"+{xp} XP ({reason})", UIKit.D20Gold);
+            if (!could && p.Character.CanLevelUp) Sfx.Play("levelup");
             if (!could && p.Character.CanLevelUp) p.Hud.Toast("★ Level up available! Open your character sheet (C / View).", UIKit.D20Gold);
             foreach (var c in CompanionsOf(p)) if (c.Character != null) { c.Character.XP += xp; AutoLevel(c.Character); }
         }

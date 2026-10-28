@@ -79,6 +79,9 @@ namespace DnD.Game
         public bool Indoors;
         public bool SafeForLongRest;
         public string EnterNarration;
+        /// <summary>Music track id; defaults to "music_{Id}" (see Assets/Editor/ArtMap.txt audio lines).</summary>
+        public string Music;
+        public string MusicId => Music ?? "music_" + Id;
         public Vector2Int DefaultSpawn;
         public List<WarpDef> Warps = new List<WarpDef>();
         public List<EnemyGroupDef> EnemyGroups = new List<EnemyGroupDef>();

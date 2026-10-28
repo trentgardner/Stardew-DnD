@@ -663,6 +663,7 @@ namespace DnD.Game
                         Show(Page.Settings);
                     });
                     _menu.Add($"Sound volume: {Mathf.RoundToInt(Sfx.Volume * 100)}%", () => { Sfx.Volume = Sfx.Volume >= 1f ? 0f : Sfx.Volume + 0.2f; Show(Page.Settings); });
+                    _menu.Add($"Music volume: {Mathf.RoundToInt(Music.Volume * 100)}%", () => { Music.Volume = Music.Volume >= 0.99f ? 0f : Mathf.Min(1f, Music.Volume + 0.2f); Show(Page.Settings); });
                     _menu.Add($"Difficulty: {g.Settings.Difficulty} (set when the playthrough began)", null, false);
                     _menu.Add("Back", () => Show(Page.Main));
                     break;
