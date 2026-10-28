@@ -13,8 +13,8 @@ namespace DnD.Tests
     {
         string _tempSaves;
 
-        // Ids that are deliberately code-drawn (overlays, the dice-colored UI) rather than pack art.
-        static readonly HashSet<string> CodeDrawn = new HashSet<string> { "tile_none", "tile_grid", "tile_highlight", "tile_cursor", "ui_white", "ui_die", "missing" };
+        // Ids that are deliberately code-drawn (overlays, the dice-colored UI and the parchment panels, kept for readability) rather than pack art.
+        static readonly HashSet<string> CodeDrawn = new HashSet<string> { "tile_none", "tile_grid", "tile_highlight", "tile_cursor", "ui_white", "ui_die", "ui_panel", "ui_panel_dark", "ui_slot", "missing" };
 
         [UnitySetUp]
         public IEnumerator SetUp()
@@ -83,6 +83,15 @@ namespace DnD.Tests
             for (int i = 0; i < 120; i++) { yield return null; seen.Add(walker.Sr.sprite.name); }
             Object.Destroy(walker.gameObject);
             Assert.IsTrue(seen.Any(n => n.EndsWith("_2") || n.EndsWith("_3")), "frames 2/3 of the walk cycle play: " + string.Join(",", seen));
+        }
+
+        [Test]
+        public void EveryItemHasRealArt()
+        {
+            var missing = new SortedSet<string>();
+            foreach (var item in DnD.Rules.Content.ItemsDb.All.Values)
+                if (!ArtRegistry.IsReal(item.Icon)) missing.Add(item.Icon);
+            Assert.IsEmpty(missing, $"{missing.Count} item icons use placeholder art: {string.Join(" ", missing)}");
         }
 
         [UnityTest]

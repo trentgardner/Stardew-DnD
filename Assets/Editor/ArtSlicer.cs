@@ -18,6 +18,9 @@ using UnityEngine;
 ///   tint  &lt;id&gt; &lt;fromId&gt; &lt;hueDeg&gt; [sat×] [val×]  recolored copy of an id already written by this run
 ///   over  &lt;id&gt; &lt;baseId&gt; &lt;sheet&gt; &lt;col&gt; &lt;row&gt;     a tile drawn over an id already written (flowers on grass...)
 ///   strip &lt;prefix&gt; &lt;sheet&gt; &lt;frames&gt; [frameW]   side-facing animal strip (frames left to right) → {prefix}_0..n-1
+///   icon  &lt;id&gt; &lt;file&gt;                           a small loose image (items) centered on a 16x16 canvas
+///   pattern &lt;name&gt; ... end                       hand-drawn pixel art: 16 rows of 16 chars, '.' = transparent
+///   paint &lt;id&gt; &lt;pattern&gt; &lt;c=RRGGBB&gt;...           a pattern colored by a palette (k = outline by convention)
 ///   recolor &lt;sheet&gt; &lt;hueDeg&gt; &lt;r×&gt; &lt;g×&gt; &lt;b×&gt;     recolors a whole sheet for the lines after it (hue shift, then multiply)
 ///   audio &lt;id&gt; &lt;file&gt;                             copies a sound to Assets/Resources/Audio/{id}.{ext}
 /// </summary>
@@ -37,10 +40,13 @@ public static class ArtSlicer
         Directory.CreateDirectory(AudioDir);
         var sheets = new Dictionary<string, Texture2D>();
         var written = new Dictionary<string, Texture2D>();
+        var patterns = new Dictionary<string, List<string>>();
         int count = 0, lineNo = 0;
-        foreach (var raw in File.ReadAllLines(MapPath))
+        var lines = File.ReadAllLines(MapPath);
+        for (int li = 0; li < lines.Length; li++)
         {
-            lineNo++;
+            var raw = lines[li];
+            lineNo = li + 1;
             var line = raw.Split('#')[0].Trim();
             if (line.Length == 0) continue;
             var a = Tokens(line);
@@ -75,6 +81,45 @@ public static class ArtSlicer
                         int frames = a.Count > 3 ? int.Parse(a[3]) : 2;
                         // Non-directional actors face right and are flipped by the game: use the right-facing column.
                         for (int f = 0; f < frames; f++) count += Write(written, $"{a[1]}_{f}", Crop(s, 3 * T, f * T, T, T));
+                        break;
+                    }
+                    case "icon":
+                    {
+                        var img = Sheet(sheets, a[2]);
+                        int w = Math.Max(T, img.width), h = Math.Max(T, img.height);
+                        var t = new Texture2D(w, h, TextureFormat.RGBA32, false);
+                        t.SetPixels(new Color[w * h]);
+                        t.SetPixels((w - img.width) / 2, (h - img.height) / 2, img.width, img.height, img.GetPixels());
+                        t.Apply();
+                        count += Write(written, a[1], t);
+                        break;
+                    }
+                    case "pattern":
+                    {
+                        var rows = new List<string>();
+                        while (++li < lines.Length && lines[li].Trim() != "end") rows.Add(lines[li].Trim());
+                        if (rows.Count != T || rows.Exists(r => r.Length != T)) throw new Exception($"pattern {a[1]} must be 16 rows of 16 chars");
+                        patterns[a[1]] = rows;
+                        break;
+                    }
+                    case "paint":
+                    {
+                        if (!patterns.TryGetValue(a[2], out var rows)) throw new Exception("unknown pattern " + a[2]);
+                        var pal = new Dictionary<char, Color>();
+                        for (int i = 3; i < a.Count; i++)
+                        {
+                            if (!ColorUtility.TryParseHtmlString("#" + a[i].Substring(2), out var c)) throw new Exception("bad color " + a[i]);
+                            pal[a[i][0]] = c;
+                        }
+                        var t = new Texture2D(T, T, TextureFormat.RGBA32, false);
+                        for (int y = 0; y < T; y++)
+                            for (int x = 0; x < T; x++)
+                            {
+                                char ch = rows[y][x];
+                                t.SetPixel(x, T - 1 - y, ch == '.' ? Color.clear : pal.TryGetValue(ch, out var c) ? c : throw new Exception($"pattern {a[2]}: no color for '{ch}'"));
+                            }
+                        t.Apply();
+                        count += Write(written, a[1], t);
                         break;
                     }
                     case "strip":
