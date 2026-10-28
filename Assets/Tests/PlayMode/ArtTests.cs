@@ -63,6 +63,29 @@ namespace DnD.Tests
         }
 
         [UnityTest]
+        public IEnumerator HeroLookFallsBackToClassArt()
+        {
+            var p = GameRoot.I.DebugStart(new FuzzInput(1) { ConfirmChance = 0, CancelChance = 0, MenuChance = 0 }, "fighter", "human");
+            yield return Frames(2);
+            Assert.AreEqual("hero_fighter_human", p.Avatar.Look);
+            StringAssert.StartsWith("hero_fighter_", p.Avatar.Sr.sprite.name);
+            Assert.IsTrue(ArtRegistry.IsReal(p.Avatar.Sr.sprite.name), $"{p.Avatar.Sr.sprite.name} should be real art (class fallback)");
+        }
+
+        [UnityTest]
+        public IEnumerator WalkCycleUsesFourFramesWhenAvailable()
+        {
+            var p = GameRoot.I.DebugStart(new FuzzInput(1) { ConfirmChance = 0, CancelChance = 0, MenuChance = 0 }, "fighter", "human");
+            yield return Frames(2);
+            var walker = Actor.Spawn<Actor>("walker", "hero_fighter_elf", true, p.Zone, p.MapPos);
+            var seen = new HashSet<string>();
+            walker.Moving = true;
+            for (int i = 0; i < 120; i++) { yield return null; seen.Add(walker.Sr.sprite.name); }
+            Object.Destroy(walker.gameObject);
+            Assert.IsTrue(seen.Any(n => n.EndsWith("_2") || n.EndsWith("_3")), "frames 2/3 of the walk cycle play: " + string.Join(",", seen));
+        }
+
+        [UnityTest]
         public IEnumerator EveryZoneDrawsOnlyRealArt()
         {
             var g = GameRoot.I;

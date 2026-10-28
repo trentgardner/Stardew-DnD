@@ -192,3 +192,57 @@ tile obj_campfire "Backgrounds/Tilesets/tileset_camp.png" 12 3 2 2
 
 # ================================================================ heroes (by class)
 actor hero_fighter "Actor/Character/Knight/SpriteSheet.png"
+actor hero_wizard    "Actor/Character/SorcererBlack/SpriteSheet.png"
+actor hero_cleric    "Actor/Character/Monk/SpriteSheet.png"
+actor hero_bard      "Actor/Character/Villager5/SpriteSheet.png"
+actor hero_barbarian "Actor/Character/Caveman/SpriteSheet.png"
+actor hero_druid     "Actor/Character/Shaman/SpriteSheet.png"
+actor hero_monk      "Actor/Character/Monk2/SpriteSheet.png"
+actor hero_paladin   "Actor/Character/KnightGold/SpriteSheet.png"
+actor hero_ranger    "Actor/Character/Hunter/SpriteSheet.png"
+actor hero_rogue     "Actor/Character/NinjaDark/SpriteSheet.png"
+actor hero_sorcerer  "Actor/Character/NinjaMageOrange/SpriteSheet.png"
+actor hero_warlock   "Actor/Character/SorcererOrange/SpriteSheet.png"
+
+# ================================================================ recruitable adventurers (by class, a different look from the heroes)
+actor npc_fighter    "Actor/Character/FighterRed/SpriteSheet.png"
+actor npc_wizard     "Actor/Character/NinjaMageBlack/SpriteSheet.png"
+actor npc_cleric     "Actor/Character/OldMan3/SpriteSheet.png"
+actor npc_bard       "Actor/Character/Noble/SpriteSheet.png"
+actor npc_barbarian  "Actor/Character/Caveman2/SpriteSheet.png"
+actor npc_druid      "Actor/Character/ShamanLion/SpriteSheet.png"
+actor npc_monk       "Actor/Character/MonkeyBoxerBlue/SpriteSheet.png"
+actor npc_paladin    "Actor/Character/GladiatorBlue/SpriteSheet.png"
+actor npc_ranger     "Actor/Character/CamouflageGreen/SpriteSheet.png"
+actor npc_rogue      "Actor/Character/NinjaGray/SpriteSheet.png"
+actor npc_sorcerer   "Actor/Character/NinjaFire/SpriteSheet.png"
+actor npc_warlock    "Actor/Character/NinjaMasked/SpriteSheet.png"
+
+# ================================================================ named townsfolk
+actor npc_brannoc    "Actor/Character/Master/SpriteSheet.png"
+actor npc_elowen     "Actor/Character/OldWoman/SpriteSheet.png"
+actor npc_pip        "Actor/Character/Boy/SpriteSheet.png"
+actor npc_rhoswen    "Actor/Character/SamuraiBlue/SpriteSheet.png"
+actor npc_hobb       "Actor/Character/OldMan2/SpriteSheet.png"
+actor npc_villager   "Actor/Character/Villager/SpriteSheet.png"
+actor npc_villager_tobin  "Actor/Character/OldMan/SpriteSheet.png"
+actor npc_villager_maddie "Actor/Character/Child/SpriteSheet.png"
+
+# ================================================================ monsters (non-directional: the game flips them)
+still mon_kobold         "Actor/Monster/Lizard/Lizard.png"
+still mon_kobold_slinger "Actor/Monster/Reptile/Reptile.png"
+still mon_snik_src       "Actor/Monster/Lizard/Lizard.png"
+tint  mon_snik_0 mon_snik_src_0 140 1.1 1.0
+tint  mon_snik_1 mon_snik_src_1 140 1.1 1.0
+still mon_rat            "Actor/Monster/Mouse/SpriteSheet.png"
+strip mon_wolf           "Actor/Animal/DogBlack/SpriteSheet.png" 2
+strip mon_boar           "Actor/Animal/WildBoar/SpriteSheet.png" 2 17
+still mon_goblin         "Actor/Character/DemonGreen/SpriteSheet.png"
+still mon_bandit         "Actor/Character/CamouflageRed/SpriteSheet.png"
+still mon_wren           "Actor/Character/Cavegirl2/SpriteSheet.png"
+
+# ================================================================ the baby dragon: the pack's yellow dragon, nudged toward ember red
+actor mon_dragonling_src "Actor/Monster/DragonYellow/SpriteSheet.png"
+still mon_dragonling_src "Actor/Monster/DragonYellow/SpriteSheet.png"
+tint  mon_dragonling_0 mon_dragonling_src_0 -22 1.15 1.0
+tint  mon_dragonling_1 mon_dragonling_src_1 -22 1.15 1.0

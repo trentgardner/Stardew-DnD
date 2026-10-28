@@ -52,24 +52,48 @@ namespace DnD.Game
         protected virtual void LateUpdate()
         {
             _animT += Time.deltaTime;
-            if (_animT > 0.18f) { _animT = 0; _frame = Moving ? 1 - _frame : 0; }
+            if (_animT > 0.18f) { _animT = 0; _frame = Moving ? (_frame + 1) % _frameCount : 0; }
             if (!Moving) _frame = 0;
             RefreshSprite();
+        }
+
+        int _frameCount = 2;
+        string _artLook, _artLookFor;
+
+        /// <summary>
+        /// The most specific look with real art: "hero_fighter_elf" → "hero_fighter" when there's no elf-specific art,
+        /// "npc_villager_tobin" → "npc_villager". Falls back to the full look (placeholder art) if nothing is real.
+        /// </summary>
+        string ArtLook()
+        {
+            if (_artLookFor == Look) return _artLook;
+            _artLookFor = Look;
+            _artLook = Look;
+            for (string look = Look; ; )
+            {
+                if (ArtRegistry.IsReal(Directional ? look + "_down_0" : look + "_0")) { _artLook = look; break; }
+                int cut = look.LastIndexOf('_');
+                if (cut <= look.IndexOf('_')) break; // keep at least "kind_name"
+                look = look.Substring(0, cut);
+            }
+            _frameCount = ArtRegistry.IsReal(Directional ? _artLook + "_down_3" : _artLook + "_3") ? 4 : 2;
+            return _artLook;
         }
 
         public void RefreshSprite()
         {
             if (Sr == null) return;
-            string id;
+            string id, look = ArtLook();
+            if (_frame >= _frameCount) _frame = 0;
             if (Directional)
             {
                 string dir = Mathf.Abs(Facing.x) > Mathf.Abs(Facing.y) ? "side" : (Facing.y > 0 ? "up" : "down");
-                id = $"{Look}_{dir}_{_frame}";
+                id = $"{look}_{dir}_{_frame}";
                 Sr.flipX = dir == "side" && Facing.x < 0;
             }
             else
             {
-                id = $"{Look}_{_frame}";
+                id = $"{look}_{_frame}";
                 Sr.flipX = Facing.x < 0;
             }
             if (id != _lastId) { Sr.sprite = ArtRegistry.Get(id); _lastId = id; }

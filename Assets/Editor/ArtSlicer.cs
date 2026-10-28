@@ -17,6 +17,7 @@ using UnityEngine;
 ///   still &lt;prefix&gt; &lt;sheet&gt; [frames=2]            non-directional actor: down-column frames → {prefix}_0..n-1
 ///   tint  &lt;id&gt; &lt;fromId&gt; &lt;hueDeg&gt; [sat×] [val×]  recolored copy of an id already written by this run
 ///   over  &lt;id&gt; &lt;baseId&gt; &lt;sheet&gt; &lt;col&gt; &lt;row&gt;     a tile drawn over an id already written (flowers on grass...)
+///   strip &lt;prefix&gt; &lt;sheet&gt; &lt;frames&gt; [frameW]   side-facing animal strip (frames left to right) → {prefix}_0..n-1
 ///   recolor &lt;sheet&gt; &lt;hueDeg&gt; &lt;r×&gt; &lt;g×&gt; &lt;b×&gt;     recolors a whole sheet for the lines after it (hue shift, then multiply)
 ///   audio &lt;id&gt; &lt;file&gt;                             copies a sound to Assets/Resources/Audio/{id}.{ext}
 /// </summary>
@@ -59,7 +60,8 @@ public static class ArtSlicer
                     case "actor":
                     {
                         var s = Sheet(sheets, a[2]);
-                        for (int f = 0; f < 4; f++)
+                        int rows = Math.Min(4, s.height / T); // a few sheets only have 2 walk frames
+                        for (int f = 0; f < rows; f++)
                         {
                             count += Write(written, $"{a[1]}_down_{f}", Crop(s, 0 * T, f * T, T, T));
                             count += Write(written, $"{a[1]}_up_{f}", Crop(s, 1 * T, f * T, T, T));
@@ -73,6 +75,14 @@ public static class ArtSlicer
                         int frames = a.Count > 3 ? int.Parse(a[3]) : 2;
                         // Non-directional actors face right and are flipped by the game: use the right-facing column.
                         for (int f = 0; f < frames; f++) count += Write(written, $"{a[1]}_{f}", Crop(s, 3 * T, f * T, T, T));
+                        break;
+                    }
+                    case "strip":
+                    {
+                        var s = Sheet(sheets, a[2]);
+                        int frames = int.Parse(a[3]);
+                        int fw = a.Count > 4 ? int.Parse(a[4]) : s.width / frames;
+                        for (int f = 0; f < frames; f++) count += Write(written, $"{a[1]}_{f}", Crop(s, f * fw, 0, fw, s.height));
                         break;
                     }
                     case "tint":
