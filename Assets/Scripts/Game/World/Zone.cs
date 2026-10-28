@@ -16,7 +16,7 @@ namespace DnD.Game
         public bool[,] Blocked;   // [col,row] map coords
         public readonly List<GameObject> Objects = new List<GameObject>();
 
-        Tilemap _ground, _solid;
+        Tilemap _base, _ground, _solid;
         static readonly Dictionary<string, Tile> TileCache = new Dictionary<string, Tile>();
 
         public int W => Def.Width;
@@ -66,6 +66,8 @@ namespace DnD.Game
             grid.cellSize = Vector3.one;
             go.transform.position = new Vector3(zone.Origin.x, zone.Origin.y, 0);
 
+            // Base floor under every cell, so see-through tiles (plaza edges, counters, crops) never show black.
+            zone._base = MakeLayer(go.transform, "Base", -1001, false);
             zone._ground = MakeLayer(go.transform, "Ground", -1000, false);
             zone._solid = MakeLayer(go.transform, "Solid", -999, true);
 
@@ -73,6 +75,7 @@ namespace DnD.Game
                 for (int col = 0; col < def.Width; col++)
                     zone.BuildCell(new Vector2Int(col, row), def.Map[row][col]);
 
+            zone._base.CompressBounds();
             zone._ground.CompressBounds();
             zone._solid.CompressBounds();
             return zone;
@@ -139,6 +142,7 @@ namespace DnD.Game
         void BuildCell(Vector2Int m, char c)
         {
             string floor = FloorFor(m);
+            _base.SetTile(Cell(m), GetTile(floor, false));
             switch (c)
             {
                 case '.': Ground(m, floor); break;
@@ -171,7 +175,7 @@ namespace DnD.Game
                         Prop(m, secret.Sprite, c == 'Y').AddComponent<SecretInteractable>().Def = secret;
                     else Debug.LogWarning($"{Def.Id}: no SecretDef at {m}");
                     break;
-                case 'X': Wall(m, "tile_cave_wall"); break;
+                case 'X': Wall(m, Def.Dark ? "tile_cave_wall" : "tile_cliff"); break; // rock in the mine, green cliffs outdoors
                 case 'W': Wall(m, Def.Id == "temple" ? "tile_stone_wall" : "tile_house_wall"); break;
                 case 'w': Wall(m, "tile_window"); break;
                 case 'U': Wall(m, "tile_roof_blue"); break;

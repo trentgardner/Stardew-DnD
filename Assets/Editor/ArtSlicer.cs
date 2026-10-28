@@ -16,6 +16,8 @@ using UnityEngine;
 ///                                                  → {prefix}_down_0..3, _up_0..3, _side_0..3 (side = right column)
 ///   still &lt;prefix&gt; &lt;sheet&gt; [frames=2]            non-directional actor: down-column frames → {prefix}_0..n-1
 ///   tint  &lt;id&gt; &lt;fromId&gt; &lt;hueDeg&gt; [sat×] [val×]  recolored copy of an id already written by this run
+///   over  &lt;id&gt; &lt;baseId&gt; &lt;sheet&gt; &lt;col&gt; &lt;row&gt;     a tile drawn over an id already written (flowers on grass...)
+///   recolor &lt;sheet&gt; &lt;hueDeg&gt; &lt;r×&gt; &lt;g×&gt; &lt;b×&gt;     recolors a whole sheet for the lines after it (hue shift, then multiply)
 ///   audio &lt;id&gt; &lt;file&gt;                             copies a sound to Assets/Resources/Audio/{id}.{ext}
 /// </summary>
 public static class ArtSlicer
@@ -79,6 +81,26 @@ public static class ArtSlicer
                         float sat = a.Count > 4 ? float.Parse(a[4], System.Globalization.CultureInfo.InvariantCulture) : 1f;
                         float val = a.Count > 5 ? float.Parse(a[5], System.Globalization.CultureInfo.InvariantCulture) : 1f;
                         count += Write(written, a[1], Tint(src, float.Parse(a[3], System.Globalization.CultureInfo.InvariantCulture), sat, val));
+                        break;
+                    }
+                    case "over":
+                    {
+                        if (!written.TryGetValue(a[2], out var under)) throw new Exception($"over base {a[2]} not written earlier in ArtMap");
+                        var top = Crop(Sheet(sheets, a[3]), int.Parse(a[4]) * T, int.Parse(a[5]) * T, T, T);
+                        count += Write(written, a[1], Over(under, top));
+                        break;
+                    }
+                    case "recolor":
+                    {
+                        var inv = System.Globalization.CultureInfo.InvariantCulture;
+                        var src = Sheet(sheets, a[1]);
+                        var tinted = Tint(src, float.Parse(a[2], inv), 1f, 1f);
+                        var px = tinted.GetPixels();
+                        var mul = new Color(float.Parse(a[3], inv), float.Parse(a[4], inv), float.Parse(a[5], inv), 1);
+                        for (int i = 0; i < px.Length; i++) px[i] *= mul;
+                        tinted.SetPixels(px);
+                        tinted.Apply();
+                        sheets[a[1]] = tinted;
                         break;
                     }
                     case "audio":
@@ -149,6 +171,17 @@ public static class ArtSlicer
         }
         var t = new Texture2D(src.width, src.height, TextureFormat.RGBA32, false);
         t.SetPixels(px);
+        t.Apply();
+        return t;
+    }
+
+    static Texture2D Over(Texture2D under, Texture2D top)
+    {
+        var a = under.GetPixels();
+        var b = top.GetPixels();
+        for (int i = 0; i < a.Length; i++) a[i] = Color.Lerp(a[i], new Color(b[i].r, b[i].g, b[i].b, 1), b[i].a);
+        var t = new Texture2D(under.width, under.height, TextureFormat.RGBA32, false);
+        t.SetPixels(a);
         t.Apply();
         return t;
     }

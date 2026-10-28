@@ -2,8 +2,193 @@
 # Run Embers > Import Art after editing. Format: see the header of Assets/Editor/ArtSlicer.cs.
 # Positions are in 16 px tiles from the top-left of each sheet.
 
-# ---------------------------------------------------------------- terrain
-tile tile_grass "Backgrounds/Tilesets/TilesetFloor.png" 2 12
+# ================================================================ terrain: grass and ground cover
+tile tile_grass            "Backgrounds/Tilesets/TilesetFloor.png" 0 12
+tile tile_grass_v1         "Backgrounds/Tilesets/TilesetFloor.png" 3 11
+tile tile_forest_grass     "Backgrounds/Tilesets/TilesetFloor.png" 11 12
+tile tile_forest_grass_v1  "Backgrounds/Tilesets/TilesetFloor.png" 14 12
+over tile_flowers          tile_grass         "Backgrounds/Tilesets/TilesetFloorDetail.png" 5 2
+over tile_forest_flowers   tile_forest_grass  "Backgrounds/Tilesets/TilesetFloorDetail.png" 6 2
+over tile_reeds            tile_grass         "Backgrounds/Tilesets/TilesetNature.png" 8 10
+over tile_mushrooms        tile_forest_grass  "Backgrounds/Tilesets/TilesetFloorDetail.png" 2 0
+tile tile_crops            "Backgrounds/Tilesets/TilesetNature.png" 8 11
 
-# ---------------------------------------------------------------- heroes (by class)
+# ================================================================ dirt path on grass (blob)
+tile tile_path        "Backgrounds/Tilesets/TilesetFloor.png" 1 8
+tile tile_path_c      "Backgrounds/Tilesets/TilesetFloor.png" 1 8
+tile tile_path_nw     "Backgrounds/Tilesets/TilesetFloor.png" 0 7
+tile tile_path_n      "Backgrounds/Tilesets/TilesetFloor.png" 1 7
+tile tile_path_ne     "Backgrounds/Tilesets/TilesetFloor.png" 2 7
+tile tile_path_w      "Backgrounds/Tilesets/TilesetFloor.png" 0 8
+tile tile_path_e      "Backgrounds/Tilesets/TilesetFloor.png" 2 8
+tile tile_path_sw     "Backgrounds/Tilesets/TilesetFloor.png" 0 9
+tile tile_path_s      "Backgrounds/Tilesets/TilesetFloor.png" 1 9
+tile tile_path_se     "Backgrounds/Tilesets/TilesetFloor.png" 2 9
+tile tile_path_v_n    "Backgrounds/Tilesets/TilesetFloor.png" 3 7
+tile tile_path_v_m    "Backgrounds/Tilesets/TilesetFloor.png" 3 8
+tile tile_path_v_s    "Backgrounds/Tilesets/TilesetFloor.png" 3 9
+tile tile_path_h_w    "Backgrounds/Tilesets/TilesetFloor.png" 0 10
+tile tile_path_h_m    "Backgrounds/Tilesets/TilesetFloor.png" 1 10
+tile tile_path_h_e    "Backgrounds/Tilesets/TilesetFloor.png" 2 10
+tile tile_path_dot    "Backgrounds/Tilesets/TilesetFloor.png" 3 10
+tile tile_path_ise    "Backgrounds/Tilesets/TilesetFloor.png" 5 8
+tile tile_path_isw    "Backgrounds/Tilesets/TilesetFloor.png" 6 8
+tile tile_path_ine    "Backgrounds/Tilesets/TilesetFloor.png" 5 9
+tile tile_path_inw    "Backgrounds/Tilesets/TilesetFloor.png" 6 9
+
+# ================================================================ water with grassy banks (blob)
+tile tile_water       "Backgrounds/Tilesets/TilesetWater.png" 1 7
+tile tile_water_c     "Backgrounds/Tilesets/TilesetWater.png" 1 7
+tile tile_water_nw    "Backgrounds/Tilesets/TilesetWater.png" 0 6
+tile tile_water_n     "Backgrounds/Tilesets/TilesetWater.png" 1 6
+tile tile_water_ne    "Backgrounds/Tilesets/TilesetWater.png" 2 6
+tile tile_water_w     "Backgrounds/Tilesets/TilesetWater.png" 0 7
+tile tile_water_e     "Backgrounds/Tilesets/TilesetWater.png" 2 7
+tile tile_water_sw    "Backgrounds/Tilesets/TilesetWater.png" 0 8
+tile tile_water_s     "Backgrounds/Tilesets/TilesetWater.png" 1 8
+tile tile_water_se    "Backgrounds/Tilesets/TilesetWater.png" 2 8
+tile tile_water_v_n   "Backgrounds/Tilesets/TilesetWater.png" 3 6
+tile tile_water_v_m   "Backgrounds/Tilesets/TilesetWater.png" 3 7
+tile tile_water_v_s   "Backgrounds/Tilesets/TilesetWater.png" 3 8
+tile tile_water_h_w   "Backgrounds/Tilesets/TilesetWater.png" 0 9
+tile tile_water_h_m   "Backgrounds/Tilesets/TilesetWater.png" 1 9
+tile tile_water_h_e   "Backgrounds/Tilesets/TilesetWater.png" 2 9
+tile tile_water_ise   "Backgrounds/Tilesets/TilesetWater.png" 5 7
+tile tile_water_isw   "Backgrounds/Tilesets/TilesetWater.png" 6 7
+tile tile_water_ine   "Backgrounds/Tilesets/TilesetWater.png" 5 8
+tile tile_water_inw   "Backgrounds/Tilesets/TilesetWater.png" 6 8
+tile tile_bridge      "Backgrounds/Tilesets/TilesetWater.png" 5 13
+
+# ================================================================ pale stone plaza (town square cobbles, blob)
+recolor "Backgrounds/Tilesets/TilesetFloorB.png" -170 1.0 0.9 0.76
+tile tile_cobbles     "Backgrounds/Tilesets/TilesetFloorB.png" 1 1
+tile tile_cobbles_c   "Backgrounds/Tilesets/TilesetFloorB.png" 1 1
+tile tile_cobbles_nw  "Backgrounds/Tilesets/TilesetFloorB.png" 0 0
+tile tile_cobbles_n   "Backgrounds/Tilesets/TilesetFloorB.png" 1 0
+tile tile_cobbles_ne  "Backgrounds/Tilesets/TilesetFloorB.png" 2 0
+tile tile_cobbles_w   "Backgrounds/Tilesets/TilesetFloorB.png" 0 1
+tile tile_cobbles_e   "Backgrounds/Tilesets/TilesetFloorB.png" 2 1
+tile tile_cobbles_sw  "Backgrounds/Tilesets/TilesetFloorB.png" 0 2
+tile tile_cobbles_s   "Backgrounds/Tilesets/TilesetFloorB.png" 1 2
+tile tile_cobbles_se  "Backgrounds/Tilesets/TilesetFloorB.png" 2 2
+tile tile_cobbles_v_n "Backgrounds/Tilesets/TilesetFloorB.png" 3 0
+tile tile_cobbles_v_m "Backgrounds/Tilesets/TilesetFloorB.png" 3 1
+tile tile_cobbles_v_s "Backgrounds/Tilesets/TilesetFloorB.png" 3 2
+tile tile_cobbles_h_w "Backgrounds/Tilesets/TilesetFloorB.png" 0 3
+tile tile_cobbles_h_m "Backgrounds/Tilesets/TilesetFloorB.png" 1 3
+tile tile_cobbles_h_e "Backgrounds/Tilesets/TilesetFloorB.png" 2 3
+tile tile_cobbles_dot "Backgrounds/Tilesets/TilesetFloorB.png" 3 3
+tile tile_cobbles_ise "Backgrounds/Tilesets/TilesetFloorB.png" 5 1
+tile tile_cobbles_isw "Backgrounds/Tilesets/TilesetFloorB.png" 6 1
+tile tile_cobbles_ine "Backgrounds/Tilesets/TilesetFloorB.png" 5 2
+tile tile_cobbles_inw "Backgrounds/Tilesets/TilesetFloorB.png" 6 2
+
+# ================================================================ other floors
+tile tile_sand         "Backgrounds/Tilesets/TilesetFloor.png" 1 1
+tile tile_wood_floor   "Backgrounds/Tilesets/TilesetWater.png" 1 13
+tile tile_stone_floor  "Backgrounds/Tilesets/tileset_bed.png" 1 10
+tile tile_cave_floor   "Backgrounds/Tilesets/TilesetFloor.png" 12 16
+tile tile_rug          "Backgrounds/Tilesets/tileset_bed.png" 1 7
+
+# ================================================================ cliffs (rect): green outdoors, brown in the mine
+tile tile_cliff_l_top  "Backgrounds/Tilesets/TilesetRelief.png" 4 0
+tile tile_cliff_m_top  "Backgrounds/Tilesets/TilesetRelief.png" 5 0
+tile tile_cliff_r_top  "Backgrounds/Tilesets/TilesetRelief.png" 6 0
+tile tile_cliff_l_mid  "Backgrounds/Tilesets/TilesetRelief.png" 4 1
+tile tile_cliff_m_mid  "Backgrounds/Tilesets/TilesetRelief.png" 5 1
+tile tile_cliff_r_mid  "Backgrounds/Tilesets/TilesetRelief.png" 6 1
+tile tile_cliff_l_bot  "Backgrounds/Tilesets/TilesetRelief.png" 4 2
+tile tile_cliff_m_bot  "Backgrounds/Tilesets/TilesetRelief.png" 5 2
+tile tile_cliff_r_bot  "Backgrounds/Tilesets/TilesetRelief.png" 6 2
+tile tile_cliff        "Backgrounds/Tilesets/TilesetRelief.png" 5 1
+tile tile_cave_wall_l_top "Backgrounds/Tilesets/TilesetRelief.png" 4 5
+tile tile_cave_wall_m_top "Backgrounds/Tilesets/TilesetRelief.png" 5 5
+tile tile_cave_wall_r_top "Backgrounds/Tilesets/TilesetRelief.png" 6 5
+tile tile_cave_wall_l_mid "Backgrounds/Tilesets/TilesetRelief.png" 4 6
+tile tile_cave_wall_m_mid "Backgrounds/Tilesets/TilesetRelief.png" 5 6
+tile tile_cave_wall_r_mid "Backgrounds/Tilesets/TilesetRelief.png" 6 6
+tile tile_cave_wall_l_bot "Backgrounds/Tilesets/TilesetRelief.png" 4 7
+tile tile_cave_wall_m_bot "Backgrounds/Tilesets/TilesetRelief.png" 5 7
+tile tile_cave_wall_r_bot "Backgrounds/Tilesets/TilesetRelief.png" 6 7
+tile tile_cave_wall    "Backgrounds/Tilesets/TilesetRelief.png" 5 6
+tile tile_stone_wall   "Backgrounds/Tilesets/TilesetRelief.png" 9 1
+tile tile_mine_entrance "Backgrounds/Tilesets/TilesetDungeon.png" 0 0
+tile tile_exit_up      "Backgrounds/Tilesets/TilesetDungeon.png" 1 0
+
+# ================================================================ houses (rect): orange roof (R), green-grey (U), red (G)
+tile tile_roof_l_top   "Backgrounds/Tilesets/TilesetHouse.png" 0 0
+tile tile_roof_m_top   "Backgrounds/Tilesets/TilesetHouse.png" 1 0
+tile tile_roof_r_top   "Backgrounds/Tilesets/TilesetHouse.png" 3 0
+tile tile_roof_l_mid   "Backgrounds/Tilesets/TilesetHouse.png" 0 1
+tile tile_roof_m_mid   "Backgrounds/Tilesets/TilesetHouse.png" 1 1
+tile tile_roof_r_mid   "Backgrounds/Tilesets/TilesetHouse.png" 3 1
+tile tile_roof_l_bot   "Backgrounds/Tilesets/TilesetHouse.png" 0 1
+tile tile_roof_m_bot   "Backgrounds/Tilesets/TilesetHouse.png" 2 1
+tile tile_roof_r_bot   "Backgrounds/Tilesets/TilesetHouse.png" 3 1
+tile tile_roof         "Backgrounds/Tilesets/TilesetHouse.png" 1 1
+tile tile_roof_blue_l_top "Backgrounds/Tilesets/TilesetHouse.png" 19 0
+tile tile_roof_blue_m_top "Backgrounds/Tilesets/TilesetHouse.png" 20 0
+tile tile_roof_blue_r_top "Backgrounds/Tilesets/TilesetHouse.png" 22 0
+tile tile_roof_blue_l_mid "Backgrounds/Tilesets/TilesetHouse.png" 19 1
+tile tile_roof_blue_m_mid "Backgrounds/Tilesets/TilesetHouse.png" 21 1
+tile tile_roof_blue_r_mid "Backgrounds/Tilesets/TilesetHouse.png" 22 1
+tile tile_roof_blue_l_bot "Backgrounds/Tilesets/TilesetHouse.png" 19 1
+tile tile_roof_blue_m_bot "Backgrounds/Tilesets/TilesetHouse.png" 21 1
+tile tile_roof_blue_r_bot "Backgrounds/Tilesets/TilesetHouse.png" 22 1
+tile tile_roof_blue    "Backgrounds/Tilesets/TilesetHouse.png" 21 1
+tile tile_roof_gold_l_top "Backgrounds/Tilesets/TilesetHouse.png" 12 0
+tile tile_roof_gold_m_top "Backgrounds/Tilesets/TilesetHouse.png" 13 0
+tile tile_roof_gold_r_top "Backgrounds/Tilesets/TilesetHouse.png" 15 0
+tile tile_roof_gold_l_mid "Backgrounds/Tilesets/TilesetHouse.png" 12 1
+tile tile_roof_gold_m_mid "Backgrounds/Tilesets/TilesetHouse.png" 13 1
+tile tile_roof_gold_r_mid "Backgrounds/Tilesets/TilesetHouse.png" 15 1
+tile tile_roof_gold_l_bot "Backgrounds/Tilesets/TilesetHouse.png" 12 1
+tile tile_roof_gold_m_bot "Backgrounds/Tilesets/TilesetHouse.png" 14 1
+tile tile_roof_gold_r_bot "Backgrounds/Tilesets/TilesetHouse.png" 15 1
+tile tile_roof_gold    "Backgrounds/Tilesets/TilesetHouse.png" 13 1
+tile tile_house_wall_l_top "Backgrounds/Tilesets/TilesetHouse.png" 0 2
+tile tile_house_wall_m_top "Backgrounds/Tilesets/TilesetHouse.png" 2 2
+tile tile_house_wall_r_top "Backgrounds/Tilesets/TilesetHouse.png" 3 2
+tile tile_house_wall_l_mid "Backgrounds/Tilesets/TilesetHouse.png" 0 2
+tile tile_house_wall_m_mid "Backgrounds/Tilesets/TilesetHouse.png" 2 2
+tile tile_house_wall_r_mid "Backgrounds/Tilesets/TilesetHouse.png" 3 2
+tile tile_house_wall_l_bot "Backgrounds/Tilesets/TilesetHouse.png" 0 2
+tile tile_house_wall_m_bot "Backgrounds/Tilesets/TilesetHouse.png" 2 2
+tile tile_house_wall_r_bot "Backgrounds/Tilesets/TilesetHouse.png" 3 2
+tile tile_house_wall   "Backgrounds/Tilesets/TilesetHouse.png" 2 2
+tile tile_window       "Backgrounds/Tilesets/TilesetHouse.png" 2 2
+tile tile_door         "Backgrounds/Tilesets/TilesetHouse.png" 1 2
+tile tile_counter      "Backgrounds/Tilesets/TilesetElement.png" 12 1
+tile tile_counter_l_mid "Backgrounds/Tilesets/TilesetElement.png" 11 1
+tile tile_counter_m_mid "Backgrounds/Tilesets/TilesetElement.png" 12 1
+tile tile_counter_r_mid "Backgrounds/Tilesets/TilesetElement.png" 14 1
+tile tile_counter_l_bot "Backgrounds/Tilesets/TilesetElement.png" 11 1
+tile tile_counter_m_bot "Backgrounds/Tilesets/TilesetElement.png" 12 1
+tile tile_counter_r_bot "Backgrounds/Tilesets/TilesetElement.png" 14 1
+tile tile_fence        "Backgrounds/Tilesets/TilesetHouse.png" 9 4
+
+# ================================================================ props (stand on the ground; big ones overhang)
+tile obj_tree     "Backgrounds/Tilesets/TilesetNature.png" 0 0 2 2
+tile obj_bush     "Backgrounds/Tilesets/TilesetNature.png" 0 10
+tile obj_rock     "Backgrounds/Tilesets/TilesetNature.png" 18 9
+tile obj_stump    "Backgrounds/Tilesets/TilesetNature.png" 4 8
+tile obj_log      "Backgrounds/Tilesets/TilesetNature.png" 5 8
+tile obj_flagstone "Backgrounds/Tilesets/TilesetFloorDetail.png" 15 0
+tile obj_fae_ring "Backgrounds/Tilesets/TilesetFloorDetail.png" 5 2
+tile obj_barrel   "Backgrounds/Tilesets/TilesetElement.png" 0 0
+tile obj_crate    "Backgrounds/Tilesets/TilesetElement.png" 8 0
+tile obj_chest    "Backgrounds/Tilesets/TilesetElement.png" 3 1
+tile obj_chest_open "Backgrounds/Tilesets/TilesetElement.png" 6 0
+tile obj_sign     "Backgrounds/Tilesets/TilesetElement.png" 0 2
+tile obj_lantern  "Backgrounds/Tilesets/TilesetElement.png" 13 0
+tile obj_table    "Backgrounds/Tilesets/TilesetElement.png" 14 0
+tile obj_well     "Backgrounds/Tilesets/TilesetElement.png" 6 1
+tile obj_altar    "Backgrounds/Tilesets/TilesetElement.png" 10 1
+tile obj_statue   "Backgrounds/Tilesets/TilesetElement.png" 2 2
+tile obj_pillar   "Backgrounds/Tilesets/TilesetElement.png" 5 2
+tile obj_stall    "Backgrounds/Tilesets/TilesetElement.png" 7 2
+tile obj_bed      "Backgrounds/Tilesets/tileset_bed.png" 12 3 1 2
+tile obj_campfire "Backgrounds/Tilesets/tileset_camp.png" 12 3 2 2
+
+# ================================================================ heroes (by class)
 actor hero_fighter "Actor/Character/Knight/SpriteSheet.png"
