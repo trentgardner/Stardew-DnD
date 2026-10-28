@@ -684,7 +684,9 @@ namespace DnD.Game
                 foreach (var a in agents) if (a) Destroy(a.gameObject);
                 _groups.Remove(c.GroupId);
             }
-            Clock.SleepUntil(8);
+            // A real party wipe costs everyone a day. If a partner is still up and about elsewhere,
+            // the fallen are simply carried to the temple and the world keeps its time.
+            if (everyone) Clock.SleepUntil(8);
             foreach (var p in fallen)
             {
                 var pc = p.Character;
@@ -696,7 +698,9 @@ namespace DnD.Game
                 foreach (var comp in CompanionsOf(p)) if (comp.Character != null) { if (comp.Character.IsDead) comp.Character.Revive(0, null); comp.Character.HP = Math.Max(1, comp.Character.EffectiveMaxHP / 2); }
                 Warp(p, "temple", new Vector2Int(5, 5), false);
                 p.Hud.Push(new MessageScreen("You wake in the temple...",
-                    $"Incense. Soft singing. A warm hand on your forehead.\n\n\"Shepherds found you at dawn and carried you here,\" Mother Elowen says. \"The Dawnmother isn't done with you yet.\"\n\nA day has passed. ({Currency.Format(fee)} was left as a temple donation.)"));
+                    everyone
+                        ? $"Incense. Soft singing. A warm hand on your forehead.\n\n\"Shepherds found you at dawn and carried you here,\" Mother Elowen says. \"The Dawnmother isn't done with you yet.\"\n\nA day has passed. ({Currency.Format(fee)} was left as a temple donation.)"
+                        : $"Incense. Soft singing. A warm hand on your forehead.\n\n\"A woodcutter found you and hauled you here on his cart,\" Mother Elowen says. \"Go on. Your friends are still out there.\"\n\n({Currency.Format(fee)} was left as a temple donation.)"));
             }
         }
 

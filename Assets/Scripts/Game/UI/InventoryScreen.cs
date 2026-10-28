@@ -38,6 +38,26 @@ namespace DnD.Game
 
         public InventoryScreen(Inventory other, string otherTitle) { _otherInv = other; _otherTitle = otherTitle; }
 
+        /// <summary>The co-op partner standing next to you (trade panel), if any.</summary>
+        public PlayerSlot Partner => _partner;
+
+        /// <summary>Sends the whole stack in one of your bag slots to your trade partner.</summary>
+        public void SendToPartner(int bagIndex)
+        {
+            if (_partner == null || bagIndex < 0 || Bag.Slots[bagIndex] == null) return;
+            string name = ItemsDb.Get(Bag.Slots[bagIndex].ItemId)?.Name ?? "items";
+            int moved = Bag.QuickTransfer(bagIndex, _partner.Character.Bag);
+            if (moved > 0) _partner.Hud.Toast($"{Slot.Character.Name} gave you {moved}× {name}", UIKit.Gold);
+        }
+
+        /// <summary>Hands coins to your trade partner (coins weigh nothing).</summary>
+        public void GiveGold(int copper)
+        {
+            if (_partner == null || !Slot.Character.GiveCopper(_partner.Character, copper)) return;
+            Sfx.Play("coin");
+            _partner.Hud.Toast($"{Slot.Character.Name} gave you {Currency.Format(copper)}", UIKit.Gold);
+        }
+
         Inventory Bag => Slot.Character.Bag;
 
         public override void Build()
@@ -293,12 +313,7 @@ namespace DnD.Game
             if (In.Sort) { Bag.Sort(); Sfx.Play("ui"); Redraw(); }
             if (_partner != null && In.Give && _held == null)
             {
-                int amt = In.QuickModifier ? 1000 : 100;
-                if (Slot.Character.GiveCopper(_partner.Character, amt))
-                {
-                    Sfx.Play("coin");
-                    _partner.Hud.Toast($"{Slot.Character.Name} gave you {Currency.Format(amt)}", UIKit.Gold);
-                }
+                GiveGold(In.QuickModifier ? 1000 : 100);
                 Redraw();
             }
 
@@ -398,13 +413,8 @@ namespace DnD.Game
                 int end = c.Index < Inventory.HotbarSize ? Bag.Size : Inventory.HotbarSize;
                 for (int i = start; i < end; i++) if (Bag.Slots[i] == null) { Bag.Move(c.Index, i); break; }
             }
-            else
-            {
-                string name = ItemsDb.Get(c.Inv.Slots[c.Index].ItemId)?.Name ?? "items";
-                int moved = c.Inv.QuickTransfer(c.Index, target);
-                if (moved > 0 && _partner != null && target == _partner.Character.Bag)
-                    _partner.Hud.Toast($"{Slot.Character.Name} gave you {moved}× {name}", UIKit.Gold);
-            }
+            else if (_partner != null && c.Inv == Bag) SendToPartner(c.Index);
+            else c.Inv.QuickTransfer(c.Index, target);
             Sfx.Play("ui");
             Redraw();
         }

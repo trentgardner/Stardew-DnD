@@ -252,6 +252,146 @@ namespace DnD.Tests
             finally { PlayerSlot.DisconnectGraceSeconds = grace; }
         }
 
+        // ------------------------------------------------------------------ splitting up and shared flows
+
+        [UnityTest]
+        public IEnumerator PlayersInDifferentZonesEachSeeTheirOwnWorld()
+        {
+            var g = GameRoot.I;
+            PlayerSlot p1 = null, p2 = null; VirtualPad b = null;
+            yield return TwoPlayers((x, y, z) => { p1 = x; p2 = y; b = z; });
+            g.Warp(p2, "forest", WorldDb.Zones["forest"].DefaultSpawn, false);
+            var p1Start = p1.Avatar.MapPos;
+            var p2Start = p2.Avatar.MapPos;
+            b.Hold(Vector2.down);
+            for (int i = 0; i < 120; i++)
+            {
+                yield return null;
+                Assert.IsTrue(p1.Zone.WorldBounds.Contains(new Vector3(p1.Cam.transform.position.x, p1.Cam.transform.position.y, 0)), "P1's camera stays in the cottage");
+                Assert.IsTrue(p2.Zone.WorldBounds.Contains(new Vector3(p2.Cam.transform.position.x, p2.Cam.transform.position.y, 0)), "P2's camera stays in the forest");
+            }
+            b.Hold(Vector2.zero);
+            Assert.AreEqual("home", p1.Zone.Def.Id);
+            Assert.AreEqual("forest", p2.Zone.Def.Id);
+            Assert.AreEqual(p1Start, p1.Avatar.MapPos, "P2's stick doesn't move P1");
+            Assert.AreNotEqual(p2Start, p2.Avatar.MapPos, "P2 walks");
+        }
+
+        [UnityTest]
+        public IEnumerator OneFightsWhileTheOtherExploresThenWalksIn()
+        {
+            var g = GameRoot.I;
+            var p1 = g.DebugStart(new FuzzInput(8) { ConfirmChance = 0, CancelChance = 0, MenuChance = 0, EndTurnChance = 0 }, "fighter", "human");
+            var b = NewPad();
+            var p2 = g.DebugStart(new GamepadInput(b.Pad), "cleric", "elf");
+            g.Warp(p1, "forest", new Vector2Int(34, 8), false);
+            yield return Frames(2);
+            g.StartGroupCombat("forest_wolves", p1);
+            Assert.IsTrue(p1.InCombat);
+            Assert.IsFalse(p2.InCombat, "P2 is in town and keeps exploring");
+            float minutes = g.Clock.Minutes;
+            yield return Frames(60);
+            Assert.AreNotEqual(minutes, g.Clock.Minutes, "the clock runs while P2 explores");
+
+            g.Warp(p2, "forest", new Vector2Int(33, 9), false);
+            yield return Frames(2);
+            Assert.IsTrue(p2.InCombat, "walking up to the fight joins it");
+            Assert.AreSame(p1.Combat, p2.Combat);
+        }
+
+        [UnityTest]
+        public IEnumerator BothRestTogether()
+        {
+            var g = GameRoot.I;
+            PlayerSlot p1 = null, p2 = null; VirtualPad b = null;
+            yield return TwoPlayers((x, y, z) => { p1 = x; p2 = y; b = z; });
+            var home = WorldDb.Zones["home"].DefaultSpawn;
+            g.Warp(p1, "home", home, false);
+            g.Warp(p2, "home", home, false);
+            p1.Character.HP = 1; p2.Character.HP = 1;
+            p2.Character.SlotsUsed[1] = 1;
+            int day = g.Clock.Day;
+            g.BeginLongRest(p1);
+            yield return Frames(5);
+            Assert.AreEqual(day, g.Clock.Day, "P1 waits in bed for P2");
+            g.BeginLongRest(p2);
+            yield return Frames(5);
+            Assert.Greater(g.Clock.Day, day);
+            Assert.AreEqual(p1.Character.EffectiveMaxHP, p1.Character.HP);
+            Assert.AreEqual(p2.Character.EffectiveMaxHP, p2.Character.HP);
+            Assert.AreEqual(0, p2.Character.SlotsUsed[1], "spell slots come back");
+        }
+
+        [UnityTest]
+        public IEnumerator PartyWipeWakesBothAtTheTemple()
+        {
+            var g = GameRoot.I;
+            var p1 = g.DebugStart(new FuzzInput(8) { ConfirmChance = 0, CancelChance = 0, MenuChance = 0, EndTurnChance = 0 }, "fighter", "human");
+            var b = NewPad();
+            var p2 = g.DebugStart(new GamepadInput(b.Pad), "cleric", "elf");
+            g.Warp(p1, "forest", new Vector2Int(34, 8), false);
+            g.Warp(p2, "forest", new Vector2Int(33, 9), false);
+            g.GiveCopper(p1, 1000); g.GiveCopper(p2, 1000);
+            int c1 = p1.Character.Copper, c2 = p2.Character.Copper;
+            yield return Frames(2);
+            g.StartGroupCombat("forest_wolves", p1);
+            var fight = p1.Combat;
+            fight.Finished = true;
+            g.OnCombatFinished(fight, false);
+            yield return new WaitForSeconds(2f);
+            Assert.AreEqual("temple", p1.Zone.Def.Id);
+            Assert.AreEqual("temple", p2.Zone.Def.Id);
+            Assert.AreEqual(c1 - c1 / 10, p1.Character.Copper, "10% temple donation");
+            Assert.AreEqual(c2 - c2 / 10, p2.Character.Copper);
+        }
+
+        [UnityTest]
+        public IEnumerator HalfThePartyFallingDoesNotSkipTheDayForTheOther()
+        {
+            var g = GameRoot.I;
+            var p1 = g.DebugStart(new FuzzInput(8) { ConfirmChance = 0, CancelChance = 0, MenuChance = 0, EndTurnChance = 0 }, "fighter", "human");
+            var b = NewPad();
+            var p2 = g.DebugStart(new GamepadInput(b.Pad), "cleric", "elf");
+            g.Warp(p1, "forest", new Vector2Int(34, 8), false);
+            yield return Frames(2);
+            g.StartGroupCombat("forest_wolves", p1);
+            Assert.IsFalse(p2.InCombat);
+            int day = g.Clock.Day; float minutes = g.Clock.Minutes;
+            var fight = p1.Combat;
+            fight.Finished = true;
+            g.OnCombatFinished(fight, false);
+            yield return new WaitForSeconds(2f);
+            Assert.AreEqual("temple", p1.Zone.Def.Id, "the fallen player is carried to the temple");
+            Assert.AreEqual("home", p2.Zone.Def.Id, "the partner who wasn't there stays put");
+            Assert.AreEqual(day, g.Clock.Day, "it's not a party wipe, so no day passes for the partner");
+            Assert.Less(Mathf.Abs(g.Clock.Minutes - minutes), 60f);
+        }
+
+        [UnityTest]
+        public IEnumerator TradeMovesItemsAndGoldBetweenPartners()
+        {
+            var g = GameRoot.I;
+            PlayerSlot p1 = null, p2 = null; VirtualPad b = null;
+            yield return TwoPlayers((x, y, z) => { p1 = x; p2 = y; b = z; });
+            g.Warp(p2, p1.Zone.Def.Id, p1.MapPos, false);
+            g.GiveItem(p1, "potion_healing");
+            g.GiveCopper(p1, 500);
+            yield return Frames(2);
+            var inv = new InventoryScreen(null, null);
+            p1.Hud.Push(inv);
+            yield return Frames(2);
+            Assert.AreSame(p2, inv.Partner, "standing together opens the trade panel");
+
+            int potions2 = p2.Character.Bag.Count("potion_healing");
+            int slot = System.Array.FindIndex(p1.Character.Bag.Slots, st => st != null && st.ItemId == "potion_healing");
+            int stack = p1.Character.Bag.Slots[slot].Count;
+            inv.SendToPartner(slot);
+            Assert.AreEqual(potions2 + stack, p2.Character.Bag.Count("potion_healing"), "the whole stack moves");
+            int copper2 = p2.Character.Copper;
+            inv.GiveGold(100);
+            Assert.AreEqual(copper2 + 100, p2.Character.Copper);
+        }
+
         [UnityTest]
         public IEnumerator PartnerLeavingWhileYouWaitInBedEndsTheNight()
         {
