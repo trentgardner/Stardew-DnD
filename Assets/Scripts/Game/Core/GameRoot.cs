@@ -188,7 +188,7 @@ namespace DnD.Game
             StopAllCoroutines();
             if (_worldRoot) Destroy(_worldRoot.gameObject);
             Zones.Clear(); _npcs.Clear(); _groups.Clear(); Companions.Clear(); _recruitAgents.Clear(); TavernRecruits.Clear();
-            _deathTime.Clear(); _sleeping.Clear(); _lastLongRest.Clear(); _parley.Clear();
+            _deathTime.Clear(); _sleeping.Clear(); _lastLongRest.Clear(); _parley.Clear(); _pendingPlayers.Clear();
             World = new WorldState();
             Quests = new QuestLog();
             Clock = new GameClock();
@@ -229,6 +229,40 @@ namespace DnD.Game
             if (_idleCam) _idleCam.gameObject.SetActive(false);
             LayoutCameras();
             return slot;
+        }
+
+        /// <summary>Characters of players who left (or haven't rejoined since a load). The next Start press brings one back.</summary>
+        public IReadOnlyList<PcData> PendingPlayers => _pendingPlayers;
+
+        /// <summary>A co-op partner leaves: their character waits (and is saved) until a controller presses Start again.</summary>
+        public void DropOut(PlayerSlot p)
+        {
+            if (p == null || !Players.Contains(p) || Players.Count < 2) return;
+            if (p.IsReady)
+            {
+                var pd = SaveSystem.ToData(p.Character);
+                pd.Zone = p.Zone.Def.Id; pd.X = p.MapPos.x; pd.Y = p.MapPos.y;
+                pd.Torch = p.Avatar.TorchMinutes; pd.LightSpell = p.Avatar.LightSpellMinutes;
+                _pendingPlayers.Add(pd);
+            }
+            p.Hud?.CloseAll();
+            var stay = Players.First(x => x != p);
+            foreach (var c in CompanionsOf(p).ToList())
+            {
+                if (c.IsDragon) c.Leader = stay; // the dragon belongs to the whole party
+                else DismissCompanion(c);
+            }
+            string name = p.Label;
+            _sleeping.Remove(p.Index);
+            if (p.Avatar) Destroy(p.Avatar.gameObject);
+            if (p.Hud) Destroy(p.Hud.gameObject);
+            if (p.Cam) Destroy(p.Cam.gameObject);
+            foreach (var d in FindObjectsByType<DarknessOverlay>()) if (d.Slot == p) Destroy(d.gameObject);
+            Players.Remove(p);
+            LayoutCameras();
+            foreach (var x in Players) x.Hud?.Narrate($"{name} heads off for now. (Press Start to rejoin.)");
+            // Someone was waiting in bed for the player who just left.
+            if (_sleeping.Count > 0 && Players.Where(x => x.IsReady).All(x => _sleeping.Contains(x.Index))) DoLongRest();
         }
 
         void LayoutCameras()

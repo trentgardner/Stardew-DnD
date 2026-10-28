@@ -625,6 +625,9 @@ namespace DnD.Game
                     _menu.Add("Load Game", () => Show(Page.Load));
                     _menu.Add("Settings", () => Show(Page.Settings));
                     _menu.Add("Controls", () => Show(Page.Controls));
+                    if (Hud.Slot.Index > 0)
+                        _menu.Add(Hud.Slot.InCombat ? "Leave the game (not during a fight)" : "Leave the game (your character waits for you)",
+                            () => { var me = Hud.Slot; Close(); g.DropOut(me); }, !Hud.Slot.InCombat);
                     _menu.Add("Quit to Title (unsaved progress is lost)", () => { Close(); g.QuitToTitle(); });
                     _info.text = $"Playthrough: {g.PlaythroughName} · {g.Settings.Difficulty}\nDay {g.Clock.Day}, {g.Clock.TimeText()}";
                     break;

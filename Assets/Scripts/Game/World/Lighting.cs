@@ -36,6 +36,7 @@ namespace DnD.Game
         Texture2D _tex;
         Color32[] _px;
         GameObject _quad;
+        public PlayerSlot Slot => _slot;
 
         public static DarknessOverlay Create(PlayerSlot slot)
         {

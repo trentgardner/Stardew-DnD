@@ -108,5 +108,98 @@ namespace DnD.Tests
             Assert.AreEqual(1, g.Players.Count, "P1's own controller must not spawn a second player");
             Assert.IsTrue(p1.Hud.Top is PauseScreen, "P1's own Start opens the pause menu");
         }
+
+        // ------------------------------------------------------------------ drop out / rejoin
+
+        /// <summary>P1 on hybrid input plus P2 on a virtual pad, both standing in town.</summary>
+        IEnumerator TwoPlayers(Action<PlayerSlot, PlayerSlot, VirtualPad> done)
+        {
+            var g = GameRoot.I;
+            var p1 = g.DebugStart(new HybridInput(), "fighter", "human");
+            var b = NewPad();
+            var p2 = g.DebugStart(new GamepadInput(b.Pad), "cleric", "elf");
+            yield return Frames(2);
+            done(p1, p2, b);
+        }
+
+        [UnityTest]
+        public IEnumerator DropOutFreesTheScreenAndRejoinRestoresTheSameCharacter()
+        {
+            var g = GameRoot.I;
+            PlayerSlot p1 = null, p2 = null; VirtualPad b = null;
+            yield return TwoPlayers((x, y, z) => { p1 = x; p2 = y; b = z; });
+            string name = p2.Character.Name;
+            g.GiveItem(p2, "potion_healing");
+            int potions = p2.Character.Bag.Count("potion_healing");
+            g.GiveCopper(p2, 500);
+            int copper = p2.Character.Copper;
+
+            g.DropOut(p2);
+            yield return Frames(2);
+            Assert.AreEqual(1, g.Players.Count);
+            Assert.AreEqual(1f, p1.Cam.rect.width, 0.01f, "P1 gets the whole screen back");
+            Assert.AreEqual(1, g.PendingPlayers.Count);
+
+            yield return b.Tap(GamepadButton.Start);
+            yield return Frames(2);
+            Assert.AreEqual(2, g.Players.Count, "Start brings the departed player back");
+            var back = g.Players[1];
+            Assert.AreEqual(name, back.Character.Name);
+            Assert.AreEqual(potions, back.Character.Bag.Count("potion_healing"));
+            Assert.AreEqual(copper, back.Character.Copper);
+            Assert.AreEqual(0.5f, back.Cam.rect.width, 0.01f);
+            Assert.AreEqual(0, g.PendingPlayers.Count);
+        }
+
+        [UnityTest]
+        public IEnumerator SavingWhileP2IsAwayKeepsTheirCharacter()
+        {
+            var g = GameRoot.I;
+            PlayerSlot p1 = null, p2 = null; VirtualPad b = null;
+            yield return TwoPlayers((x, y, z) => { p1 = x; p2 = y; b = z; });
+            string name = p2.Character.Name;
+            g.DropOut(p2);
+            yield return Frames(2);
+            string path = SaveSystem.Save(false);
+            Assert.IsNotNull(path);
+            g.LoadGame(path);
+            yield return Frames(2);
+            var saved = SaveSystem.Read(path);
+            Assert.AreEqual(2, saved.Players.Count, "save players: " + string.Join(",", saved.Players.ConvertAll(x => x.Name)));
+            Assert.AreEqual(1, g.PendingPlayers.Count, "the departed player is in the save");
+            Assert.AreEqual(name, g.PendingPlayers[0].Name);
+        }
+
+        [UnityTest]
+        public IEnumerator LongRestDoesNotWaitForADepartedPlayer()
+        {
+            var g = GameRoot.I;
+            PlayerSlot p1 = null, p2 = null; VirtualPad b = null;
+            yield return TwoPlayers((x, y, z) => { p1 = x; p2 = y; b = z; });
+            g.Warp(p1, "home", WorldDb.Zones["home"].DefaultSpawn, false);
+            g.DropOut(p2);
+            yield return Frames(2);
+            int day = g.Clock.Day;
+            g.BeginLongRest(p1);
+            yield return Frames(10);
+            Assert.Greater(g.Clock.Day, day, "P1 sleeps through the night alone");
+        }
+
+        [UnityTest]
+        public IEnumerator PartnerLeavingWhileYouWaitInBedEndsTheNight()
+        {
+            var g = GameRoot.I;
+            PlayerSlot p1 = null, p2 = null; VirtualPad b = null;
+            yield return TwoPlayers((x, y, z) => { p1 = x; p2 = y; b = z; });
+            g.Warp(p1, "home", WorldDb.Zones["home"].DefaultSpawn, false);
+            int day = g.Clock.Day;
+            g.BeginLongRest(p1);
+            yield return Frames(2);
+            Assert.AreEqual(day, g.Clock.Day, "still waiting for P2");
+            g.DropOut(p2);
+            yield return Frames(10);
+            Assert.Greater(g.Clock.Day, day, "nobody is left awake, so the night passes");
+            Assert.IsFalse(p1.Hud.Top is ChoiceScreen, "the 'waiting for...' window is gone");
+        }
     }
 }

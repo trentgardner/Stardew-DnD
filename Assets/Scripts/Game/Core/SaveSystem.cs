@@ -170,6 +170,7 @@ namespace DnD.Game
                 pd.Torch = p.Avatar.TorchMinutes; pd.LightSpell = p.Avatar.LightSpellMinutes;
                 d.Players.Add(pd);
             }
+            d.Players.AddRange(g.PendingPlayers); // partners who stepped away are still part of this playthrough
             foreach (var c in g.Companions)
             {
                 if (c.IsDragon) { d.DragonLeader = c.Leader.Index; continue; }
