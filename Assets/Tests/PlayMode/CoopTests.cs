@@ -393,6 +393,23 @@ namespace DnD.Tests
         }
 
         [UnityTest]
+        public IEnumerator TwoPlayersFuzzEveryZone()
+        {
+            var g = GameRoot.I;
+            var p1 = g.DebugStart(new FuzzInput(31), "bard", "half_elf");
+            var p2 = g.DebugStart(new FuzzInput(32), "wizard", "gnome");
+            Time.timeScale = 4;
+            foreach (var z in WorldDb.Zones.Values)
+            {
+                g.Warp(p1, z.Id, z.DefaultSpawn, false);
+                g.Warp(p2, z.Id, z.DefaultSpawn + Vector2Int.right, false);
+                yield return Frames(600);
+                Assert.IsTrue(g.InGame, $"still in the game after fuzzing {z.Id}");
+            }
+            Time.timeScale = 1;
+        }
+
+        [UnityTest]
         public IEnumerator PartnerLeavingWhileYouWaitInBedEndsTheNight()
         {
             var g = GameRoot.I;

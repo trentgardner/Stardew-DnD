@@ -98,6 +98,20 @@ character. You can go anywhere independently; if one of you starts a fight, the 
 - [ ] Fight together; let one of you go down and get picked back up (Healing Word, potion, or Medicine check).
 - [ ] Both go to bed to end the day.
 
+## Co-op checklist (couch, two controllers)
+
+Tick these off on the laptop and TV. If something feels wrong, note what you were doing.
+
+1. **Join:** start a game, then press **Start** on the second controller. Player 2 makes a character and appears next to Player 1. Player 1's pause menu should NOT pop open.
+2. **Split up:** walk into different places (one in the forest, one in town). Each half of the screen follows its own player.
+3. **Fight while the other explores:** one of you starts a fight while the other shops. The shopper can walk over and join the fight.
+4. **Trade:** stand next to each other and open the inventory (Y / I). Send a potion across, and give gold (X / G).
+5. **Unplug a controller** mid-game, then plug it back in. You should see a "Controller disconnected" box, and then you get control back. Try unplugging during your turn in a fight: after about 10 seconds the game skips that turn instead of freezing.
+6. **Leave and come back:** Player 2 opens the pause menu, picks **Leave the game**, then presses Start again later. Same character, same items.
+7. **Sleep together:** both of you go to bed (home or the tavern). The night only passes once you're both asleep.
+8. **Save, quit, load:** save, quit to the title screen, load the save, and Player 2 presses Start to rejoin.
+9. **One of you falls:** if only one of you goes down in a fight, they wake at the temple and no day passes for the other.
+
 ## What feedback helps most
 - Anything that **broke** (a screenshot of the error, or "I did X, then Y happened").
 - Anything that felt **slow or fiddly**, especially combat pacing and the dice rolls.
