@@ -107,8 +107,32 @@ namespace DnD.Game
             return ((m.x * 7 + m.y * 13) % 5 == 0) ? "tile_grass_v1" : "tile_grass";
         }
 
-        void Ground(Vector2Int m, string sprite) => _ground.SetTile(Cell(m), GetTile(sprite, false));
-        void Wall(Vector2Int m, string sprite) { _solid.SetTile(Cell(m), GetTile(sprite, true)); Blocked[m.x, m.y] = true; }
+        void Ground(Vector2Int m, string sprite) => _ground.SetTile(Cell(m), GetTile(Styled(m, sprite), false));
+        void Wall(Vector2Int m, string sprite) { _solid.SetTile(Cell(m), GetTile(Styled(m, sprite), true)); Blocked[m.x, m.y] = true; }
+
+        /// <summary>Map chars whose tiles take edge/corner pieces from their neighbors, and which neighbor chars count as "the same".</summary>
+        static readonly Dictionary<char, (TileShape shape, string same)> Styles = new Dictionary<char, (TileShape, string)>
+        {
+            { ',', (TileShape.Blob, ",bDEM") },   // dirt paths run into bridges, doors and the mine mouth
+            { ';', (TileShape.Blob, ";") },       // sand
+            { '~', (TileShape.Blob, "~b") },      // water (a bridge has water under it)
+            { 'o', (TileShape.Blob, "oSOm") },    // cobbled square around the statue, well and stalls
+            { 'X', (TileShape.Rect, "XM") },      // cliffs (the mine entrance is cut into them)
+            { 'R', (TileShape.Rect, "R") },
+            { 'U', (TileShape.Rect, "U") },
+            { 'G', (TileShape.Rect, "G") },
+            { 'W', (TileShape.Rect, "WwD") },     // walls continue through windows and doors
+            { 'C', (TileShape.Rect, "C") },
+            { 'f', (TileShape.Rect, "f") },
+        };
+
+        /// <summary>The neighbor-aware variant of a tile if real art exists for it, else the plain tile.</summary>
+        string Styled(Vector2Int m, string baseId)
+        {
+            if (baseId == null || !Styles.TryGetValue(CharAt(m), out var st)) return baseId;
+            string v = TileStyler.Variant(baseId, st.shape, (dx, dy) => st.same.IndexOf(CharAt(new Vector2Int(m.x + dx, m.y + dy))) >= 0, m.x, m.y);
+            return ArtRegistry.Resolve(v, baseId);
+        }
         /// <summary>Invisible blocker under props (trees, tables...).</summary>
         void Solid(Vector2Int m) { _solid.SetTile(Cell(m), GetTile("tile_none", true)); Blocked[m.x, m.y] = true; }
 
