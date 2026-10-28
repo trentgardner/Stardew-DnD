@@ -1,0 +1,9 @@
+# ArtMap: which piece of the Ninja Adventure pack (CC0, by Pixel-boy and AAA) becomes which ArtRegistry id.
+# Run Embers > Import Art after editing. Format: see the header of Assets/Editor/ArtSlicer.cs.
+# Positions are in 16 px tiles from the top-left of each sheet.
+
+# ---------------------------------------------------------------- terrain
+tile tile_grass "Backgrounds/Tilesets/TilesetFloor.png" 2 12
+
+# ---------------------------------------------------------------- heroes (by class)
+actor hero_fighter "Actor/Character/Knight/SpriteSheet.png"

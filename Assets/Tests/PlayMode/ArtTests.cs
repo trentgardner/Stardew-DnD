@@ -49,6 +49,19 @@ namespace DnD.Tests
             Assert.AreEqual("last_fallback", ArtRegistry.Resolve("nope_a", "last_fallback"), "nothing real: the last id (placeholder) wins");
         }
 
+        [Test]
+        public void ImportedSpritesArePixelPerfect()
+        {
+            foreach (var id in new[] { "tile_grass", "hero_fighter_down_0" })
+            {
+                Assert.IsTrue(ArtRegistry.IsReal(id), $"{id} was sliced from the pack");
+                var spr = ArtRegistry.Get(id);
+                Assert.AreEqual(FilterMode.Point, spr.texture.filterMode, id);
+                Assert.AreEqual(16f, spr.pixelsPerUnit, id);
+                Assert.AreEqual(16f, spr.rect.width, id);
+            }
+        }
+
         [UnityTest]
         public IEnumerator EveryZoneDrawsOnlyRealArt()
         {
