@@ -114,7 +114,7 @@ namespace DnD.Game
                 // choice hotkeys: E/A = first, R/X = second, Esc/B = last
                 if (input.Confirm || input.MouseLeft) _choice = 0;
                 else if ((input.NextTab || input.AltAction) && _choices.Count > 2) _choice = 1;
-                else if (input.Cancel) _choice = _choices.Count - 1;
+                else if (input.Cancel || _hud.Slot.StalledByDisconnect) _choice = _choices.Count - 1; // last = accept / decline
             }
         }
 

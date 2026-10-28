@@ -595,6 +595,9 @@ namespace DnD.Game
         enum Page { Main, Load, Settings, Controls }
         Page _page;
 
+        /// <summary>Is there a menu row starting with this text on the current page?</summary>
+        public bool HasOption(string prefix) => _menu != null && _menu.Entries.Exists(e => e.Text.StartsWith(prefix));
+
         public override void Build()
         {
             Window(new Vector2(360, 280), "Paused");
@@ -625,6 +628,12 @@ namespace DnD.Game
                     _menu.Add("Load Game", () => Show(Page.Load));
                     _menu.Add("Settings", () => Show(Page.Settings));
                     _menu.Add("Controls", () => Show(Page.Controls));
+                    foreach (var other in g.Players)
+                        if (other != Hud.Slot && other.IsReady && other.Disconnected)
+                        {
+                            var gone = other;
+                            _menu.Add($"Send {gone.Character.Name} home (their controller is lost)", () => { Close(); g.DropOut(gone); }, !gone.InCombat);
+                        }
                     if (Hud.Slot.Index > 0)
                         _menu.Add(Hud.Slot.InCombat ? "Leave the game (not during a fight)" : "Leave the game (your character waits for you)",
                             () => { var me = Hud.Slot; Close(); g.DropOut(me); }, !Hud.Slot.InCombat);

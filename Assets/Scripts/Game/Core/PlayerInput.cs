@@ -178,15 +178,15 @@ namespace DnD.Game
 
         public override bool Confirm => IsConnected && Pad.buttonSouth.wasPressedThisFrame;
         public override bool Cancel => IsConnected && Pad.buttonEast.wasPressedThisFrame;
-        public bool AnyActivity
+        public bool AnyActivity => HasActivity(true);
+
+        /// <summary>Any button or stick this frame. Start can be left out: on a pad P1 isn't using, Start means "join", not "switch to this pad".</summary>
+        public bool HasActivity(bool includeStart)
         {
-            get
-            {
-                if (!IsConnected) return false;
-                foreach (var c in Pad.allControls)
-                    if (c is UnityEngine.InputSystem.Controls.ButtonControl b && b.wasPressedThisFrame) return true;
-                return Pad.leftStick.ReadValue().sqrMagnitude > 0.25f || Pad.rightStick.ReadValue().sqrMagnitude > 0.25f;
-            }
+            if (!IsConnected) return false;
+            foreach (var c in Pad.allControls)
+                if (c is UnityEngine.InputSystem.Controls.ButtonControl b && b.wasPressedThisFrame && (includeStart || c != Pad.startButton)) return true;
+            return Pad.leftStick.ReadValue().sqrMagnitude > 0.25f || Pad.rightStick.ReadValue().sqrMagnitude > 0.25f;
         }
         public override bool Inventory => IsConnected && Pad.buttonNorth.wasPressedThisFrame;
         public override bool CharacterSheet => IsConnected && Pad.selectButton.wasPressedThisFrame;
@@ -239,6 +239,9 @@ namespace DnD.Game
         int _frame = -1;
         public Gamepad ActivePad { get; private set; }
 
+        /// <summary>P1 is playing on this pad right now (it was their last-used device). Start on any other pad means "join".</summary>
+        public bool OwnsPad(Gamepad pad) { Refresh(); return _padLast && ActivePad == pad; }
+
         public override bool TypingMode { get => _kb.TypingMode; set => _kb.TypingMode = value; }
 
         void Refresh()
@@ -251,7 +254,7 @@ namespace DnD.Game
                 if (Claimed != null && Claimed(pad)) continue;
                 if (!_pads.TryGetValue(pad, out var gi)) _pads[pad] = gi = new GamepadInput(pad);
                 _active.Add(gi);
-                if (gi.AnyActivity) { _padLast = true; ActivePad = pad; }
+                if (gi.HasActivity(includeStart: _padLast && ActivePad == pad)) { _padLast = true; ActivePad = pad; }
             }
             if (_kb.AnyActivity) _padLast = false;
         }
@@ -286,7 +289,8 @@ namespace DnD.Game
         public override bool Spells => Any(p => p.Spells);
         public override bool Journal => Any(p => p.Journal);
         public override bool EndTurn => Any(p => p.EndTurn);
-        public override bool Pause => Any(p => p.Pause);
+        // Start on a pad P1 isn't using means "join" (GameRoot.TryDropIn), never P1's pause.
+        public override bool Pause { get { Refresh(); return _kb.Pause || _active.Exists(p => p.Pause && OwnsPad(p.Pad)); } }
         public override bool NextTab => Any(p => p.NextTab);
         public override bool PrevTab => Any(p => p.PrevTab);
         public override bool AltAction => Any(p => p.AltAction);

@@ -247,11 +247,8 @@ namespace DnD.Game
             }
             p.Hud?.CloseAll();
             var stay = Players.First(x => x != p);
-            foreach (var c in CompanionsOf(p).ToList())
-            {
-                if (c.IsDragon) c.Leader = stay; // the dragon belongs to the whole party
-                else DismissCompanion(c);
-            }
+            // Companions (and the dragon, which belongs to everyone) wait with the rest of the party.
+            foreach (var c in CompanionsOf(p).ToList()) c.Leader = stay;
             string name = p.Label;
             _sleeping.Remove(p.Index);
             if (p.Avatar) Destroy(p.Avatar.gameObject);
@@ -262,7 +259,7 @@ namespace DnD.Game
             LayoutCameras();
             foreach (var x in Players) x.Hud?.Narrate($"{name} heads off for now. (Press Start to rejoin.)");
             // Someone was waiting in bed for the player who just left.
-            if (_sleeping.Count > 0 && Players.Where(x => x.IsReady).All(x => _sleeping.Contains(x.Index))) DoLongRest();
+            if (_sleeping.Count > 0 && Players.Where(x => x.IsReady && !x.StalledByDisconnect).All(x => _sleeping.Contains(x.Index))) DoLongRest();
         }
 
         void LayoutCameras()
@@ -396,7 +393,7 @@ namespace DnD.Game
             {
                 foreach (var pad in Gamepad.all)
                     if (pad.startButton.wasPressedThisFrame && !Players.Any(p => p.Input is GamepadInput gi && gi.Pad == pad)
-                        && !Players.Any(p => p.Input is HybridInput h && h.ActivePad == pad && !h.UsesMouse))
+                        && !Players.Any(p => p.Input is HybridInput h && h.OwnsPad(pad)))
                     {
                         ((GamepadInput)lost.Input).Rebind(pad);
                         lost.Hud.Toast("Controller connected. Welcome back!", UIKit.Good);
@@ -407,7 +404,7 @@ namespace DnD.Game
             PlayerInput joiner = null;
             foreach (var pad in Gamepad.all)
                 if (pad.startButton.wasPressedThisFrame && !Players.Any(p => p.Input is GamepadInput gi && gi.Pad == pad)
-                    && !Players.Any(p => p.Input is HybridInput h && h.ActivePad == pad && !h.UsesMouse)) joiner = new GamepadInput(pad);
+                    && !Players.Any(p => p.Input is HybridInput h && h.OwnsPad(pad))) joiner = new GamepadInput(pad);
             var kb = Keyboard.current;
             if (joiner == null && kb != null && kb.enterKey.wasPressedThisFrame && !Players.Any(p => p.Input is KeyboardMouseInput || p.Input is HybridInput) && Players.All(p => !p.IsBusy))
                 joiner = new KeyboardMouseInput();
@@ -757,7 +754,7 @@ namespace DnD.Game
             }
         }
 
-        CompanionAgent SpawnCompanion(PlayerSlot leader, PlayerCharacter pc, string quirk)
+        public CompanionAgent SpawnCompanion(PlayerSlot leader, PlayerCharacter pc, string quirk)
         {
             pc.Team = Team.Players;
             var c = CompanionAgent.Create(leader, $"ally_{pc.Class.Id}_{pc.Species.Id}", true, pc);
@@ -933,7 +930,7 @@ namespace DnD.Game
         void FinishSleeping(PlayerSlot p)
         {
             _sleeping.Add(p.Index);
-            var awake = Players.Where(x => x.IsReady && !_sleeping.Contains(x.Index)).ToList();
+            var awake = Players.Where(x => x.IsReady && !x.StalledByDisconnect && !_sleeping.Contains(x.Index)).ToList();
             if (awake.Count > 0)
             {
                 p.Hud.Push(new ChoiceScreen("Zzz...", $"Waiting for {string.Join(", ", awake.Select(a => a.Character.Name))} to go to bed too.",

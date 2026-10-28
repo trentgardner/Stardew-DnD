@@ -409,6 +409,142 @@ namespace DnD.Tests
             Time.timeScale = 1;
         }
 
+        // ------------------------------------------------------------------ final-review fixes
+
+        [UnityTest]
+        public IEnumerator APadPlayerOneTouchedStillJoinsOnceTheyGoBackToTheKeyboard()
+        {
+            var g = GameRoot.I;
+            var p1 = g.DebugStart(new HybridInput(), "fighter", "human");
+            var b = NewPad();
+            b.Hold(Vector2.right);          // the fiancee nudges the spare pad: P1's character moves
+            yield return Frames(5);
+            b.Hold(Vector2.zero);
+            // Batch-mode runs have no window focus, and by default the Input System drops keyboard input without it.
+            var background = InputSystem.settings.backgroundBehavior;
+            InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+#if UNITY_EDITOR
+            var editorMode = InputSystem.settings.editorInputBehaviorInPlayMode;
+            InputSystem.settings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+#endif
+            var kb = InputSystem.AddDevice<Keyboard>();
+            try
+            {
+                kb.MakeCurrent();
+                InputSystem.QueueStateEvent(kb, new KeyboardState(Key.W)); // P1 goes back to the keyboard
+                yield return null;
+                Assert.AreSame(kb, Keyboard.current, "test keyboard is current");
+                Assert.IsTrue(kb.wKey.isPressed, "W is down");
+                yield return null;
+                InputSystem.QueueStateEvent(kb, new KeyboardState());
+                yield return Frames(2);
+                Assert.IsFalse(((HybridInput)p1.Input).OwnsPad(b.Pad), "after typing, P1 is back on the keyboard");
+                yield return b.Tap(GamepadButton.Start);
+                yield return Frames(2);
+                Assert.AreEqual(2, g.Players.Count, "Start on a pad P1 isn't using joins as Player 2");
+                Assert.IsFalse(p1.Hud.Top is PauseScreen);
+            }
+            finally
+            {
+                InputSystem.RemoveDevice(kb);
+                InputSystem.settings.backgroundBehavior = background;
+#if UNITY_EDITOR
+                InputSystem.settings.editorInputBehaviorInPlayMode = editorMode;
+#endif
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator TradeScreenLetsGoOfAPartnerWhoLeft()
+        {
+            var g = GameRoot.I;
+            PlayerSlot p1 = null, p2 = null; VirtualPad b = null;
+            yield return TwoPlayers((x, y, z) => { p1 = x; p2 = y; b = z; });
+            g.Warp(p2, p1.Zone.Def.Id, p1.MapPos, false);
+            g.GiveCopper(p1, 500);
+            yield return Frames(2);
+            var inv = new InventoryScreen(null, null);
+            p1.Hud.Push(inv);
+            yield return Frames(2);
+            Assert.AreSame(p2, inv.Partner);
+            g.DropOut(p2);
+            yield return Frames(2);
+            Assert.IsNull(inv.Partner, "no trading with someone who left");
+            int copper = p1.Character.Copper;
+            inv.GiveGold(100);
+            Assert.AreEqual(copper, p1.Character.Copper, "gold isn't sent into the void");
+        }
+
+        [UnityTest]
+        public IEnumerator ADeadControllerDoesNotHangARerollPrompt()
+        {
+            PlayerSlot p1 = null, p2 = null; VirtualPad b = null;
+            yield return TwoPlayers((x, y, z) => { p1 = x; p2 = y; b = z; });
+            float grace = PlayerSlot.DisconnectGraceSeconds;
+            PlayerSlot.DisconnectGraceSeconds = 0.2f;
+            try
+            {
+                p2.Character.HeroicInspiration = true; // a failed roll will offer a reroll choice
+                b.Unplug();
+                bool done = false;
+                p2.Hud.Dice.RollD20("Test Save", "DC 99", () => { DnD.Rules.D20Result r; do r = DnD.Rules.Dice.RollD20(DnD.Rules.AdvantageState.Normal); while (r.Natural == 20); return r; },
+                    99, false, _ => done = true);
+                float start = Time.realtimeSinceStartup;
+                while (!done && Time.realtimeSinceStartup - start < 15f) yield return null;
+                Assert.IsTrue(done, "the roll resolves on its own when the controller is gone");
+            }
+            finally { PlayerSlot.DisconnectGraceSeconds = grace; }
+        }
+
+        [UnityTest]
+        public IEnumerator ALostControllerDoesNotKeepPlayerOneAwakeForever()
+        {
+            var g = GameRoot.I;
+            PlayerSlot p1 = null, p2 = null; VirtualPad b = null;
+            yield return TwoPlayers((x, y, z) => { p1 = x; p2 = y; b = z; });
+            float grace = PlayerSlot.DisconnectGraceSeconds;
+            PlayerSlot.DisconnectGraceSeconds = 0.2f;
+            try
+            {
+                g.Warp(p1, "home", WorldDb.Zones["home"].DefaultSpawn, false);
+                b.Unplug();
+                yield return new WaitForSecondsRealtime(0.5f);
+                int day = g.Clock.Day;
+                g.BeginLongRest(p1);
+                yield return Frames(10);
+                Assert.Greater(g.Clock.Day, day, "a partner whose controller is gone doesn't block sleep");
+            }
+            finally { PlayerSlot.DisconnectGraceSeconds = grace; }
+        }
+
+        [UnityTest]
+        public IEnumerator PlayerOneCanSendHomeAPartnerWithADeadController()
+        {
+            var g = GameRoot.I;
+            PlayerSlot p1 = null, p2 = null; VirtualPad b = null;
+            yield return TwoPlayers((x, y, z) => { p1 = x; p2 = y; b = z; });
+            b.Unplug();
+            yield return Frames(2);
+            var pause = new PauseScreen();
+            p1.Hud.Push(pause);
+            yield return Frames(2);
+            Assert.IsTrue(pause.HasOption("Send " + p2.Character.Name + " home"), "P1's pause menu offers to drop out a disconnected partner");
+        }
+
+        [UnityTest]
+        public IEnumerator CompanionsWaitWithThePartyWhenTheirLeaderLeaves()
+        {
+            var g = GameRoot.I;
+            PlayerSlot p1 = null, p2 = null; VirtualPad b = null;
+            yield return TwoPlayers((x, y, z) => { p1 = x; p2 = y; b = z; });
+            var pc = DnD.Rules.CharacterFactory.Create(DnD.Rules.CharacterFactory.DefaultChoices("fighter", "dwarf", "Tova"));
+            var comp = g.SpawnCompanion(p2, pc, "hums");
+            g.DropOut(p2);
+            yield return Frames(2);
+            Assert.IsTrue(g.Companions.Contains(comp), "the companion stays with the party");
+            Assert.AreSame(p1, comp.Leader);
+        }
+
         [UnityTest]
         public IEnumerator PartnerLeavingWhileYouWaitInBedEndsTheNight()
         {

@@ -222,6 +222,14 @@ namespace DnD.Game
 
         public override void Tick()
         {
+            if (_partner != null && !GameRoot.I.Players.Contains(_partner))
+            {
+                // Your trade partner left the game: nothing more can go to (or come from) their bag.
+                _partner = null;
+                Hud.Toast("Your partner left, so the trade is closed.", UIKit.Dim);
+                Close();
+                return;
+            }
             var cells = Panel(_panel);
 
             // Mouse hover / click / drag
