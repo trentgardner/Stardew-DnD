@@ -47,3 +47,6 @@ Thumbs.db
 
 # Superpowers scratch
 /.superpowers/
+
+# Third-party art source packs (CC0; sliced copies live in Assets/Resources/Art)
+/ArtSource/
