@@ -13,6 +13,8 @@ namespace DnD.Game
     /// The game's hub. Created automatically when any scene loads (no scene setup needed).
     /// Owns players, the world, the clock and all running fights.
     /// </summary>
+    // Runs before avatars and HUDs, so a controller's Start press is claimed as a join before P1 can read it as Pause.
+    [DefaultExecutionOrder(-100)]
     public class GameRoot : MonoBehaviour
     {
         public static GameRoot I;

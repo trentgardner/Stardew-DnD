@@ -44,3 +44,6 @@ Thumbs.db
 
 # Unity test runner leftovers
 /Assets/InitTestScene*.unity*
+
+# Superpowers scratch
+/.superpowers/
