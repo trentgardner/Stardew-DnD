@@ -65,6 +65,7 @@ namespace DnD.Game
             Application.targetFrameRate = 60;
             QualitySettings.vSyncCount = 1;
             Clock.HourChanged += OnHourChanged;
+            Quests.Changed += OnQuestsChanged;
             AttackResolver.ConcentrationCheckNeeded += (c, dmg) => Combats.FirstOrDefault(x => x.Units.Any(u => u.C == c))?.ConcentrationCheck(c, dmg);
             AttackResolver.PushRequested += (from, to, ft) =>
             {
@@ -192,6 +193,7 @@ namespace DnD.Game
             _deathTime.Clear(); _sleeping.Clear(); _lastLongRest.Clear(); _parley.Clear(); _pendingPlayers.Clear();
             World = new WorldState();
             Quests = new QuestLog();
+            Quests.Changed += OnQuestsChanged;
             Clock = new GameClock();
             Clock.HourChanged += OnHourChanged;
             foreach (var p in Players) { if (p.Avatar) Destroy(p.Avatar.gameObject); p.Avatar = null; p.Character = null; p.Combat = null; }
@@ -533,6 +535,16 @@ namespace DnD.Game
                 if (_groups.TryGetValue(g.Id, out var old)) foreach (var a in old) if (a) Destroy(a.gameObject);
                 _groups.Remove(g.Id);
             }
+            if (!g.InStage(Quests))
+            {
+                // A quest-gated group that isn't part of the story right now (not yet, or not any more).
+                if (_groups.TryGetValue(g.Id, out var gone) && !Combats.Any(c => c.GroupId == g.Id && !c.Finished) && !_parley.Contains(g.Id))
+                {
+                    foreach (var a in gone) if (a) Destroy(a.gameObject);
+                    _groups.Remove(g.Id);
+                }
+                return;
+            }
             if (World.DefeatedGroups.Contains(g.Id) || _groups.ContainsKey(g.Id)) return;
             if (World.PacifiedGroups.Contains(g.Id) && World.Flag("fled:" + g.Id)) return;
             var list = new List<EnemyAgent>();
@@ -839,6 +851,26 @@ namespace DnD.Game
 
         float _nextItemCheck;
 
+        /// <summary>Quest-gated groups appear or leave as their quest moves on.</summary>
+        void OnQuestsChanged()
+        {
+            foreach (var z in Zones.Values)
+                foreach (var grp in z.Def.EnemyGroups)
+                    if (grp.QuestId != null) SpawnGroupIfNeeded(z, grp);
+        }
+
+        /// <summary>A quest item counts wherever the party keeps it: this player's bag, a partner's, or home storage.</summary>
+        public bool HasQuestItem(PlayerSlot p, string id) =>
+            p.Character.CountOf(id) > 0 || Players.Any(x => x.Character != null && x.Character.CountOf(id) > 0) || World.Storage.Count(id) > 0;
+
+        /// <summary>Hands one quest item over (from this player first, then a partner, then home storage).</summary>
+        public bool TakeQuestItem(PlayerSlot p, string id)
+        {
+            if (p.Character.RemoveItem(id)) return true;
+            foreach (var x in Players) if (x.Character != null && x.Character.RemoveItem(id)) return true;
+            return World.Storage.Remove(id, 1);
+        }
+
         void CheckQuestItems()
         {
             foreach (var q in QuestDb.All.Values)
@@ -894,14 +926,14 @@ namespace DnD.Game
 
         public void ReturnKettle(PlayerSlot p)
         {
-            p.Character.RemoveItem("copper_kettle");
+            TakeQuestItem(p, "copper_kettle");
             World.KettleReturned = true;
             Quests.Set("kettle", 2, p);
         }
 
         public void ReturnSpoon(PlayerSlot p)
         {
-            p.Character.RemoveItem("lucky_spoon");
+            TakeQuestItem(p, "lucky_spoon");
             World.SetFlag("spoon_returned");
             Quests.Set("spoon", 2, p);
         }

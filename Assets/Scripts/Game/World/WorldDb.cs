@@ -40,6 +40,10 @@ namespace DnD.Game
         public string Spotted, Befriended;
         /// <summary>Story groups never come back once resolved (everything else respawns after a few days).</summary>
         public bool Unique;
+        /// <summary>Quest-gated group: only around while QuestId's stage is within MinStage..MaxStage (QuestId null = always).</summary>
+        public string QuestId;
+        public int MinStage, MaxStage;
+        public bool InStage(QuestLog q) => QuestId == null || (q.Stage(QuestId) >= MinStage && q.Stage(QuestId) <= MaxStage);
     }
 
     public class ChestDef
@@ -69,6 +73,12 @@ namespace DnD.Game
         public bool HeroicInspiration;   // grants Heroic Inspiration on success
         public string FirstTimeItem;     // extra item only on the very first success
         public string FirstTimeText;
+        /// <summary>Quest spot: only present while QuestId is at QuestStage. Success sets SetsFlag and moves the quest to AdvanceTo.</summary>
+        public string QuestId;
+        public int QuestStage = -1;
+        public int AdvanceTo = -1;
+        public string SetsFlag;
+        public bool IsQuestSpot => QuestId != null;
     }
 
     public class ZoneDef

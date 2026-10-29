@@ -61,7 +61,7 @@ namespace DnD.Game
                 .Roll(Skill.Performance, 12, "Perhaps a little song for the shopkeep?", "perf_yes", "perf_no",
                       onSuccess: c => c.G.World.SetShopModifier(c.P.Index, "general", -10, c.G.Clock.Day), show: c => c.Is("bard"), role: "Bard")
                 .Roll(Skill.Insight, 12, "You seem distracted. Something on your mind?", "insight_yes", "insight_no", social: false)
-                .Say("I found your copper kettle.", "kettle", doIt: c => c.G.ReturnKettle(c.P), show: c => c.PC.CountOf("copper_kettle") > 0)
+                .Say("I found your copper kettle.", "kettle", doIt: c => c.G.ReturnKettle(c.P), show: c => c.G.HasQuestItem(c.P, "copper_kettle"))
                 .Say("Did you see the falling star last night?", "star")
                 .Bye();
 
@@ -256,7 +256,7 @@ namespace DnD.Game
 
         static Dialogue Tobin()
         {
-            var d = new Dialogue("tobin", c => c.PC.CountOf("lucky_spoon") > 0 ? "spoon" : "start");
+            var d = new Dialogue("tobin", c => c.G.HasQuestItem(c.P, "lucky_spoon") ? "spoon" : "start");
             const string who = "Old Tobin";
             d.Node("start", who, c => c.G.World.Flag("spoon_returned")
                     ? "There's the spoon-finder! Best soup I've had in years, thanks to you."

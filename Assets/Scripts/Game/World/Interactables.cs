@@ -55,9 +55,20 @@ namespace DnD.Game
 
         public override string PromptText(PlayerSlot p) => Def.Prompt;
 
+        bool Present => !Def.IsQuestSpot || GameRoot.I.Quests.Stage(Def.QuestId) == Def.QuestStage;
+        public override bool Available(PlayerSlot p) => Present;
+
+        SpriteRenderer _sr;
+        void Update()
+        {
+            if (!Def.IsQuestSpot) return;
+            if (_sr == null) _sr = GetComponent<SpriteRenderer>();
+            if (_sr != null) _sr.enabled = Present;
+        }
+
         public override void Interact(PlayerSlot p)
         {
-            if (p.IsBusy) return; // one roll at a time (two inputs in the same frame must not open two dice trays)
+            if (p.IsBusy || !Present) return; // one roll at a time (two inputs in the same frame must not open two dice trays)
             var g = GameRoot.I;
             var w = g.World;
             if (!Def.Daily && w.Flag(FoundKey)) { p.Hud.Narrate(Def.AlreadyFound, false); return; }
@@ -69,9 +80,17 @@ namespace DnD.Game
 
             var pc = p.Character;
             string sub = $"{SkillUtil.Name(Def.Skill)} ({SkillUtil.AbilityOf(Def.Skill)}) {AbilityUtil.Fmt(pc.SkillBonus(Def.Skill))} · DC hidden";
-            p.Hud.Dice.RollD20($"{SkillUtil.Name(Def.Skill)} Check", sub, () => Checks.RollSkill(pc, Def.Skill, AdvantageState.Normal), Def.DC, true, r =>
+            p.Hud.Dice.RollD20($"{SkillUtil.Name(Def.Skill)} Check", sub, () => Checks.RollSkill(pc, Def.Skill, AdvantageState.Normal), Def.DC, true,
+                r => Resolve(p, Checks.ResolveCheck(r, Def.DC)));
+        }
+
+        /// <summary>Everything after the roll: lock-outs, rewards, quest progress and the result window.</summary>
+        public void Resolve(PlayerSlot p, CheckOutcome outcome)
+        {
+            var g = GameRoot.I;
+            var w = g.World;
+            var pc = p.Character;
             {
-                var outcome = Checks.ResolveCheck(r, Def.DC);
                 bool success = Checks.IsSuccess(outcome);
                 if (Def.Daily || !success) w.Lock(TodayKey(p), 24 * 60 - g.Clock.Minutes); // until midnight
                 if (!success)
@@ -98,8 +117,11 @@ namespace DnD.Game
                     g.GiveItem(p, Def.FirstTimeItem);
                     text += "\n\n" + Def.FirstTimeText;
                 }
+                if (Def.SetsFlag != null) w.SetFlag(Def.SetsFlag);
+                if (Def.IsQuestSpot && Def.AdvanceTo > 0) g.Quests.Set(Def.QuestId, Def.AdvanceTo, p);
+                g.Quests.Notify(QuestEvent.SecretFound, Def.Id, p);
                 p.Hud.Push(new MessageScreen(Def.Prompt, text));
-            });
+            }
         }
     }
 

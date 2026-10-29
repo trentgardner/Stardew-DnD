@@ -31,6 +31,8 @@ namespace DnD.Rules
         public float Weight;
         /// <summary>How many fit in one inventory slot. 0 = use the default for the item kind.</summary>
         public int StackSize;
+        /// <summary>Story items: never sold (price 0), never lost (overflow goes to home storage), one per slot.</summary>
+        public bool QuestItem;
 
         public int MaxStack
         {

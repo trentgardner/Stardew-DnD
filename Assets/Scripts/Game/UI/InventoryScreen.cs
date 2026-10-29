@@ -445,6 +445,7 @@ namespace DnD.Game
             {
                 int left = Bag.ReturnHeld(_held);
                 if (left > 0 && OtherInv != null) left = OtherInv.Add(_held.ItemId, left);
+                if (left > 0 && ItemsDb.Get(_held.ItemId)?.QuestItem == true) left = GameRoot.I.World.Storage.Add(_held.ItemId, left);
                 if (left > 0) Slot.Hud.Toast($"No room: dropped {left}× {ItemsDb.Get(_held.ItemId)?.Name}", UIKit.Bad);
                 _held = null;
             }

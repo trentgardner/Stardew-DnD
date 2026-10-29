@@ -120,5 +120,90 @@ namespace DnD.Tests
             Assert.AreEqual(xp, p.Character.XP, "no second payout");
             StringAssert.StartsWith("Complete", QuestDb.Get("kettle").StageText[g.Quests.Stage("kettle")]);
         }
+
+        // ============================================================ Task 2: quest spots, gated groups, quest items, toasts
+
+        [UnityTest]
+        public IEnumerator QuestSpotOnlyAppearsAtItsStage()
+        {
+            var town = WorldDb.Zones["town"];
+            var at = new Vector2Int(25, 19); // open cobbles on the square (not a q tile: quest spots can sit anywhere walkable)
+            var spot = new SecretDef { Id = "test_spot", Sprite = "obj_crate", Prompt = "Test spot", Skill = Skill.Perception, DC = 10,
+                Success = "ok", Failure = "no", AlreadyFound = "done", QuestId = "spoon", QuestStage = 1, AdvanceTo = 2, SetsFlag = "test_spot_flag" };
+            town.Secrets[at] = spot;
+            try
+            {
+                var g = GameRoot.I;
+                var p = g.DebugStart(Still(6), "fighter", "human");
+                yield return null;
+                var si = Object.FindObjectsByType<SecretInteractable>().Single(x => x.Def == spot);
+                Assert.IsFalse(si.Available(p), "hidden before the quest reaches its stage");
+                g.Quests.Start("spoon");
+                yield return null;
+                Assert.IsTrue(si.Available(p), "present at its stage");
+                si.Resolve(p, CheckOutcome.Success);
+                Assert.AreEqual(2, g.Quests.Stage("spoon"), "success advances the quest");
+                Assert.IsTrue(g.World.Flag("test_spot_flag"));
+                yield return null;
+                Assert.IsFalse(si.Available(p), "gone once the quest moves past its stage");
+            }
+            finally { town.Secrets.Remove(at); }
+        }
+
+        [UnityTest]
+        public IEnumerator QuestGatedGroupSpawnsOnlyInStageRange()
+        {
+            var forest = WorldDb.Zones["forest"];
+            var grp = new EnemyGroupDef { Id = "test_gated", Unique = true, QuestId = "spoon", MinStage = 1, MaxStage = 1 };
+            grp.Members.Add(new EnemySpawn("wolf", 6, 21)); // far from the player: nobody gets spotted
+            forest.EnemyGroups.Add(grp);
+            try
+            {
+                var g = GameRoot.I;
+                var p = g.DebugStart(Still(7), "fighter", "human");
+                g.Warp(p, "forest", new Vector2Int(43, 18), false);
+                yield return null;
+                System.Func<int> count = () => Object.FindObjectsByType<EnemyAgent>().Count(e => e.Group == grp);
+                Assert.AreEqual(0, count(), "not before stage 1");
+                g.Quests.Start("spoon");
+                yield return null;
+                Assert.AreEqual(1, count(), "spawns at stage 1");
+                g.Quests.Set("spoon", 2);
+                yield return null;
+                Assert.AreEqual(0, count(), "leaves after stage 1");
+            }
+            finally { forest.EnemyGroups.Remove(grp); }
+        }
+
+        [UnityTest]
+        public IEnumerator QuestItemsCantBeSoldOrDropped()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(8), "fighter", "human");
+            yield return null;
+            foreach (var id in new[] { "copper_kettle", "lucky_spoon" })
+            {
+                Assert.IsTrue(ItemsDb.Get(id).QuestItem, id);
+                Assert.AreEqual(0, ItemsDb.Get(id).PriceCp, $"{id}: shops only buy priced items");
+            }
+            g.World.Storage.Add("copper_kettle", 1);
+            Assert.IsTrue(g.HasQuestItem(p, "copper_kettle"), "a quest item left in home storage still counts");
+            Assert.IsTrue(g.TakeQuestItem(p, "copper_kettle"));
+            Assert.AreEqual(0, g.World.Storage.Count("copper_kettle"));
+            Assert.IsFalse(g.TakeQuestItem(p, "copper_kettle"));
+        }
+
+        [UnityTest]
+        public IEnumerator DuplicateToastsMerge()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(9), "fighter", "human");
+            yield return null;
+            int before = p.Hud.ToastTexts.Count;
+            for (int i = 0; i < 3; i++) p.Hud.Toast("You are already at full health.");
+            var mine = p.Hud.ToastTexts.Where(t => t.StartsWith("You are already at full health.")).ToList();
+            Assert.AreEqual(1, mine.Count, "one toast, not three");
+            StringAssert.EndsWith("×3", mine[0]);
+        }
     }
 }

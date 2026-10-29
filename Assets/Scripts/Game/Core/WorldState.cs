@@ -68,7 +68,10 @@ namespace DnD.Game
         public void Lock(string key, float minutes) => Locks[key] = Now + minutes;
 
         public bool Flag(string f) => Flags.Contains(f);
-        public void SetFlag(string f) => Flags.Add(f);
+        public void SetFlag(string f)
+        {
+            if (Flags.Add(f)) GameRoot.I?.Quests.Notify(QuestEvent.FlagSet, f);
+        }
 
         public void SetShopModifier(int player, string shop, int pct, int day) => ShopModifiers[$"{player}:{shop}"] = new Vector2Int(pct, day);
 

@@ -120,8 +120,8 @@ namespace DnD.Rules.Content
 
             All["gemstone"] = new ItemDef { Id = "gemstone", Name = "Polished Gemstone", Kind = ItemKind.Treasure, PriceCp = 1000, Icon = "item_gem", Description = "Kobolds love these." };
             All["copper_trinket"] = new ItemDef { Id = "copper_trinket", Name = "Shiny Copper Trinket", Kind = ItemKind.Treasure, PriceCp = 50, Icon = "item_trinket", Description = "Probably stolen from a farmhouse." };
-            All["copper_kettle"] = new ItemDef { Id = "copper_kettle", Name = "Dented Copper Kettle", Kind = ItemKind.Treasure, PriceCp = 0, Icon = "item_copper_trinket", StackSize = 1, Description = "Brannoc's grandmother's kettle. Smells faintly of kobold." };
-            All["lucky_spoon"] = new ItemDef { Id = "lucky_spoon", Name = "Old Tobin's Lucky Spoon", Kind = ItemKind.Treasure, PriceCp = 0, Icon = "item_dagger", StackSize = 1, Description = "A worn wooden spoon. Tobin insists it makes soup taste better. (It does.)" };
+            All["copper_kettle"] = new ItemDef { Id = "copper_kettle", Name = "Dented Copper Kettle", Kind = ItemKind.Treasure, PriceCp = 0, Icon = "item_copper_trinket", StackSize = 1, QuestItem = true, Description = "Brannoc's grandmother's kettle. Smells faintly of kobold." };
+            All["lucky_spoon"] = new ItemDef { Id = "lucky_spoon", Name = "Old Tobin's Lucky Spoon", Kind = ItemKind.Treasure, PriceCp = 0, Icon = "item_dagger", StackSize = 1, QuestItem = true, Description = "A worn wooden spoon. Tobin insists it makes soup taste better. (It does.)" };
             All["egg_shard"] = new ItemDef { Id = "egg_shard", Name = "Warm Eggshell Shard", Kind = ItemKind.Treasure, PriceCp = 0, Icon = "item_shard", Description = "Faintly warm. Smells like a campfire." };
         }
 

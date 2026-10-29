@@ -74,6 +74,10 @@ namespace DnD.Game
             for (int row = 0; row < def.Height; row++)
                 for (int col = 0; col < def.Width; col++)
                     zone.BuildCell(new Vector2Int(col, row), def.Map[row][col]);
+            // Quest spots can sit on any walkable tile (they come and go with their quest's stage).
+            foreach (var kv in def.Secrets)
+                if ("qOY".IndexOf(zone.CharAt(kv.Key)) < 0)
+                    zone.Prop(kv.Key, kv.Value.Sprite).AddComponent<SecretInteractable>().Def = kv.Value;
 
             zone._base.CompressBounds();
             zone._ground.CompressBounds();
