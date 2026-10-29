@@ -120,7 +120,7 @@ namespace DnD.Tests
                 "npc_wick_down_0", "npc_thimble_down_0", "npc_brawler_down_0", "npc_watchman_down_0",
                 "mon_goat_0", "mon_owlbear_0", "mon_owlbear_cub_0",
                 "obj_forge", "obj_barrel_tapped", "obj_herb", "obj_bench", "obj_planter", "obj_washing_line",
-                "item_ring", "item_poem", "item_herb", "item_goat_bell" };
+                "item_ring", "item_poem", "item_herb", "item_goat_bell", "obj_hanging_sign" };
             var missing = ids.Where(id => !ArtRegistry.IsReal(id)).ToList();
             Assert.IsEmpty(missing, "placeholder art: " + string.Join(", ", missing));
         }

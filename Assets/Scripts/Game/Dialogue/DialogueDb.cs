@@ -8,7 +8,7 @@ namespace DnD.Game
     /// All conversations. Lore names are PLACEHOLDERS pending approval (docs/LORE_PITCH.md).
     /// Role-gated options use Show = class/background/species checks.
     /// </summary>
-    public static class DialogueDb
+    public static partial class DialogueDb
     {
         static readonly Dictionary<string, Dialogue> Cache = new Dictionary<string, Dialogue>();
 
@@ -26,6 +26,11 @@ namespace DnD.Game
                 case "snik": d = Snik(); break;
                 case "wren": d = Wren(); break;
                 case "hobb": d = Hobb(); break;
+                case "garrick": d = Garrick(); break;
+                case "hesper": d = Hesper(); break;
+                case "dunstan": d = Dunstan(); break;
+                case "lark": d = Lark(); break;
+                case "tamsin": d = Tamsin(); break;
                 case "recruit": d = Recruit(); break;
                 case "companion": d = Companion(); break;
                 default: d = new Dialogue(id, c => "start"); d.Node("start", null, c => "...").Bye(); break;

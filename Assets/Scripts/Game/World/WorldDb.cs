@@ -81,6 +81,13 @@ namespace DnD.Game
         public bool IsQuestSpot => QuestId != null;
     }
 
+    /// <summary>The sign hanging beside a building's door: the prompt names the building, reading it gives the text.</summary>
+    public class BuildingSign
+    {
+        public string Name, Text;
+        public BuildingSign(string name, string text) { Name = name; Text = text; }
+    }
+
     public class ZoneDef
     {
         public string Id, Name;
@@ -98,6 +105,8 @@ namespace DnD.Game
         public List<ChestDef> Chests = new List<ChestDef>();
         public Dictionary<Vector2Int, string> Signs = new Dictionary<Vector2Int, string>();
         public Dictionary<Vector2Int, SecretDef> Secrets = new Dictionary<Vector2Int, SecretDef>();
+        /// <summary>Keyed by the DOOR tile; the sign hangs on the wall just right of the door.</summary>
+        public Dictionary<Vector2Int, BuildingSign> DoorSigns = new Dictionary<Vector2Int, BuildingSign>();
         public Vector2Int? EggPos;
         public Vector2Int? BedPos;
         public Vector2Int? ShopCounter;
@@ -132,6 +141,7 @@ namespace DnD.Game
         public static readonly Dictionary<string, NpcDef> Npcs = new Dictionary<string, NpcDef>();
 
         public static readonly string[] Weekdays = { "Dawnday", "Tideday", "Emberday", "Stormday", "Leafday", "Coinday", "Hearthday" };
+        public const int Dawnday = 0, Tideday = 1, Emberday = 2, Stormday = 3, Leafday = 4, Coinday = 5, Hearthday = 6;
 
         static WorldDb()
         {
@@ -150,6 +160,21 @@ namespace DnD.Game
             town.Warps.Add(new WarpDef(0, 19, "forest", 44, 19));
             town.Warps.Add(new WarpDef(49, 18, "ford", 1, 14));
             town.Warps.Add(new WarpDef(49, 19, "ford", 1, 15));
+            town.Warps.Add(new WarpDef(6, 40, "forge", 6, 7));
+            town.Warps.Add(new WarpDef(27, 40, "watchhouse", 5, 6));
+            town.Warps.Add(new WarpDef(4, 49, "cottage_lark", 4, 5));
+            town.DoorSigns[new Vector2Int(7, 9)] = new BuildingSign("Temple of the Dawnmother", "TEMPLE OF THE DAWNMOTHER\n\nAll are welcome. Healing, blessings and second chances, by donation.\nHearthday service at nine bells.");
+            town.DoorSigns[new Vector2Int(32, 10)] = new BuildingSign("The Sleeping Drake", "THE SLEEPING DRAKE\nInn & Tavern\n\nRooms, stew, and the best cider in the valley. Story night every Emberday.\nNo dragons on the furniture (sleeping or otherwise).");
+            town.DoorSigns[new Vector2Int(14, 14)] = new BuildingSign("Ironkettle General Goods", "IRONKETTLE GENERAL GOODS\n\nOpen eight bells to six. Closed Hearthdays.\nPrices are prices.");
+            town.DoorSigns[new Vector2Int(8, 28)] = new BuildingSign("Your Cottage", "HOME\n\nThe little sign is new. Someone (Maddie) has painted your name on it. It's spelled wrong, and there's a dragon in the corner.");
+            town.DoorSigns[new Vector2Int(29, 29)] = new BuildingSign("Maddie's House", "MADDIES HOWSE\n(and mum and dad)\n\nKNOCK LOUD. DRAGONS WELCOME.");
+            town.DoorSigns[new Vector2Int(6, 40)] = new BuildingSign("Ashforge Smithy", "ASHFORGE SMITHY\n\nWeapons, armor, horseshoes, hinges.\nIf it's iron, Garrick can make it. If it's broken, Garrick can fix it. If it's a kettle, see Brannoc.");
+            town.DoorSigns[new Vector2Int(27, 40)] = new BuildingSign("The Watch House", "THE WATCH HOUSE\n\nReport crimes, lost things and suspicious small scaly persons here.");
+            town.DoorSigns[new Vector2Int(34, 41)] = new BuildingSign("Meadowsweet Cottage", "MEADOWSWEET COTTAGE\n\nHoney for sale.\nNOT to Burrows.");
+            town.DoorSigns[new Vector2Int(45, 41)] = new BuildingSign("Burrow Cottage", "BURROW COTTAGE\n\nHoney for sale. BETTER honey. Ask anyone.\n(Not Hesper.)");
+            town.DoorSigns[new Vector2Int(4, 49)] = new BuildingSign("Lark's Cottage", "LARK'S FLOWERS\n\nA bunch for every feeling. Knock gently: the jars rattle.");
+            town.Signs[new Vector2Int(29, 41)] = "THISTLEDOWN WATCH\n\nCaptain R. Vale, commanding.\nOffice hours: whenever the Captain is not out doing something more important.\n\nBelow, in a child's handwriting: \"and maddie (deputy)\"";
+            town.Signs[new Vector2Int(12, 45)] = "SOUTH LANE GREEN\n\nPlease do not feed the ducks bread. Or pie. Or Mrs Meadowsweet's honey cake. They have had ENOUGH, Dunstan.";
             town.Signs[new Vector2Int(27, 5)] = "DANGER: OLD COPPER MINE. CLOSED BY ORDER OF THE WATCH.\n\nSomeone has drawn a small, very proud dragon on the sign in charcoal.";
             town.Signs[new Vector2Int(19, 14)] = "THISTLEDOWN NOTICE BOARD\n\nMISSING: 4 chickens, 1 copper kettle, Old Tobin's lucky spoon.\nReport suspicious small scaly persons to Captain Vale.\n\nAlso: did ANYONE else see the falling star last night?";
             town.Signs[new Vector2Int(25, 16)] = "A weathered stone dragon curls around the top of a pillar, wings half-open, one eye closed as if winking.\n\nThe plaque reads: \"EMBERWING, WHO SAT WITH US A WHILE.\"\n\nThe village kids rub its nose for luck. The nose is very shiny.";
@@ -244,6 +269,21 @@ namespace DnD.Game
             temple.Warps.Add(new WarpDef(6, 9, "town", 7, 10));
             Zones[temple.Id] = temple;
 
+            var forge = new ZoneDef { Id = "forge", Name = "Ashforge Smithy", Map = Maps.Forge, Indoors = true, DefaultSpawn = new Vector2Int(6, 7),
+                EnterNarration = "Heat hits you like a friendly shove. Horseshoes, hinges and a few honest swords hang on the walls, and everything smells of coal and hot iron.", ShopCounter = new Vector2Int(6, 3), Music = "music_shop" };
+            forge.Warps.Add(new WarpDef(6, 8, "town", 6, 41));
+            Zones[forge.Id] = forge;
+
+            var watch = new ZoneDef { Id = "watchhouse", Name = "The Watch House", Map = Maps.WatchHouse, Indoors = true, DefaultSpawn = new Vector2Int(5, 6), Music = "music_shop",
+                EnterNarration = "One desk buried in paperwork, one holding cell (currently storing a broom), and a wall map of the valley stuck full of pins. Most of the pins say 'kobold?'." };
+            watch.Warps.Add(new WarpDef(5, 7, "town", 27, 41));
+            Zones[watch.Id] = watch;
+
+            var cottage = new ZoneDef { Id = "cottage_lark", Name = "Lark's Cottage", Map = Maps.CottageLark, Indoors = true, DefaultSpawn = new Vector2Int(4, 5), Music = "music_home",
+                EnterNarration = "Every surface holds a jar of flowers. Pressed petals are drying between the pages of a very large book." };
+            cottage.Warps.Add(new WarpDef(4, 6, "town", 4, 50));
+            Zones[cottage.Id] = cottage;
+
             var home = new ZoneDef { Id = "home", Name = "Your Cottage", Map = Maps.Home, Indoors = true, DefaultSpawn = new Vector2Int(5, 5), SafeForLongRest = true,
                 BedPos = new Vector2Int(2, 2), EnterNarration = "Home. Small, a little drafty, and entirely yours." };
             home.Warps.Add(new WarpDef(5, 7, "town", 8, 29));
@@ -307,6 +347,7 @@ namespace DnD.Game
             };
             ford.Warps.Add(new WarpDef(0, 14, "town", 48, 18));
             ford.Warps.Add(new WarpDef(0, 15, "town", 48, 19));
+            ford.DoorSigns[new Vector2Int(37, 19)] = new BuildingSign("Old Hobb's Mill", "HOBB'S MILL\n\nFlour, meal and grumbling.\nEst. a very long time ago.");
             ford.Signs[new Vector2Int(3, 13)] = "MILLER'S FORD\n\nWEST: Thistledown\nEAST: Port Varrel (3 days)\n\nScratched underneath: \"bridge is OUT. use the ford. mind the wardens.\"";
             ford.Signs[new Vector2Int(25, 13)] = "The bridge is broken clean through: the spring flood took the middle span. Upstream there's a shallow ford, and smoke from a camp beside it.";
             ford.Signs[new Vector2Int(22, 7)] = "FORD WARDENS\nOFFICIAL TOLL CROSSING\n\n10 silver per party. Very official. Do not ask by whose authority.";
@@ -361,7 +402,11 @@ namespace DnD.Game
             brannoc.Schedule.Add(new ScheduleEntry(8, "shop", 6, 2, "minding the counter"));
             brannoc.Schedule.Add(new ScheduleEntry(18, "tavern", 4, 5, "nursing an ale"));
             brannoc.Schedule.Add(new ScheduleEntry(22, null, 0, 0, "asleep"));
-            brannoc.Schedule.Add(new ScheduleEntry(8, "tavern", 11, 5, "enjoying his day off", 6)); // Hearthday: shop closed
+            brannoc.Schedule.Add(new ScheduleEntry(8, "tavern", 11, 5, "enjoying his day off", Hearthday)); // shop closed
+            brannoc.Schedule.Add(new ScheduleEntry(9, "temple", 3, 3, "at the Hearthday service, pretending not to sing", Hearthday));
+            brannoc.Schedule.Add(new ScheduleEntry(11, "tavern", 11, 5, "enjoying his day off", Hearthday));
+            brannoc.Schedule.Add(new ScheduleEntry(10, "town", 21, 15, "selling odds and ends at the market", Coinday));
+            brannoc.Schedule.Add(new ScheduleEntry(14, "shop", 6, 2, "counting the market takings", Coinday));
             Npcs[brannoc.Id] = brannoc;
 
             var elowen = new NpcDef { Id = "elowen", Name = "Mother Elowen", Title = "Priestess of the Dawnmother", Look = "npc_elowen", Dialogue = "elowen", ShopId = "temple" };
@@ -370,12 +415,16 @@ namespace DnD.Game
             elowen.Schedule.Add(new ScheduleEntry(17, "town", 5, 11, "tending the temple flowers"));
             elowen.Schedule.Add(new ScheduleEntry(20, "temple", 6, 2, "at evening prayers"));
             elowen.Schedule.Add(new ScheduleEntry(23, null, 0, 0, "asleep"));
+            elowen.Schedule.Add(new ScheduleEntry(9, "temple", 5, 2, "leading the Hearthday service", Hearthday));
+            elowen.Schedule.Add(new ScheduleEntry(11, "temple", 6, 2, "tidying up after the service", Hearthday));
             Npcs[elowen.Id] = elowen;
 
             var pip = new NpcDef { Id = "pip", Name = "Pip Thistlewhit", Title = "Keeper of the Sleeping Drake", Look = "npc_pip", Dialogue = "pip", ShopId = "tavern" };
             pip.Schedule.Add(new ScheduleEntry(0, "tavern", 4, 1, "wiping down the bar"));
             pip.Schedule.Add(new ScheduleEntry(2, null, 0, 0, "asleep"));
             pip.Schedule.Add(new ScheduleEntry(9, "tavern", 4, 1, "behind the bar"));
+            pip.Schedule.Add(new ScheduleEntry(9, null, 0, 0, "sleeping in (it's Hearthday)", Hearthday));
+            pip.Schedule.Add(new ScheduleEntry(11, "tavern", 4, 1, "behind the bar, yawning", Hearthday));
             Npcs[pip.Id] = pip;
 
             var rhoswen = new NpcDef { Id = "rhoswen", Name = "Captain Rhoswen Vale", Title = "Captain of the Watch", Look = "npc_rhoswen", Dialogue = "rhoswen", Romanceable = true };
@@ -385,6 +434,8 @@ namespace DnD.Game
             rhoswen.Schedule.Add(new ScheduleEntry(13, "town", 24, 6, "watching the mine road"));
             rhoswen.Schedule.Add(new ScheduleEntry(19, "tavern", 10, 7, "off duty (supposedly)"));
             rhoswen.Schedule.Add(new ScheduleEntry(23, null, 0, 0, "asleep"));
+            rhoswen.Schedule.Add(new ScheduleEntry(7, "town", 27, 42, "drilling the watch (all two of them)", Stormday));
+            rhoswen.Schedule.Add(new ScheduleEntry(10, "watchhouse", 3, 2, "doing paperwork, furiously", Stormday));
             Npcs[rhoswen.Id] = rhoswen;
 
             var tobin = new NpcDef { Id = "tobin", Name = "Old Tobin", Title = "Farmer", Look = "npc_villager_tobin", Dialogue = "tobin" };
@@ -393,6 +444,9 @@ namespace DnD.Game
             tobin.Schedule.Add(new ScheduleEntry(12, "town", 12, 19, "looking for his spoon"));
             tobin.Schedule.Add(new ScheduleEntry(18, "tavern", 12, 6, "telling the same story again"));
             tobin.Schedule.Add(new ScheduleEntry(21, null, 0, 0, "asleep"));
+            tobin.Schedule.Add(new ScheduleEntry(10, "town", 23, 18, "selling apples (and opinions) at the market", Coinday));
+            tobin.Schedule.Add(new ScheduleEntry(9, "temple", 3, 5, "at the Hearthday service, front row", Hearthday));
+            tobin.Schedule.Add(new ScheduleEntry(11, "town", 18, 25, "fussing over his fence", Hearthday));
             Npcs[tobin.Id] = tobin;
 
             var maddie = new NpcDef { Id = "maddie", Name = "Maddie", Title = "Village kid", Look = "npc_villager_maddie", Dialogue = "maddie" };
@@ -400,6 +454,9 @@ namespace DnD.Game
             maddie.Schedule.Add(new ScheduleEntry(8, "town", 32, 31, "skipping stones at the pond"));
             maddie.Schedule.Add(new ScheduleEntry(14, "town", 24, 18, "playing 'dragon' with a stick"));
             maddie.Schedule.Add(new ScheduleEntry(19, null, 0, 0, "home for supper"));
+            maddie.Schedule.Add(new ScheduleEntry(8, "town", 35, 27, "feeding the ducks (bread, against the rules)", Leafday));
+            maddie.Schedule.Add(new ScheduleEntry(9, "temple", 4, 6, "at the Hearthday service, fidgeting", Hearthday));
+            maddie.Schedule.Add(new ScheduleEntry(11, "town", 16, 47, "playing on the South Lane green", Hearthday));
             Npcs[maddie.Id] = maddie;
 
             var hobb = new NpcDef { Id = "hobb", Name = "Old Hobb", Title = "Miller", Look = "npc_hobb", Dialogue = "hobb" };
@@ -408,7 +465,73 @@ namespace DnD.Game
             hobb.Schedule.Add(new ScheduleEntry(12, "ford", 40, 25, "weeding the garden"));
             hobb.Schedule.Add(new ScheduleEntry(18, "ford", 36, 20, "sitting on the step with a pipe"));
             hobb.Schedule.Add(new ScheduleEntry(22, null, 0, 0, "asleep"));
+            hobb.Schedule.Add(new ScheduleEntry(12, "ford", 36, 20, "mending flour sacks on the step", Dawnday));
             Npcs[hobb.Id] = hobb;
+
+            BuildSouthLaneNpcs();
+        }
+
+        /// <summary>The South Lane folk (Phase 4). Names are side content pending lore approval.</summary>
+        static void BuildSouthLaneNpcs()
+        {
+            var garrick = new NpcDef { Id = "garrick", Name = "Garrick Ashforge", Title = "Blacksmith", Look = "npc_garrick", Dialogue = "garrick", ShopId = "forge" };
+            garrick.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
+            garrick.Schedule.Add(new ScheduleEntry(7, "town", 11, 40, "hammering at the anvil"));
+            garrick.Schedule.Add(new ScheduleEntry(12, "forge", 6, 2, "minding the forge"));
+            garrick.Schedule.Add(new ScheduleEntry(18, "tavern", 9, 7, "having a well-earned pint"));
+            garrick.Schedule.Add(new ScheduleEntry(22, null, 0, 0, "asleep"));
+            garrick.Schedule.Add(new ScheduleEntry(10, "town", 29, 20, "hawking horseshoes at the market", Coinday));
+            garrick.Schedule.Add(new ScheduleEntry(14, "forge", 6, 2, "minding the forge", Coinday));
+            garrick.Schedule.Add(new ScheduleEntry(19, "tavern", 9, 4, "telling the one about the wyvern at story night", Emberday));
+            garrick.Schedule.Add(new ScheduleEntry(9, "temple", 3, 7, "at the Hearthday service, back row", Hearthday));
+            garrick.Schedule.Add(new ScheduleEntry(11, "town", 11, 40, "tinkering on his day off", Hearthday));
+            Npcs[garrick.Id] = garrick;
+
+            var hesper = new NpcDef { Id = "hesper", Name = "Hesper Meadowsweet", Title = "Beekeeper", Look = "npc_hesper", Dialogue = "hesper" };
+            hesper.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
+            hesper.Schedule.Add(new ScheduleEntry(7, "town", 34, 43, "glaring across the stream"));
+            hesper.Schedule.Add(new ScheduleEntry(11, "town", 36, 45, "tending her garden"));
+            hesper.Schedule.Add(new ScheduleEntry(17, "town", 34, 42, "sitting on her doorstep"));
+            hesper.Schedule.Add(new ScheduleEntry(21, null, 0, 0, "asleep"));
+            hesper.Schedule.Add(new ScheduleEntry(19, "tavern", 4, 7, "at story night, heckling", Emberday));
+            hesper.Schedule.Add(new ScheduleEntry(22, null, 0, 0, "asleep", Emberday));
+            hesper.Schedule.Add(new ScheduleEntry(9, "temple", 7, 5, "at the Hearthday service, left side", Hearthday));
+            hesper.Schedule.Add(new ScheduleEntry(11, "town", 36, 45, "tending her garden", Hearthday));
+            Npcs[hesper.Id] = hesper;
+
+            var dunstan = new NpcDef { Id = "dunstan", Name = "Dunstan Burrow", Title = "Beekeeper (the other one)", Look = "npc_dunstan", Dialogue = "dunstan" };
+            dunstan.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
+            dunstan.Schedule.Add(new ScheduleEntry(7, "town", 44, 43, "glaring across the stream"));
+            dunstan.Schedule.Add(new ScheduleEntry(11, "town", 45, 47, "fussing with his beehives"));
+            dunstan.Schedule.Add(new ScheduleEntry(17, "town", 45, 42, "sitting on his doorstep"));
+            dunstan.Schedule.Add(new ScheduleEntry(21, null, 0, 0, "asleep"));
+            dunstan.Schedule.Add(new ScheduleEntry(19, "tavern", 13, 7, "at story night, heckling the heckler", Emberday));
+            dunstan.Schedule.Add(new ScheduleEntry(22, null, 0, 0, "asleep", Emberday));
+            dunstan.Schedule.Add(new ScheduleEntry(9, "temple", 8, 6, "at the Hearthday service, right side (pointedly)", Hearthday));
+            dunstan.Schedule.Add(new ScheduleEntry(11, "town", 45, 47, "fussing with his beehives", Hearthday));
+            Npcs[dunstan.Id] = dunstan;
+
+            var lark = new NpcDef { Id = "lark", Name = "Lark", Title = "Flower seller", Look = "npc_lark", Dialogue = "lark" };
+            lark.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
+            lark.Schedule.Add(new ScheduleEntry(7, "town", 8, 46, "hanging out the washing"));
+            lark.Schedule.Add(new ScheduleEntry(10, "town", 25, 22, "selling flowers by the statue"));
+            lark.Schedule.Add(new ScheduleEntry(16, "town", 16, 47, "daydreaming on the green"));
+            lark.Schedule.Add(new ScheduleEntry(20, "cottage_lark", 4, 3, "pressing flowers"));
+            lark.Schedule.Add(new ScheduleEntry(23, null, 0, 0, "asleep"));
+            lark.Schedule.Add(new ScheduleEntry(9, "temple", 8, 7, "at the Hearthday service, humming along", Hearthday));
+            lark.Schedule.Add(new ScheduleEntry(11, "town", 16, 47, "daydreaming on the green", Hearthday));
+            Npcs[lark.Id] = lark;
+
+            var tamsin = new NpcDef { Id = "tamsin", Name = "Tamsin", Title = "Fisher", Look = "npc_tamsin", Dialogue = "tamsin" };
+            tamsin.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
+            tamsin.Schedule.Add(new ScheduleEntry(6, "town", 47, 27, "fishing at the pond"));
+            tamsin.Schedule.Add(new ScheduleEntry(12, "town", 40, 43, "pacing on the footbridge"));
+            tamsin.Schedule.Add(new ScheduleEntry(15, "town", 36, 27, "fishing, not catching anything"));
+            tamsin.Schedule.Add(new ScheduleEntry(19, "tavern", 6, 9, "nursing a cider, nervously"));
+            tamsin.Schedule.Add(new ScheduleEntry(23, null, 0, 0, "asleep"));
+            tamsin.Schedule.Add(new ScheduleEntry(9, "temple", 7, 7, "at the Hearthday service, sitting near Lark (casually)", Hearthday));
+            tamsin.Schedule.Add(new ScheduleEntry(11, "town", 40, 43, "pacing on the footbridge", Hearthday));
+            Npcs[tamsin.Id] = tamsin;
         }
 
         /// <summary>Where an NPC should be at a given hour and weekday.</summary>

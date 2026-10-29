@@ -38,6 +38,8 @@ namespace DnD.Game
         public string Text;
         public string Title = "Sign";
         public string Prompt = "Read";
+        public float Reach = 1.4f;
+        public override float Range => Reach;
         public override string PromptText(PlayerSlot p) => Prompt;
         public override void Interact(PlayerSlot p) => p.Hud.Push(new MessageScreen(Title, Text));
     }

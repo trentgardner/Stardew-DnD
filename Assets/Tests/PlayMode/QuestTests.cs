@@ -205,5 +205,67 @@ namespace DnD.Tests
             Assert.AreEqual(1, mine.Count, "one toast, not three");
             StringAssert.EndsWith("×3", mine[0]);
         }
+
+        // ============================================================ Task 4: South Lane and the weekly rhythm
+
+        static int Coinday => System.Array.IndexOf(WorldDb.Weekdays, "Coinday");
+        static int Hearthday => System.Array.IndexOf(WorldDb.Weekdays, "Hearthday");
+
+        [Test]
+        public void EveryNpcHasAWeeklyVariation()
+        {
+            foreach (var npc in WorldDb.Npcs.Values)
+                Assert.IsTrue(npc.Schedule.Any(e => e.OnlyWeekday >= 0), $"{npc.Id} does the same thing every day of the week");
+        }
+
+        [Test]
+        public void MarketDayFillsTheSquare()
+        {
+            var inSquare = WorldDb.Npcs.Values.Select(n => WorldDb.Current(n, 11, Coinday))
+                .Count(e => e != null && e.Zone == "town" && e.Pos.x >= 18 && e.Pos.x <= 32 && e.Pos.y >= 13 && e.Pos.y <= 23);
+            Assert.GreaterOrEqual(inSquare, 3, "Coinday at 11:00: market stalls are busy");
+        }
+
+        [Test]
+        public void HearthdayServiceAtTheTemple()
+        {
+            Assert.AreEqual("temple", WorldDb.Current(WorldDb.Npcs["elowen"], 10, Hearthday).Zone);
+            int there = WorldDb.Npcs.Values.Count(n => WorldDb.Current(n, 10, Hearthday)?.Zone == "temple");
+            Assert.GreaterOrEqual(there, 4, "Elowen and at least three villagers at the Hearthday service");
+        }
+
+        [UnityTest]
+        public IEnumerator ForgeSellsWeapons()
+        {
+            var g = GameRoot.I;
+            g.DebugStart(Still(10), "fighter", "human");
+            yield return null;
+            var stock = ShopDb.Stock("forge");
+            CollectionAssert.Contains(stock, "longsword");
+            CollectionAssert.Contains(stock, "chain_mail");
+            CollectionAssert.Contains(stock, "shield");
+            Assert.IsTrue(stock.All(id => ItemsDb.Get(id) != null && ItemsDb.Get(id).PriceCp > 0), "everything at the forge is a real, priced item");
+            Assert.AreEqual("Garrick", ShopDb.Owner("forge"));
+            Assert.IsTrue(g.Zones.ContainsKey("forge") && g.Zones.ContainsKey("watchhouse") && g.Zones.ContainsKey("cottage_lark"));
+        }
+
+        /// <summary>User request (2026-10-29): every building has a readable sign saying what it is.</summary>
+        [UnityTest]
+        public IEnumerator EveryBuildingDoorHasASign()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(11), "fighter", "human");
+            yield return null;
+            var signs = Object.FindObjectsByType<SignInteractable>();
+            foreach (var z in g.Zones.Values.Where(z => !z.Def.Indoors))
+                for (int y = 0; y < z.Def.Height; y++)
+                    for (int x = 0; x < z.Def.Width; x++)
+                    {
+                        var door = new Vector2Int(x, y);
+                        if (z.CharAt(door) != 'D') continue;
+                        Assert.IsTrue(z.Def.DoorSigns.TryGetValue(door, out var sign), $"{z.Def.Id}: the door at {door} has no building sign");
+                        Assert.IsTrue(signs.Any(si => si.Title == sign.Name && si.PromptText(p).Contains(sign.Name)), $"{z.Def.Id}: sign '{sign.Name}' isn't in the world");
+                    }
+        }
     }
 }

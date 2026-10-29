@@ -88,11 +88,16 @@ namespace DnD.Game
                     return t;
                 case "tavern":
                     return new List<string> { "rations", "torch", "potion_healing" };
+                case "forge":
+                    // Garrick makes everything mundane he can: every non-magical weapon, armor and shield.
+                    return ItemsDb.All.Values.Where(d => d.PriceCp > 0 && !d.QuestItem &&
+                        ((d is WeaponDef w && w.Rarity == null) || d.Kind == ItemKind.Armor || d.Kind == ItemKind.Shield))
+                        .OrderBy(d => d.Kind).ThenBy(d => d.PriceCp).Select(d => d.Id).ToList();
                 default: return new List<string>();
             }
         }
 
-        public static string Owner(string shop) => shop == "general" ? "Brannoc" : shop == "temple" ? "Mother Elowen" : "Pip";
+        public static string Owner(string shop) => shop == "general" ? "Brannoc" : shop == "temple" ? "Mother Elowen" : shop == "forge" ? "Garrick" : "Pip";
 
         /// <summary>Base price in copper with difficulty scaling for Embers of Return.</summary>
         public static int BasePrice(ItemDef def)

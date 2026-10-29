@@ -94,6 +94,25 @@ namespace DnD.Tests
             yield return Settle();
             Capture("02f_forest_shrine");
 
+            // Phase 4: the South Lane, a market-day square and the forge.
+            g.Warp(p, "town", new Vector2Int(20, 43), false);
+            yield return Settle();
+            Capture("20a_south_lane");
+            g.Warp(p, "town", new Vector2Int(38, 43), false);
+            yield return Settle();
+            Capture("20a2_south_lane_feud");
+            g.Clock.Day = 6; g.Clock.Minutes = 11 * 60; // Coinday: market day
+            g.Warp(p, "town", new Vector2Int(25, 19), false);
+            foreach (var n in Object.FindObjectsByType<NpcAgent>()) n.UpdateSchedule(true);
+            yield return Settle();
+            Capture("20b_square_market");
+            g.Clock.Day = 1; g.Clock.Minutes = 13 * 60;
+            g.Warp(p, "forge", new Vector2Int(6, 5), false);
+            foreach (var n in Object.FindObjectsByType<NpcAgent>()) n.UpdateSchedule(true);
+            yield return Settle();
+            Capture("20c_forge");
+            g.Clock.Minutes = 10 * 60;
+
             g.Warp(p, "town", new Vector2Int(25, 19), false);
             yield return Settle();
 

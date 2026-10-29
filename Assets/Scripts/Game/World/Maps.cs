@@ -7,6 +7,7 @@
 //          C counter  a table  x crate/barrel  B bed  c chest  A altar  g dragon egg
 //          S dragon statue  O well  m market stall  P ruined pillar  F campfire
 //          Y fairy ring  q hidden spot (searched with a skill check, see ZoneDef.Secrets)
+//          K anvil/forge  N bench  p planter  L washing line
 namespace DnD.Game
 {
     public static class Maps
@@ -26,17 +27,17 @@ namespace DnD.Game
             "Tt.....,...UUUUUUU.....,,,..WWWWDWWWW...j~~t*t.tTT",
             "T***..*,.*.UUUUUUU.....l,,,.....,.......~~......TT",
             "TT*..*.,..*UUUUUUU......,,,.....,.*....j~~.t*t.tTT",
-            "TT.*..,,.*.WwWWWwW.ooooooooooooo,......j~~......*T",
+            "TT.*..,,.*.WwWWWwW.pooooooooooop,......j~~......*T",
             "TT..,,,....WWWDWWWlnooooooooooool.....j~~..t.t.t.T",
             "T...,.......*.,...ooooooooooooooo.....j~~.......TT",
-            "TTs.,..l......,...oooooooSooooooo....j~~......s.TT",
+            "TTs.,..l......,...ommmoooSooooooo....j~~......s.TT",
             "TT..,......,,,,,,,ooooooooooooooo..l..~~.......,,T",
             ",,,,,,,,,,,,,,,,,,ooooooooooooooo,,,,~~......,,,,,",
             ",,,,,,,,,,,,,.....ooooooooooooooo,,,,bb,,,,,,,,,,,",
             "TT............l...ooooooooooooooo..,,bb,,,,,,,,.TT",
             "T*r...............oooOoooooommmoo....~~~....l....T",
-            "TT.......t.......,loooooooooooool....~~~.........T",
-            "TT.........t....,,.ooooooooooooo....j~~~.*....*..T",
+            "TT.......t.......,lpooooooooooopl....~~~.........T",
+            "TT.........t....,,.ooooNooooNooo....j~~~.*....*..T",
             "T.....RRRRR....,,...................j~~~...*....TT",
             "T.....RRRRR....,...........GGGGG.....j~~~.......TT",
             "TT....RRRRR...,ffff,,ffff..GGGGG.....j~~~........T",
@@ -44,10 +45,26 @@ namespace DnD.Game
             "TT....WWDWW*..,fvvvvvvvvf..WwWwW.;;~~~~~~~~~~~;;.T",
             "T*...**.,....,,f,,,,,,,,f..WWDWW;;~~~~~~~~~~~~~;;T",
             "T.......,,,,,,.fvvvvvvvvf....,..;~~~~~~~~~~~~~~~;T",
-            "T..............f,,,,,,,,f,,,,,..;~~~~~~~~~~~~~~~;T",
-            "T......*.......fvvvvvvvvf.......;;~~~~~~~~~~~~~;;T",
-            "T..............ffffffffff........q;~~~~~~~~~~~;;.T",
-            "TT.T....TT.TTTTT.TTT.TTT...TTT..TTT;;;;~~~;;;;..TT",
+            "T.........,....f,,,,,,,,f,,,,,..;~~~~~~~~~~~~~~~;T",
+            "T......*..,....fvvvvvvvvf.......;;~~~~~~~~~~~~~;;T",
+            "T.........,....ffffffffff........q;~~~~~~~~~~~;;.T",
+            "TT.T....TT,TTTTT.TTT.TTT...TTT..TTT;;;;~~~;;;;..TT",
+            "TTTTTTTTTT,TTTTTTTTTTTTTTTTTTTTTTTTTTTT~~~TTTTTTTT",
+            "T..RRRRRRR,............UUUUUUUU........~~~......TT",
+            "TT.RRRRRRR,..xx.t....h.UUUUUUUU.RRRRR.j~~~.GGGGG.T",
+            "TT.RRRRRRR,.K......t...UUUUUUUU.RRRRR..~~~jGGGGGTT",
+            "T..WwWWWwW,,,,x..h.....WwWWWWwW.RRRRR..~~~.GGGGG.T",
+            "TT.WWWDWWW,.........t..WWWWDWWW.WwWwW.j~~~.WwWwWTT",
+            "TT....,,,,,l...t......l....,.s..WWDWW..~~~.WWDWW.T",
+            "T.t.t.,...,................,...h..,....~~~...,..TT",
+            "TT.h......,,,,,,,,,,,,,,,,,,,,,,,,,,,,,bbb,,,,,,.T",
+            "TT.*..*...,,,,,,,,,,,,,,,,,,,,,,,,,,,,,bbb,,,,,,TT",
+            "T.UUUUU.*.,.s....*....*..........*.*.*.~~~j....h.T",
+            "TTUUUUU...,....N....N....*...t..ffffffj~~~ffffffTT",
+            "TTUUUUU.L.,...*........................~~~.*.*...T",
+            "T.WwWwW...,..p....t....p..*....t...h...~~~j.x.x.TT",
+            "TTWWDWW...,.....*....*......*....t....j~~~.......T",
+            "TT..,,,,,,,..t............h.........t..~~~..t.t.TT",
             "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
         };
 
@@ -163,6 +180,42 @@ namespace DnD.Game
             "W::::__::::W",
             "W::::__::::W",
             "WWWWWDDWWWWW",
+        };
+
+        public static readonly string[] Forge =
+        {
+            "WWWWWWWWWWWW",
+            "W=x==K===x=W",
+            "W==========W",
+            "W=CCCCCCCC=W",
+            "W==========W",
+            "Wx=========W",
+            "W========x=W",
+            "W==========W",
+            "WWWWWWDWWWWW",
+        };
+
+        public static readonly string[] WatchHouse =
+        {
+            "WWWWWWWWWWWW",
+            "W=a=====fffW",
+            "W=a=====f==W",
+            "W=======f==W",
+            "W==========W",
+            "Wx======a==W",
+            "W==========W",
+            "WWWWWDWWWWWW",
+        };
+
+        public static readonly string[] CottageLark =
+        {
+            "WWWWWWWWWW",
+            "W=B====x=W",
+            "W========W",
+            "W========W",
+            "W====a===W",
+            "W========W",
+            "WWWWDWWWWW",
         };
 
         public static readonly string[] Home =
