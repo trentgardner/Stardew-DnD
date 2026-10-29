@@ -30,6 +30,8 @@ namespace DnD.Rules
         public bool ConsumedWhenAttacked;
         /// <summary>This creature's next attack roll has Disadvantage (Sap, Vicious Mockery).</summary>
         public bool DisadvantageOnNextAttack;
+        /// <summary>The bearer's next attack roll has Advantage, then this effect ends (Steady Aim).</summary>
+        public bool AdvantageOnNextAttack;
         /// <summary>Only this attacker gets Advantage on the next attack against the bearer (Vex).</summary>
         public Creature AdvantageForAttacker;
 
@@ -70,6 +72,20 @@ namespace DnD.Rules
                 case "frightened": return new ActiveEffect { Id = id, Name = "Frightened", Source = source, RoundsLeft = 10, Condition = Rules.Condition.Frightened, RepeatSave = Ability.WIS, RepeatSaveDC = saveDC };
                 case "charmed": return new ActiveEffect { Id = id, Name = "Charmed", Source = source, RoundsLeft = -1, Condition = Rules.Condition.Charmed };
                 case "dodge": return new ActiveEffect { Id = id, Name = "Dodging", Source = source, RoundsLeft = 1 };
+                case "protection_evil_good": return new ActiveEffect { Id = id, Name = "Protected", Source = source, RoundsLeft = 100, Concentration = true };
+                case "sacred_weapon": return new ActiveEffect { Id = id, Name = "Sacred Weapon", Source = source, RoundsLeft = 100 };
+                case "hunters_mark": return new ActiveEffect { Id = id, Name = "Hunter's Mark", Source = source, RoundsLeft = 600, Concentration = true };
+                case "entangle": return new ActiveEffect { Id = id, Name = "Entangled", Source = source, RoundsLeft = 10, Concentration = true, Condition = Rules.Condition.Restrained, RepeatSave = Ability.STR, RepeatSaveDC = saveDC };
+                case "longstrider": return new ActiveEffect { Id = id, Name = "Longstrider", Source = source, RoundsLeft = 600, SpeedPenalty = -10 };
+                case "barkskin": return new ActiveEffect { Id = id, Name = "Barkskin", Source = source, RoundsLeft = 600 };
+                case "shillelagh": return new ActiveEffect { Id = id, Name = "Shillelagh", Source = source, RoundsLeft = 10 };
+                case "hex": return new ActiveEffect { Id = id, Name = "Hexed", Source = source, RoundsLeft = 600, Concentration = true };
+                case "armor_of_agathys": return new ActiveEffect { Id = id, Name = "Armor of Agathys", Source = source, RoundsLeft = 600 };
+                case "mirror_image": return new ActiveEffect { Id = id, Name = "Mirror Image", Source = source, RoundsLeft = 10, AcBonus = 3 };
+                case "innate_sorcery": return new ActiveEffect { Id = id, Name = "Innate Sorcery", Source = source, RoundsLeft = 10 };
+                case "rage": return new ActiveEffect { Id = id, Name = "Raging", Source = source, RoundsLeft = 100 };
+                case "reckless": return new ActiveEffect { Id = id, Name = "Reckless", Source = source, RoundsLeft = 1 };
+                case "steady_aim": return new ActiveEffect { Id = id, Name = "Steady Aim", Source = source, RoundsLeft = 1, AdvantageOnNextAttack = true };
                 case "spiritual_weapon": return new ActiveEffect { Id = id, Name = "Spiritual Weapon", Source = source, RoundsLeft = 10, Concentration = true };
                 default: return new ActiveEffect { Id = id, Name = id, Source = source, RoundsLeft = 1 };
             }

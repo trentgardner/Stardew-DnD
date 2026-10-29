@@ -113,6 +113,15 @@ namespace DnD.Game
             }
             Enc.Sort();
             Log("Initiative: " + string.Join(", ", Enc.Order.Select(o => $"{o.Creature.Name} {o.Initiative}")));
+            // Monk: Uncanny Metabolism, once per long rest when initiative is rolled.
+            foreach (var u in Units)
+                if (u.C is PlayerCharacter m && m.ResourceLeft("uncanny_metabolism") > 0 && m.ResourceLeft("focus") < m.ResourceMax("focus"))
+                {
+                    m.SpendResource("uncanny_metabolism");
+                    m.ResourcesUsed.Remove("focus");
+                    int h = m.Heal(Dice.Roll(m.MartialArtsDie) + m.Level);
+                    Log($"{m.Name}'s Uncanny Metabolism: Focus restored, +{h} HP.");
+                }
 
             while (!Finished)
             {

@@ -6,7 +6,7 @@ using DnD.Rules.Content;
 namespace RulesTests
 {
     /// <summary>Tiny dependency-free test runner for the rules engine.</summary>
-    public static class Program
+    public static partial class Program
     {
         static int _passed, _failed;
 
@@ -36,6 +36,15 @@ namespace RulesTests
             SpellTests();
             EncounterTests();
             ContentTests();
+            LevelUpTests();
+            RogueTests();
+            BarbarianTests();
+            MonkTests();
+            PaladinTests();
+            RangerTests();
+            DruidTests();
+            WarlockTests();
+            SorcererTests();
 
             Console.WriteLine($"\n{_passed} passed, {_failed} failed");
             return _failed == 0 ? 0 : 1;
@@ -107,16 +116,18 @@ namespace RulesTests
 
             f.XP = 300;
             Check(f.CanLevelUp, "300 xp → level 2");
-            f.LevelUp(null, null);
+            f.LevelUp(new LevelUpPlan(), null);
             Eq(f.Level, 2, "now level 2");
             Eq(f.MaxHP, 12 + 6 + 2, "average HP gain d10 = 6 + CON");
             Eq(f.ResourceMax("action_surge"), 1, "action surge at L2");
-            f.XP = 900; f.LevelUp(7, null);
+            f.XP = 900; f.LevelUp(new LevelUpPlan { HpRoll = 7 }, null);
             Eq(f.MaxHP, 20 + 7 + 2, "rolled HP gain");
             Check(f.HasFeature("Improved Critical"), "champion at 3");
             Eq(f.GetAttacks()[0].CritOn, 19, "champion crits on 19");
             f.XP = 99999;
-            Check(!f.CanLevelUp, "playtest level cap 3");
+            Check(f.CanLevelUp, "level 4 is reachable (Act I cap)");
+            f.LevelUp(f.AutoPlan(), null);
+            Check(!f.CanLevelUp, "Act I level cap 4");
 
             Dice.Rng = new SystemRandom(2);
             var dwarf = CharacterFactory.Create(CharacterFactory.DefaultChoices("cleric", "dwarf", "Test Dwarf"));
@@ -417,7 +428,7 @@ namespace RulesTests
 
         static void ContentTests()
         {
-            Eq(CharacterDb.Classes.Count, 4, "4 playtest classes");
+            foreach (var cls in CharacterDb.Classes.Values) Check(cls.Subclass != null && cls.HitDie > 0, cls.Id + " has a subclass and a hit die");
             Eq(CharacterDb.Species.Count, 5, "5 species");
             Eq(CharacterDb.Backgrounds.Count, 4, "4 backgrounds");
             foreach (var c in CharacterDb.Classes.Values)

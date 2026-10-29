@@ -90,6 +90,28 @@ namespace DnD.Rules.Content
                 Loot = { new KeyValuePair<string, float>("potion_healing", 1f), new KeyValuePair<string, float>("gemstone", 0.5f) },
                 CopperMin = 300, CopperMax = 700,
             };
+            // Beasts a druid can Wild Shape into (SRD 5.2 stat blocks, simplified to what combat uses).
+            All["cat"] = new MonsterDef
+            {
+                Id = "cat", Name = "Cat", SpriteId = "mon_cat", AC = 12, HitDice = DiceExpr.Parse("1d4"),
+                Scores = new[] { 3, 15, 10, 3, 12, 7 }, Darkvision = 60, CR = 0, XP = 10, Speed = 40,
+                Description = "Quiet, quick, and fits through gaps no person could.",
+                Attacks = { Melee("Scratch", 4, "1d1", DamageType.Slashing) }, ProficientSkills = { Skill.Perception, Skill.Stealth },
+            };
+            All["frog"] = new MonsterDef
+            {
+                Id = "frog", Name = "Frog", SpriteId = "mon_frog", AC = 11, HitDice = DiceExpr.Parse("1d4-1"),
+                Scores = new[] { 1, 13, 8, 1, 8, 3 }, Darkvision = 30, CR = 0, XP = 10, Speed = 20,
+                Description = "Swims, hops, and is beneath anyone's notice.",
+                Attacks = { Melee("Bite", 3, "1d1", DamageType.Piercing) }, ProficientSkills = { Skill.Perception, Skill.Stealth },
+            };
+            All["black_bear"] = new MonsterDef
+            {
+                Id = "black_bear", Name = "Black Bear", SpriteId = "mon_bear", AC = 11, HitDice = DiceExpr.Parse("3d8+6"),
+                Scores = new[] { 15, 12, 14, 2, 12, 7 }, Darkvision = 60, CR = 0.5, XP = 100, Speed = 30,
+                Description = "Big, strong, and very interested in your lunch.",
+                Attacks = { Melee("Rend", 4, "1d6+2", DamageType.Slashing) }, ProficientSkills = { Skill.Perception },
+            };
             All["boar"] = new MonsterDef
             {
                 Id = "boar", Name = "Boar", SpriteId = "mon_boar", AC = 11, HitDice = DiceExpr.Parse("2d8+4"),

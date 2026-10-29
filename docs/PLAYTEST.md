@@ -37,6 +37,16 @@
 **Co-op:** your fiance presses **START** on a second controller at any time. The screen splits and she makes a
 character. You can go anywhere independently; if one of you starts a fight, the other can walk over and join it.
 
+## New since playtest 3
+- **Real art and music** (Ninja Adventure pack, CC0): characters, monsters, tiles, items, and music for every zone plus fight music.
+- **All 12 classes**: Rogue, Barbarian, Monk, Paladin, Ranger, Druid, Sorcerer and Warlock join Fighter, Wizard, Cleric
+  and Bard. Each gets its subclass at level 3. Druids can **Wild Shape** into a wolf, cat or frog (bear at level 4).
+- **Level 4** is the new cap, with an Ability Score Improvement or a feat.
+- **You choose your level-ups**: open the character sheet (C) when it says LEVEL UP. Roll for HP or take the average,
+  then pick your new spells, skills and features.
+- Tavern recruits can be any class, and companions now use their class tricks on their own (rage, healing hands, marks).
+- Co-op hardening: a second player can drop out and rejoin, and an unplugged controller is handled instead of breaking the game.
+
 ## New since playtest 2
 - **Menus close properly**: Esc / B, the window's own key, or the ✕ in its corner. (Esc used to close a menu *and* open the pause menu.)
 - **You don't have to fight**: when enemies spot you, the DM asks what you do: talk them down, calm animals, scare them off,
@@ -54,7 +64,7 @@ character. You can go anywhere independently; if one of you starts a fight, the 
   a mill, boars, three secrets, and a new quest with five different ways to solve it.
 
 ## What's in this build
-- Character creation: 4 classes (Fighter, Wizard, Cleric, Bard), 5 species, 4 backgrounds,
+- Character creation: all 12 classes, 5 species, 4 backgrounds,
   **rolled stats (4d6 drop lowest, 5 free rerolls)**, assign them yourself, skills, spells. Or Quick Start.
 - **Thistledown**: a river town with a bridge, a town square (dragon statue, well, market stalls), Tobin's farm,
   a pond and an orchard. 6 NPCs with daily schedules (Brannoc's shop is open 8am-6pm, closed Hearthday),
@@ -119,8 +129,7 @@ Tick these off on the laptop and TV. If something feels wrong, note what you wer
 - Numbers that felt off: prices, damage, how fast the day goes, XP.
 
 ## Known placeholders and limits (expected!)
-- Art and sound are generated placeholders. See `ART_IMPORT_GUIDE.md`.
+- A few sprites are still Claude-made fill-ins where the art pack had nothing (see `ART_IMPORT_GUIDE.md`).
 - Lore names are pending your approval (`LORE_PITCH.md`).
-- Level-up choices (Bard Expertise, etc.) are picked automatically for now.
 - The road past Miller's Ford is blocked by a fallen tree (Port Varrel comes later).
-- Level cap is 3 for this playtest.
+- Level cap is 4 for this playtest (the end of Act I).

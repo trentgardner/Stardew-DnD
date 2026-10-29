@@ -288,8 +288,9 @@ namespace DnD.Game
             string slots = slotParts.Count > 0 ? "   Slots " + string.Join(" · ", slotParts) : "";
             // The torch goes on the second line with conditions: the first line is full (AC, XP, slots).
             if (Slot.Avatar != null && Slot.Avatar.TorchMinutes > 0) cond = $" Torch {Mathf.CeilToInt(Slot.Avatar.TorchMinutes)}m" + cond;
-            _statusText.text = $"<b>{pc.Name}</b>  <color=#c8b48c>Lv{pc.Level} {pc.Class.Name}</color>";
-            _hpText.text = $"{pc.HP} / {pc.EffectiveMaxHP}{(pc.TempHP > 0 ? $"  +{pc.TempHP}" : "")}";
+            _statusText.text = $"<b>{pc.Name}</b>  <color=#c8b48c>Lv{pc.Level} {pc.Class.Name}</color>"
+                + (pc.WildShape != null ? $"  <color=#7ed957>❦ {pc.WildShape.Name}</color>" : "");
+            _hpText.text = $"{pc.HP} / {pc.EffectiveMaxHP}{(pc.TempHP > 0 ? $"  <color=#9dff7a>+{pc.TempHP}</color>" : "")}";
             int next = pc.Level < PlayerCharacter.XpThresholds.Length - 1 ? PlayerCharacter.XpThresholds[pc.Level + 1] : 0;
             string xp = next > 0 ? $"   XP {pc.XP}/{next}" : "";
             _statsText.text = $"AC {pc.ArmorClass}{xp}{slots}" + (cond.Length > 0 ? "\n" + cond.TrimStart() : "");

@@ -81,7 +81,7 @@ namespace DnD.Game
                     return;
                 }
 
-                Sfx.Play("success");
+                Sfx.Play("secret"); // the found-a-secret jingle
                 bool first = !w.Flag(FoundKey);
                 w.SetFlag(FoundKey);
                 g.AwardOnce(p, FoundKey, Def.DC * (outcome == CheckOutcome.CriticalSuccess ? 3 : 2), "finding a secret");

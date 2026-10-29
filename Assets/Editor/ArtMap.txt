@@ -1,0 +1,487 @@
+# ArtMap: which piece of the Ninja Adventure pack (CC0, by Pixel-boy and AAA) becomes which ArtRegistry id.
+# Run Embers > Import Art after editing. Format: see the header of Assets/Editor/ArtSlicer.cs.
+# Positions are in 16 px tiles from the top-left of each sheet.
+
+# ================================================================ terrain: grass and ground cover
+tile tile_grass            "Backgrounds/Tilesets/TilesetFloor.png" 0 12
+tile tile_grass_v1         "Backgrounds/Tilesets/TilesetFloor.png" 3 11
+tile tile_forest_grass     "Backgrounds/Tilesets/TilesetFloor.png" 11 12
+tile tile_forest_grass_v1  "Backgrounds/Tilesets/TilesetFloor.png" 14 12
+over tile_flowers          tile_grass         "Backgrounds/Tilesets/TilesetFloorDetail.png" 5 2
+over tile_forest_flowers   tile_forest_grass  "Backgrounds/Tilesets/TilesetFloorDetail.png" 6 2
+over tile_reeds            tile_grass         "Backgrounds/Tilesets/TilesetNature.png" 8 10
+over tile_mushrooms        tile_forest_grass  "Backgrounds/Tilesets/TilesetFloorDetail.png" 2 0
+tile tile_crops            "Backgrounds/Tilesets/TilesetNature.png" 8 11
+
+# ================================================================ dirt path on grass (blob)
+tile tile_path        "Backgrounds/Tilesets/TilesetFloor.png" 1 8
+tile tile_path_c      "Backgrounds/Tilesets/TilesetFloor.png" 1 8
+tile tile_path_nw     "Backgrounds/Tilesets/TilesetFloor.png" 0 7
+tile tile_path_n      "Backgrounds/Tilesets/TilesetFloor.png" 1 7
+tile tile_path_ne     "Backgrounds/Tilesets/TilesetFloor.png" 2 7
+tile tile_path_w      "Backgrounds/Tilesets/TilesetFloor.png" 0 8
+tile tile_path_e      "Backgrounds/Tilesets/TilesetFloor.png" 2 8
+tile tile_path_sw     "Backgrounds/Tilesets/TilesetFloor.png" 0 9
+tile tile_path_s      "Backgrounds/Tilesets/TilesetFloor.png" 1 9
+tile tile_path_se     "Backgrounds/Tilesets/TilesetFloor.png" 2 9
+tile tile_path_v_n    "Backgrounds/Tilesets/TilesetFloor.png" 3 7
+tile tile_path_v_m    "Backgrounds/Tilesets/TilesetFloor.png" 3 8
+tile tile_path_v_s    "Backgrounds/Tilesets/TilesetFloor.png" 3 9
+tile tile_path_h_w    "Backgrounds/Tilesets/TilesetFloor.png" 0 10
+tile tile_path_h_m    "Backgrounds/Tilesets/TilesetFloor.png" 1 10
+tile tile_path_h_e    "Backgrounds/Tilesets/TilesetFloor.png" 2 10
+tile tile_path_dot    "Backgrounds/Tilesets/TilesetFloor.png" 3 10
+tile tile_path_ise    "Backgrounds/Tilesets/TilesetFloor.png" 5 8
+tile tile_path_isw    "Backgrounds/Tilesets/TilesetFloor.png" 6 8
+tile tile_path_ine    "Backgrounds/Tilesets/TilesetFloor.png" 5 9
+tile tile_path_inw    "Backgrounds/Tilesets/TilesetFloor.png" 6 9
+
+# ================================================================ water with grassy banks (blob)
+tile tile_water       "Backgrounds/Tilesets/TilesetWater.png" 1 7
+tile tile_water_c     "Backgrounds/Tilesets/TilesetWater.png" 1 7
+tile tile_water_nw    "Backgrounds/Tilesets/TilesetWater.png" 0 6
+tile tile_water_n     "Backgrounds/Tilesets/TilesetWater.png" 1 6
+tile tile_water_ne    "Backgrounds/Tilesets/TilesetWater.png" 2 6
+tile tile_water_w     "Backgrounds/Tilesets/TilesetWater.png" 0 7
+tile tile_water_e     "Backgrounds/Tilesets/TilesetWater.png" 2 7
+tile tile_water_sw    "Backgrounds/Tilesets/TilesetWater.png" 0 8
+tile tile_water_s     "Backgrounds/Tilesets/TilesetWater.png" 1 8
+tile tile_water_se    "Backgrounds/Tilesets/TilesetWater.png" 2 8
+tile tile_water_v_n   "Backgrounds/Tilesets/TilesetWater.png" 3 6
+tile tile_water_v_m   "Backgrounds/Tilesets/TilesetWater.png" 3 7
+tile tile_water_v_s   "Backgrounds/Tilesets/TilesetWater.png" 3 8
+tile tile_water_h_w   "Backgrounds/Tilesets/TilesetWater.png" 0 9
+tile tile_water_h_m   "Backgrounds/Tilesets/TilesetWater.png" 1 9
+tile tile_water_h_e   "Backgrounds/Tilesets/TilesetWater.png" 2 9
+tile tile_water_ise   "Backgrounds/Tilesets/TilesetWater.png" 5 7
+tile tile_water_isw   "Backgrounds/Tilesets/TilesetWater.png" 6 7
+tile tile_water_ine   "Backgrounds/Tilesets/TilesetWater.png" 5 8
+tile tile_water_inw   "Backgrounds/Tilesets/TilesetWater.png" 6 8
+tile tile_bridge      "Backgrounds/Tilesets/TilesetWater.png" 5 13
+
+# ================================================================ pale stone plaza (town square cobbles, blob)
+recolor "Backgrounds/Tilesets/TilesetFloorB.png" -170 1.0 0.9 0.76
+tile tile_cobbles     "Backgrounds/Tilesets/TilesetFloorB.png" 1 1
+tile tile_cobbles_c   "Backgrounds/Tilesets/TilesetFloorB.png" 1 1
+tile tile_cobbles_nw  "Backgrounds/Tilesets/TilesetFloorB.png" 0 0
+tile tile_cobbles_n   "Backgrounds/Tilesets/TilesetFloorB.png" 1 0
+tile tile_cobbles_ne  "Backgrounds/Tilesets/TilesetFloorB.png" 2 0
+tile tile_cobbles_w   "Backgrounds/Tilesets/TilesetFloorB.png" 0 1
+tile tile_cobbles_e   "Backgrounds/Tilesets/TilesetFloorB.png" 2 1
+tile tile_cobbles_sw  "Backgrounds/Tilesets/TilesetFloorB.png" 0 2
+tile tile_cobbles_s   "Backgrounds/Tilesets/TilesetFloorB.png" 1 2
+tile tile_cobbles_se  "Backgrounds/Tilesets/TilesetFloorB.png" 2 2
+tile tile_cobbles_v_n "Backgrounds/Tilesets/TilesetFloorB.png" 3 0
+tile tile_cobbles_v_m "Backgrounds/Tilesets/TilesetFloorB.png" 3 1
+tile tile_cobbles_v_s "Backgrounds/Tilesets/TilesetFloorB.png" 3 2
+tile tile_cobbles_h_w "Backgrounds/Tilesets/TilesetFloorB.png" 0 3
+tile tile_cobbles_h_m "Backgrounds/Tilesets/TilesetFloorB.png" 1 3
+tile tile_cobbles_h_e "Backgrounds/Tilesets/TilesetFloorB.png" 2 3
+tile tile_cobbles_dot "Backgrounds/Tilesets/TilesetFloorB.png" 3 3
+tile tile_cobbles_ise "Backgrounds/Tilesets/TilesetFloorB.png" 5 1
+tile tile_cobbles_isw "Backgrounds/Tilesets/TilesetFloorB.png" 6 1
+tile tile_cobbles_ine "Backgrounds/Tilesets/TilesetFloorB.png" 5 2
+tile tile_cobbles_inw "Backgrounds/Tilesets/TilesetFloorB.png" 6 2
+
+# ================================================================ other floors
+tile tile_sand         "Backgrounds/Tilesets/TilesetFloor.png" 1 1
+tile tile_wood_floor   "Backgrounds/Tilesets/TilesetWater.png" 1 13
+tile tile_stone_floor  "Backgrounds/Tilesets/tileset_bed.png" 1 10
+tile tile_cave_floor   "Backgrounds/Tilesets/TilesetFloor.png" 12 16
+tile tile_rug          "Backgrounds/Tilesets/tileset_bed.png" 1 7
+
+# ================================================================ cliffs (rect): green outdoors, brown in the mine
+tile tile_cliff_l_top  "Backgrounds/Tilesets/TilesetRelief.png" 4 0
+tile tile_cliff_m_top  "Backgrounds/Tilesets/TilesetRelief.png" 5 0
+tile tile_cliff_r_top  "Backgrounds/Tilesets/TilesetRelief.png" 6 0
+tile tile_cliff_l_mid  "Backgrounds/Tilesets/TilesetRelief.png" 4 1
+tile tile_cliff_m_mid  "Backgrounds/Tilesets/TilesetRelief.png" 5 1
+tile tile_cliff_r_mid  "Backgrounds/Tilesets/TilesetRelief.png" 6 1
+tile tile_cliff_l_bot  "Backgrounds/Tilesets/TilesetRelief.png" 4 2
+tile tile_cliff_m_bot  "Backgrounds/Tilesets/TilesetRelief.png" 5 2
+tile tile_cliff_r_bot  "Backgrounds/Tilesets/TilesetRelief.png" 6 2
+tile tile_cliff        "Backgrounds/Tilesets/TilesetRelief.png" 5 1
+tile tile_cave_wall_l_top "Backgrounds/Tilesets/TilesetRelief.png" 4 5
+tile tile_cave_wall_m_top "Backgrounds/Tilesets/TilesetRelief.png" 5 5
+tile tile_cave_wall_r_top "Backgrounds/Tilesets/TilesetRelief.png" 6 5
+tile tile_cave_wall_l_mid "Backgrounds/Tilesets/TilesetRelief.png" 4 6
+tile tile_cave_wall_m_mid "Backgrounds/Tilesets/TilesetRelief.png" 5 6
+tile tile_cave_wall_r_mid "Backgrounds/Tilesets/TilesetRelief.png" 6 6
+tile tile_cave_wall_l_bot "Backgrounds/Tilesets/TilesetRelief.png" 4 7
+tile tile_cave_wall_m_bot "Backgrounds/Tilesets/TilesetRelief.png" 5 7
+tile tile_cave_wall_r_bot "Backgrounds/Tilesets/TilesetRelief.png" 6 7
+tile tile_cave_wall    "Backgrounds/Tilesets/TilesetRelief.png" 5 6
+tile tile_stone_wall   "Backgrounds/Tilesets/TilesetRelief.png" 9 1
+tile tile_mine_entrance "Backgrounds/Tilesets/TilesetDungeon.png" 0 0
+tile tile_exit_up      "Backgrounds/Tilesets/TilesetDungeon.png" 1 0
+
+# ================================================================ houses (rect): orange roof (R), green-grey (U), red (G)
+tile tile_roof_l_top   "Backgrounds/Tilesets/TilesetHouse.png" 0 0
+tile tile_roof_m_top   "Backgrounds/Tilesets/TilesetHouse.png" 1 0
+tile tile_roof_r_top   "Backgrounds/Tilesets/TilesetHouse.png" 3 0
+tile tile_roof_l_mid   "Backgrounds/Tilesets/TilesetHouse.png" 0 1
+tile tile_roof_m_mid   "Backgrounds/Tilesets/TilesetHouse.png" 1 1
+tile tile_roof_r_mid   "Backgrounds/Tilesets/TilesetHouse.png" 3 1
+tile tile_roof_l_bot   "Backgrounds/Tilesets/TilesetHouse.png" 0 1
+tile tile_roof_m_bot   "Backgrounds/Tilesets/TilesetHouse.png" 2 1
+tile tile_roof_r_bot   "Backgrounds/Tilesets/TilesetHouse.png" 3 1
+tile tile_roof         "Backgrounds/Tilesets/TilesetHouse.png" 1 1
+tile tile_roof_blue_l_top "Backgrounds/Tilesets/TilesetHouse.png" 19 0
+tile tile_roof_blue_m_top "Backgrounds/Tilesets/TilesetHouse.png" 20 0
+tile tile_roof_blue_r_top "Backgrounds/Tilesets/TilesetHouse.png" 22 0
+tile tile_roof_blue_l_mid "Backgrounds/Tilesets/TilesetHouse.png" 19 1
+tile tile_roof_blue_m_mid "Backgrounds/Tilesets/TilesetHouse.png" 21 1
+tile tile_roof_blue_r_mid "Backgrounds/Tilesets/TilesetHouse.png" 22 1
+tile tile_roof_blue_l_bot "Backgrounds/Tilesets/TilesetHouse.png" 19 1
+tile tile_roof_blue_m_bot "Backgrounds/Tilesets/TilesetHouse.png" 21 1
+tile tile_roof_blue_r_bot "Backgrounds/Tilesets/TilesetHouse.png" 22 1
+tile tile_roof_blue    "Backgrounds/Tilesets/TilesetHouse.png" 21 1
+tile tile_roof_gold_l_top "Backgrounds/Tilesets/TilesetHouse.png" 12 0
+tile tile_roof_gold_m_top "Backgrounds/Tilesets/TilesetHouse.png" 13 0
+tile tile_roof_gold_r_top "Backgrounds/Tilesets/TilesetHouse.png" 15 0
+tile tile_roof_gold_l_mid "Backgrounds/Tilesets/TilesetHouse.png" 12 1
+tile tile_roof_gold_m_mid "Backgrounds/Tilesets/TilesetHouse.png" 13 1
+tile tile_roof_gold_r_mid "Backgrounds/Tilesets/TilesetHouse.png" 15 1
+tile tile_roof_gold_l_bot "Backgrounds/Tilesets/TilesetHouse.png" 12 1
+tile tile_roof_gold_m_bot "Backgrounds/Tilesets/TilesetHouse.png" 14 1
+tile tile_roof_gold_r_bot "Backgrounds/Tilesets/TilesetHouse.png" 15 1
+tile tile_roof_gold    "Backgrounds/Tilesets/TilesetHouse.png" 13 1
+tile tile_house_wall_l_top "Backgrounds/Tilesets/TilesetHouse.png" 0 2
+tile tile_house_wall_m_top "Backgrounds/Tilesets/TilesetHouse.png" 2 2
+tile tile_house_wall_r_top "Backgrounds/Tilesets/TilesetHouse.png" 3 2
+tile tile_house_wall_l_mid "Backgrounds/Tilesets/TilesetHouse.png" 0 2
+tile tile_house_wall_m_mid "Backgrounds/Tilesets/TilesetHouse.png" 2 2
+tile tile_house_wall_r_mid "Backgrounds/Tilesets/TilesetHouse.png" 3 2
+tile tile_house_wall_l_bot "Backgrounds/Tilesets/TilesetHouse.png" 0 2
+tile tile_house_wall_m_bot "Backgrounds/Tilesets/TilesetHouse.png" 2 2
+tile tile_house_wall_r_bot "Backgrounds/Tilesets/TilesetHouse.png" 3 2
+tile tile_house_wall   "Backgrounds/Tilesets/TilesetHouse.png" 2 2
+tile tile_window       "Backgrounds/Tilesets/TilesetHouse.png" 2 2
+tile tile_door         "Backgrounds/Tilesets/TilesetHouse.png" 1 2
+tile tile_counter      "Backgrounds/Tilesets/TilesetElement.png" 12 1
+tile tile_counter_l_mid "Backgrounds/Tilesets/TilesetElement.png" 11 1
+tile tile_counter_m_mid "Backgrounds/Tilesets/TilesetElement.png" 12 1
+tile tile_counter_r_mid "Backgrounds/Tilesets/TilesetElement.png" 14 1
+tile tile_counter_l_bot "Backgrounds/Tilesets/TilesetElement.png" 11 1
+tile tile_counter_m_bot "Backgrounds/Tilesets/TilesetElement.png" 12 1
+tile tile_counter_r_bot "Backgrounds/Tilesets/TilesetElement.png" 14 1
+tile tile_fence        "Backgrounds/Tilesets/TilesetHouse.png" 9 4
+
+# ================================================================ props (stand on the ground; big ones overhang)
+tile obj_tree     "Backgrounds/Tilesets/TilesetNature.png" 0 0 2 2
+tile obj_bush     "Backgrounds/Tilesets/TilesetNature.png" 0 10
+tile obj_rock     "Backgrounds/Tilesets/TilesetNature.png" 18 9
+tile obj_stump    "Backgrounds/Tilesets/TilesetNature.png" 4 8
+tile obj_log      "Backgrounds/Tilesets/TilesetNature.png" 5 8
+tile obj_flagstone "Backgrounds/Tilesets/TilesetFloorDetail.png" 15 0
+tile obj_fae_ring "Backgrounds/Tilesets/TilesetFloorDetail.png" 5 2
+tile obj_barrel   "Backgrounds/Tilesets/TilesetElement.png" 0 0
+tile obj_crate    "Backgrounds/Tilesets/TilesetElement.png" 8 0
+tile obj_chest    "Backgrounds/Tilesets/TilesetElement.png" 3 1
+tile obj_chest_open "Backgrounds/Tilesets/TilesetElement.png" 6 0
+tile obj_sign     "Backgrounds/Tilesets/TilesetElement.png" 0 2
+tile obj_lantern  "Backgrounds/Tilesets/TilesetElement.png" 13 0
+tile obj_table    "Backgrounds/Tilesets/TilesetElement.png" 14 0
+tile obj_well     "Backgrounds/Tilesets/TilesetElement.png" 6 1
+tile obj_altar    "Backgrounds/Tilesets/TilesetElement.png" 10 1
+tile obj_statue   "Backgrounds/Tilesets/TilesetElement.png" 2 2
+tile obj_pillar   "Backgrounds/Tilesets/TilesetElement.png" 5 2
+tile obj_stall    "Backgrounds/Tilesets/TilesetElement.png" 7 2
+tile obj_bed      "Backgrounds/Tilesets/tileset_bed.png" 12 3 1 2
+tile obj_campfire "Backgrounds/Tilesets/tileset_camp.png" 12 3 2 2
+
+# ================================================================ heroes (by class)
+actor hero_fighter "Actor/Character/Knight/SpriteSheet.png"
+actor hero_wizard    "Actor/Character/SorcererBlack/SpriteSheet.png"
+actor hero_cleric    "Actor/Character/Monk/SpriteSheet.png"
+actor hero_bard      "Actor/Character/Villager5/SpriteSheet.png"
+actor hero_barbarian "Actor/Character/Caveman/SpriteSheet.png"
+actor hero_druid     "Actor/Character/Shaman/SpriteSheet.png"
+actor hero_monk      "Actor/Character/Monk2/SpriteSheet.png"
+actor hero_paladin   "Actor/Character/KnightGold/SpriteSheet.png"
+actor hero_ranger    "Actor/Character/Hunter/SpriteSheet.png"
+actor hero_rogue     "Actor/Character/NinjaDark/SpriteSheet.png"
+actor hero_sorcerer  "Actor/Character/NinjaMageOrange/SpriteSheet.png"
+actor hero_warlock   "Actor/Character/SorcererOrange/SpriteSheet.png"
+
+# ================================================================ recruitable adventurers (by class, a different look from the heroes)
+actor npc_fighter    "Actor/Character/FighterRed/SpriteSheet.png"
+actor npc_wizard     "Actor/Character/NinjaMageBlack/SpriteSheet.png"
+actor npc_cleric     "Actor/Character/OldMan3/SpriteSheet.png"
+actor npc_bard       "Actor/Character/Noble/SpriteSheet.png"
+actor npc_barbarian  "Actor/Character/Caveman2/SpriteSheet.png"
+actor npc_druid      "Actor/Character/ShamanLion/SpriteSheet.png"
+actor npc_monk       "Actor/Character/MonkeyBoxerBlue/SpriteSheet.png"
+actor npc_paladin    "Actor/Character/GladiatorBlue/SpriteSheet.png"
+actor npc_ranger     "Actor/Character/CamouflageGreen/SpriteSheet.png"
+actor npc_rogue      "Actor/Character/NinjaGray/SpriteSheet.png"
+actor npc_sorcerer   "Actor/Character/NinjaFire/SpriteSheet.png"
+actor npc_warlock    "Actor/Character/NinjaMasked/SpriteSheet.png"
+
+# ================================================================ named townsfolk
+actor npc_brannoc    "Actor/Character/Master/SpriteSheet.png"
+actor npc_elowen     "Actor/Character/OldWoman/SpriteSheet.png"
+actor npc_pip        "Actor/Character/Boy/SpriteSheet.png"
+actor npc_rhoswen    "Actor/Character/SamuraiBlue/SpriteSheet.png"
+actor npc_hobb       "Actor/Character/OldMan2/SpriteSheet.png"
+actor npc_villager   "Actor/Character/Villager/SpriteSheet.png"
+actor npc_villager_tobin  "Actor/Character/OldMan/SpriteSheet.png"
+actor npc_villager_maddie "Actor/Character/Child/SpriteSheet.png"
+
+# ================================================================ monsters (non-directional: the game flips them)
+still mon_kobold         "Actor/Monster/Lizard/Lizard.png"
+still mon_kobold_slinger "Actor/Monster/Reptile/Reptile.png"
+still mon_snik_src       "Actor/Monster/Lizard/Lizard.png"
+tint  mon_snik_0 mon_snik_src_0 140 1.1 1.0
+tint  mon_snik_1 mon_snik_src_1 140 1.1 1.0
+still mon_rat            "Actor/Monster/Mouse/SpriteSheet.png"
+strip mon_wolf           "Actor/Animal/DogBlack/SpriteSheet.png" 2
+strip mon_boar           "Actor/Animal/WildBoar/SpriteSheet.png" 2 17
+still mon_goblin         "Actor/Character/DemonGreen/SpriteSheet.png"
+still mon_bandit         "Actor/Character/CamouflageRed/SpriteSheet.png"
+still mon_wren           "Actor/Character/Cavegirl2/SpriteSheet.png"
+
+# ================================================================ the baby dragon: the pack's yellow dragon, nudged toward ember red
+actor mon_dragonling_src "Actor/Monster/DragonYellow/SpriteSheet.png"
+still mon_dragonling_src "Actor/Monster/DragonYellow/SpriteSheet.png"
+tint  mon_dragonling_0 mon_dragonling_src_0 -22 1.15 1.0
+tint  mon_dragonling_1 mon_dragonling_src_1 -22 1.15 1.0
+
+# ================================================================ item icons (pack images centered on 16x16)
+icon item_dagger            "Items/Weapons/Ninjaku/Sprite.png"
+icon item_shortsword        "Items/Weapons/Sword2/Sprite.png"
+icon item_longsword         "Items/Weapons/Sword/Sprite.png"
+icon item_greatsword        "Items/Weapons/BigSword/Sprite.png"
+icon item_rapier            "Items/Weapons/Rapier/Sprite.png"
+icon item_scimitar          "Items/Weapons/Katana/Sprite.png"
+icon item_club              "Items/Weapons/Club/Sprite.png"
+icon item_greatclub         "Items/Weapons/Bone/Sprite.png"
+icon item_morningstar       "Items/Weapons/Club/Sprite.png"
+icon item_quarterstaff      "Items/Weapons/Stick/Sprite.png"
+icon item_mace              "Items/Weapons/Hammer/Sprite.png"
+icon item_light_hammer      "Items/Weapons/Hammer/Sprite.png"
+icon item_warhammer         "Items/Weapons/Hammer/Sprite.png"
+icon item_maul              "Items/Weapons/Hammer/Sprite.png"
+icon item_flail             "Items/Weapons/Hammer/Sprite.png"
+icon item_handaxe           "Items/Weapons/AxeTool/Sprite.png"
+icon item_battleaxe         "Items/Weapons/Axe/Sprite.png"
+icon item_greataxe          "Items/Weapons/Axe/Sprite.png"
+icon item_war_pick          "Items/Weapons/Pickaxe/Sprite.png"
+icon item_spear             "Items/Weapons/Lance/Sprite.png"
+icon item_halberd           "Items/Weapons/Lance/Sprite.png"
+icon item_javelin           "Items/Weapons/Lance2/Sprite.png"
+icon item_glaive            "Items/Weapons/Lance2/Sprite.png"
+icon item_trident           "Items/Weapons/Fork/Sprite.png"
+icon item_whip              "Items/Weapons/Whip/Sprite.png"
+icon item_sickle            "Items/Tool/Sickle.png"
+icon item_sling             "Items/Resource/Rock.png"
+icon item_shortbow          "Items/Weapons/Bow/Sprite.png"
+icon item_longbow           "Items/Weapons/Bow2/Sprite.png"
+icon item_light_crossbow    "Items/Weapons/Bow2/Sprite.png"
+icon item_hand_crossbow     "Items/Weapons/Bow/Sprite.png"
+icon item_heavy_crossbow    "Items/Weapons/Bow2/Sprite.png"
+icon item_starfall_wand     "Items/Weapons/MagicWand/Sprite.png"
+icon item_starfall_staff_src "Items/Weapons/Stick/Sprite.png"
+tint item_starfall_staff item_starfall_staff_src 200 1.3 1.1
+icon item_emberwrought_blade_src "Items/Weapons/Sword/Sprite.png"
+tint item_emberwrought_blade item_emberwrought_blade_src -30 1.4 1.0
+icon item_potion_healing    "Items/Potion/LifePot.png"
+tint item_potion_greater_healing item_potion_healing 270 1.0 1.0
+icon item_scroll_revivify   "Items/Scroll/Scroll.png"
+icon item_rations           "Items/Object/Bag.png"
+icon item_gem               "Items/Resource/GemRed.png"
+icon item_trinket           "Items/Treasure/SilverCoin.png"
+icon item_copper_trinket    "Items/Resource/BarCopper.png"
+icon item_fennicks_lucky_copper "Items/Treasure/GoldCoin.png"
+icon item_dawnmothers_charm "Items/Resource/GemYellow.png"
+icon item_ember_of_return_src "Items/Resource/GemRed.png"
+tint item_ember_of_return item_ember_of_return_src 20 1.2 1.15
+
+# ================================================================ hand-drawn by Claude (things the pack doesn't have)
+pattern tunic
+................
+....kk....kk....
+...kaak..kaak...
+..kaaabkkbaaak..
+..kaaaabbaaaak..
+...kaaaaaaaak...
+...kaaaaaaaak...
+...kaaacaaaak...
+...kaaaaaaaak...
+...kaaaaaaaak...
+...kbbbbbbbbk...
+...kaaaaaaaak...
+...kaaaaaaaak...
+....kkkkkkkk....
+................
+................
+end
+paint item_padded          tunic k=2b2118 a=e8dcc0 b=b8a27a c=b8a27a
+paint item_leather         tunic k=2b2118 a=9c6534 b=5c3a1a c=9c6534
+paint item_studded_leather tunic k=2b2118 a=8a5a2e b=5c3a1a c=ffd54a
+paint item_hide            tunic k=2b2118 a=b08850 b=6d5030 c=6d5030
+paint item_chain_shirt     tunic k=1e2428 a=9aa4ab b=6b757c c=c7cfd4
+paint item_ring_mail       tunic k=1e2428 a=8c949a b=5e666c c=b0b8be
+paint item_scale_mail      tunic k=1e2428 a=7d8f7a b=56664f c=a7b7a2
+paint item_chain_mail      tunic k=1e2428 a=a7b0b6 b=6b757c c=d4dbe0
+paint item_breastplate     tunic k=1e2428 a=c7cfd4 b=7d878e c=f0f4f6
+paint item_half_plate      tunic k=1e2428 a=bcc5cb b=6b757c c=ffd54a
+paint item_splint          tunic k=1e2428 a=b0b8be b=596168 c=e0e6ea
+paint item_plate           tunic k=1e2428 a=dfe5e9 b=8a949b c=ffd54a
+
+pattern roundshield
+................
+.....kkkkkk.....
+...kkbbbbbbkk...
+..kbbaaaaaabbk..
+..kbaaaaaaaabk..
+.kbaaaaccaaaabk.
+.kbaaaaccaaaabk.
+.kbaaccccccaabk.
+.kbaaccccccaabk.
+.kbaaaaccaaaabk.
+..kbaaaccaaabk..
+..kbbaaaaaabbk..
+...kkbbbbbbkk...
+.....kkkkkk.....
+................
+................
+end
+paint item_shield roundshield k=2b2118 a=9c6534 b=b0b8be c=ffd54a
+
+pattern torch
+................
+.......yy.......
+......yooy......
+......orro......
+.......oo.......
+......kwwk......
+......kbbk......
+.......bb.......
+.......bb.......
+.......bb.......
+.......bb.......
+.......bb.......
+.......bb.......
+.......dd.......
+................
+................
+end
+paint item_torch torch k=2b2118 y=ffe066 o=ff9f1c r=e8462a w=bdbdbd b=8b5a2b d=5c3a1a
+
+pattern cloak
+................
+......kkkk......
+.....kaaaak.....
+....kaaccaak....
+....kaaaaaak....
+...kaaaaaaaak...
+...kabaaaabak...
+..kaabaaaabaak..
+..kaabaaaabaak..
+..kaabaaaabaak..
+.kaaabaaaabaaak.
+.kaaabaaaabaaak.
+.kbbbbbbbbbbbbk.
+..kkkkkkkkkkkk..
+................
+................
+end
+paint item_veilthread_cloak cloak k=2b1d3a a=7e57c2 b=b39ddb c=ffd54a
+
+pattern ring
+................
+................
+......kkkk......
+.....kcccck.....
+.....kcggck.....
+......kcck......
+.....kk..kk.....
+....kak..kak....
+...kak....kak...
+...kak....kak...
+...kak....kak...
+....kak..kak....
+.....kkaakk.....
+.......kk.......
+................
+................
+end
+paint item_oathbound_signet ring k=3e2723 a=ffc107 c=ffca28 g=455a64
+
+pattern shard
+................
+................
+................
+......k.........
+.....krk........
+....krRrk.......
+....krRRrk......
+...krrRRRrk.....
+...krrrRRrk.....
+....krrrrk......
+.....kkkk.......
+................
+................
+................
+................
+................
+end
+paint item_shard shard k=4a1410 r=c0392b R=ff7043
+
+pattern egg
+................
+......kkkk......
+.....krrrrk.....
+....krrRRrrk....
+...krrRRRRrrk...
+...krrRyRRrrk...
+..krrRRRRRyrrk..
+..krryRRRRRrrk..
+..krrRRRyRRrrk..
+..krrRRRRRRrrk..
+..krrrRRRRrrrk..
+...krrrrrrrrk...
+...kddrrrrddk...
+....kddddddk....
+.....kkkkkk.....
+................
+end
+paint obj_egg_glow egg k=2a1010 r=c0392b R=ff7043 y=ffd54a d=8e2a20
+paint obj_egg      egg k=2a1010 r=a8322a R=d9593a y=e8b84a d=7a241c
+
+# ================================================================ music (Audio/Musics) — zone tracks are music_{zoneId}
+audio music_title       "Audio/Musics/38 - Intro.ogg"
+audio music_town        "Audio/Musics/36 - Village.ogg"
+audio music_town_night  "Audio/Musics/27 - Chill.ogg"
+audio music_home        "Audio/Musics/5 - Peaceful.ogg"
+audio music_shop        "Audio/Musics/33 - Calm Village.ogg"
+audio music_tavern      "Audio/Musics/20 - Good Time.ogg"
+audio music_temple      "Audio/Musics/12 - Temple.ogg"
+audio music_forest      "Audio/Musics/11 - Clearing.ogg"
+audio music_forest_night "Audio/Musics/13 - Mystical.ogg"
+audio music_ford        "Audio/Musics/23 - Road.ogg"
+audio music_mine        "Audio/Musics/2 - The Cave.ogg"
+audio music_fight       "Audio/Musics/17 - Fight.ogg"
+
+# ================================================================ sound effects (the dice keep their own code-made clatter)
+audio hit           "Audio/Sounds/Hit & Impact/Hit1.wav"
+audio miss          "Audio/Sounds/Whoosh & Slash/Whoosh.wav"
+audio crit          "Audio/Sounds/Hit & Impact/Impact.wav"
+audio heal          "Audio/Sounds/Magic & Skill/Heal.wav"
+audio spell         "Audio/Sounds/Magic & Skill/Magic1.wav"
+audio door          "Audio/Sounds/Menu/Accept2.wav"
+audio coin          "Audio/Sounds/Bonus/Coin.wav"
+audio ui            "Audio/Sounds/Menu/Menu5.wav"
+audio success       "Audio/Jingles/Success1.wav"
+audio fail          "Audio/Sounds/Menu/Cancel.wav"
+audio combat_start  "Audio/Sounds/Alert/Alert.wav"
+audio secret        "Audio/Jingles/Secret1.wav"
+audio levelup       "Audio/Jingles/LevelUp1.wav"
+
+# ================================================================ Wild Shape forms and the transform puff
+strip mon_cat    "Actor/Animal/Cat/SpriteSheet.png" 2
+strip mon_frog   "Actor/Animal/Frog/SpriteSheet.png" 2
+still mon_bear   "Actor/Monster/Bear/SpriteSheet.png"
+strip fx_smoke   "FX/Smoke/Smoke/SpriteSheet.png" 6
+strip fx_leaf    "FX/Particle/Leaf.png" 3 7

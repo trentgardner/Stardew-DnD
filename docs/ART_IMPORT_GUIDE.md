@@ -3,6 +3,26 @@
 The game looks up every image **by filename**. If a file exists, it's used; if not, the game draws its own
 placeholder. So you can replace art **one sprite at a time**, in any order, without touching code.
 
+## How the current art works (Ninja Adventure)
+
+The game's art and audio come from the free Ninja Adventure pack (CC0). Nothing from the pack is
+loaded at runtime; instead a one-time import cuts it into the files the game asks for.
+
+1. The pack lives in `ArtSource/NinjaAdventure/` (not committed to git; re-download it from
+   https://pixel-boy.itch.io/ninja-adventure-asset-pack and unzip it there if it's missing).
+2. `Assets/Editor/ArtMap.txt` says which piece of the pack becomes which sprite or sound id
+   (for example: `tile tile_grass "Backgrounds/Tilesets/TilesetFloor.png" 0 12`).
+   The header of `Assets/Editor/ArtSlicer.cs` documents every line type, including
+   `pattern`/`paint` for small sprites drawn by hand right in the text file.
+3. In Unity: **Embers > Import Art (Ninja Adventure)**. It writes `Assets/Resources/Art/*.png` and
+   `Assets/Resources/Audio/*`, which *are* committed, so the game builds without the pack.
+
+To change a look, edit a line in ArtMap.txt and import again. The test `ArtTests.EveryZoneDrawsOnlyRealArt`
+fails and lists any sprite id that still has no real art.
+
+Paths, water, plazas, roofs, walls and cliffs pick edge and corner pieces automatically from their
+neighbors (`TileStyler`): name the pieces `{id}_nw`, `{id}_n`... (paths, water) or `{id}_l_top`... (roofs, cliffs).
+
 ## The 3-step version
 
 1. Get a PNG that follows `docs/ART_BRIEF.md` (right size, transparent background).

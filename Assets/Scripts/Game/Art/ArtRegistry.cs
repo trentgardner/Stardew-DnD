@@ -13,10 +13,32 @@ namespace DnD.Game
     {
         public const int PixelsPerUnit = 16;
         static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
+        static readonly Dictionary<string, bool> RealCache = new Dictionary<string, bool>();
+
+        /// <summary>Every id asked for since the last ClearCache (used to audit for leftover placeholder art).</summary>
+        public static readonly HashSet<string> Requested = new HashSet<string>();
+
+        /// <summary>True if real art for this id ships in Resources/Art (not a generated placeholder).</summary>
+        public static bool IsReal(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return false;
+            if (RealCache.TryGetValue(id, out var real)) return real;
+            real = Resources.Load<Texture2D>("Art/" + id) != null;
+            RealCache[id] = real;
+            return real;
+        }
+
+        /// <summary>The first id that has real art, else the last one (which then gets a placeholder).</summary>
+        public static string Resolve(params string[] ids)
+        {
+            foreach (var id in ids) if (IsReal(id)) return id;
+            return ids[ids.Length - 1];
+        }
 
         public static Sprite Get(string id)
         {
             if (string.IsNullOrEmpty(id)) id = "missing";
+            Requested.Add(id);
             if (Cache.TryGetValue(id, out var s)) return s;
 
             s = Resources.Load<Sprite>("Art/" + id);
@@ -43,6 +65,6 @@ namespace DnD.Game
             return arr;
         }
 
-        public static void ClearCache() => Cache.Clear();
+        public static void ClearCache() { Cache.Clear(); RealCache.Clear(); Requested.Clear(); }
     }
 }

@@ -7,6 +7,8 @@ namespace DnD.Rules
     /// <summary>How a spell resolves mechanically. The engine handles each kind generically.</summary>
     public enum SpellKind
     {
+        /// <summary>Puts an effect on an enemy with no attack roll or save (Hunter's Mark).</summary>
+        Mark,
         /// <summary>Spell attack roll vs AC, then damage.</summary>
         Attack,
         /// <summary>Targets make a saving throw; damage (half on success if HalfOnSave).</summary>
@@ -104,7 +106,7 @@ namespace DnD.Rules
         public FeatureDef(int level, string name, string text) { Level = level; Name = name; Text = text; }
     }
 
-    public enum CasterType { None, Full }
+    public enum CasterType { None, Full, Half, Pact }
 
     public class ClassDef
     {
@@ -117,6 +119,10 @@ namespace DnD.Rules
         public int SkillChoices;
         public bool LightArmor, MediumArmor, HeavyArmor, Shields;
         public bool MartialWeapons;
+        /// <summary>Rogue: martial weapons that have the Finesse or Light property.</summary>
+        public bool MartialFinesseOrLight;
+        /// <summary>Class spells that are always prepared from a level on (Paladin's Smite: divine_smite at 2). Don't count against the limit.</summary>
+        public Dictionary<string, int> AlwaysPrepared = new Dictionary<string, int>();
         public CasterType Caster;
         public Ability SpellAbility;
         public int[] CantripsKnown = new int[21];   // by level
@@ -144,9 +150,26 @@ namespace DnD.Rules
             {4,3,3,3,2,1,1,1,1},{4,3,3,3,3,1,1,1,1},{4,3,3,3,3,2,1,1,1},{4,3,3,3,3,2,2,1,1},
         };
 
+        // Half casters (Paladin, Ranger; 2024 rules: spellcasting from level 1), levels 1-20, slot levels 1-5.
+        static readonly int[,] Half =
+        {
+            {0,0,0,0,0},
+            {2,0,0,0,0},{2,0,0,0,0},{3,0,0,0,0},{3,0,0,0,0},{4,2,0,0,0},{4,2,0,0,0},{4,3,0,0,0},{4,3,0,0,0},
+            {4,3,2,0,0},{4,3,2,0,0},{4,3,3,0,0},{4,3,3,0,0},{4,3,3,1,0},{4,3,3,1,0},{4,3,3,2,0},{4,3,3,2,0},
+            {4,3,3,3,1},{4,3,3,3,1},{4,3,3,3,2},{4,3,3,3,2},
+        };
+
         public static int For(CasterType type, int classLevel, int slotLevel)
         {
             if (type == CasterType.None || slotLevel < 1 || slotLevel > 9) return 0;
+            if (type == CasterType.Half) return slotLevel > 5 ? 0 : Half[classLevel, slotLevel - 1];
+            if (type == CasterType.Pact)
+            {
+                // Warlock Pact Magic: a few slots, all of one level (they come back on a Short Rest).
+                int pactLevel = classLevel >= 9 ? 5 : classLevel >= 7 ? 4 : classLevel >= 5 ? 3 : classLevel >= 3 ? 2 : 1;
+                int count = classLevel >= 17 ? 4 : classLevel >= 11 ? 3 : classLevel >= 2 ? 2 : 1;
+                return slotLevel == pactLevel ? count : 0;
+            }
             return Full[classLevel, slotLevel - 1];
         }
     }

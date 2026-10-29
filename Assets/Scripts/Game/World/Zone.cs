@@ -16,7 +16,7 @@ namespace DnD.Game
         public bool[,] Blocked;   // [col,row] map coords
         public readonly List<GameObject> Objects = new List<GameObject>();
 
-        Tilemap _ground, _solid;
+        Tilemap _base, _ground, _solid;
         static readonly Dictionary<string, Tile> TileCache = new Dictionary<string, Tile>();
 
         public int W => Def.Width;
@@ -66,6 +66,8 @@ namespace DnD.Game
             grid.cellSize = Vector3.one;
             go.transform.position = new Vector3(zone.Origin.x, zone.Origin.y, 0);
 
+            // Base floor under every cell, so see-through tiles (plaza edges, counters, crops) never show black.
+            zone._base = MakeLayer(go.transform, "Base", -1001, false);
             zone._ground = MakeLayer(go.transform, "Ground", -1000, false);
             zone._solid = MakeLayer(go.transform, "Solid", -999, true);
 
@@ -73,6 +75,7 @@ namespace DnD.Game
                 for (int col = 0; col < def.Width; col++)
                     zone.BuildCell(new Vector2Int(col, row), def.Map[row][col]);
 
+            zone._base.CompressBounds();
             zone._ground.CompressBounds();
             zone._solid.CompressBounds();
             return zone;
@@ -107,14 +110,39 @@ namespace DnD.Game
             return ((m.x * 7 + m.y * 13) % 5 == 0) ? "tile_grass_v1" : "tile_grass";
         }
 
-        void Ground(Vector2Int m, string sprite) => _ground.SetTile(Cell(m), GetTile(sprite, false));
-        void Wall(Vector2Int m, string sprite) { _solid.SetTile(Cell(m), GetTile(sprite, true)); Blocked[m.x, m.y] = true; }
+        void Ground(Vector2Int m, string sprite) => _ground.SetTile(Cell(m), GetTile(Styled(m, sprite), false));
+        void Wall(Vector2Int m, string sprite) { _solid.SetTile(Cell(m), GetTile(Styled(m, sprite), true)); Blocked[m.x, m.y] = true; }
+
+        /// <summary>Map chars whose tiles take edge/corner pieces from their neighbors, and which neighbor chars count as "the same".</summary>
+        static readonly Dictionary<char, (TileShape shape, string same)> Styles = new Dictionary<char, (TileShape, string)>
+        {
+            { ',', (TileShape.Blob, ",bDEM") },   // dirt paths run into bridges, doors and the mine mouth
+            { ';', (TileShape.Blob, ";") },       // sand
+            { '~', (TileShape.Blob, "~b") },      // water (a bridge has water under it)
+            { 'o', (TileShape.Blob, "oSOm") },    // cobbled square around the statue, well and stalls
+            { 'X', (TileShape.Rect, "XM") },      // cliffs (the mine entrance is cut into them)
+            { 'R', (TileShape.Rect, "R") },
+            { 'U', (TileShape.Rect, "U") },
+            { 'G', (TileShape.Rect, "G") },
+            { 'W', (TileShape.Rect, "WwD") },     // walls continue through windows and doors
+            { 'C', (TileShape.Rect, "C") },
+            { 'f', (TileShape.Rect, "f") },
+        };
+
+        /// <summary>The neighbor-aware variant of a tile if real art exists for it, else the plain tile.</summary>
+        string Styled(Vector2Int m, string baseId)
+        {
+            if (baseId == null || !Styles.TryGetValue(CharAt(m), out var st)) return baseId;
+            string v = TileStyler.Variant(baseId, st.shape, (dx, dy) => st.same.IndexOf(CharAt(new Vector2Int(m.x + dx, m.y + dy))) >= 0, m.x, m.y);
+            return ArtRegistry.Resolve(v, baseId);
+        }
         /// <summary>Invisible blocker under props (trees, tables...).</summary>
         void Solid(Vector2Int m) { _solid.SetTile(Cell(m), GetTile("tile_none", true)); Blocked[m.x, m.y] = true; }
 
         void BuildCell(Vector2Int m, char c)
         {
             string floor = FloorFor(m);
+            _base.SetTile(Cell(m), GetTile(floor, false));
             switch (c)
             {
                 case '.': Ground(m, floor); break;
@@ -147,7 +175,7 @@ namespace DnD.Game
                         Prop(m, secret.Sprite, c == 'Y').AddComponent<SecretInteractable>().Def = secret;
                     else Debug.LogWarning($"{Def.Id}: no SecretDef at {m}");
                     break;
-                case 'X': Wall(m, "tile_cave_wall"); break;
+                case 'X': Wall(m, Def.Dark ? "tile_cave_wall" : "tile_cliff"); break; // rock in the mine, green cliffs outdoors
                 case 'W': Wall(m, Def.Id == "temple" ? "tile_stone_wall" : "tile_house_wall"); break;
                 case 'w': Wall(m, "tile_window"); break;
                 case 'U': Wall(m, "tile_roof_blue"); break;

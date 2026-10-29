@@ -155,6 +155,7 @@ namespace DnD.Game
 
         void Redraw()
         {
+            if (Closed || Root == null) return;   // an options menu can outlive the inventory (e.g. combat starts)
             void Draw(List<Cell> cells, int panel)
             {
                 for (int i = 0; i < cells.Count; i++)

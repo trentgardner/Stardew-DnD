@@ -23,6 +23,9 @@ namespace DnD.Rules
         public AttackOption Attack;
         public D20Result Roll;
         public bool Hit, Critical, OutOfRange;
+        /// <summary>The attack's context and the attacker's turn (for once-per-turn riders like Sneak Attack); may be null.</summary>
+        public AttackContext Context;
+        public TurnState Turn;
         public int TargetAC;
         public readonly List<string> AdvantageReasons = new List<string>();
         public readonly List<string> DisadvantageReasons = new List<string>();
@@ -67,7 +70,14 @@ namespace DnD.Rules
                 if (e.AdvantageForAttacker == attacker) adv.Add("vex");
             }
             foreach (var e in attacker.Effects)
+            {
                 if (e.DisadvantageOnNextAttack) dis.Add(e.Name.ToLower());
+                if (e.AdvantageOnNextAttack) adv.Add(e.Name.ToLower());
+            }
+            if (atk.IsSpell && attacker.HasEffect("innate_sorcery")) adv.Add("innate sorcery");
+            bool strMelee = !atk.Ranged && !atk.IsSpell && attacker is PlayerCharacter apc && (atk.Weapon == null || !atk.Weapon.Has(WeaponProperty.Finesse) || apc.Mod(Ability.STR) >= apc.Mod(Ability.DEX));
+            if (strMelee && attacker.HasEffect("reckless")) adv.Add("reckless");
+            if (target.HasEffect("reckless")) adv.Add("target is reckless");
 
             if (atk.Ranged || (atk.IsSpell && atk.RangeNormal > 5))
             {
@@ -84,9 +94,9 @@ namespace DnD.Rules
             return Dice.Combine(adv.Count > 0, dis.Count > 0);
         }
 
-        public static AttackRollResult RollAttack(Creature attacker, Creature target, AttackOption atk, AttackContext ctx)
+        public static AttackRollResult RollAttack(Creature attacker, Creature target, AttackOption atk, AttackContext ctx, TurnState turn = null)
         {
-            var res = new AttackRollResult { Attacker = attacker, Target = target, Attack = atk, TargetAC = target.ArmorClass };
+            var res = new AttackRollResult { Attacker = attacker, Target = target, Attack = atk, TargetAC = target.ArmorClass, Context = ctx, Turn = turn };
             if (ctx.DistanceFt > atk.MaxRangeFt && !(atk.IsSpell && ctx.DistanceFt <= atk.RangeNormal))
             {
                 res.OutOfRange = true;
@@ -100,7 +110,7 @@ namespace DnD.Rules
             foreach (var e in attacker.Effects) if (e.AttackDie > 0) Dice.AddBonusDie(res.Roll, e.AttackDie);
 
             // Consume one-shot effects.
-            attacker.Effects.RemoveAll(e => e.DisadvantageOnNextAttack);
+            attacker.Effects.RemoveAll(e => e.DisadvantageOnNextAttack || e.AdvantageOnNextAttack);
             target.Effects.RemoveAll(e => e.ConsumedWhenAttacked && (e.AdvantageForAttacker == null || e.AdvantageForAttacker == attacker));
 
             int nat = res.Roll.Natural;
@@ -126,7 +136,58 @@ namespace DnD.Rules
                 roll.Extra = Dice.RollDamage(atk.ExtraDamage, r.Critical);
                 roll.ExtraType = atk.ExtraDamageType;
             }
+            if (r.Attacker is PlayerCharacter pc && r.Turn != null)
+            {
+                // Rogue: Sneak Attack, once per turn.
+                int sneak = SneakAttackDiceFor(pc);
+                if (sneak > 0 && !r.Turn.SneakAttackUsed && SneakAttackEligible(r))
+                {
+                    r.Turn.SneakAttackUsed = true;
+                    roll.Dice.AddRange(Dice.RollDamage(new DiceExpr(sneak, 6), r.Critical).Dice);
+                    roll.Terms.Add(new RollTerm("sneak attack", 0));
+                }
+                // Hunter's Mark: +1d6 force on weapon hits against the creature you marked.
+                if (atk.Weapon != null && r.Target.Effects.Any(e => e.Id == "hunters_mark" && e.Source == pc))
+                {
+                    var mark = Dice.RollDamage(new DiceExpr(1, 6), r.Critical);
+                    if (roll.Extra == null) { roll.Extra = mark; roll.ExtraType = DamageType.Force; }
+                    else roll.Dice.AddRange(mark.Dice);
+                }
+                // Hex: +1d6 necrotic on any attack hit against the creature you cursed.
+                if (r.Target.Effects.Any(e => e.Id == "hex" && e.Source == pc))
+                {
+                    var hex = Dice.RollDamage(new DiceExpr(1, 6), r.Critical);
+                    if (roll.Extra == null) { roll.Extra = hex; roll.ExtraType = DamageType.Necrotic; }
+                    else roll.Dice.AddRange(hex.Dice);
+                }
+                // Hunter: Colossus Slayer, once per turn against a creature that's already hurt.
+                if (pc.HunterPrey == "colossus_slayer" && atk.Weapon != null && r.Target.HP < r.Target.MaxHP && !r.Turn.ColossusUsed)
+                {
+                    r.Turn.ColossusUsed = true;
+                    roll.Dice.AddRange(Dice.RollDamage(new DiceExpr(1, 8), r.Critical).Dice);
+                    roll.Terms.Add(new RollTerm("colossus slayer", 0));
+                }
+                // Berserker: Frenzy, the first hit each turn while raging recklessly.
+                if (pc.HasFeature("Frenzy") && pc.Raging && pc.HasEffect("reckless") && !r.Turn.FrenzyUsed && !atk.Ranged && !atk.IsSpell)
+                {
+                    r.Turn.FrenzyUsed = true;
+                    roll.Dice.AddRange(Dice.RollDamage(new DiceExpr(pc.RageDamage, 6), r.Critical).Dice);
+                    roll.Terms.Add(new RollTerm("frenzy", 0));
+                }
+            }
             return roll;
+        }
+
+        /// <summary>Number of Sneak Attack d6s for a character (0 if not a rogue).</summary>
+        public static int SneakAttackDiceFor(PlayerCharacter pc) => pc.Class.Id == "rogue" ? (pc.Level + 1) / 2 : 0;
+
+        /// <summary>Finesse or ranged weapon, and either Advantage or an ally next to the target without Disadvantage.</summary>
+        public static bool SneakAttackEligible(AttackRollResult r)
+        {
+            var w = r.Attack.Weapon;
+            if (w == null || !(w.Has(WeaponProperty.Finesse) || w.IsRanged)) return false;
+            var adv = r.Roll.Advantage;
+            return adv == AdvantageState.Advantage || (r.Context != null && r.Context.AllyAdjacentToTarget && adv != AdvantageState.Disadvantage);
         }
 
         /// <summary>Applies damage and weapon mastery effects on a hit. Returns log lines.</summary>
@@ -220,6 +281,7 @@ namespace DnD.Rules
                 Ranged = s.RangeFt > 5,
                 Spell = s,
                 Ability = caster.Class.SpellAbility,
+                DamageMod = s.Id == "eldritch_blast" && caster.Invocations.Contains("agonizing_blast") ? caster.SpellMod : 0,
             };
         }
 
@@ -266,8 +328,13 @@ namespace DnD.Rules
         }
 
         /// <summary>Spends the slot (or nothing for cantrips). Returns false if unavailable.</summary>
+        /// <summary>Divine Smite: 2d8 radiant, +1d8 per slot level above 1st (doubled on a critical hit).</summary>
+        public static DamageRoll DivineSmiteDamage(int slotLevel, bool critical) => Dice.RollDamage(new DiceExpr(1 + Math.Max(1, slotLevel), 8), critical);
+
         public static bool PaySlot(PlayerCharacter caster, SpellDef s, int slotLevel)
         {
+            // Ranger: Favored Enemy casts Hunter's Mark without a slot (a few times per Long Rest).
+            if (s.Id == "hunters_mark" && caster.SpendResource("favored_enemy")) return true;
             if (s.IsCantrip) return true;
             if (slotLevel < s.Level || caster.SlotsLeft(slotLevel) <= 0) return false;
             caster.SlotsUsed[slotLevel]++;
@@ -291,6 +358,9 @@ namespace DnD.Rules
         public bool Dashed, Disengaged;
         public bool CastLeveledSpellThisTurn;
         public bool CleaveUsed;
+        public bool SneakAttackUsed, FrenzyUsed, ColossusUsed, HordeBreakerUsed;
+        /// <summary>Sorcerer Quickened Spell: the next action spell this turn costs the Bonus Action instead.</summary>
+        public bool QuickenNextSpell;
 
         public void Reset(Creature c)
         {
@@ -301,6 +371,7 @@ namespace DnD.Rules
             Dashed = Disengaged = false;
             CastLeveledSpellThisTurn = false;
             CleaveUsed = false;
+            SneakAttackUsed = FrenzyUsed = ColossusUsed = HordeBreakerUsed = QuickenNextSpell = false;
         }
     }
 

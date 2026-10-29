@@ -352,71 +352,34 @@ namespace DnD.Game
             _right.text = sk.ToString();
 
             _menu.Clear();
-            if (pc.CanLevelUp) _menu.Add($"★ LEVEL UP to {pc.Level + 1}!", LevelUp);
+            if (pc.CanLevelUp) _menu.Add($"★ LEVEL UP to {pc.Level + 1}!", StartLevelUp);
+            if (pc.ResourceMax("wild_shape") > 0 && !Slot.InCombat) _menu.Add(pc.WildShape != null ? $"Wild Shape: return to your own form" : $"Wild Shape ({pc.ResourceLeft("wild_shape")} left)…", OpenWildShape);
             _menu.Add("Close", Close);
             _menu.Build();
         }
 
-        void LevelUp()
+        /// <summary>Out of combat: pick a beast to become (or turn back), e.g. a cat to squeeze through a gap.</summary>
+        void OpenWildShape()
         {
             var pc = Slot.Character;
-            Hud.Push(new ChoiceScreen($"Level {pc.Level + 1}: Hit Points", "Roll your hit die, or take the average? (Your call, Critical Role style.)", new List<(string, Action)>
+            if (pc.WildShape != null) { pc.EndWildShape(null); WildShapeFx.Transform(Slot.Avatar, pc); Close(); return; }
+            var opts = new List<(string, Action)>();
+            foreach (var form in pc.WildShapeForms())
             {
-                ($"Roll d{pc.Class.HitDie}!", () =>
+                var def = MonstersDb.Get(form);
+                string f = form;
+                opts.Add(($"{def.Name}: AC {def.AC}, speed {def.Speed} ft. {def.Description}", () =>
                 {
-                    var roll = Dice.RollDamage(new DiceExpr(1, pc.Class.HitDie));
-                    Hud.Dice.RollDamage("Hit Points", $"d{pc.Class.HitDie} + CON {AbilityUtil.Fmt(pc.Mod(Ability.CON))}", roll, DieColor.Healing, () => FinishLevel(roll.Dice[0].Value));
-                }),
-                ($"Take the average ({pc.AverageHitDie})", () => FinishLevel(null)),
-            }, false));
+                    if (pc.StartWildShape(f, null)) { WildShapeFx.Transform(Slot.Avatar, pc); Close(); }
+                    else Hud.Toast("No Wild Shape uses left. (One comes back on a short rest.)", UIKit.Bad);
+                }));
+            }
+            opts.Add(("Never mind", () => { }));
+            Hud.Push(new ChoiceScreen("Wild Shape", $"Become a beast you know. You keep your mind and HP, gain {pc.Level} temporary HP, and can't cast spells until you change back.", opts, false));
         }
 
-        void FinishLevel(int? roll)
-        {
-            var pc = Slot.Character;
-            var log = new List<string>();
-            pc.LevelUp(roll, log);
-            AutoChoices(pc, log);
-            Sfx.Play("success");
-            Hud.Push(new MessageScreen($"Level {pc.Level}!", string.Join("\n", log), Rebuild));
-        }
-
-        /// <summary>Playtest: level-up choices are picked automatically (shown to the player).</summary>
-        public static void AutoChoices(PlayerCharacter pc, List<string> log)
-        {
-            if (pc.Class.Id == "bard" && pc.Level == 2)
-            {
-                foreach (var s in pc.SkillProficiencies.OrderByDescending(x => pc.SkillBonus(x)).Take(2).ToList()) { pc.Expertise.Add(s); log.Add($"Expertise: {SkillUtil.Name(s)}"); }
-            }
-            if (pc.Class.Id == "bard" && pc.Level == 3)
-            {
-                foreach (var s in new[] { Skill.Insight, Skill.Arcana, Skill.History, Skill.Perception, Skill.Investigation }.Where(x => !pc.IsProficient(x)).Take(3)) { pc.SkillProficiencies.Add(s); log.Add($"Bonus proficiency: {SkillUtil.Name(s)}"); }
-            }
-            if (pc.Class.Id == "wizard" && pc.Level == 2)
-            {
-                pc.SkillProficiencies.Add(Skill.Arcana); pc.Expertise.Add(Skill.Arcana); log.Add("Scholar: Expertise in Arcana");
-            }
-            // New prepared spells / cantrips
-            int prepTarget = pc.Class.PreparedSpells[pc.Level];
-            var always = pc.Class.Subclass != null && pc.Level >= 3 ? pc.Class.Subclass.AlwaysPreparedSpells : new List<string>();
-            int maxSpellLevel = pc.Level >= 3 ? 2 : 1;
-            foreach (var s in SpellsDb.ForClass(pc.Class.Id, maxSpellLevel))
-            {
-                if (s.IsCantrip || pc.PreparedSpells.Contains(s.Id)) continue;
-                if (pc.PreparedSpells.Count(x => !always.Contains(x)) >= prepTarget) break;
-                if (s.Level == maxSpellLevel || pc.PreparedSpells.Count(x => !always.Contains(x)) < prepTarget)
-                {
-                    pc.PreparedSpells.Add(s.Id);
-                    if (pc.Class.Id == "wizard") pc.Spellbook.Add(s.Id);
-                    log.Add($"New spell prepared: {s.Name}");
-                }
-            }
-            if (pc.Class.Id == "wizard" && pc.Level == 3)
-            {
-                foreach (var id in new[] { "shatter", "scorching_ray" }) if (!pc.Spellbook.Contains(id)) { pc.Spellbook.Add(id); log.Add($"Evocation Savant: {SpellsDb.Get(id).Name} added to spellbook"); }
-            }
-            log.Add("(Change prepared spells any time from the Spellbook, K / RT.)");
-        }
+        /// <summary>Opens the level-up screen (the player's own choices); the sheet refreshes afterwards.</summary>
+        public void StartLevelUp() => Hud.Push(new LevelUpScreen(Rebuild));
 
         public override void Tick()
         {
@@ -663,6 +626,7 @@ namespace DnD.Game
                         Show(Page.Settings);
                     });
                     _menu.Add($"Sound volume: {Mathf.RoundToInt(Sfx.Volume * 100)}%", () => { Sfx.Volume = Sfx.Volume >= 1f ? 0f : Sfx.Volume + 0.2f; Show(Page.Settings); });
+                    _menu.Add($"Music volume: {Mathf.RoundToInt(Music.Volume * 100)}%", () => { Music.Volume = Music.Volume >= 0.99f ? 0f : Mathf.Min(1f, Music.Volume + 0.2f); Show(Page.Settings); });
                     _menu.Add($"Difficulty: {g.Settings.Difficulty} (set when the playthrough began)", null, false);
                     _menu.Add("Back", () => Show(Page.Main));
                     break;

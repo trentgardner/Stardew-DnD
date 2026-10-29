@@ -12,5 +12,11 @@ are used under that license. This Game is not affiliated with, endorsed, sponsor
 specifically approved by Wizards of the Coast LLC. "Dungeons & Dragons" and "D&D" are
 trademarks of Wizards of the Coast LLC and are not used as part of this Game's name or branding.
 
+## Ninja Adventure Asset Pack
+
+Most pixel art, music and sound effects come from the Ninja Adventure Asset Pack by Pixel-boy and AAA
+(https://pixel-boy.itch.io/ninja-adventure-asset-pack), released under Creative Commons Zero (CC0 1.0).
+Attribution is not required; we give it gladly. Some sprites are recolored or cut from that pack.
+
 Everything else (the world of Sundermere, its story, characters, names and lore, plus the code
-and art) is original and proprietary. See LICENSE.
+and the hand-drawn sprites in Assets/Editor/ArtMap.txt) is original and proprietary. See LICENSE.

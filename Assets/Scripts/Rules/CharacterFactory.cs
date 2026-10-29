@@ -19,6 +19,12 @@ namespace DnD.Rules
         public bool SpreadEvenly;
         public List<Skill> ClassSkills = new List<Skill>();
         public List<Skill> BonusSkills = new List<Skill>();
+        /// <summary>Rogue: two proficient skills to double at level 1 (empty = the best two).</summary>
+        public List<Skill> Expertise = new List<Skill>();
+        /// <summary>Druid: "magician" or "warden".</summary>
+        public string PrimalOrder;
+        /// <summary>Warlock: the level-1 invocation.</summary>
+        public List<string> Invocations = new List<string>();
         public string FightingStyle = "defense";
         public string DivineOrder = "protector";
         public List<string> Cantrips = new List<string>();
@@ -67,12 +73,18 @@ namespace DnD.Rules
             foreach (var s in ch.ClassSkills) pc.SkillProficiencies.Add(s);
             foreach (var s in ch.BonusSkills) pc.SkillProficiencies.Add(s);
 
-            if (pc.Class.Id == "fighter")
+            if (pc.Class.Id == "fighter") pc.FightingStyle = ch.FightingStyle;
+            if (CharacterDb.DefaultMasteries.TryGetValue(pc.Class.Id, out var masteries)) pc.MasteredWeapons.AddRange(masteries);
+            if (pc.Class.Id == "rogue")
             {
-                pc.FightingStyle = ch.FightingStyle;
-                pc.MasteredWeapons.AddRange(CharacterDb.DefaultFighterMasteries);
+                // Expertise at level 1: the player's picks, else the two skills they're best at.
+                var picks = ch.Expertise.Count > 0 ? ch.Expertise : pc.SkillProficiencies.OrderByDescending(s => pc.SkillBonus(s)).Take(2).ToList();
+                foreach (var s in picks) if (pc.SkillProficiencies.Contains(s)) pc.Expertise.Add(s);
             }
             if (pc.Class.Id == "cleric") pc.DivineOrder = ch.DivineOrder;
+            if (pc.Class.Id == "druid") pc.PrimalOrder = ch.PrimalOrder ?? "magician";
+            if (pc.Class.Id == "warlock") pc.Invocations.AddRange(ch.Invocations.Count > 0 ? ch.Invocations : new List<string> { "agonizing_blast" });
+            foreach (var kv in pc.Class.AlwaysPrepared) if (kv.Value <= 1 && !pc.PreparedSpells.Contains(kv.Key)) pc.PreparedSpells.Add(kv.Key);
 
             // Spells
             pc.Cantrips.AddRange(ch.Cantrips);
@@ -88,6 +100,7 @@ namespace DnD.Rules
                 var armor = ItemsDb.Get<ArmorDef>(pc.Class.StartingArmor);
                 // Thaumaturge clerics can't use the chain shirt? (they can: medium armor). Protector upgrades to chain mail.
                 if (pc.Class.Id == "cleric" && pc.DivineOrder == "protector") armor = ItemsDb.Get<ArmorDef>("chain_mail");
+                if (pc.Class.Id == "druid" && pc.PrimalOrder == "warden") armor = ItemsDb.Get<ArmorDef>("hide");
                 pc.Armor = armor;
             }
             pc.Shield = pc.Class.StartingShield;
@@ -131,6 +144,49 @@ namespace DnD.Rules
                     c.ClassSkills.AddRange(new[] { Skill.Medicine, Skill.Persuasion });
                     c.Cantrips.AddRange(new[] { "sacred_flame", "light", "thaumaturgy" });
                     c.Spells.AddRange(new[] { "cure_wounds", "healing_word", "guiding_bolt", "shield_of_faith" });
+                    break;
+                case "rogue":
+                    c.BackgroundId = "criminal"; c.Scores = new[] { 10, 15, 13, 12, 14, 8 }; c.PlusTwo = Ability.DEX; c.PlusOne = Ability.CON;
+                    c.SpreadEvenly = false;
+                    c.ClassSkills.AddRange(new[] { Skill.Acrobatics, Skill.Perception, Skill.Investigation, Skill.Insight });
+                    break;
+                case "barbarian":
+                    c.BackgroundId = "soldier"; c.Scores = new[] { 15, 13, 14, 8, 12, 10 }; c.PlusTwo = Ability.STR; c.PlusOne = Ability.CON;
+                    c.ClassSkills.AddRange(new[] { Skill.Perception, Skill.Survival });
+                    break;
+                case "ranger":
+                    c.BackgroundId = "soldier"; c.Scores = new[] { 12, 15, 13, 8, 14, 10 }; c.PlusTwo = Ability.DEX; c.PlusOne = Ability.WIS;
+                    c.ClassSkills.AddRange(new[] { Skill.Survival, Skill.Perception, Skill.Stealth });
+                    c.Spells.AddRange(new[] { "cure_wounds", "goodberry" });
+                    break;
+                case "druid":
+                    c.BackgroundId = "sage"; c.Scores = new[] { 10, 13, 14, 12, 15, 8 }; c.PlusTwo = Ability.WIS; c.PlusOne = Ability.CON;
+                    c.ClassSkills.AddRange(new[] { Skill.Nature, Skill.AnimalHandling });
+                    c.Cantrips.AddRange(new[] { "produce_flame", "guidance", "shillelagh" }); // 2 + 1 (Magician)
+                    c.Spells.AddRange(new[] { "cure_wounds", "entangle", "faerie_fire", "thunderwave" });
+                    break;
+                case "sorcerer":
+                    c.BackgroundId = "sage"; c.Scores = new[] { 8, 13, 14, 12, 10, 15 }; c.PlusTwo = Ability.CHA; c.PlusOne = Ability.CON;
+                    c.ClassSkills.AddRange(new[] { Skill.Arcana, Skill.Persuasion });
+                    c.Cantrips.AddRange(new[] { "fire_bolt", "light", "prestidigitation", "minor_illusion" });
+                    c.Spells.AddRange(new[] { "magic_missile", "shield" });
+                    break;
+                case "warlock":
+                    c.BackgroundId = "criminal"; c.Scores = new[] { 8, 14, 13, 12, 10, 15 }; c.PlusTwo = Ability.CHA; c.PlusOne = Ability.CON;
+                    c.SpreadEvenly = false;
+                    c.ClassSkills.AddRange(new[] { Skill.Deception, Skill.Arcana });
+                    c.Cantrips.AddRange(new[] { "eldritch_blast", "minor_illusion" });
+                    c.Spells.AddRange(new[] { "hex", "armor_of_agathys" });
+                    c.Invocations.Add("agonizing_blast");
+                    break;
+                case "monk":
+                    c.BackgroundId = "acolyte"; c.Scores = new[] { 12, 15, 13, 10, 14, 8 }; c.PlusTwo = Ability.DEX; c.PlusOne = Ability.WIS;
+                    c.ClassSkills.AddRange(new[] { Skill.Acrobatics, Skill.Stealth });
+                    break;
+                case "paladin":
+                    c.BackgroundId = "soldier"; c.Scores = new[] { 15, 10, 13, 8, 12, 14 }; c.PlusTwo = Ability.STR; c.PlusOne = Ability.CHA;
+                    c.ClassSkills.AddRange(new[] { Skill.Persuasion, Skill.Medicine });
+                    c.Spells.AddRange(new[] { "bless", "cure_wounds" });
                     break;
                 case "bard":
                     c.BackgroundId = "criminal"; c.Scores = new[] { 8, 14, 13, 12, 10, 15 }; c.PlusTwo = Ability.DEX; c.PlusOne = Ability.CON;
@@ -187,7 +243,7 @@ namespace DnD.Rules
         /// <summary>Generates a tavern adventurer the way a DM would improvise one.</summary>
         public static Recruit GenerateRecruit(Random rng)
         {
-            string[] classes = { "fighter", "wizard", "cleric", "bard" };
+            var classes = CharacterDb.Classes.Keys.ToArray();
             string[] species = { "human", "elf", "half_elf", "dwarf", "gnome" };
             string cls = classes[rng.Next(classes.Length)];
             string sp = species[rng.Next(species.Length)];

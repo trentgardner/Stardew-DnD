@@ -32,8 +32,13 @@ namespace DnD.Rules
             return terms;
         }
 
+        /// <summary>Raging creatures have Advantage on Strength checks.</summary>
+        static AdvantageState CheckAdvantage(Creature c, Ability a, AdvantageState adv)
+            => a == Ability.STR && c.HasEffect("rage") ? Dice.Combine(true, adv == AdvantageState.Disadvantage) : adv;
+
         public static D20Result RollSkill(Creature c, Skill s, AdvantageState adv)
         {
+            adv = CheckAdvantage(c, SkillUtil.AbilityOf(s), adv);
             var r = Dice.RollD20(adv, SkillTerms(c, s));
             ApplyEffectDice(c, r, checkRoll: true);
             return r;
@@ -41,6 +46,7 @@ namespace DnD.Rules
 
         public static D20Result RollAbilityCheck(Creature c, Ability a, AdvantageState adv)
         {
+            adv = CheckAdvantage(c, a, adv);
             var terms = new List<RollTerm> { new RollTerm(a.ToString(), c.Mod(a)) };
             if (c is PlayerCharacter pc && pc.HasFeature("Jack of All Trades")) terms.Add(new RollTerm("jack of all trades", pc.ProficiencyBonus / 2));
             if (c.D20Penalty != 0) terms.Add(new RollTerm("exhaustion", c.D20Penalty));

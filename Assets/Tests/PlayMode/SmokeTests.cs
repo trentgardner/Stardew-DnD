@@ -137,7 +137,7 @@ namespace DnD.Tests
         [UnityTest]
         public IEnumerator EveryClassAndSpeciesSpawns()
         {
-            foreach (var cls in new[] { "fighter", "wizard", "cleric", "bard" })
+            foreach (var cls in DnD.Rules.Content.CharacterDb.Classes.Keys.ToList())
                 foreach (var sp in new[] { "human", "elf", "half_elf", "dwarf", "gnome" })
                 {
                     var slot = GameRoot.I.DebugStart(new FuzzInput(1) { ConfirmChance = 0 }, cls, sp);
@@ -249,7 +249,7 @@ namespace DnD.Tests
         [UnityTest]
         public IEnumerator FightInTheMineWithEachClass()
         {
-            foreach (var cls in new[] { "fighter", "wizard", "cleric", "bard" })
+            foreach (var cls in DnD.Rules.Content.CharacterDb.Classes.Keys.ToList())
             {
                 var g = GameRoot.I;
                 var p = g.DebugStart(new FuzzInput(cls.GetHashCode()) { ConfirmChance = 0.35f, EndTurnChance = 0.01f }, cls, "human");
@@ -278,6 +278,8 @@ namespace DnD.Tests
             p.Character.Copper = 12345;
             p.Character.AddItem("torch", 7);
             p.Character.HP = 3;
+            p.Character.AsiBonus[(int)Ability.INT] = 2;
+            p.Character.Feats.Add("grappler");
             g.World.AddFriendship("brannoc", 150);
             g.Quests.Start("fallen_star");
             g.Warp(p, "tavern", new Vector2Int(8, 9), false);
@@ -292,11 +294,26 @@ namespace DnD.Tests
             Assert.AreEqual(before.XP, after.Character.XP);
             Assert.AreEqual(12345, after.Character.Copper);
             Assert.AreEqual(3, after.Character.HP);
+            Assert.AreEqual(2, after.Character.AsiBonus[(int)Ability.INT], "ability score improvements are saved");
+            CollectionAssert.Contains(after.Character.Feats, "grappler", "feats are saved");
             Assert.AreEqual(before.BagIds, SaveSystem.ToData(after.Character).BagIds);
             Assert.AreEqual("tavern", after.Zone.Def.Id);
             Assert.AreEqual(1, g.World.Hearts("brannoc"));
             Assert.AreEqual(1, g.Quests.Stage("fallen_star"));
             Assert.GreaterOrEqual(SaveSystem.List().Count, 1);
+        }
+
+        [Test]
+        public void ClassChoicesSurviveSaving()
+        {
+            var lock_ = CharacterFactory.Create(CharacterFactory.DefaultChoices("warlock", "human", "Vex"));
+            lock_.Invocations.Clear(); lock_.Invocations.Add("ember_sight");
+            var back = SaveSystem.FromData(SaveSystem.ToData(lock_));
+            CollectionAssert.AreEqual(new[] { "ember_sight" }, back.Invocations, "invocations are saved (and not reset to the default)");
+
+            var sorc = CharacterFactory.Create(CharacterFactory.DefaultChoices("sorcerer", "elf", "Ash"));
+            sorc.Metamagic.Add("quickened"); sorc.Metamagic.Add("careful");
+            CollectionAssert.AreEquivalent(new[] { "quickened", "careful" }, SaveSystem.FromData(SaveSystem.ToData(sorc)).Metamagic, "metamagic is saved");
         }
 
         [UnityTest]
