@@ -770,7 +770,7 @@ namespace DnD.Game
         public CompanionAgent SpawnCompanion(PlayerSlot leader, PlayerCharacter pc, string quirk)
         {
             pc.Team = Team.Players;
-            var c = CompanionAgent.Create(leader, $"ally_{pc.Class.Id}_{pc.Species.Id}", true, pc);
+            var c = CompanionAgent.Create(leader, $"npc_{pc.Class.Id}_{pc.Species.Id}", true, pc); // same look as in the tavern
             c.Quirk = quirk;
             Companions.Add(c);
             return c;

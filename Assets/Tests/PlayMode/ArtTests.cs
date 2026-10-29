@@ -95,6 +95,22 @@ namespace DnD.Tests
         }
 
         [UnityTest]
+        public IEnumerator HiredCompanionsKeepTheirRealArt()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new FuzzInput(1) { ConfirmChance = 0, CancelChance = 0, MenuChance = 0 }, "fighter", "human");
+            yield return Frames(2);
+            foreach (var cls in new[] { "fighter", "wizard", "cleric", "bard" })
+            {
+                var pc = DnD.Rules.CharacterFactory.Create(DnD.Rules.CharacterFactory.DefaultChoices(cls, "dwarf", "Recruit " + cls));
+                var comp = g.SpawnCompanion(p, pc, "hums");
+                yield return Frames(2);
+                Assert.IsTrue(ArtRegistry.IsReal(comp.Actor.Sr.sprite.name), $"{cls} companion draws real art, not {comp.Actor.Sr.sprite.name}");
+                g.DismissCompanion(comp);
+            }
+        }
+
+        [UnityTest]
         public IEnumerator EveryZoneDrawsOnlyRealArt()
         {
             var g = GameRoot.I;
