@@ -67,6 +67,38 @@ namespace DnD.Tests
         }
 
         [UnityTest]
+        public IEnumerator EveryClassLevelsToFourThroughTheScreen()
+        {
+            var g = GameRoot.I;
+            foreach (var cls in DnD.Rules.Content.CharacterDb.Classes.Keys.ToList())
+            {
+                var p = g.DebugStart(Quiet(), cls, "human");
+                p.Character.XP = 2700;
+                yield return Frames(2);
+                for (int lvl = 2; lvl <= 4; lvl++)
+                {
+                    var screen = new LevelUpScreen();
+                    p.Hud.Push(screen);
+                    yield return Frames(2);
+                    screen.PickHpAverage();
+                    int guard = 0;
+                    while (screen.CurrentChoice != null && guard++ < 20)
+                    {
+                        var c = screen.CurrentChoice;
+                        foreach (var id in c.Options.Take(c.Count).ToList()) screen.Toggle(id);
+                        screen.Next();
+                    }
+                    Assert.Less(guard, 20, $"{cls} {lvl}: stuck on a choice ({screen.CurrentChoice?.Title})");
+                    screen.Confirm();
+                    yield return Frames(2);
+                    Assert.AreEqual(lvl, p.Character.Level, $"{cls} reaches level {lvl}");
+                }
+                g.QuitToTitle();
+                yield return null;
+            }
+        }
+
+        [UnityTest]
         public IEnumerator EscapeBacksOutWithoutChanges()
         {
             var g = GameRoot.I;

@@ -243,7 +243,7 @@ namespace DnD.Rules
         /// <summary>Generates a tavern adventurer the way a DM would improvise one.</summary>
         public static Recruit GenerateRecruit(Random rng)
         {
-            string[] classes = { "fighter", "wizard", "cleric", "bard" };
+            var classes = CharacterDb.Classes.Keys.ToArray();
             string[] species = { "human", "elf", "half_elf", "dwarf", "gnome" };
             string cls = classes[rng.Next(classes.Length)];
             string sp = species[rng.Next(species.Length)];

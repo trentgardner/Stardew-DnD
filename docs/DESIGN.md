@@ -19,7 +19,19 @@ Agreed between the designer (Trent) and Claude. Change a decision here first, th
 - No flanking. A grid appears only during combat.
 
 ## Characters
-- Playtest: Fighter (Champion), Wizard (Evoker), Cleric (Life), Bard (Lore), levels 1-3.
+- All 12 SRD classes, levels 1-4 for Act I, one subclass each at level 3: Fighter (Champion), Wizard (Evoker),
+  Cleric (Life), Bard (Lore), Rogue (Thief), Barbarian (Berserker), Monk (Open Hand), Paladin (Devotion),
+  Ranger (Hunter), Druid (Circle of the Land), Sorcerer (Draconic), Warlock (Ember Patron, our own patron).
+- Level-up is the player's choice: roll HP or take the average, then every choice the level brings (skills, expertise,
+  spells, fighting style, invocations, metamagic...), a summary, and confirm. Level 4: ASI (+2 / +1+1) or a feat.
+  Companions level up automatically.
+- Level-1 class choices in creation: Fighting Style (fighter), Divine Order (cleric), Primal Order (druid: Magician =
+  extra cantrip, Warden = medium armor + martial weapons), the first Eldritch Invocation (warlock).
+- Druid Wild Shape (level 2): a beast form keeps your own HP, gains temp HP = druid level, uses the beast's AC, speed,
+  STR/DEX/CON and attacks, and blocks spellcasting. CR 1/4 forms at 2 (wolf, cat, frog), CR 1/2 at 4 (black bear).
+  Dropping to 0 HP ends the form.
+- Tavern recruits can be any class. Companion AI uses class bonus actions (Second Wind, Lay on Hands, Rage,
+  Hunter's Mark, Hex) before moving and attacking.
 - Species: Human, Elf, Half-Elf (custom 2024-style), Dwarf, Gnome. Backgrounds: Acolyte, Criminal, Sage, Soldier.
 - Stats: 4d6 drop lowest ×6, 5 free full rerolls, player assigns. Background gives +2/+1 or +1/+1/+1.
 

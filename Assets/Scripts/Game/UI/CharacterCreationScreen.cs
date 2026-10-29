@@ -351,13 +351,9 @@ namespace DnD.Game
         /// <summary>Puts the highest rolls into the class's most important abilities.</summary>
         void AutoAssign()
         {
-            var order = new Dictionary<string, Ability[]>
-            {
-                { "fighter", new[] { Ability.STR, Ability.CON, Ability.DEX, Ability.WIS, Ability.CHA, Ability.INT } },
-                { "wizard", new[] { Ability.INT, Ability.CON, Ability.DEX, Ability.WIS, Ability.CHA, Ability.STR } },
-                { "cleric", new[] { Ability.WIS, Ability.CON, Ability.STR, Ability.CHA, Ability.DEX, Ability.INT } },
-                { "bard", new[] { Ability.CHA, Ability.DEX, Ability.CON, Ability.WIS, Ability.INT, Ability.STR } },
-            }[_ch.ClassId];
+            // Same priorities as the class's recommended build: highest default score first.
+            var rec = CharacterFactory.DefaultChoices(_ch.ClassId, _ch.SpeciesId, _ch.Name).Scores;
+            var order = AbilityUtil.All.OrderByDescending(x => rec[(int)x]).ToList();
             var free = Enumerable.Range(0, 6).Where(i => !_assigned.Contains(i)).OrderByDescending(i => _rolled[i]).ToList();
             foreach (var a in order)
             {
@@ -366,6 +362,19 @@ namespace DnD.Game
                 free.RemoveAt(0);
             }
             ApplyAssigned();
+        }
+
+        /// <summary>Whether a late step shows anything for this class (Back skips the ones that auto-advance).</summary>
+        bool HasPage(Step st)
+        {
+            var cls = CharacterDb.Classes[_ch.ClassId];
+            switch (st)
+            {
+                case Step.ClassOption: return _ch.ClassId == "fighter" || _ch.ClassId == "cleric" || _ch.ClassId == "druid" || _ch.ClassId == "warlock";
+                case Step.Cantrips: return cls.Caster != CasterType.None && cls.CantripsKnown[1] + (_ch.ClassId == "cleric" && _ch.DivineOrder == "thaumaturge" || _ch.ClassId == "druid" && _ch.PrimalOrder == "magician" ? 1 : 0) > 0;
+                case Step.Spells: return cls.Caster != CasterType.None;
+                default: return true;
+            }
         }
 
         void ApplyAssigned()
@@ -380,7 +389,7 @@ namespace DnD.Game
             if (In.Cancel && _step != Step.Mode && _step != Step.Name)
             {
                 var back = _step == Step.Assign ? Step.Roll : _step == Step.Roll ? (_quick ? Step.Class : Step.Background) : (Step)Math.Max(0, (int)_step - 1);
-                if (back == Step.ClassOption && _ch.ClassId != "fighter" && _ch.ClassId != "cleric") back = Step.Skills;
+                while (back > Step.Skills && !HasPage(back)) back--;
                 Go(back);
             }
         }
