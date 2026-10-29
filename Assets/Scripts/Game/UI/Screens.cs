@@ -526,13 +526,17 @@ namespace DnD.Game
             var g = GameRoot.I;
             var sb = new System.Text.StringBuilder("<b>Quests</b>\n");
             bool any = false;
-            foreach (var q in QuestLog.Defs.Values)
+            var done = new List<string>();
+            foreach (var q in QuestDb.All.Values)
             {
                 int st = g.Quests.Stage(q.Id);
                 if (st == 0) continue;
                 any = true;
-                sb.AppendLine($"{(g.Quests.Done(q.Id) ? "✓" : "•")} <b>{q.Title}</b>: {q.StageText[Mathf.Min(st, q.StageText.Length - 1)]}");
+                if (g.Quests.Done(q.Id)) { done.Add(q.Title); continue; }
+                string giver = q.Giver != null && WorldDb.Npcs.TryGetValue(q.Giver, out var n) ? $" <i>({n.Name})</i>" : "";
+                sb.AppendLine($"• <b>{q.Title}</b>{giver}: {q.StageText[Mathf.Min(st, q.Last)]}");
             }
+            if (done.Count > 0) sb.AppendLine($"✓ <i>Completed:</i> {string.Join(", ", done)}");
             if (!any) sb.AppendLine("Nothing yet. Maybe talk to people? Captain Vale looked like she needed help.");
             sb.AppendLine("\n<b>Friends in Thistledown</b>");
             foreach (var n in WorldDb.Npcs.Values)

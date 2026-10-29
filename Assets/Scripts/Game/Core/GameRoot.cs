@@ -347,6 +347,9 @@ namespace DnD.Game
             // Drop-in: an unassigned controller (or the keyboard) presses Start / Enter.
             TryDropIn();
 
+            // Quests waiting for an item notice it however it arrived (loot, chests, trades, gifts).
+            if (Time.unscaledTime >= _nextItemCheck) { _nextItemCheck = Time.unscaledTime + 0.5f; CheckQuestItems(); }
+
             // Clock runs unless every ready player is busy (menus, dialogue, dice, combat).
             var ready = Players.Where(p => p.IsReady).ToList();
             if (ready.Count > 0 && !ready.All(p => p.IsBusy) && _sleeping.Count == 0)
@@ -501,7 +504,7 @@ namespace DnD.Game
             foreach (var n in _npcs) n.UpdateSchedule(false);
 
             AwardOnce(p, "zone:" + zoneId, 15, $"discovering {zone.Def.Name}");
-            if (zoneId == "ford") Quests.Start("east_road");
+            Quests.Notify(QuestEvent.ZoneEntered, zoneId, p);
             string key = $"entered:{p.Index}:{zoneId}:{Clock.Day}";
             if (!World.IsLocked(key)) { World.Lock(key, 24 * 60); p.Hud.Narrate(zone.Def.EnterNarration, !World.Flag("seen:" + zoneId)); World.SetFlag("seen:" + zoneId); }
 
@@ -573,8 +576,7 @@ namespace DnD.Game
         /// <summary>Story hooks for a group being dealt with, whichever way it went (fight, talk, scare).</summary>
         void OnGroupResolved(string groupId)
         {
-            if (groupId == "mine_egg") Quests.Set("fallen_star", 2);
-            if (groupId == "ford_toll") Quests.Set("east_road", 2);
+            Quests.Notify(QuestEvent.GroupResolved, groupId);
         }
 
         /// <summary>Paid off: the group lets you be (no XP, they're still there, and you can still deal with them later).</summary>
@@ -637,8 +639,7 @@ namespace DnD.Game
                 var taker = humans.FirstOrDefault(h => h.Character.Bag.SpaceFor(it) > 0) ?? humans.First();
                 if (taker.Character.AddItem(it) > 0) World.Storage.Add(it, 1);
                 foreach (var h in humans) h.Hud.Toast($"{taker.Character.Name} got: {ItemsDb.Get(it)?.Name}", UIKit.Gold);
-                if (it == "copper_kettle") Quests.Start("kettle");
-                if (it == "lucky_spoon") Quests.Start("spoon");
+                Quests.Notify(QuestEvent.ItemGained, it, taker);
             }
         }
 
@@ -814,7 +815,7 @@ namespace DnD.Game
         public void HatchEgg(PlayerSlot p, Vector3 eggPos)
         {
             World.EggHatched = true;
-            Quests.Set("fallen_star", 3);
+            Quests.Set("fallen_star", 3, p);
             Sfx.Play("crit");
             p.Hud.Push(new MessageScreen("The Egg Hatches",
                 "The egg pulses once, twice, then splits with a sound like a log cracking in a fire. A tiny, damp, furious red dragon tumbles out, sneezes a puff of sparks onto your boots, looks up at you...\n\n...and decides, with total certainty, that you are its mother.",
@@ -836,6 +837,19 @@ namespace DnD.Game
 
         public void OpenShop(PlayerSlot p, string shop) => p.Hud.Push(new ShopScreen(shop));
 
+        float _nextItemCheck;
+
+        void CheckQuestItems()
+        {
+            foreach (var q in QuestDb.All.Values)
+                foreach (var t in q.Triggers)
+                {
+                    if (t.On != QuestEvent.ItemGained || Quests.Stage(q.Id) != t.FromStage) continue;
+                    var holder = Players.FirstOrDefault(p => p.IsReady && p.Character != null && p.Character.CountOf(t.Id) > 0);
+                    if (holder != null) Quests.Notify(QuestEvent.ItemGained, t.Id, holder);
+                }
+        }
+
         public void GiveItem(PlayerSlot p, string id, int count = 1)
         {
             int left = p.Character.AddItem(id, count);
@@ -843,6 +857,7 @@ namespace DnD.Game
             if (left > 0) p.Hud.Toast($"No room for {name}! (Stored at home.)", UIKit.Bad);
             if (left > 0) World.Storage.Add(id, left);
             else p.Hud.Toast($"Received: {name}", UIKit.Gold);
+            Quests.Notify(QuestEvent.ItemGained, id, p);
         }
 
         public void GiveCopper(PlayerSlot p, int cp)
@@ -881,36 +896,24 @@ namespace DnD.Game
         {
             p.Character.RemoveItem("copper_kettle");
             World.KettleReturned = true;
-            Quests.Set("kettle", 2);
-            World.AddFriendship("brannoc", 100);
-            GiveXP(p, 100, "returning Brannoc's kettle");
+            Quests.Set("kettle", 2, p);
         }
 
         public void ReturnSpoon(PlayerSlot p)
         {
             p.Character.RemoveItem("lucky_spoon");
             World.SetFlag("spoon_returned");
-            Quests.Set("spoon", 2);
-            World.AddFriendship("tobin", 100);
-            GiveItem(p, "potion_healing");
-            GiveXP(p, 75, "returning Tobin's spoon");
+            Quests.Set("spoon", 2, p);
         }
 
         public void CompleteFallenStar(PlayerSlot p)
         {
-            if (Quests.Stage("fallen_star") >= 4) return;
-            Quests.Set("fallen_star", 4);
-            World.AddFriendship("rhoswen", 100);
-            foreach (var x in Players.Where(x => x.IsReady)) { GiveCopper(x, 5000); GiveXP(x, 300, "The Fallen Star"); }
+            Quests.Set("fallen_star", 4, p);
         }
 
         public void CompleteEastRoad(PlayerSlot p)
         {
-            if (Quests.Stage("east_road") >= 3) return;
-            Quests.Set("east_road", 3);
-            World.AddFriendship("hobb", 100);
-            foreach (var x in Players.Where(x => x.IsReady)) { GiveCopper(x, 2500); GiveXP(x, 150, "Miller's Ford"); }
-            GiveItem(p, "potion_greater_healing");
+            Quests.Set("east_road", 3, p);
         }
 
         public void RentRoom(PlayerSlot p)
