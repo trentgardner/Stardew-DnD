@@ -211,6 +211,60 @@ namespace DnD.Game
                         Run = (me, tile) => PreserveLife(me, pc) }, t, pc, pc.ResourceLeft("channel_divinity") > 0));
             }
 
+            // Barbarian
+            if (pc.ResourceMax("rage") > 0)
+                list.Add(Need(new CombatAction { Name = pc.Raging ? "Raging!" : $"Rage ({pc.ResourceLeft("rage")})", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
+                    Tooltip = $"+{pc.RageDamage} damage on Strength attacks, resist bludgeoning/piercing/slashing, Advantage on Strength checks and saves.",
+                    Run = (me, tile) => Rage(me, pc) }, t, pc, pc.ResourceLeft("rage") > 0 && !pc.Raging));
+            if (pc.HasFeature("Reckless Attack"))
+                list.Add(new CombatAction { Name = "Reckless Attack", Group = ActionGroup.Abilities, Cost = ActionCost.Free, Target = Targeting.None,
+                    Enabled = !pc.HasEffect("reckless") && !t.ActionUsed, Why = pc.HasEffect("reckless") ? "Already reckless this turn." : "Decide before your first attack.",
+                    Tooltip = "Advantage on your Strength attacks this turn, but attacks against you have Advantage until your next turn.",
+                    Run = (me, tile) => Reckless(me, pc) });
+            // Rogue
+            if (pc.HasFeature("Cunning Action"))
+            {
+                list.Add(Need(new CombatAction { Name = "Dash (Cunning)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None, Run = (me, tile) => Simple(me, "Dash", bonus: true) }, t, pc));
+                list.Add(Need(new CombatAction { Name = "Disengage (Cunning)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None, Run = (me, tile) => Simple(me, "Disengage", bonus: true) }, t, pc));
+                list.Add(Need(new CombatAction { Name = "Hide (Cunning)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
+                    Tooltip = "Stealth check, DC 15. Success: your next attack has Advantage (they lose track of you).", Run = (me, tile) => Hide(me, pc) }, t, pc));
+            }
+            // Monk
+            if (pc.HasFeature("Martial Arts"))
+                list.Add(Need(new CombatAction { Name = "Martial Arts strike", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.Enemy, RangeFt = 5,
+                    Tooltip = $"Bonus Action: an unarmed strike (1d{pc.MartialArtsDie} + DEX).", Run = (me, tile) => UnarmedBonus(me, pc, UnitAt(tile), 1) }, t, pc));
+            if (pc.ResourceMax("focus") > 0)
+            {
+                bool fp = pc.ResourceLeft("focus") > 0;
+                list.Add(Need(new CombatAction { Name = $"Flurry of Blows (1 Focus, {pc.ResourceLeft("focus")} left)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.Enemy, RangeFt = 5,
+                    Tooltip = "Two unarmed strikes as a Bonus Action." + (pc.HasFeature("Open Hand Technique") ? " Open Hand: each hit can knock the target Prone (DEX save)." : ""),
+                    Run = (me, tile) => { pc.SpendResource("focus"); return UnarmedBonus(me, pc, UnitAt(tile), 2); } }, t, pc, fp));
+                list.Add(Need(new CombatAction { Name = "Patient Defense (1 Focus)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
+                    Tooltip = "Disengage and Dodge as a Bonus Action.", Run = (me, tile) => PatientDefense(me, pc) }, t, pc, fp));
+                list.Add(Need(new CombatAction { Name = "Step of the Wind (1 Focus)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
+                    Tooltip = "Dash and Disengage as a Bonus Action.", Run = (me, tile) => StepOfTheWind(me, pc) }, t, pc, fp));
+            }
+            // Paladin
+            if (pc.ResourceMax("lay_on_hands") > 0)
+                list.Add(Need(new CombatAction { Name = $"Lay on Hands ({pc.ResourceLeft("lay_on_hands")} HP)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.Ally, RangeFt = 5,
+                    Tooltip = "Touch: heal from your pool (as much as they need, up to what's left).", Run = (me, tile) => LayOnHands(me, pc, UnitAt(tile)) }, t, pc, pc.ResourceLeft("lay_on_hands") > 0));
+            if (pc.KnowsSpell("divine_smite"))
+            {
+                bool canSmite = pc.ResourceLeft("free_smite") > 0 || pc.LowestAvailableSlot(1) > 0;
+                list.Add(Need(new CombatAction { Name = pc.HasEffect("smite_ready") ? "Smite ready!" : "Divine Smite (next hit)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
+                    Tooltip = "Your next melee weapon hit this turn deals +2d8 radiant (+1d8 per slot level above 1st). Free once per Long Rest, then uses a spell slot.",
+                    Run = (me, tile) => ReadySmite(me, pc) }, t, pc, canSmite && !pc.HasEffect("smite_ready")));
+            }
+            if (pc.HasFeature("Sacred Weapon"))
+                list.Add(new CombatAction { Name = "Sacred Weapon", Group = ActionGroup.Abilities, Cost = ActionCost.Free, Target = Targeting.None,
+                    Enabled = pc.ResourceLeft("channel_divinity") > 0 && !pc.HasEffect("sacred_weapon"), Why = "Needs a Channel Divinity use.",
+                    Tooltip = $"Channel Divinity: add your CHA modifier ({AbilityUtil.Fmt(Math.Max(1, pc.Mod(Ability.CHA)))}) to weapon attack rolls for 10 minutes.",
+                    Run = (me, tile) => SacredWeapon(me, pc) });
+            if (pc.HasFeature("Steady Aim"))
+                list.Add(Need(new CombatAction { Name = "Steady Aim", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
+                    Tooltip = "If you haven't moved: Advantage on your next attack this turn; your Speed becomes 0.",
+                    Run = (me, tile) => SteadyAim(me, pc) }, t, pc, t.MovementLeftFt >= pc.Speed));
+
             list.Add(Need(new CombatAction { Name = "Dash", Group = ActionGroup.Actions, Cost = ActionCost.Action, Target = Targeting.None, Run = (me, tile) => Simple(me, "Dash") }, t, pc));
             list.Add(Need(new CombatAction { Name = "Disengage", Group = ActionGroup.Actions, Cost = ActionCost.Action, Target = Targeting.None, Run = (me, tile) => Simple(me, "Disengage") }, t, pc));
             list.Add(Need(new CombatAction { Name = "Dodge", Group = ActionGroup.Actions, Cost = ActionCost.Action, Target = Targeting.None, Run = (me, tile) => Simple(me, "Dodge") }, t, pc));
@@ -436,7 +490,7 @@ namespace DnD.Game
             if (consumeAction) turn.ActionUsed = true;
             me.A.Face(target.A.transform.position);
             var ctx = Context(me, target);
-            var res = AttackResolver.RollAttack(me.C, target.C, atk, ctx);
+            var res = AttackResolver.RollAttack(me.C, target.C, atk, ctx, turn);
             if (res.OutOfRange) { me.Ctrl?.Hud.Toast("Out of range!", UIKit.Bad); yield break; }
 
             // Bardic Inspiration held: add it if it could turn a miss into a hit.
@@ -467,6 +521,20 @@ namespace DnD.Game
                     while (!done) yield return null;
                 }
                 ApplyHitResults(me, target, res, dmg);
+                if (me.C is PlayerCharacter smiter && !atk.Ranged && !atk.IsSpell && target.Active)
+                {
+                    var ready = smiter.Effects.FirstOrDefault(e => e.Id == "smite_ready");
+                    if (ready != null)
+                    {
+                        smiter.Effects.Remove(ready);
+                        var smite = SpellResolver.DivineSmiteDamage(ready.RepeatSaveDC, res.Critical);
+                        yield return WaitDamageRoll(me, "Divine Smite!", $"{1 + ready.RepeatSaveDC}d8 radiant{(res.Critical ? " (critical: doubled)" : "")}", smite, DieColor.Damage);
+                        var log = new List<string>();
+                        int taken = target.C.TakeDamage(smite.Total, DamageType.Radiant, res.Critical, log);
+                        target.A.Popup("-" + taken, UIKit.Gold);
+                        foreach (var l in log) Log(l);
+                    }
+                }
                 // Cleave mastery: one more attack against a creature next to the first target.
                 if (atk.Mastery == WeaponMastery.Cleave && !turn.CleaveUsed)
                 {
@@ -691,6 +759,137 @@ namespace DnD.Game
 
         // ================================================================== features & basic actions
 
+        IEnumerator UnarmedBonus(Unit me, PlayerCharacter pc, Unit target, int strikes)
+        {
+            if (target == null) yield break;
+            me.Cb.Turn.BonusActionUsed = true;
+            for (int i = 0; i < strikes && target.Active; i++)
+            {
+                int hpBefore = target.C.HP;
+                yield return AttackAction(me, target, pc.UnarmedStrike(), consumeAction: false);
+                // Open Hand Technique: a Flurry hit can knock the target down.
+                if (strikes == 2 && pc.HasFeature("Open Hand Technique") && target.Active && target.C.HP < hpBefore && !target.C.Has(Condition.Prone))
+                {
+                    int dc = 8 + pc.ProficiencyBonus + pc.Mod(Ability.WIS);
+                    var save = Checks.RollSave(target.C, Ability.DEX, AdvantageState.Normal);
+                    Ticker($"Open Hand: {target.Name} DEX save {save.Breakdown()} vs DC {dc}");
+                    if (save.Total < dc) { target.C.AddEffect(EffectLibrary.Create("prone", pc)); target.A.Popup("Prone!", UIKit.Gold); Log($"{target.Name} is knocked Prone!"); }
+                    yield return new WaitForSeconds(0.4f);
+                }
+            }
+        }
+
+        IEnumerator PatientDefense(Unit me, PlayerCharacter pc)
+        {
+            pc.SpendResource("focus");
+            var t = me.Cb.Turn;
+            t.BonusActionUsed = true;
+            t.Disengaged = true;
+            pc.AddEffect(EffectLibrary.Create("dodge", pc));
+            me.A.Popup("Patient Defense", UIKit.UtilityBlue);
+            Log($"{pc.Name} slips into a defensive stance (Disengage + Dodge).");
+            yield break;
+        }
+
+        IEnumerator StepOfTheWind(Unit me, PlayerCharacter pc)
+        {
+            pc.SpendResource("focus");
+            var t = me.Cb.Turn;
+            t.BonusActionUsed = true;
+            t.Disengaged = true;
+            t.MovementLeftFt += pc.Speed;
+            me.A.Popup("Step of the Wind", UIKit.UtilityBlue);
+            Log($"{pc.Name} moves like the wind (Dash + Disengage).");
+            yield break;
+        }
+
+        IEnumerator LayOnHands(Unit me, PlayerCharacter pc, Unit target)
+        {
+            if (target == null) yield break;
+            int need = target.C.EffectiveMaxHP - target.C.HP;
+            int amount = Math.Min(need, pc.ResourceLeft("lay_on_hands"));
+            if (amount <= 0) { me.Ctrl?.Hud.Toast($"{target.Name} is already at full health.", UIKit.Dim); yield break; }
+            me.Cb.Turn.BonusActionUsed = true;
+            pc.SpendResource("lay_on_hands", amount);
+            int h = target.C.Heal(amount);
+            target.A.Popup("+" + h, UIKit.HealGreen);
+            Sfx.Play("heal");
+            Log($"{pc.Name} lays hands on {target.Name}: +{h} HP ({pc.ResourceLeft("lay_on_hands")} left in the pool).");
+        }
+
+        IEnumerator ReadySmite(Unit me, PlayerCharacter pc)
+        {
+            int slot = 1;
+            if (pc.ResourceLeft("free_smite") > 0) pc.SpendResource("free_smite");
+            else
+            {
+                slot = pc.LowestAvailableSlot(1);
+                if (slot <= 0) yield break;
+                pc.SlotsUsed[slot]++;
+            }
+            me.Cb.Turn.BonusActionUsed = true;
+            pc.AddEffect(new ActiveEffect { Id = "smite_ready", Name = "Smite ready", Source = pc, RoundsLeft = 1, AttackDie = 0, RepeatSaveDC = slot });
+            me.A.Popup("Smite ready!", UIKit.Gold);
+            Log($"{pc.Name}'s weapon glows with radiant light. (Divine Smite, level {slot})");
+        }
+
+        IEnumerator SacredWeapon(Unit me, PlayerCharacter pc)
+        {
+            pc.SpendResource("channel_divinity");
+            pc.AddEffect(EffectLibrary.Create("sacred_weapon", pc));
+            me.A.Popup("Sacred Weapon", UIKit.Gold);
+            Log($"{pc.Name} raises their weapon in prayer: +{Math.Max(1, pc.Mod(Ability.CHA))} to attack rolls.");
+            yield break;
+        }
+
+        IEnumerator Rage(Unit me, PlayerCharacter pc)
+        {
+            me.Cb.Turn.BonusActionUsed = true;
+            var log = new List<string>();
+            if (pc.StartRage(log))
+            {
+                me.A.Popup("RAGE!", UIKit.DamageRed);
+                Sfx.Play("combat_start");
+            }
+            foreach (var l in log) Log(l);
+            yield break;
+        }
+
+        IEnumerator Reckless(Unit me, PlayerCharacter pc)
+        {
+            pc.AddEffect(EffectLibrary.Create("reckless", pc));
+            me.A.Popup("Reckless!", UIKit.Gold);
+            Log($"{pc.Name} attacks recklessly. (Advantage on Strength attacks; enemies get Advantage too.)");
+            yield break;
+        }
+
+        IEnumerator Hide(Unit me, PlayerCharacter pc)
+        {
+            me.Cb.Turn.BonusActionUsed = true;
+            D20Result res = null;
+            if (me.IsHuman) me.Ctrl.Hud.Dice.RollD20("Hide", "Stealth · DC 15", () => Checks.RollSkill(pc, Skill.Stealth, AdvantageState.Normal), 15, true, r => res = r);
+            else res = Checks.RollSkill(pc, Skill.Stealth, AdvantageState.Normal);
+            while (res == null) yield return null;
+            if (res.Total >= 15)
+            {
+                pc.AddEffect(new ActiveEffect { Id = "hidden", Name = "Hidden", Source = pc, RoundsLeft = 2, AdvantageOnNextAttack = true });
+                me.A.Popup("Hidden", UIKit.UtilityBlue);
+                Log($"{pc.Name} slips out of sight ({res.Total}). Their next attack has Advantage.");
+            }
+            else Log($"{pc.Name} tries to hide, but they spot you ({res.Total}).");
+        }
+
+        IEnumerator SteadyAim(Unit me, PlayerCharacter pc)
+        {
+            var t = me.Cb.Turn;
+            t.BonusActionUsed = true;
+            t.MovementLeftFt = 0;
+            pc.AddEffect(EffectLibrary.Create("steady_aim", pc));
+            me.A.Popup("Steady...", UIKit.UtilityBlue);
+            Log($"{pc.Name} takes careful aim (Advantage on the next attack).");
+            yield break;
+        }
+
         IEnumerator SecondWind(Unit me, PlayerCharacter pc)
         {
             pc.SpendResource("second_wind");
@@ -766,10 +965,10 @@ namespace DnD.Game
             yield break;
         }
 
-        IEnumerator Simple(Unit me, string what)
+        IEnumerator Simple(Unit me, string what, bool bonus = false)
         {
             var t = me.Cb.Turn;
-            t.ActionUsed = true;
+            if (bonus) t.BonusActionUsed = true; else t.ActionUsed = true;
             switch (what)
             {
                 case "Dash": t.MovementLeftFt += me.C.Speed; break;
@@ -973,7 +1172,7 @@ namespace DnD.Game
             me.Cb.Turn.ActionUsed = true;
             me.A.Face(target.A.transform.position);
             var ctx = Context(me, target);
-            var res = AttackResolver.RollAttack(me.C, target.C, atk, ctx);
+            var res = AttackResolver.RollAttack(me.C, target.C, atk, ctx, me.Cb.Turn);
             if (res.OutOfRange) yield break;
             Ticker($"{me.Name} → {target.Name} ({atk.Name}): {res.Roll.Breakdown()} vs AC {res.TargetAC} → {(res.Critical ? "CRITICAL HIT!" : res.Hit ? "HIT" : "MISS")}");
             yield return new WaitForSeconds(0.5f);
@@ -1024,6 +1223,16 @@ namespace DnD.Game
                 Sfx.Play(res.Critical ? "crit" : "hit");
                 var dmg = AttackResolver.RollDamage(res);
                 Ticker($"{me.Name} damage: {dmg.Breakdown()}");
+                // Monk: Deflect Attacks (reaction) against bludgeoning, piercing or slashing hits.
+                if (target.C is PlayerCharacter monk && monk.HasFeature("Deflect Attacks") && !target.Cb.Turn.ReactionUsed
+                    && (atk.DamageType == DamageType.Bludgeoning || atk.DamageType == DamageType.Piercing || atk.DamageType == DamageType.Slashing))
+                {
+                    target.Cb.Turn.ReactionUsed = true;
+                    int cut = monk.DeflectReduction();
+                    dmg.Terms.Add(new RollTerm("deflected", -Math.Min(cut, dmg.Total)));
+                    target.A.Popup("Deflect!", UIKit.UtilityBlue);
+                    Log($"{monk.Name} deflects the blow (-{cut} damage).");
+                }
                 ApplyHitResults(me, target, res, dmg);
                 yield return new WaitForSeconds(0.35f);
             }

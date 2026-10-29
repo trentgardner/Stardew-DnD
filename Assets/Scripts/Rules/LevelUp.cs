@@ -5,7 +5,7 @@ using DnD.Rules.Content;
 
 namespace DnD.Rules
 {
-    public enum ChoiceKind { Expertise, BonusSkill, Cantrip, Spell, Feat }
+    public enum ChoiceKind { Expertise, BonusSkill, Cantrip, Spell, Feat, FightingStyle }
 
     /// <summary>One decision the next level asks for, e.g. "pick 2 spells from these".</summary>
     public class LevelUpChoice
@@ -29,7 +29,13 @@ namespace DnD.Rules
     {
         static readonly Skill[] ScholarSkills = { Skill.Arcana, Skill.History, Skill.Investigation, Skill.Medicine, Skill.Nature, Skill.Religion };
 
-        int MaxSpellLevelAt(int level) => Class.Caster == CasterType.Full ? (level >= 3 ? 2 : 1) : 0;
+        int MaxSpellLevelAt(int level) => Class.Caster == CasterType.Full ? (level >= 3 ? 2 : 1) : Class.Caster == CasterType.Half ? (level >= 5 ? 2 : 1) : 0;
+
+        static readonly Dictionary<string, string[]> FightingStyles = new Dictionary<string, string[]>
+        {
+            { "paladin", new[] { "defense", "dueling", "great_weapon" } },
+            { "ranger", new[] { "archery", "defense", "dueling" } },
+        };
 
         /// <summary>The choices reaching the next level asks for (empty if there's nothing to decide besides HP).</summary>
         public List<LevelUpChoice> PendingChoices()
@@ -51,8 +57,15 @@ namespace DnD.Rules
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.BonusSkill, Count = 3, Title = "College of Lore: three new skill proficiencies",
                     Options = SkillUtil.All.Where(s => !SkillProficiencies.Contains(s)).Select(s => s.ToString()).ToList() });
 
+            if (Class.Id == "barbarian" && next == 3)
+                list.Add(new LevelUpChoice { Kind = ChoiceKind.BonusSkill, Count = 1, Title = "Primal Knowledge: one more Barbarian skill",
+                    Options = Class.SkillOptions.Where(s => !SkillProficiencies.Contains(s)).Select(s => s.ToString()).ToList() });
+
+            if (next == 2 && FightingStyles.TryGetValue(Class.Id, out var styles))
+                list.Add(new LevelUpChoice { Kind = ChoiceKind.FightingStyle, Count = 1, Title = "Fighting Style", Options = styles.ToList() });
+
             // Spells
-            if (Class.Caster == CasterType.Full)
+            if (Class.Caster != CasterType.None)
             {
                 int newCantrips = Class.CantripsKnown[next] - Class.CantripsKnown[Level];
                 if (newCantrips > 0)
@@ -100,6 +113,13 @@ namespace DnD.Rules
                 return p[1] == p[2] ? $"+2 {p[1]}" : $"+1 {p[1]}, +1 {p[2]}";
             }
             if (id.StartsWith("grappler:")) return $"Grappler feat (+1 {id.Split(':')[1]})";
+            switch (id)
+            {
+                case "defense": return "Defense (+1 AC in armor)";
+                case "dueling": return "Dueling (+2 damage, one-handed melee)";
+                case "great_weapon": return "Great Weapon Fighting (reroll 1s and 2s)";
+                case "archery": return "Archery (+2 to hit with ranged weapons)";
+            }
             if (Enum.TryParse<Skill>(id, out var sk)) return SkillUtil.Name(sk);
             return SpellsDb.Get(id)?.Name ?? id;
         }
@@ -140,6 +160,10 @@ namespace DnD.Rules
                         if (!PreparedSpells.Contains(id) && PreparedCount < Class.PreparedSpells[Math.Min(Level + 1, 20)]) PreparedSpells.Add(id);
                         log?.Add(Class.Id == "wizard" ? $"Copied into your spellbook: {DescribeOption(id)}" : $"New spell prepared: {DescribeOption(id)}");
                         break;
+                    case ChoiceKind.FightingStyle:
+                        FightingStyle = id;
+                        log?.Add($"Fighting Style: {DescribeOption(id)}");
+                        break;
                     case ChoiceKind.Feat:
                         var p = id.Split(':');
                         if (p[0] == "asi")
@@ -166,7 +190,7 @@ namespace DnD.Rules
             get
             {
                 var always = Class.Subclass != null && Level >= 3 ? Class.Subclass.AlwaysPreparedSpells : new List<string>();
-                return PreparedSpells.Count(s => !always.Contains(s));
+                return PreparedSpells.Count(s => !always.Contains(s) && !Class.AlwaysPrepared.ContainsKey(s));
             }
         }
 

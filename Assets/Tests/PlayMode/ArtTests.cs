@@ -100,7 +100,7 @@ namespace DnD.Tests
             var g = GameRoot.I;
             var p = g.DebugStart(new FuzzInput(1) { ConfirmChance = 0, CancelChance = 0, MenuChance = 0 }, "fighter", "human");
             yield return Frames(2);
-            foreach (var cls in new[] { "fighter", "wizard", "cleric", "bard" })
+            foreach (var cls in DnD.Rules.Content.CharacterDb.Classes.Keys.ToList())
             {
                 var pc = DnD.Rules.CharacterFactory.Create(DnD.Rules.CharacterFactory.DefaultChoices(cls, "dwarf", "Recruit " + cls));
                 var comp = g.SpawnCompanion(p, pc, "hums");

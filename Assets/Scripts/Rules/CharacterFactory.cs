@@ -19,6 +19,8 @@ namespace DnD.Rules
         public bool SpreadEvenly;
         public List<Skill> ClassSkills = new List<Skill>();
         public List<Skill> BonusSkills = new List<Skill>();
+        /// <summary>Rogue: two proficient skills to double at level 1 (empty = the best two).</summary>
+        public List<Skill> Expertise = new List<Skill>();
         public string FightingStyle = "defense";
         public string DivineOrder = "protector";
         public List<string> Cantrips = new List<string>();
@@ -67,10 +69,13 @@ namespace DnD.Rules
             foreach (var s in ch.ClassSkills) pc.SkillProficiencies.Add(s);
             foreach (var s in ch.BonusSkills) pc.SkillProficiencies.Add(s);
 
-            if (pc.Class.Id == "fighter")
+            if (pc.Class.Id == "fighter") pc.FightingStyle = ch.FightingStyle;
+            if (CharacterDb.DefaultMasteries.TryGetValue(pc.Class.Id, out var masteries)) pc.MasteredWeapons.AddRange(masteries);
+            if (pc.Class.Id == "rogue")
             {
-                pc.FightingStyle = ch.FightingStyle;
-                pc.MasteredWeapons.AddRange(CharacterDb.DefaultFighterMasteries);
+                // Expertise at level 1: the player's picks, else the two skills they're best at.
+                var picks = ch.Expertise.Count > 0 ? ch.Expertise : pc.SkillProficiencies.OrderByDescending(s => pc.SkillBonus(s)).Take(2).ToList();
+                foreach (var s in picks) if (pc.SkillProficiencies.Contains(s)) pc.Expertise.Add(s);
             }
             if (pc.Class.Id == "cleric") pc.DivineOrder = ch.DivineOrder;
 
@@ -131,6 +136,24 @@ namespace DnD.Rules
                     c.ClassSkills.AddRange(new[] { Skill.Medicine, Skill.Persuasion });
                     c.Cantrips.AddRange(new[] { "sacred_flame", "light", "thaumaturgy" });
                     c.Spells.AddRange(new[] { "cure_wounds", "healing_word", "guiding_bolt", "shield_of_faith" });
+                    break;
+                case "rogue":
+                    c.BackgroundId = "criminal"; c.Scores = new[] { 10, 15, 13, 12, 14, 8 }; c.PlusTwo = Ability.DEX; c.PlusOne = Ability.CON;
+                    c.SpreadEvenly = false;
+                    c.ClassSkills.AddRange(new[] { Skill.Acrobatics, Skill.Perception, Skill.Investigation, Skill.Insight });
+                    break;
+                case "barbarian":
+                    c.BackgroundId = "soldier"; c.Scores = new[] { 15, 13, 14, 8, 12, 10 }; c.PlusTwo = Ability.STR; c.PlusOne = Ability.CON;
+                    c.ClassSkills.AddRange(new[] { Skill.Perception, Skill.Survival });
+                    break;
+                case "monk":
+                    c.BackgroundId = "acolyte"; c.Scores = new[] { 12, 15, 13, 10, 14, 8 }; c.PlusTwo = Ability.DEX; c.PlusOne = Ability.WIS;
+                    c.ClassSkills.AddRange(new[] { Skill.Acrobatics, Skill.Stealth });
+                    break;
+                case "paladin":
+                    c.BackgroundId = "soldier"; c.Scores = new[] { 15, 10, 13, 8, 12, 14 }; c.PlusTwo = Ability.STR; c.PlusOne = Ability.CHA;
+                    c.ClassSkills.AddRange(new[] { Skill.Persuasion, Skill.Medicine });
+                    c.Spells.AddRange(new[] { "bless", "cure_wounds" });
                     break;
                 case "bard":
                     c.BackgroundId = "criminal"; c.Scores = new[] { 8, 14, 13, 12, 10, 15 }; c.PlusTwo = Ability.DEX; c.PlusOne = Ability.CON;

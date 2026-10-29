@@ -14,7 +14,7 @@ namespace DnD.Rules.Content
             return s;
         }
 
-        const string W = "wizard", C = "cleric", B = "bard";
+        const string W = "wizard", C = "cleric", B = "bard", P = "paladin";
 
         static SpellsDb()
         {
@@ -57,28 +57,33 @@ namespace DnD.Rules.Content
                 Description = "Creatures in a 5-ft sphere make a WIS save or become Incapacitated (then fall asleep). Concentration." }, W, B);
             Add(new SpellDef { Id = "charm_person", Name = "Charm Person", Level = 1, School = "Enchantment", RangeFt = 30, Kind = SpellKind.Save, SaveAbility = Ability.WIS, EffectId = "charmed",
                 Description = "WIS save (with Advantage if you're fighting it) or the humanoid is Charmed for 1 hour. In conversation: Advantage on CHA checks with them." }, W, B);
+            Add(new SpellDef { Id = "divine_smite", Name = "Divine Smite", Level = 1, School = "Evocation", CastTime = CastTime.BonusAction, RangeFt = 5, Kind = SpellKind.Utility,
+                Dice = DiceExpr.Parse("2d8"), UpcastDice = 1, DamageType = DamageType.Radiant,
+                Description = "Bonus Action, right after you hit with a melee weapon: +2d8 radiant (+1d8 per slot level above 1st)." }, P);
+            Add(new SpellDef { Id = "protection_from_evil_and_good", Name = "Protection from Evil and Good", Level = 1, School = "Abjuration", RangeFt = 5, Kind = SpellKind.Buff, Concentration = true, EffectId = "protection_evil_good",
+                Description = "Touch: aberrations, celestials, elementals, fey, fiends and undead have Disadvantage attacking the target. Concentration, 10 minutes." }, C, P, W);
             Add(new SpellDef { Id = "detect_magic", Name = "Detect Magic", Level = 1, School = "Divination", RangeFt = 0, Kind = SpellKind.Utility, Ritual = true, Concentration = true,
-                Description = "Sense magic within 30 ft. Ritual." }, W, C, B);
+                Description = "Sense magic within 30 ft. Ritual." }, W, C, B, P);
             Add(new SpellDef { Id = "cure_wounds", Name = "Cure Wounds", Level = 1, School = "Abjuration", RangeFt = 5, Kind = SpellKind.Heal, Dice = DiceExpr.Parse("2d8"), AddSpellMod = true, UpcastDice = 2,
-                Description = "Touch: regain 2d8 + your spellcasting modifier HP." }, C, B);
+                Description = "Touch: regain 2d8 + your spellcasting modifier HP." }, C, B, P);
             Add(new SpellDef { Id = "healing_word", Name = "Healing Word", Level = 1, School = "Abjuration", CastTime = CastTime.BonusAction, RangeFt = 60, Kind = SpellKind.Heal, Dice = DiceExpr.Parse("2d4"), AddSpellMod = true, UpcastDice = 2,
                 Description = "Bonus Action, 60 ft: regain 2d4 + your spellcasting modifier HP. The classic 'get back up!' spell." }, C, B);
             Add(new SpellDef { Id = "bless", Name = "Bless", Level = 1, School = "Enchantment", RangeFt = 30, MaxTargets = 3, Kind = SpellKind.Buff, Concentration = true, EffectId = "bless",
-                Description = "Up to 3 allies add +1d4 to attack rolls and saving throws. Concentration, 1 minute." }, C);
+                Description = "Up to 3 allies add +1d4 to attack rolls and saving throws. Concentration, 1 minute." }, C, P);
             Add(new SpellDef { Id = "guiding_bolt", Name = "Guiding Bolt", Level = 1, School = "Evocation", RangeFt = 120, Kind = SpellKind.Attack, Dice = DiceExpr.Parse("4d6"), UpcastDice = 1, DamageType = DamageType.Radiant, EffectId = "guiding_bolt",
                 Description = "Ranged spell attack, 4d6 radiant; the next attack against the target has Advantage." }, C);
             Add(new SpellDef { Id = "inflict_wounds", Name = "Inflict Wounds", Level = 1, School = "Necromancy", RangeFt = 5, Kind = SpellKind.Save, SaveAbility = Ability.CON, HalfOnSave = true, Dice = DiceExpr.Parse("2d10"), UpcastDice = 1, DamageType = DamageType.Necrotic,
                 Description = "Touch: CON save, 2d10 necrotic (half on a success)." }, C);
             Add(new SpellDef { Id = "shield_of_faith", Name = "Shield of Faith", Level = 1, School = "Abjuration", CastTime = CastTime.BonusAction, RangeFt = 60, Kind = SpellKind.Buff, Concentration = true, EffectId = "shield_of_faith",
-                Description = "Bonus Action: an ally gains +2 AC. Concentration, 10 minutes." }, C);
+                Description = "Bonus Action: an ally gains +2 AC. Concentration, 10 minutes." }, C, P);
             Add(new SpellDef { Id = "command", Name = "Command", Level = 1, School = "Enchantment", RangeFt = 60, Kind = SpellKind.Save, SaveAbility = Ability.WIS, EffectId = "prone",
-                Description = "One-word command. WIS save or obey. In combat: 'Grovel!' knocks the target Prone." }, C, B);
+                Description = "One-word command. WIS save or obey. In combat: 'Grovel!' knocks the target Prone." }, C, B, P);
             Add(new SpellDef { Id = "dissonant_whispers", Name = "Dissonant Whispers", Level = 1, School = "Enchantment", RangeFt = 60, Kind = SpellKind.Save, SaveAbility = Ability.WIS, HalfOnSave = true, Dice = DiceExpr.Parse("3d6"), UpcastDice = 1, DamageType = DamageType.Psychic, EffectId = "frightened",
                 Description = "A discordant melody only the target hears. WIS save, 3d6 psychic (half on a success); on a failure it flees in terror." }, B);
             Add(new SpellDef { Id = "faerie_fire", Name = "Faerie Fire", Level = 1, School = "Evocation", RangeFt = 60, Shape = TargetShape.Cube, AreaFt = 20, MaxTargets = 99, Kind = SpellKind.Save, SaveAbility = Ability.DEX, Concentration = true, EffectId = "faerie_fire",
                 Description = "Creatures in a 20-ft cube make a DEX save or are outlined in light: attacks against them have Advantage." }, B);
             Add(new SpellDef { Id = "heroism", Name = "Heroism", Level = 1, School = "Enchantment", RangeFt = 5, Kind = SpellKind.Buff, Concentration = true, EffectId = "heroism",
-                Description = "An ally is immune to Frightened and gains temporary HP equal to your spellcasting modifier each turn." }, B);
+                Description = "An ally is immune to Frightened and gains temporary HP equal to your spellcasting modifier each turn." }, B, P);
             Add(new SpellDef { Id = "hideous_laughter", Name = "Hideous Laughter", Level = 1, School = "Enchantment", RangeFt = 30, Kind = SpellKind.Save, SaveAbility = Ability.WIS, Concentration = true, EffectId = "laughter",
                 Description = "WIS save or the target collapses laughing (Prone, Incapacitated). Repeats the save at the end of each turn." }, W, B);
             Add(new SpellDef { Id = "comprehend_languages", Name = "Comprehend Languages", Level = 1, School = "Divination", RangeFt = 0, Kind = SpellKind.Utility, Ritual = true,

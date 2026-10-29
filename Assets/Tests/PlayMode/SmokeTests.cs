@@ -137,7 +137,7 @@ namespace DnD.Tests
         [UnityTest]
         public IEnumerator EveryClassAndSpeciesSpawns()
         {
-            foreach (var cls in new[] { "fighter", "wizard", "cleric", "bard" })
+            foreach (var cls in DnD.Rules.Content.CharacterDb.Classes.Keys.ToList())
                 foreach (var sp in new[] { "human", "elf", "half_elf", "dwarf", "gnome" })
                 {
                     var slot = GameRoot.I.DebugStart(new FuzzInput(1) { ConfirmChance = 0 }, cls, sp);
@@ -249,7 +249,7 @@ namespace DnD.Tests
         [UnityTest]
         public IEnumerator FightInTheMineWithEachClass()
         {
-            foreach (var cls in new[] { "fighter", "wizard", "cleric", "bard" })
+            foreach (var cls in DnD.Rules.Content.CharacterDb.Classes.Keys.ToList())
             {
                 var g = GameRoot.I;
                 var p = g.DebugStart(new FuzzInput(cls.GetHashCode()) { ConfirmChance = 0.35f, EndTurnChance = 0.01f }, cls, "human");

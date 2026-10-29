@@ -37,6 +37,12 @@ namespace RulesTests
             EncounterTests();
             ContentTests();
             LevelUpTests();
+            RogueTests();
+            BarbarianTests();
+            MonkTests();
+            PaladinTests();
+            RangerTests();
+            DruidTests();
 
             Console.WriteLine($"\n{_passed} passed, {_failed} failed");
             return _failed == 0 ? 0 : 1;
@@ -420,7 +426,7 @@ namespace RulesTests
 
         static void ContentTests()
         {
-            Eq(CharacterDb.Classes.Count, 4, "4 playtest classes");
+            foreach (var cls in CharacterDb.Classes.Values) Check(cls.Subclass != null && cls.HitDie > 0, cls.Id + " has a subclass and a hit die");
             Eq(CharacterDb.Species.Count, 5, "5 species");
             Eq(CharacterDb.Backgrounds.Count, 4, "4 backgrounds");
             foreach (var c in CharacterDb.Classes.Values)

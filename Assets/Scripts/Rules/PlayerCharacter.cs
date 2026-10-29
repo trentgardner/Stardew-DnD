@@ -90,7 +90,16 @@ namespace DnD.Rules
 
         public override bool IsPlayerCharacter => true;
         public override int ProficiencyBonus => 2 + (Level - 1) / 4;
-        protected override int BaseSpeed => IsOverloaded ? 5 : Species != null ? Species.Speed : 30;
+        protected override int BaseSpeed => IsOverloaded ? 5 : (Species != null ? Species.Speed : 30) + (UnarmoredMovement ? 10 : 0);
+
+        // ---------------------------------------------------------------- monk
+
+        public int MartialArtsDie => Level >= 17 ? 12 : Level >= 11 ? 10 : Level >= 5 ? 8 : 6;
+        bool UnarmoredMovement => Class != null && Class.Id == "monk" && Level >= 2 && Armor == null && !Shield;
+        /// <summary>Simple melee weapons and martial melee weapons with the Light property.</summary>
+        public bool IsMonkWeapon(WeaponDef w) => Class.Id == "monk" && !w.IsRanged && (w.Category == WeaponCategory.Simple || w.Has(WeaponProperty.Light));
+        /// <summary>Deflect Attacks: 1d10 + DEX + monk level of damage prevented.</summary>
+        public int DeflectReduction() => Dice.Roll(10) + Mod(Ability.DEX) + Level;
 
         /// <summary>2024 rules: a Medium creature can carry STR × 15 lb. Coins weigh nothing (house rule).</summary>
         public int CarryCapacity => Score(Ability.STR) * 15;
@@ -149,6 +158,8 @@ namespace DnD.Rules
             HP += gain;
             log?.Add($"{Name} reaches level {Level}! +{gain} max HP.");
             foreach (var f in Class.Features) if (f.Level == Level) log?.Add($"New feature: {f.Name}");
+            foreach (var kv in Class.AlwaysPrepared)
+                if (kv.Value == Level && !PreparedSpells.Contains(kv.Key)) PreparedSpells.Add(kv.Key);
             if (Class.Subclass != null)
             {
                 foreach (var f in Class.Subclass.Features) if (f.Level == Level) log?.Add($"New feature ({Class.Subclass.Name}): {f.Name}");
@@ -183,6 +194,8 @@ namespace DnD.Rules
                     if (FightingStyle == "defense") ac += 1;
                 }
                 else if (HasEffect("mage_armor")) ac = 13 + dex;
+                else if (Class.Id == "barbarian") ac = 10 + dex + Mod(Ability.CON); // Unarmored Defense
+                else if (Class.Id == "monk" && !Shield) ac = 10 + dex + Mod(Ability.WIS); // Unarmored Defense (no shield either)
                 else ac = 10 + dex;
                 if (Shield) ac += 2;
                 ac += WornBonus(w => w.AcBonus);
@@ -215,6 +228,8 @@ namespace DnD.Rules
 
         public override bool AdvantageOnSave(Ability a, string vs)
         {
+            if (a == Ability.STR && Raging) return true;
+            if (a == Ability.DEX && HasFeature("Danger Sense") && !Has(Condition.Incapacitated)) return true;
             if (Species == null) return false;
             if (Species.AdvantageMentalSaves && (a == Ability.INT || a == Ability.WIS || a == Ability.CHA)) return true;
             if (Species.AdvantageVsCharmed && vs == "charmed") return true;
@@ -250,9 +265,14 @@ namespace DnD.Rules
             {
                 case "second_wind": return Class.Id == "fighter" ? (Level >= 10 ? 4 : Level >= 4 ? 3 : 2) : 0;
                 case "action_surge": return Class.Id == "fighter" && Level >= 2 ? 1 : 0;
-                case "channel_divinity": return Class.Id == "cleric" && Level >= 2 ? (Level >= 6 ? 3 : 2) : 0;
+                case "channel_divinity": return Class.Id == "cleric" && Level >= 2 ? (Level >= 6 ? 3 : 2) : Class.Id == "paladin" && Level >= 3 ? (Level >= 11 ? 3 : 2) : 0;
+                case "focus": return Class.Id == "monk" && Level >= 2 ? Level : 0;
+                case "uncanny_metabolism": return Class.Id == "monk" && Level >= 2 ? 1 : 0;
+                case "lay_on_hands": return Class.Id == "paladin" ? 5 * Level : 0;
+                case "free_smite": return Class.Id == "paladin" && Level >= 2 ? 1 : 0;
                 case "bardic_inspiration": return Class.Id == "bard" ? Math.Max(1, Mod(Ability.CHA)) : 0;
                 case "arcane_recovery": return Class.Id == "wizard" ? 1 : 0;
+                case "rage": return Class.Id == "barbarian" ? (Level >= 17 ? 6 : Level >= 12 ? 5 : Level >= 6 ? 4 : Level >= 3 ? 3 : 2) : 0;
                 default: return 0;
             }
         }
@@ -263,11 +283,14 @@ namespace DnD.Rules
             return ResourceMax(res) - used;
         }
 
-        public bool SpendResource(string res)
+        public bool SpendResource(string res) => SpendResource(res, 1);
+
+        /// <summary>Spends several points at once (Lay on Hands pool, Focus Points). False (and nothing spent) if there aren't enough.</summary>
+        public bool SpendResource(string res, int amount)
         {
-            if (ResourceLeft(res) <= 0) return false;
+            if (amount <= 0 || ResourceLeft(res) < amount) return false;
             ResourcesUsed.TryGetValue(res, out int used);
-            ResourcesUsed[res] = used + 1;
+            ResourcesUsed[res] = used + amount;
             return true;
         }
 
@@ -281,22 +304,49 @@ namespace DnD.Rules
 
         // ---------------------------------------------------------------- attacks
 
-        public bool IsProficientWith(WeaponDef w) => w.Category == WeaponCategory.Simple || Class.MartialWeapons || DivineOrder == "protector";
+        public bool IsProficientWith(WeaponDef w) => w.Category == WeaponCategory.Simple || Class.MartialWeapons || DivineOrder == "protector"
+            || Class.MartialFinesseOrLight && (w.Has(WeaponProperty.Finesse) || w.Has(WeaponProperty.Light));
+
+        // ---------------------------------------------------------------- barbarian
+
+        public int RageDamage => Level >= 16 ? 4 : Level >= 9 ? 3 : 2;
+        public bool Raging => HasEffect("rage");
+
+        /// <summary>Bonus Action: enter a Rage (spends a use). False if out of uses or already raging.</summary>
+        public bool StartRage(List<string> log)
+        {
+            if (Raging || !SpendResource("rage")) return false;
+            Effects.Add(EffectLibrary.Create("rage", this));
+            log?.Add($"{Name} flies into a RAGE! (+{RageDamage} damage, resists bludgeoning/piercing/slashing)");
+            return true;
+        }
+
+        public override int TakeDamage(int amount, DamageType type, bool critical, List<string> log)
+        {
+            // Rage: resistance to bludgeoning, piercing and slashing (added only for this hit).
+            bool rageResist = Raging && (type == DamageType.Bludgeoning || type == DamageType.Piercing || type == DamageType.Slashing) && !Resistances.Contains(type);
+            if (rageResist) Resistances.Add(type);
+            try { return base.TakeDamage(amount, type, critical, log); }
+            finally { if (rageResist) Resistances.Remove(type); }
+        }
 
         public AttackOption WeaponAttack(WeaponDef w)
         {
-            bool finesse = w.Has(WeaponProperty.Finesse);
+            bool finesse = w.Has(WeaponProperty.Finesse) || IsMonkWeapon(w);
             Ability ab = w.IsRanged ? Ability.DEX : Ability.STR;
             if (finesse && Mod(Ability.DEX) > Mod(Ability.STR)) ab = Ability.DEX;
             int mod = Mod(ab);
             int toHit = mod + (IsProficientWith(w) ? ProficiencyBonus : 0) + w.MagicBonus;
             if (w.IsRanged && FightingStyle == "archery") toHit += 2;
+            if (HasEffect("sacred_weapon")) toHit += Math.Max(1, Mod(Ability.CHA));
 
             var dmg = w.Damage;
             bool twoHanding = !Shield && w.Has(WeaponProperty.Versatile);
             if (twoHanding) dmg = w.VersatileDamage;
+            if (IsMonkWeapon(w) && dmg.Count == 1 && dmg.Sides < MartialArtsDie) dmg = new DiceExpr(1, MartialArtsDie, dmg.Bonus); // Martial Arts die
 
             int dmgMod = mod + w.MagicBonus;
+            if (Raging && ab == Ability.STR && !w.IsRanged) dmgMod += RageDamage;
             bool oneHandedMelee = !w.IsRanged && !w.Has(WeaponProperty.TwoHanded) && !twoHanding;
             if (FightingStyle == "dueling" && oneHandedMelee) dmgMod += 2;
 
@@ -324,14 +374,16 @@ namespace DnD.Rules
 
         public AttackOption UnarmedStrike()
         {
+            bool monk = Class.Id == "monk";
+            var ab = monk && Mod(Ability.DEX) > Mod(Ability.STR) ? Ability.DEX : Ability.STR;
             return new AttackOption
             {
                 Name = "Unarmed Strike",
-                ToHit = Mod(Ability.STR) + ProficiencyBonus,
-                Damage = new DiceExpr(0, 0, 1),
-                DamageMod = Mod(Ability.STR),
+                ToHit = Mod(ab) + ProficiencyBonus,
+                Damage = monk ? new DiceExpr(1, MartialArtsDie) : new DiceExpr(0, 0, 1),
+                DamageMod = Mod(ab),
                 DamageType = DamageType.Bludgeoning,
-                Ability = Ability.STR,
+                Ability = ab,
             };
         }
 
@@ -455,6 +507,8 @@ namespace DnD.Rules
             RegainResource("second_wind", 1);
             RegainResource("action_surge", 99);
             RegainResource("channel_divinity", 1);
+            RegainResource("rage", 1);
+            RegainResource("focus", 99);
             log?.Add($"{Name} finishes a short rest.");
         }
 
