@@ -223,6 +223,23 @@ namespace DnD.Game
                         _menu.Add("Protector", () => { _ch.DivineOrder = "protector"; Go(Step.Cantrips); }, true, "Trained for battle: heavy armor and martial weapons. You start in chain mail.");
                         _menu.Add("Thaumaturge", () => { _ch.DivineOrder = "thaumaturge"; Go(Step.Cantrips); }, true, "One extra cantrip, and add your WIS modifier to Arcana and Religion checks.");
                     }
+                    else if (_ch.ClassId == "druid")
+                    {
+                        _header.text = title + "\nChoose your Primal Order.";
+                        _menu.Add("Magician", () => { _ch.PrimalOrder = "magician"; Go(Step.Cantrips); }, true, "One extra cantrip, and add your WIS modifier to Arcana and Nature checks.");
+                        _menu.Add("Warden", () => { _ch.PrimalOrder = "warden"; Go(Step.Cantrips); }, true, "Trained for battle: medium armor and martial weapons.");
+                    }
+                    else if (_ch.ClassId == "warlock")
+                    {
+                        _header.text = title + "\nYour patron offers one Eldritch Invocation.";
+                        foreach (var id in PlayerCharacter.InvocationOptions)
+                        {
+                            var inv = id;
+                            var desc = PlayerCharacter.DescribeOption(id);
+                            int cut = desc.IndexOf(" (");
+                            _menu.Add(cut > 0 ? desc.Substring(0, cut) : desc, () => { _ch.Invocations = new List<string> { inv }; Go(Step.Cantrips); }, true, desc);
+                        }
+                    }
                     else Go(Step.Cantrips);
                     break;
 
@@ -230,7 +247,9 @@ namespace DnD.Game
                 {
                     var cls = CharacterDb.Classes[_ch.ClassId];
                     if (cls.Caster == CasterType.None) { Go(Step.Review); return; }
-                    int need = cls.CantripsKnown[1] + (_ch.DivineOrder == "thaumaturge" && _ch.ClassId == "cleric" ? 1 : 0);
+                    int need = cls.CantripsKnown[1] + (_ch.DivineOrder == "thaumaturge" && _ch.ClassId == "cleric" ? 1 : 0)
+                                                     + (_ch.PrimalOrder == "magician" && _ch.ClassId == "druid" ? 1 : 0);
+                    if (need == 0) { Go(Step.Spells); return; }   // paladin, ranger: no cantrips
                     SpellPicker(title, "cantrips", need, SpellsDb.ForClass(cls.Id, 0).Where(x => x.IsCantrip), _ch.Cantrips, Step.Spells);
                     break;
                 }
@@ -301,11 +320,13 @@ namespace DnD.Game
             _ch.ClassId = d.ClassId; _ch.BackgroundId = d.BackgroundId; _ch.PlusTwo = d.PlusTwo; _ch.PlusOne = d.PlusOne; _ch.SpreadEvenly = d.SpreadEvenly;
             _ch.ClassSkills = d.ClassSkills; _ch.BonusSkills = d.BonusSkills; _ch.Cantrips = d.Cantrips; _ch.Spells = d.Spells;
             _ch.FightingStyle = d.FightingStyle; _ch.DivineOrder = d.DivineOrder;
+            _ch.PrimalOrder = d.PrimalOrder; _ch.Invocations = d.Invocations; _ch.Expertise = d.Expertise;
         }
 
         void ResetChoices()
         {
             _ch.ClassSkills = new List<Skill>(); _ch.BonusSkills = new List<Skill>(); _ch.Cantrips = new List<string>(); _ch.Spells = new List<string>();
+            _ch.Invocations = new List<string>(); _ch.Expertise = new List<Skill>(); _ch.PrimalOrder = null;
             for (int i = 0; i < 6; i++) _assigned[i] = -1;
         }
 

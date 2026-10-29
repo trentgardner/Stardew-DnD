@@ -51,6 +51,12 @@ namespace RulesTests
             Check(SpellsDb.ForClass("druid", 1).Any(s => s.Id == "entangle") && SpellsDb.ForClass("druid", 0).Any(s => s.Id == "produce_flame"), "druid spell list");
             Eq(d.ResourceMax("wild_shape"), 0, "no wild shape at 1");
 
+            var wc = CharacterFactory.DefaultChoices("druid", "human", "W"); wc.PrimalOrder = "warden";
+            var warden = CharacterFactory.Create(wc);
+            Eq(warden.Armor?.Id, "hide", "warden starts in hide armor");
+            Check(warden.CanWearArmor(ItemsDb.Get<ArmorDef>("scale_mail")), "warden can wear medium armor");
+            Check(!d.CanWearArmor(ItemsDb.Get<ArmorDef>("scale_mail")), "magician can't wear medium armor");
+
             var d2 = AtLevel("druid", 2);
             Eq(d2.ResourceMax("wild_shape"), 2, "two wild shape uses at 2");
             var forms = d2.WildShapeForms();

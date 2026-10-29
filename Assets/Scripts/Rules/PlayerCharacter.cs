@@ -618,7 +618,7 @@ namespace DnD.Rules
             switch (a.Category)
             {
                 case ArmorCategory.Light: return Class.LightArmor;
-                case ArmorCategory.Medium: return Class.MediumArmor;
+                case ArmorCategory.Medium: return Class.MediumArmor || PrimalOrder == "warden";
                 default: return Class.HeavyArmor || DivineOrder == "protector";
             }
         }

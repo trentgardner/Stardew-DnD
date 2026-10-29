@@ -1273,6 +1273,7 @@ namespace DnD.Game
                 var ward = Units.Where(o => o != u && o.Active && !Hostile(u, o)).OrderBy(o => o.C.HP / (float)Math.Max(1, o.C.EffectiveMaxHP)).FirstOrDefault();
                 if (ward != null) target = foes.OrderBy(f => Zone.DistanceFt(f.Pos, ward.Pos) * 2 + Zone.DistanceFt(u.Pos, f.Pos)).First();
             }
+            if (u.C is PlayerCharacter bpc && !u.IsHuman && !turn.BonusActionUsed) yield return AiBonusAction(u, bpc, target);
             if (prefersRange)
             {
                 int dist = Zone.DistanceFt(u.Pos, target.Pos);
@@ -1306,6 +1307,28 @@ namespace DnD.Game
             {
                 if (u.C is PlayerCharacter) yield return AttackAction(u, target, melee);
                 else yield return AiAttack(u, target, melee);
+            }
+        }
+
+        /// <summary>Companion bonus action before moving: heal up, rage, or mark the target.</summary>
+        IEnumerator AiBonusAction(Unit u, PlayerCharacter pc, Unit target)
+        {
+            if (pc.ResourceLeft("second_wind") > 0 && pc.HP < pc.EffectiveMaxHP / 2) { yield return SecondWind(u, pc); yield break; }
+            if (pc.ResourceLeft("lay_on_hands") > 0)
+            {
+                var hurt = Units.Where(o => o.Active && !Hostile(u, o) && o.C.HP < o.C.EffectiveMaxHP * 0.4f && Zone.DistanceFt(u.Pos, o.Pos) <= 5)
+                    .OrderBy(o => o.C.HP / (float)Math.Max(1, o.C.EffectiveMaxHP)).FirstOrDefault();
+                if (hurt != null) { yield return LayOnHands(u, pc, hurt); yield break; }
+            }
+            if (pc.ResourceLeft("rage") > 0 && !pc.Raging && Zone.DistanceFt(u.Pos, target.Pos) <= pc.Speed + 5) { yield return Rage(u, pc); yield break; }
+            if (pc.ConcentratingOn == null && Zone.DistanceFt(u.Pos, target.Pos) <= 90 && Zone.LineOfSight(u.Pos, target.Pos))
+            {
+                foreach (var id in new[] { "hunters_mark", "hex" })
+                {
+                    var mark = SpellsDb.Get(id);
+                    bool canPay = pc.LowestAvailableSlot(1) > 0 || (id == "hunters_mark" && pc.ResourceLeft("favored_enemy") > 0);
+                    if (pc.KnowsSpell(id) && canPay && pc.CanCastSpells) { yield return CastSpell(u, pc, mark, target.Pos); yield break; }
+                }
             }
         }
 

@@ -100,6 +100,7 @@ namespace DnD.Rules
                 var armor = ItemsDb.Get<ArmorDef>(pc.Class.StartingArmor);
                 // Thaumaturge clerics can't use the chain shirt? (they can: medium armor). Protector upgrades to chain mail.
                 if (pc.Class.Id == "cleric" && pc.DivineOrder == "protector") armor = ItemsDb.Get<ArmorDef>("chain_mail");
+                if (pc.Class.Id == "druid" && pc.PrimalOrder == "warden") armor = ItemsDb.Get<ArmorDef>("hide");
                 pc.Armor = armor;
             }
             pc.Shield = pc.Class.StartingShield;
