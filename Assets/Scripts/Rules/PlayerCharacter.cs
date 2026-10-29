@@ -11,7 +11,7 @@ namespace DnD.Rules
         public ItemStack(string id, int count) { ItemId = id; Count = count; }
     }
 
-    public class PlayerCharacter : Creature
+    public partial class PlayerCharacter : Creature
     {
         public SpeciesDef Species;
         public BackgroundDef Background;
@@ -23,6 +23,10 @@ namespace DnD.Rules
         public int[] BaseScores = { 10, 10, 10, 10, 10, 10 };
         /// <summary>Background ability increases (+2/+1 or +1/+1/+1).</summary>
         public int[] BackgroundBonus = new int[6];
+        /// <summary>Ability Score Improvements and feat increases from leveling (never past 20).</summary>
+        public int[] AsiBonus = new int[6];
+        /// <summary>Feats taken (by id), e.g. "grappler".</summary>
+        public readonly List<string> Feats = new List<string>();
 
         public readonly HashSet<Skill> SkillProficiencies = new HashSet<Skill>();
         public readonly HashSet<Skill> Expertise = new HashSet<Skill>();
@@ -107,7 +111,7 @@ namespace DnD.Rules
         public bool IsOverloaded => CarriedWeight > CarryCapacity;
         public override int Darkvision => Species != null ? Species.Darkvision : 0;
 
-        protected override int ScoreBonus(Ability a) => BackgroundBonus[(int)a];
+        protected override int ScoreBonus(Ability a) => BackgroundBonus[(int)a] + AsiBonus[(int)a];
 
         public PlayerCharacter() { Team = Team.Players; }
 
@@ -127,17 +131,17 @@ namespace DnD.Rules
         // ---------------------------------------------------------------- leveling
 
         public static readonly int[] XpThresholds = { 0, 0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000 };
-        public const int PlaytestLevelCap = 3;
+        public const int PlaytestLevelCap = 4;
 
         public bool CanLevelUp => Level < PlaytestLevelCap && Level + 1 < XpThresholds.Length && XP >= XpThresholds[Level + 1];
 
         public int AverageHitDie => Class.HitDie / 2 + 1;
 
         /// <summary>
-        /// Levels up. hpRoll is the value of the rolled hit die, or null to take the average
-        /// (Critical Role style: the player chooses each time).
+        /// Gains a level: HP and new features only (choices are applied by LevelUp(plan)). hpRoll is the
+        /// rolled hit die, or null to take the average (Critical Role style: the player chooses each time).
         /// </summary>
-        public int LevelUp(int? hpRoll, List<string> log)
+        public int GainLevel(int? hpRoll, List<string> log)
         {
             Level++;
             int gain = Math.Max(1, (hpRoll ?? AverageHitDie) + Mod(Ability.CON)) + (Species?.BonusHpPerLevel ?? 0);

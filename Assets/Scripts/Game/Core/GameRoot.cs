@@ -866,7 +866,7 @@ namespace DnD.Game
         /// <summary>Companions level up on their own (average HP, auto choices).</summary>
         static void AutoLevel(PlayerCharacter pc)
         {
-            while (pc.CanLevelUp) { var log = new List<string>(); pc.LevelUp(null, log); CharacterSheetScreen.AutoChoices(pc, log); }
+            while (pc.CanLevelUp) pc.LevelUp(pc.AutoPlan(), new List<string>());
         }
 
         public void AwardOnce(PlayerSlot p, string key, int xp, string reason)

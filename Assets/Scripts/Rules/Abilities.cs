@@ -55,6 +55,7 @@ namespace DnD.Rules
         };
 
         public static Ability AbilityOf(Skill s) => _ability[s];
+        public static Skill Parse(string s) => (Skill)Enum.Parse(typeof(Skill), s);
 
         public static string Name(Skill s)
         {

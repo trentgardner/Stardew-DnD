@@ -375,47 +375,11 @@ namespace DnD.Game
         {
             var pc = Slot.Character;
             var log = new List<string>();
-            pc.LevelUp(roll, log);
-            AutoChoices(pc, log);
+            var plan = pc.AutoPlan(); // replaced by the level-up screen's picks in Phase 3 Task 2
+            plan.HpRoll = roll;
+            pc.LevelUp(plan, log);
             Sfx.Play("success");
             Hud.Push(new MessageScreen($"Level {pc.Level}!", string.Join("\n", log), Rebuild));
-        }
-
-        /// <summary>Playtest: level-up choices are picked automatically (shown to the player).</summary>
-        public static void AutoChoices(PlayerCharacter pc, List<string> log)
-        {
-            if (pc.Class.Id == "bard" && pc.Level == 2)
-            {
-                foreach (var s in pc.SkillProficiencies.OrderByDescending(x => pc.SkillBonus(x)).Take(2).ToList()) { pc.Expertise.Add(s); log.Add($"Expertise: {SkillUtil.Name(s)}"); }
-            }
-            if (pc.Class.Id == "bard" && pc.Level == 3)
-            {
-                foreach (var s in new[] { Skill.Insight, Skill.Arcana, Skill.History, Skill.Perception, Skill.Investigation }.Where(x => !pc.IsProficient(x)).Take(3)) { pc.SkillProficiencies.Add(s); log.Add($"Bonus proficiency: {SkillUtil.Name(s)}"); }
-            }
-            if (pc.Class.Id == "wizard" && pc.Level == 2)
-            {
-                pc.SkillProficiencies.Add(Skill.Arcana); pc.Expertise.Add(Skill.Arcana); log.Add("Scholar: Expertise in Arcana");
-            }
-            // New prepared spells / cantrips
-            int prepTarget = pc.Class.PreparedSpells[pc.Level];
-            var always = pc.Class.Subclass != null && pc.Level >= 3 ? pc.Class.Subclass.AlwaysPreparedSpells : new List<string>();
-            int maxSpellLevel = pc.Level >= 3 ? 2 : 1;
-            foreach (var s in SpellsDb.ForClass(pc.Class.Id, maxSpellLevel))
-            {
-                if (s.IsCantrip || pc.PreparedSpells.Contains(s.Id)) continue;
-                if (pc.PreparedSpells.Count(x => !always.Contains(x)) >= prepTarget) break;
-                if (s.Level == maxSpellLevel || pc.PreparedSpells.Count(x => !always.Contains(x)) < prepTarget)
-                {
-                    pc.PreparedSpells.Add(s.Id);
-                    if (pc.Class.Id == "wizard") pc.Spellbook.Add(s.Id);
-                    log.Add($"New spell prepared: {s.Name}");
-                }
-            }
-            if (pc.Class.Id == "wizard" && pc.Level == 3)
-            {
-                foreach (var id in new[] { "shatter", "scorching_ray" }) if (!pc.Spellbook.Contains(id)) { pc.Spellbook.Add(id); log.Add($"Evocation Savant: {SpellsDb.Get(id).Name} added to spellbook"); }
-            }
-            log.Add("(Change prepared spells any time from the Spellbook, K / RT.)");
         }
 
         public override void Tick()
