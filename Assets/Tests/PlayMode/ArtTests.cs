@@ -110,6 +110,21 @@ namespace DnD.Tests
             }
         }
 
+        /// <summary>Phase 4: the new townsfolk, creatures, props and quest items all have real art.</summary>
+        [Test]
+        public void Phase4ArtIsReal()
+        {
+            ArtRegistry.ClearCache();
+            var ids = new[] {
+                "npc_garrick_down_0", "npc_hesper_down_0", "npc_dunstan_down_0", "npc_lark_down_0", "npc_tamsin_down_0",
+                "npc_wick_down_0", "npc_thimble_down_0", "npc_brawler_down_0", "npc_watchman_down_0",
+                "mon_goat_0", "mon_owlbear_0", "mon_owlbear_cub_0",
+                "obj_forge", "obj_barrel_tapped", "obj_herb", "obj_bench", "obj_planter", "obj_washing_line",
+                "item_ring", "item_poem", "item_herb", "item_goat_bell" };
+            var missing = ids.Where(id => !ArtRegistry.IsReal(id)).ToList();
+            Assert.IsEmpty(missing, "placeholder art: " + string.Join(", ", missing));
+        }
+
         [UnityTest]
         public IEnumerator EveryZoneDrawsOnlyRealArt()
         {
