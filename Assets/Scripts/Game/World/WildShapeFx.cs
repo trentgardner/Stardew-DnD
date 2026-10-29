@@ -12,11 +12,19 @@ namespace DnD.Game
         public static void Transform(Actor a, PlayerCharacter pc)
         {
             if (a == null) return;
-            a.Look = pc.WildShape != null ? pc.WildShape.SpriteId : PlayerController.LookFor(pc);
+            a.Look = pc.WildShape != null ? pc.WildShape.SpriteId : a.HomeLook;
             a.Directional = pc.WildShape == null;
             a.RefreshSprite();
             Poof.At(a.transform.position + new Vector3(0, 0.3f, 0));
             Sfx.Play("spell");
+        }
+
+        /// <summary>Puts the sprite back in line with the rules if the form ended on its own (e.g. dropping to 0 HP).</summary>
+        public static void Sync(Actor a, PlayerCharacter pc)
+        {
+            if (a == null || pc == null) return;
+            string want = pc.WildShape != null ? pc.WildShape.SpriteId : a.HomeLook;
+            if (a.Look != want) Transform(a, pc);
         }
     }
 

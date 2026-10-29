@@ -63,5 +63,26 @@ namespace DnD.Tests
             yield return Frames(3);
             StringAssert.StartsWith("hero_druid", back.Avatar.Sr.sprite.name, "back to the druid's own look");
         }
+
+        [UnityTest]
+        public IEnumerator CompanionDruidRevertsToItsOwnLookWhenKnockedOut()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new ScriptInput(), "fighter", "human");
+            var pc = CharacterFactory.Create(CharacterFactory.DefaultChoices("druid", "elf", "Moss"));
+            pc.XP = 300; pc.LevelUp(pc.AutoPlan(), null);
+            var comp = g.SpawnCompanion(p, pc, "hums");
+            yield return Frames(2);
+            string home = comp.Actor.Look;
+            StringAssert.StartsWith("npc_druid", home);
+
+            Assert.IsTrue(pc.StartWildShape("wolf", null));
+            WildShapeFx.Transform(comp.Actor, pc);
+            yield return Frames(2);
+            pc.TakeDamage(1000, DamageType.Piercing, false, null);   // the form ends in the rules...
+            WildShapeFx.Sync(comp.Actor, pc);                          // ...and the sprite follows
+            yield return Frames(2);
+            Assert.AreEqual(home, comp.Actor.Look, "back to the tavern look, not a player hero sprite");
+        }
     }
 }

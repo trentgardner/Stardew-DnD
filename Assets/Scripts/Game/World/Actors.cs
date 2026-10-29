@@ -12,6 +12,8 @@ namespace DnD.Game
     public class Actor : MonoBehaviour
     {
         public string Look;
+        /// <summary>The look this actor spawned with (what Wild Shape reverts to).</summary>
+        public string HomeLook;
         public bool Directional = true;
         public Zone Zone;
         public Creature Creature;
@@ -31,7 +33,7 @@ namespace DnD.Game
         {
             var go = new GameObject(name);
             var a = go.AddComponent<T>();
-            a.Look = look;
+            a.Look = a.HomeLook = look;
             a.Directional = directional;
             a.Sr = go.AddComponent<SpriteRenderer>();
             go.AddComponent<YSort>();

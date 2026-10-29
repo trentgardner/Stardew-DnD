@@ -107,6 +107,7 @@ namespace DnD.Game
             var roll = Dice.RollDamage(new DiceExpr(1, _pc.Class.HitDie));
             Hud.Dice.RollDamage("Hit Points", $"d{_pc.Class.HitDie} + CON {AbilityUtil.Fmt(_pc.Mod(Ability.CON))}", roll, DieColor.Healing, () =>
             {
+                if (Closed || Root == null) return;   // closed while the die rolled: nothing was applied yet
                 _plan.HpRoll = roll.Dice[0].Value;
                 _hpChosen = true;
                 Next();

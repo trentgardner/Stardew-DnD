@@ -632,6 +632,7 @@ namespace DnD.Game
         void OnDamaged(Unit target)
         {
             if (target.C.IsDead && target.DeathRound < 0) target.DeathRound = Enc.Round;
+            if (target.C is PlayerCharacter shaped) WildShapeFx.Sync(target.A, shaped);
             if (target.C.IsDown && target.C.Team == Team.Enemies) { target.A.Popup("Defeated!", UIKit.Gold); }
             if (target.C.IsDown && target.Owner != null) target.Owner.Hud.Narrate(target.C.IsDead ? "Everything goes dark..." : "You fall unconscious! Death saves begin on your turn...");
             else if (target.C.IsDown && target.Comp != null) target.Comp.Leader?.Hud.Narrate(target.C.IsDead ? $"{target.Name} has fallen..." : $"{target.Name} is down! Get a potion or a healing spell to them (Items: Give Potion to Ally).");
@@ -888,6 +889,7 @@ namespace DnD.Game
                 var log = new List<string>();
                 int lost = o.C.TakeDamage(ok ? dmg.Total / 2 : dmg.Total, DamageType.Necrotic, false, log);
                 o.A.Popup("-" + lost, UIKit.DamageRed);
+                if (lost > 0) AttackResolver.RaiseConcentrationCheck(o.C, lost);
                 Log($"{o.Name} {(ok ? "resists" : "is caught by")} the thorns (CON {save.Total} vs DC {pc.SpellSaveDC}): {lost} damage.");
                 OnDamaged(o);
             }

@@ -303,6 +303,19 @@ namespace DnD.Tests
             Assert.GreaterOrEqual(SaveSystem.List().Count, 1);
         }
 
+        [Test]
+        public void ClassChoicesSurviveSaving()
+        {
+            var lock_ = CharacterFactory.Create(CharacterFactory.DefaultChoices("warlock", "human", "Vex"));
+            lock_.Invocations.Clear(); lock_.Invocations.Add("ember_sight");
+            var back = SaveSystem.FromData(SaveSystem.ToData(lock_));
+            CollectionAssert.AreEqual(new[] { "ember_sight" }, back.Invocations, "invocations are saved (and not reset to the default)");
+
+            var sorc = CharacterFactory.Create(CharacterFactory.DefaultChoices("sorcerer", "elf", "Ash"));
+            sorc.Metamagic.Add("quickened"); sorc.Metamagic.Add("careful");
+            CollectionAssert.AreEquivalent(new[] { "quickened", "careful" }, SaveSystem.FromData(SaveSystem.ToData(sorc)).Metamagic, "metamagic is saved");
+        }
+
         [UnityTest]
         public IEnumerator MultiplePlaythroughsAreKeptApart()
         {
