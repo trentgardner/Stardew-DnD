@@ -352,35 +352,13 @@ namespace DnD.Game
             _right.text = sk.ToString();
 
             _menu.Clear();
-            if (pc.CanLevelUp) _menu.Add($"★ LEVEL UP to {pc.Level + 1}!", LevelUp);
+            if (pc.CanLevelUp) _menu.Add($"★ LEVEL UP to {pc.Level + 1}!", StartLevelUp);
             _menu.Add("Close", Close);
             _menu.Build();
         }
 
-        void LevelUp()
-        {
-            var pc = Slot.Character;
-            Hud.Push(new ChoiceScreen($"Level {pc.Level + 1}: Hit Points", "Roll your hit die, or take the average? (Your call, Critical Role style.)", new List<(string, Action)>
-            {
-                ($"Roll d{pc.Class.HitDie}!", () =>
-                {
-                    var roll = Dice.RollDamage(new DiceExpr(1, pc.Class.HitDie));
-                    Hud.Dice.RollDamage("Hit Points", $"d{pc.Class.HitDie} + CON {AbilityUtil.Fmt(pc.Mod(Ability.CON))}", roll, DieColor.Healing, () => FinishLevel(roll.Dice[0].Value));
-                }),
-                ($"Take the average ({pc.AverageHitDie})", () => FinishLevel(null)),
-            }, false));
-        }
-
-        void FinishLevel(int? roll)
-        {
-            var pc = Slot.Character;
-            var log = new List<string>();
-            var plan = pc.AutoPlan(); // replaced by the level-up screen's picks in Phase 3 Task 2
-            plan.HpRoll = roll;
-            pc.LevelUp(plan, log);
-            Sfx.Play("success");
-            Hud.Push(new MessageScreen($"Level {pc.Level}!", string.Join("\n", log), Rebuild));
-        }
+        /// <summary>Opens the level-up screen (the player's own choices); the sheet refreshes afterwards.</summary>
+        public void StartLevelUp() => Hud.Push(new LevelUpScreen(Rebuild));
 
         public override void Tick()
         {
