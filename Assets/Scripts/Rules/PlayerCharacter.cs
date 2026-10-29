@@ -90,7 +90,7 @@ namespace DnD.Rules
 
         public override bool IsPlayerCharacter => true;
         public override int ProficiencyBonus => 2 + (Level - 1) / 4;
-        protected override int BaseSpeed => IsOverloaded ? 5 : (Species != null ? Species.Speed : 30) + (UnarmoredMovement ? 10 : 0);
+        protected override int BaseSpeed => WildShape != null ? WildShape.Speed : IsOverloaded ? 5 : (Species != null ? Species.Speed : 30) + (UnarmoredMovement ? 10 : 0);
 
         // ---------------------------------------------------------------- monk
 
@@ -118,9 +118,14 @@ namespace DnD.Rules
         }
 
         public bool IsOverloaded => CarriedWeight > CarryCapacity;
-        public override int Darkvision => Species != null ? Species.Darkvision : 0;
+        public override int Darkvision => Invocations.Contains("ember_sight") ? Math.Max(120, Species?.Darkvision ?? 0) : Species != null ? Species.Darkvision : 0;
 
-        protected override int ScoreBonus(Ability a) => BackgroundBonus[(int)a] + AsiBonus[(int)a];
+        protected override int ScoreBonus(Ability a)
+        {
+            // Wild Shape: the beast's body (STR, DEX, CON), your own mind.
+            if (WildShape != null && (a == Ability.STR || a == Ability.DEX || a == Ability.CON)) return WildShape.Scores[(int)a] - Scores[(int)a];
+            return BackgroundBonus[(int)a] + AsiBonus[(int)a];
+        }
 
         public PlayerCharacter() { Team = Team.Players; }
 
@@ -158,6 +163,7 @@ namespace DnD.Rules
             HP += gain;
             log?.Add($"{Name} reaches level {Level}! +{gain} max HP.");
             foreach (var f in Class.Features) if (f.Level == Level) log?.Add($"New feature: {f.Name}");
+            if (HasFeature("Draconic Resilience")) { int extra = Level == 3 ? 3 : 1; MaxHP += extra; HP += extra; }
             foreach (var kv in Class.AlwaysPrepared)
                 if (kv.Value == Level && !PreparedSpells.Contains(kv.Key)) PreparedSpells.Add(kv.Key);
             if (Class.Subclass != null)
@@ -184,6 +190,7 @@ namespace DnD.Rules
         {
             get
             {
+                if (WildShape != null) return WildShape.AC;
                 int dex = Mod(Ability.DEX);
                 int ac;
                 if (Armor != null)
@@ -196,9 +203,12 @@ namespace DnD.Rules
                 else if (HasEffect("mage_armor")) ac = 13 + dex;
                 else if (Class.Id == "barbarian") ac = 10 + dex + Mod(Ability.CON); // Unarmored Defense
                 else if (Class.Id == "monk" && !Shield) ac = 10 + dex + Mod(Ability.WIS); // Unarmored Defense (no shield either)
+                else if (HasFeature("Draconic Resilience")) ac = 10 + dex + Mod(Ability.CHA);
+                else if (Invocations.Contains("armor_of_shadows")) ac = 13 + dex; // Mage Armor at will
                 else ac = 10 + dex;
                 if (Shield) ac += 2;
                 ac += WornBonus(w => w.AcBonus);
+                if (HasEffect("barkskin")) ac = Math.Max(ac, 17);
                 return ac;
             }
         }
@@ -212,6 +222,7 @@ namespace DnD.Rules
             else if (SkillProficiencies.Contains(s)) b += ProficiencyBonus;
             else if (HasFeature("Jack of All Trades")) b += ProficiencyBonus / 2;
             if (DivineOrder == "thaumaturge" && (s == Skill.Arcana || s == Skill.Religion)) b += Math.Max(1, Mod(Ability.WIS));
+            if (PrimalOrder == "magician" && (s == Skill.Arcana || s == Skill.Nature)) b += Math.Max(1, Mod(Ability.WIS));
             return b;
         }
 
@@ -228,6 +239,7 @@ namespace DnD.Rules
 
         public override bool AdvantageOnSave(Ability a, string vs)
         {
+            if (vs == "concentration" && Invocations.Contains("eldritch_mind")) return true;
             if (a == Ability.STR && Raging) return true;
             if (a == Ability.DEX && HasFeature("Danger Sense") && !Has(Condition.Incapacitated)) return true;
             if (Species == null) return false;
@@ -241,7 +253,7 @@ namespace DnD.Rules
 
         public bool IsCaster => Class.Caster != CasterType.None;
         public int SpellMod => IsCaster ? Mod(Class.SpellAbility) : 0;
-        public int SpellSaveDC => 8 + ProficiencyBonus + SpellMod;
+        public int SpellSaveDC => 8 + ProficiencyBonus + SpellMod + (HasEffect("innate_sorcery") ? 1 : 0);
         public int SpellAttackBonus => ProficiencyBonus + SpellMod + WornBonus(w => w.SpellAttackBonus);
 
         public int SlotsMax(int slotLevel) => SpellSlots.For(Class.Caster, Level, slotLevel);
@@ -253,7 +265,7 @@ namespace DnD.Rules
             return -1;
         }
 
-        public bool KnowsSpell(string id) => Cantrips.Contains(id) || PreparedSpells.Contains(id);
+        public bool KnowsSpell(string id) => Cantrips.Contains(id) || PreparedSpells.Contains(id) || BonusAlwaysPrepared.Contains(id);
 
         public int CantripDiceMultiplier => Level >= 17 ? 4 : Level >= 11 ? 3 : Level >= 5 ? 2 : 1;
 
@@ -270,6 +282,11 @@ namespace DnD.Rules
                 case "uncanny_metabolism": return Class.Id == "monk" && Level >= 2 ? 1 : 0;
                 case "lay_on_hands": return Class.Id == "paladin" ? 5 * Level : 0;
                 case "free_smite": return Class.Id == "paladin" && Level >= 2 ? 1 : 0;
+                case "innate_sorcery": return Class.Id == "sorcerer" ? 2 : 0;
+                case "sorcery_points": return Class.Id == "sorcerer" && Level >= 2 ? Level : 0;
+                case "magical_cunning": return Class.Id == "warlock" && Level >= 2 ? 1 : 0;
+                case "wild_shape": return Class.Id == "druid" && Level >= 2 ? (Level >= 17 ? 4 : Level >= 6 ? 3 : 2) : 0;
+                case "favored_enemy": return Class.Id == "ranger" ? (Level >= 17 ? 6 : Level >= 13 ? 5 : Level >= 9 ? 4 : Level >= 5 ? 3 : 2) : 0;
                 case "bardic_inspiration": return Class.Id == "bard" ? Math.Max(1, Mod(Ability.CHA)) : 0;
                 case "arcane_recovery": return Class.Id == "wizard" ? 1 : 0;
                 case "rage": return Class.Id == "barbarian" ? (Level >= 17 ? 6 : Level >= 12 ? 5 : Level >= 6 ? 4 : Level >= 3 ? 3 : 2) : 0;
@@ -304,8 +321,9 @@ namespace DnD.Rules
 
         // ---------------------------------------------------------------- attacks
 
-        public bool IsProficientWith(WeaponDef w) => w.Category == WeaponCategory.Simple || Class.MartialWeapons || DivineOrder == "protector"
-            || Class.MartialFinesseOrLight && (w.Has(WeaponProperty.Finesse) || w.Has(WeaponProperty.Light));
+        public bool IsProficientWith(WeaponDef w) => w.Category == WeaponCategory.Simple || Class.MartialWeapons || DivineOrder == "protector" || PrimalOrder == "warden"
+            || Class.MartialFinesseOrLight && (w.Has(WeaponProperty.Finesse) || w.Has(WeaponProperty.Light))
+            || Invocations.Contains("pact_of_the_blade");
 
         // ---------------------------------------------------------------- barbarian
 
@@ -335,6 +353,9 @@ namespace DnD.Rules
             bool finesse = w.Has(WeaponProperty.Finesse) || IsMonkWeapon(w);
             Ability ab = w.IsRanged ? Ability.DEX : Ability.STR;
             if (finesse && Mod(Ability.DEX) > Mod(Ability.STR)) ab = Ability.DEX;
+            bool shillelagh = HasEffect("shillelagh") && (w.Id == "club" || w.Id == "quarterstaff");
+            if (shillelagh) ab = Class.SpellAbility;
+            if (Invocations.Contains("pact_of_the_blade") && !w.IsRanged && Mod(Ability.CHA) > Mod(ab)) ab = Ability.CHA;
             int mod = Mod(ab);
             int toHit = mod + (IsProficientWith(w) ? ProficiencyBonus : 0) + w.MagicBonus;
             if (w.IsRanged && FightingStyle == "archery") toHit += 2;
@@ -344,6 +365,7 @@ namespace DnD.Rules
             bool twoHanding = !Shield && w.Has(WeaponProperty.Versatile);
             if (twoHanding) dmg = w.VersatileDamage;
             if (IsMonkWeapon(w) && dmg.Count == 1 && dmg.Sides < MartialArtsDie) dmg = new DiceExpr(1, MartialArtsDie, dmg.Bonus); // Martial Arts die
+            if (shillelagh) dmg = new DiceExpr(1, Level >= 17 ? 12 : Level >= 11 ? 10 : Level >= 5 ? 10 : 8);
 
             int dmgMod = mod + w.MagicBonus;
             if (Raging && ab == Ability.STR && !w.IsRanged) dmgMod += RageDamage;
@@ -389,6 +411,7 @@ namespace DnD.Rules
 
         public override List<AttackOption> GetAttacks()
         {
+            if (WildShape != null) return Monster.AttacksOf(WildShape);
             var list = new List<AttackOption>();
             list.Add(MainHand != null ? WeaponAttack(MainHand) : UnarmedStrike());
             return list;
@@ -401,6 +424,7 @@ namespace DnD.Rules
         protected override void OnDamaged(int hpBefore, int amount, bool critical, List<string> log)
         {
             if (HP > 0) return;
+            EndWildShape(log); // dropping to 0 HP ends Wild Shape
             int overflow = -HP;
             HP = 0;
             if (hpBefore > 0)
@@ -509,6 +533,8 @@ namespace DnD.Rules
             RegainResource("channel_divinity", 1);
             RegainResource("rage", 1);
             RegainResource("focus", 99);
+            RegainResource("wild_shape", 1);
+            if (Class.Caster == CasterType.Pact) SlotsUsed = new int[10]; // Pact Magic: slots back on a Short Rest
             log?.Add($"{Name} finishes a short rest.");
         }
 

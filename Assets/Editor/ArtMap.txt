@@ -478,3 +478,10 @@ audio fail          "Audio/Sounds/Menu/Cancel.wav"
 audio combat_start  "Audio/Sounds/Alert/Alert.wav"
 audio secret        "Audio/Jingles/Secret1.wav"
 audio levelup       "Audio/Jingles/LevelUp1.wav"
+
+# ================================================================ Wild Shape forms and the transform puff
+strip mon_cat    "Actor/Animal/Cat/SpriteSheet.png" 2
+strip mon_frog   "Actor/Animal/Frog/SpriteSheet.png" 2
+still mon_bear   "Actor/Monster/Bear/SpriteSheet.png"
+strip fx_smoke   "FX/Smoke/Smoke/SpriteSheet.png" 6
+strip fx_leaf    "FX/Particle/Leaf.png" 3 7

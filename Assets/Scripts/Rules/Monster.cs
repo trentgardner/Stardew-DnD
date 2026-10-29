@@ -84,10 +84,13 @@ namespace DnD.Rules
             return b;
         }
 
-        public override List<AttackOption> GetAttacks()
+        public override List<AttackOption> GetAttacks() => AttacksOf(Def);
+
+        /// <summary>A stat block's attacks as attack options (also used by a druid in Wild Shape).</summary>
+        public static List<AttackOption> AttacksOf(MonsterDef def)
         {
             var list = new List<AttackOption>();
-            foreach (var a in Def.Attacks)
+            foreach (var a in def.Attacks)
             {
                 list.Add(new AttackOption
                 {

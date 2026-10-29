@@ -21,6 +21,10 @@ namespace DnD.Rules
         public List<Skill> BonusSkills = new List<Skill>();
         /// <summary>Rogue: two proficient skills to double at level 1 (empty = the best two).</summary>
         public List<Skill> Expertise = new List<Skill>();
+        /// <summary>Druid: "magician" or "warden".</summary>
+        public string PrimalOrder;
+        /// <summary>Warlock: the level-1 invocation.</summary>
+        public List<string> Invocations = new List<string>();
         public string FightingStyle = "defense";
         public string DivineOrder = "protector";
         public List<string> Cantrips = new List<string>();
@@ -78,6 +82,9 @@ namespace DnD.Rules
                 foreach (var s in picks) if (pc.SkillProficiencies.Contains(s)) pc.Expertise.Add(s);
             }
             if (pc.Class.Id == "cleric") pc.DivineOrder = ch.DivineOrder;
+            if (pc.Class.Id == "druid") pc.PrimalOrder = ch.PrimalOrder ?? "magician";
+            if (pc.Class.Id == "warlock") pc.Invocations.AddRange(ch.Invocations.Count > 0 ? ch.Invocations : new List<string> { "agonizing_blast" });
+            foreach (var kv in pc.Class.AlwaysPrepared) if (kv.Value <= 1 && !pc.PreparedSpells.Contains(kv.Key)) pc.PreparedSpells.Add(kv.Key);
 
             // Spells
             pc.Cantrips.AddRange(ch.Cantrips);
@@ -145,6 +152,31 @@ namespace DnD.Rules
                 case "barbarian":
                     c.BackgroundId = "soldier"; c.Scores = new[] { 15, 13, 14, 8, 12, 10 }; c.PlusTwo = Ability.STR; c.PlusOne = Ability.CON;
                     c.ClassSkills.AddRange(new[] { Skill.Perception, Skill.Survival });
+                    break;
+                case "ranger":
+                    c.BackgroundId = "soldier"; c.Scores = new[] { 12, 15, 13, 8, 14, 10 }; c.PlusTwo = Ability.DEX; c.PlusOne = Ability.WIS;
+                    c.ClassSkills.AddRange(new[] { Skill.Survival, Skill.Perception, Skill.Stealth });
+                    c.Spells.AddRange(new[] { "cure_wounds", "goodberry" });
+                    break;
+                case "druid":
+                    c.BackgroundId = "sage"; c.Scores = new[] { 10, 13, 14, 12, 15, 8 }; c.PlusTwo = Ability.WIS; c.PlusOne = Ability.CON;
+                    c.ClassSkills.AddRange(new[] { Skill.Nature, Skill.AnimalHandling });
+                    c.Cantrips.AddRange(new[] { "produce_flame", "guidance", "shillelagh" }); // 2 + 1 (Magician)
+                    c.Spells.AddRange(new[] { "cure_wounds", "entangle", "faerie_fire", "thunderwave" });
+                    break;
+                case "sorcerer":
+                    c.BackgroundId = "sage"; c.Scores = new[] { 8, 13, 14, 12, 10, 15 }; c.PlusTwo = Ability.CHA; c.PlusOne = Ability.CON;
+                    c.ClassSkills.AddRange(new[] { Skill.Arcana, Skill.Persuasion });
+                    c.Cantrips.AddRange(new[] { "fire_bolt", "light", "prestidigitation", "minor_illusion" });
+                    c.Spells.AddRange(new[] { "magic_missile", "shield" });
+                    break;
+                case "warlock":
+                    c.BackgroundId = "criminal"; c.Scores = new[] { 8, 14, 13, 12, 10, 15 }; c.PlusTwo = Ability.CHA; c.PlusOne = Ability.CON;
+                    c.SpreadEvenly = false;
+                    c.ClassSkills.AddRange(new[] { Skill.Deception, Skill.Arcana });
+                    c.Cantrips.AddRange(new[] { "eldritch_blast", "minor_illusion" });
+                    c.Spells.AddRange(new[] { "hex", "armor_of_agathys" });
+                    c.Invocations.Add("agonizing_blast");
                     break;
                 case "monk":
                     c.BackgroundId = "acolyte"; c.Scores = new[] { 12, 15, 13, 10, 14, 8 }; c.PlusTwo = Ability.DEX; c.PlusOne = Ability.WIS;

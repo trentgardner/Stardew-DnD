@@ -180,13 +180,22 @@ namespace DnD.Game
 
             if (pc.IsCaster)
             {
-                foreach (var id in pc.Cantrips.Concat(pc.PreparedSpells).Distinct())
+                foreach (var id in pc.Cantrips.Concat(pc.PreparedSpells).Concat(pc.BonusAlwaysPrepared).Distinct())
                 {
                     var s = SpellsDb.Get(id);
                     if (s == null || !CombatUsable(s)) continue;
                     var a = SpellAction(u, pc, s);
                     a.Group = ActionGroup.Spells;
+                    if (!pc.CanCastSpells) { a.Enabled = false; a.Why = "Beasts can't cast spells. Revert first."; }
                     list.Add(a);
+                    if (pc.Metamagic.Contains("quickened") && a.Cost == ActionCost.Action && a.Enabled)
+                    {
+                        var orig = a.Run;
+                        var quick = new CombatAction { Name = a.Name + " (Quickened, 2 pts)", Group = ActionGroup.Spells, Cost = ActionCost.Bonus, Target = a.Target, RangeFt = a.RangeFt,
+                            AreaTiles = a.AreaTiles, AreaFromSelf = a.AreaFromSelf, Tooltip = "Metamagic: cast it as a Bonus Action for 2 sorcery points. " + a.Tooltip,
+                            Run = (me, tile) => { pc.SpendResource("sorcery_points", 2); me.Cb.Turn.QuickenNextSpell = true; return orig(me, tile); } };
+                        list.Add(Need(quick, t, pc, pc.ResourceLeft("sorcery_points") >= 2));
+                    }
                 }
             }
             if (pc.HasEffect("spiritual_weapon"))
@@ -260,6 +269,38 @@ namespace DnD.Game
                     Enabled = pc.ResourceLeft("channel_divinity") > 0 && !pc.HasEffect("sacred_weapon"), Why = "Needs a Channel Divinity use.",
                     Tooltip = $"Channel Divinity: add your CHA modifier ({AbilityUtil.Fmt(Math.Max(1, pc.Mod(Ability.CHA)))}) to weapon attack rolls for 10 minutes.",
                     Run = (me, tile) => SacredWeapon(me, pc) });
+            // Sorcerer
+            if (pc.ResourceMax("innate_sorcery") > 0)
+                list.Add(Need(new CombatAction { Name = $"Innate Sorcery ({pc.ResourceLeft("innate_sorcery")})", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
+                    Tooltip = "For 1 minute: +1 to your spell save DC and Advantage on spell attacks.",
+                    Run = (me, tile) => InnateSorcery(me, pc) }, t, pc, pc.ResourceLeft("innate_sorcery") > 0 && !pc.HasEffect("innate_sorcery")));
+            if (pc.ResourceMax("sorcery_points") > 0)
+            {
+                list.Add(new CombatAction { Name = $"Font of Magic: make a level-1 slot (2 of {pc.ResourceLeft("sorcery_points")} pts)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
+                    Enabled = !t.BonusActionUsed && pc.ResourceLeft("sorcery_points") >= 2, Why = "Needs 2 sorcery points and your bonus action.",
+                    Run = (me, tile) => { me.Cb.Turn.BonusActionUsed = true; if (pc.PointsToSlot(1)) Log($"{pc.Name} shapes raw magic into a spell slot."); return Nothing(); } });
+                int lowest = pc.LowestAvailableSlot(1);
+                list.Add(new CombatAction { Name = "Font of Magic: slot → sorcery points", Group = ActionGroup.Abilities, Cost = ActionCost.Free, Target = Targeting.None,
+                    Enabled = lowest > 0 && pc.ResourceLeft("sorcery_points") < pc.ResourceMax("sorcery_points"), Why = "Needs a free slot and room for more points.",
+                    Run = (me, tile) => { if (pc.SlotToPoints(lowest)) Log($"{pc.Name} unravels a level-{lowest} slot into sorcery points."); return Nothing(); } });
+            }
+            // Druid
+            if (pc.WildShape != null)
+                list.Add(Need(new CombatAction { Name = $"Revert to your own form", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
+                    Run = (me, tile) => RevertShape(me, pc) }, t, pc));
+            else if (pc.ResourceMax("wild_shape") > 0)
+                foreach (var form in pc.WildShapeForms())
+                {
+                    var def = MonstersDb.Get(form);
+                    string f = form;
+                    list.Add(Need(new CombatAction { Name = $"Wild Shape: {def.Name} ({pc.ResourceLeft("wild_shape")})", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
+                        Tooltip = $"{def.Name}: AC {def.AC}, speed {def.Speed} ft, {string.Join(", ", def.Attacks.Select(x => x.Name + " " + x.Damage))}. +{pc.Level} temp HP; no spells while shaped.",
+                        Run = (me, tile) => Shapeshift(me, pc, f) }, t, pc, pc.ResourceLeft("wild_shape") > 0));
+                }
+            if (pc.HasFeature("Land's Aid"))
+                list.Add(Need(new CombatAction { Name = "Land's Aid (1 Wild Shape)", Group = ActionGroup.Abilities, Cost = ActionCost.Action, Target = Targeting.Tile, RangeFt = 60, AreaTiles = 2,
+                    Tooltip = "Thorny burst, 10-ft radius: CON save or 2d6 necrotic (half on a success). One ally in it heals 2d6.",
+                    Run = (me, tile) => LandsAid(me, pc, tile) }, t, pc, pc.ResourceLeft("wild_shape") > 0 && pc.WildShape == null));
             if (pc.HasFeature("Steady Aim"))
                 list.Add(Need(new CombatAction { Name = "Steady Aim", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
                     Tooltip = "If you haven't moved: Advantage on your next attack this turn; your Speed becomes 0.",
@@ -327,7 +368,7 @@ namespace DnD.Game
                     break;
             }
             if (s.CastTime == CastTime.Reaction || s.CastTime == CastTime.Minute || s.CastTime == CastTime.TenMinutes) { a.Enabled = false; a.Why = s.CastTime == CastTime.Reaction ? "Reaction: offered automatically when you're hit." : "Takes too long to cast in combat."; }
-            if (!s.IsCantrip && pc.LowestAvailableSlot(s.Level) < 0) { a.Enabled = false; a.Why = "No spell slots left."; }
+            if (!s.IsCantrip && pc.LowestAvailableSlot(s.Level) < 0 && !(s.Id == "hunters_mark" && pc.ResourceLeft("favored_enemy") > 0)) { a.Enabled = false; a.Why = "No spell slots left."; }
             if (!s.IsCantrip && t.CastLeveledSpellThisTurn) { a.Enabled = false; a.Why = "Only one spell slot per turn (2024 rules)."; }
             Need(a, t, pc);
             a.Run = (me, tile) => CastSpell(me, pc, s, tile);
@@ -536,6 +577,16 @@ namespace DnD.Game
                     }
                 }
                 // Cleave mastery: one more attack against a creature next to the first target.
+                if (me.C is PlayerCharacter hunter && hunter.HunterPrey == "horde_breaker" && atk.Weapon != null && !turn.HordeBreakerUsed)
+                {
+                    var second = Units.FirstOrDefault(o => o != target && o.Active && Hostile(me, o) && Zone.DistanceFt(o.Pos, target.Pos) <= 5 && Zone.DistanceFt(o.Pos, me.Pos) <= (atk.Ranged ? atk.RangeNormal : atk.ReachFt));
+                    if (second != null)
+                    {
+                        turn.HordeBreakerUsed = true;
+                        Log("Horde Breaker! You turn on a second foe.");
+                        yield return AttackAction(me, second, atk, false);
+                    }
+                }
                 if (atk.Mastery == WeaponMastery.Cleave && !turn.CleaveUsed)
                 {
                     var next = Units.FirstOrDefault(o => o != target && o.Active && Hostile(me, o) && Zone.DistanceFt(o.Pos, target.Pos) <= 5 && Zone.DistanceFt(o.Pos, me.Pos) <= atk.ReachFt);
@@ -560,8 +611,19 @@ namespace DnD.Game
         void ApplyHitResults(Unit me, Unit target, AttackRollResult res, DamageRoll dmg)
         {
             int before = target.C.HP + target.C.TempHP;
+            bool wasUp = !target.C.IsDown;
             var lines = AttackResolver.ApplyHit(res, dmg);
             foreach (var l in lines) Log(l);
+            if (wasUp) OnFoeDropped(me, target);
+            // Armor of Agathys: whoever hits the warded creature in melee takes 5 cold.
+            if (!res.Attack.Ranged && !res.Attack.IsSpell && target.C.HasEffect("armor_of_agathys") && target.C.TempHP > 0)
+            {
+                var cold = new List<string>();
+                int took = me.C.TakeDamage(5, DamageType.Cold, false, cold);
+                me.A.Popup("-" + took, UIKit.UtilityBlue);
+                Log($"{me.Name} is bitten by frost ({took} cold).");
+            }
+            if (target.C.HasEffect("armor_of_agathys") && target.C.TempHP <= 0) target.C.Effects.RemoveAll(e => e.Id == "armor_of_agathys");
             int lost = before - (target.C.HP + target.C.TempHP);
             target.A.Popup((res.Critical ? "CRIT " : "") + "-" + Math.Max(0, lost), res.Critical ? UIKit.D20Gold : UIKit.DamageRed);
             OnDamaged(target);
@@ -582,7 +644,8 @@ namespace DnD.Game
             var turn = me.Cb.Turn;
             int slot = s.IsCantrip ? 0 : pc.LowestAvailableSlot(s.Level);
             if (!SpellResolver.PaySlot(pc, s, slot)) { me.Ctrl?.Hud.Toast("No slot available.", UIKit.Bad); yield break; }
-            if (s.CastTime == CastTime.BonusAction) turn.BonusActionUsed = true; else turn.ActionUsed = true;
+            if (s.CastTime == CastTime.BonusAction || turn.QuickenNextSpell) { turn.BonusActionUsed = true; turn.QuickenNextSpell = false; }
+            else turn.ActionUsed = true;
             if (!s.IsCantrip) turn.CastLeveledSpellThisTurn = true;
             var log = new List<string>();
             SpellResolver.StartConcentration(pc, s, log);
@@ -663,6 +726,15 @@ namespace DnD.Game
                     break;
                 }
 
+                case SpellKind.Mark:
+                    if (target != null)
+                    {
+                        // A mark moves with you: drop any mark you've placed elsewhere first.
+                        foreach (var o in Units) o.C.Effects.RemoveAll(e => e.Id == s.EffectId && e.Source == pc);
+                        ApplySpellEffect(me, target, s);
+                    }
+                    break;
+
                 case SpellKind.Buff:
                 {
                     var recipients = new List<Unit>();
@@ -674,6 +746,7 @@ namespace DnD.Game
                         var fx = EffectLibrary.Create(s.EffectId, pc);
                         r.C.AddEffect(fx);
                         if (s.Id == "aid") r.C.Heal(5);
+                        if (s.Id == "armor_of_agathys") r.C.TempHP = Math.Max(r.C.TempHP, 5 * Math.Max(1, slot));
                         r.A.Popup(fx.Name, UIKit.UtilityBlue);
                         Log($"{r.Name} is affected by {s.Name}.");
                     }
@@ -704,6 +777,7 @@ namespace DnD.Game
                 yield return WaitDamageRoll(me, res.Critical ? $"CRITICAL {s.Name}!" : s.Name, $"{atk.Damage} {s.DamageType.ToString().ToLower()}", dmg, DieColor.Damage);
                 ApplyHitResults(me, target, res, dmg);
                 if (s.EffectId != null && !target.C.IsDown) ApplySpellEffect(me, target, s);
+                if (s.Id == "eldritch_blast" && pc.Invocations.Contains("repelling_blast") && target.Active) Push(me, target, 2);
             }
             else
             {
@@ -758,6 +832,75 @@ namespace DnD.Game
         }
 
         // ================================================================== features & basic actions
+
+        static IEnumerator Nothing() { yield break; }
+
+        IEnumerator InnateSorcery(Unit me, PlayerCharacter pc)
+        {
+            pc.SpendResource("innate_sorcery");
+            me.Cb.Turn.BonusActionUsed = true;
+            pc.AddEffect(EffectLibrary.Create("innate_sorcery", pc));
+            me.A.Popup("Innate Sorcery", UIKit.UtilityBlue);
+            Log($"{pc.Name}'s blood burns with draconic magic (+1 spell DC, Advantage on spell attacks).");
+            yield break;
+        }
+
+        /// <summary>Things that happen when a hero drops a foe to 0 HP (Ember's Blessing).</summary>
+        void OnFoeDropped(Unit me, Unit target)
+        {
+            if (!(me.C is PlayerCharacter pc) || !target.C.IsDown || !Hostile(me, target)) return;
+            var log = new List<string>();
+            pc.OnReducedHostileToZero(log);
+            foreach (var l in log) Log(l);
+        }
+
+        IEnumerator Shapeshift(Unit me, PlayerCharacter pc, string form)
+        {
+            var log = new List<string>();
+            if (!pc.StartWildShape(form, log)) yield break;
+            me.Cb.Turn.BonusActionUsed = true;
+            me.Cb.Turn.MovementLeftFt = Math.Min(me.Cb.Turn.MovementLeftFt, pc.Speed);
+            WildShapeFx.Transform(me.A, pc);
+            foreach (var l in log) Log(l);
+        }
+
+        IEnumerator RevertShape(Unit me, PlayerCharacter pc)
+        {
+            var log = new List<string>();
+            pc.EndWildShape(log);
+            me.Cb.Turn.BonusActionUsed = true;
+            WildShapeFx.Transform(me.A, pc);
+            foreach (var l in log) Log(l);
+            yield break;
+        }
+
+        IEnumerator LandsAid(Unit me, PlayerCharacter pc, Vector2Int tile)
+        {
+            if (!pc.SpendResource("wild_shape")) yield break;
+            me.Cb.Turn.ActionUsed = true;
+            var inArea = Units.Where(o => o.Active && Zone.DistanceFt(o.Pos, tile) <= 10).ToList();
+            var dmg = Dice.RollDamage(new DiceExpr(2, 6));
+            yield return WaitDamageRoll(me, "Land's Aid", "2d6 necrotic · CON save", dmg, DieColor.Damage);
+            foreach (var o in inArea.Where(o => Hostile(me, o)))
+            {
+                var save = Checks.RollSave(o.C, Ability.CON, AdvantageState.Normal);
+                bool ok = save.Total >= pc.SpellSaveDC;
+                var log = new List<string>();
+                int lost = o.C.TakeDamage(ok ? dmg.Total / 2 : dmg.Total, DamageType.Necrotic, false, log);
+                o.A.Popup("-" + lost, UIKit.DamageRed);
+                Log($"{o.Name} {(ok ? "resists" : "is caught by")} the thorns (CON {save.Total} vs DC {pc.SpellSaveDC}): {lost} damage.");
+                OnDamaged(o);
+            }
+            var friend = inArea.Where(o => !Hostile(me, o) && !o.C.IsDead).OrderBy(o => o.C.HP / (float)Math.Max(1, o.C.EffectiveMaxHP)).FirstOrDefault();
+            if (friend != null)
+            {
+                var heal = Dice.RollDamage(new DiceExpr(2, 6));
+                yield return WaitDamageRoll(me, "Land's Aid", $"2d6 healing for {friend.Name}", heal, DieColor.Healing);
+                int h = friend.C.Heal(heal.Total);
+                friend.A.Popup("+" + h, UIKit.HealGreen);
+                Log($"{friend.Name} is restored by the land (+{h} HP).");
+            }
+        }
 
         IEnumerator UnarmedBonus(Unit me, PlayerCharacter pc, Unit target, int strikes)
         {

@@ -43,6 +43,8 @@ namespace RulesTests
             PaladinTests();
             RangerTests();
             DruidTests();
+            WarlockTests();
+            SorcererTests();
 
             Console.WriteLine($"\n{_passed} passed, {_failed} failed");
             return _failed == 0 ? 0 : 1;

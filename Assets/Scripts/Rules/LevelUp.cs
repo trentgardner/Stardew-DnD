@@ -5,7 +5,7 @@ using DnD.Rules.Content;
 
 namespace DnD.Rules
 {
-    public enum ChoiceKind { Expertise, BonusSkill, Cantrip, Spell, Feat, FightingStyle }
+    public enum ChoiceKind { Expertise, BonusSkill, Cantrip, Spell, Feat, FightingStyle, HunterPrey, LandType, Invocation, Metamagic }
 
     /// <summary>One decision the next level asks for, e.g. "pick 2 spells from these".</summary>
     public class LevelUpChoice
@@ -29,7 +29,7 @@ namespace DnD.Rules
     {
         static readonly Skill[] ScholarSkills = { Skill.Arcana, Skill.History, Skill.Investigation, Skill.Medicine, Skill.Nature, Skill.Religion };
 
-        int MaxSpellLevelAt(int level) => Class.Caster == CasterType.Full ? (level >= 3 ? 2 : 1) : Class.Caster == CasterType.Half ? (level >= 5 ? 2 : 1) : 0;
+        int MaxSpellLevelAt(int level) => Class.Caster == CasterType.Full || Class.Caster == CasterType.Pact ? (level >= 3 ? 2 : 1) : Class.Caster == CasterType.Half ? (level >= 5 ? 2 : 1) : 0;
 
         static readonly Dictionary<string, string[]> FightingStyles = new Dictionary<string, string[]>
         {
@@ -57,6 +57,19 @@ namespace DnD.Rules
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.BonusSkill, Count = 3, Title = "College of Lore: three new skill proficiencies",
                     Options = SkillUtil.All.Where(s => !SkillProficiencies.Contains(s)).Select(s => s.ToString()).ToList() });
 
+            if (Class.Id == "ranger" && next == 2)
+                list.Add(new LevelUpChoice { Kind = ChoiceKind.Expertise, Count = 1, Title = "Deft Explorer: Expertise in one of your skills",
+                    Options = SkillProficiencies.Where(s => !Expertise.Contains(s)).Select(s => s.ToString()).OrderBy(s => s).ToList() });
+            if (Class.Id == "ranger" && next == 3)
+                list.Add(new LevelUpChoice { Kind = ChoiceKind.HunterPrey, Count = 1, Title = "Hunter's Prey", Options = new List<string> { "colossus_slayer", "horde_breaker" } });
+            if (Class.Id == "druid" && next == 3)
+                list.Add(new LevelUpChoice { Kind = ChoiceKind.LandType, Count = 1, Title = "Circle of the Land: which land calls to you?", Options = CircleSpells.Keys.ToList() });
+            int newInvocations = InvocationsKnownAt(next) - Invocations.Count;
+            if (newInvocations > 0)
+                list.Add(new LevelUpChoice { Kind = ChoiceKind.Invocation, Count = newInvocations, Title = $"Eldritch Invocations: learn {newInvocations}",
+                    Options = InvocationOptions.Where(o => !Invocations.Contains(o)).ToList() });
+            if (Class.Id == "sorcerer" && next == 2)
+                list.Add(new LevelUpChoice { Kind = ChoiceKind.Metamagic, Count = 2, Title = "Metamagic: two ways to twist your spells", Options = MetamagicOptions.ToList() });
             if (Class.Id == "barbarian" && next == 3)
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.BonusSkill, Count = 1, Title = "Primal Knowledge: one more Barbarian skill",
                     Options = Class.SkillOptions.Where(s => !SkillProficiencies.Contains(s)).Select(s => s.ToString()).ToList() });
@@ -119,6 +132,23 @@ namespace DnD.Rules
                 case "dueling": return "Dueling (+2 damage, one-handed melee)";
                 case "great_weapon": return "Great Weapon Fighting (reroll 1s and 2s)";
                 case "archery": return "Archery (+2 to hit with ranged weapons)";
+                case "colossus_slayer": return "Colossus Slayer (+1d8 once per turn vs a wounded foe)";
+                case "horde_breaker": return "Horde Breaker (an extra attack vs a second adjacent foe)";
+                case "arid": return "Arid land (Burning Hands, Fire Bolt)";
+                case "agonizing_blast": return "Agonizing Blast (+CHA to Eldritch Blast damage)";
+                case "armor_of_shadows": return "Armor of Shadows (Mage Armor at will: AC 13 + DEX)";
+                case "repelling_blast": return "Repelling Blast (Eldritch Blast pushes 10 ft)";
+                case "pact_of_the_blade": return "Pact of the Blade (melee weapons use CHA; proficient with all)";
+                case "eldritch_mind": return "Eldritch Mind (Advantage to keep Concentration)";
+                case "ember_sight": return "Ember Sight (see 120 ft in darkness)";
+                case "quickened": return "Quickened Spell (2 pts: cast an action spell as a Bonus Action)";
+                case "empowered": return "Empowered Spell (1 pt: reroll low damage dice)";
+                case "careful": return "Careful Spell (1 pt: allies auto-succeed your area saves)";
+                case "distant": return "Distant Spell (1 pt: double the range)";
+                case "extended": return "Extended Spell (1 pt: double the duration)";
+                case "twinned": return "Twinned Spell (spell level in pts: a second target)";
+                case "polar": return "Polar land (Fog Cloud, Hold Person, Ray of Frost)";
+                case "temperate": return "Temperate land (Misty Step, Shocking Grasp, Sleep)";
             }
             if (Enum.TryParse<Skill>(id, out var sk)) return SkillUtil.Name(sk);
             return SpellsDb.Get(id)?.Name ?? id;
@@ -159,6 +189,23 @@ namespace DnD.Rules
                         if (Class.Id == "wizard" && !Spellbook.Contains(id)) Spellbook.Add(id);
                         if (!PreparedSpells.Contains(id) && PreparedCount < Class.PreparedSpells[Math.Min(Level + 1, 20)]) PreparedSpells.Add(id);
                         log?.Add(Class.Id == "wizard" ? $"Copied into your spellbook: {DescribeOption(id)}" : $"New spell prepared: {DescribeOption(id)}");
+                        break;
+                    case ChoiceKind.Invocation:
+                        if (!Invocations.Contains(id)) Invocations.Add(id);
+                        log?.Add($"Invocation: {DescribeOption(id)}");
+                        break;
+                    case ChoiceKind.Metamagic:
+                        if (!Metamagic.Contains(id)) Metamagic.Add(id);
+                        log?.Add($"Metamagic: {DescribeOption(id)}");
+                        break;
+                    case ChoiceKind.HunterPrey:
+                        HunterPrey = id;
+                        log?.Add($"Hunter's Prey: {DescribeOption(id)}");
+                        break;
+                    case ChoiceKind.LandType:
+                        LandType = id;
+                        foreach (var sp in CircleSpells[id]) if (!BonusAlwaysPrepared.Contains(sp)) BonusAlwaysPrepared.Add(sp);
+                        log?.Add($"Circle of the Land: {DescribeOption(id)}");
                         break;
                     case ChoiceKind.FightingStyle:
                         FightingStyle = id;

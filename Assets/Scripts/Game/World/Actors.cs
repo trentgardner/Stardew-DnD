@@ -59,6 +59,7 @@ namespace DnD.Game
 
         int _frameCount = 2;
         string _artLook, _artLookFor;
+        bool _artDirFor;
 
         /// <summary>
         /// The most specific look with real art: "hero_fighter_elf" → "hero_fighter" when there's no elf-specific art,
@@ -66,8 +67,9 @@ namespace DnD.Game
         /// </summary>
         string ArtLook()
         {
-            if (_artLookFor == Look) return _artLook;
+            if (_artLookFor == Look && _artDirFor == Directional) return _artLook;
             _artLookFor = Look;
+            _artDirFor = Directional;
             _artLook = Look;
             for (string look = Look; ; )
             {
@@ -197,6 +199,7 @@ namespace DnD.Game
             col.size = new Vector2(0.55f, 0.3f);
             col.offset = new Vector2(0, -0.35f);
             a._light = LightSource.Attach(a.gameObject, 0, new Color(1f, 0.8f, 0.5f));
+            if (pc.WildShape != null) { a.Look = pc.WildShape.SpriteId; a.Directional = false; a.RefreshSprite(); } // loaded mid-Wild Shape
             return a;
         }
 

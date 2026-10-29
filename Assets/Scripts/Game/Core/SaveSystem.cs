@@ -20,7 +20,8 @@ namespace DnD.Game
         public int Level, XP, Copper, HP, MaxHP, TempHP, Exhaustion, HitDiceSpent, DeathS, DeathF, HeldInsp;
         public bool Dead, Stable, Shield, Heroic, LuckyUsed;
         public int[] BaseScores, BgBonus, SlotsUsed, Asi;
-        public List<string> Feats = new List<string>();
+        public List<string> Feats = new List<string>(), BonusPrepared = new List<string>();
+        public string PrimalOrder, LandType, HunterPrey, WildShape;
         public List<string> Skills = new List<string>(), Expertise = new List<string>(), Mastered = new List<string>(), Worn = new List<string>();
         public List<string> Cantrips = new List<string>(), Prepared = new List<string>(), Spellbook = new List<string>();
         public List<string> BagIds = new List<string>();
@@ -208,6 +209,8 @@ namespace DnD.Game
             d.Expertise.AddRange(pc.Expertise.Select(s => s.ToString()));
             d.Mastered.AddRange(pc.MasteredWeapons);
             d.Feats.AddRange(pc.Feats);
+            d.BonusPrepared.AddRange(pc.BonusAlwaysPrepared);
+            d.PrimalOrder = pc.PrimalOrder; d.LandType = pc.LandType; d.HunterPrey = pc.HunterPrey; d.WildShape = pc.WildShape?.Id;
             d.Worn.AddRange(pc.Worn.Select(w => w.Id));
             d.Cantrips.AddRange(pc.Cantrips); d.Prepared.AddRange(pc.PreparedSpells); d.Spellbook.AddRange(pc.Spellbook);
             foreach (var s in pc.Bag.Slots) { d.BagIds.Add(s?.ItemId ?? ""); d.BagCounts.Add(s?.Count ?? 0); }
@@ -232,6 +235,9 @@ namespace DnD.Game
             Array.Copy(d.BgBonus, pc.BackgroundBonus, 6);
             if (d.Asi != null && d.Asi.Length == 6) Array.Copy(d.Asi, pc.AsiBonus, 6); // older saves have none
             if (d.Feats != null) pc.Feats.AddRange(d.Feats);
+            if (d.BonusPrepared != null) pc.BonusAlwaysPrepared.AddRange(d.BonusPrepared);
+            pc.PrimalOrder = d.PrimalOrder; pc.LandType = d.LandType; pc.HunterPrey = d.HunterPrey;
+            if (!string.IsNullOrEmpty(d.WildShape)) pc.WildShape = MonstersDb.Get(d.WildShape);
             if (d.SlotsUsed != null && d.SlotsUsed.Length == 10) pc.SlotsUsed = (int[])d.SlotsUsed.Clone();
             foreach (var s in d.Skills) if (Enum.TryParse<Skill>(s, out var sk)) pc.SkillProficiencies.Add(sk);
             foreach (var s in d.Expertise) if (Enum.TryParse<Skill>(s, out var sk)) pc.Expertise.Add(sk);

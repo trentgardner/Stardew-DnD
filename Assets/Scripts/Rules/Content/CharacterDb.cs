@@ -330,6 +330,123 @@ namespace DnD.Rules.Content
             };
             paladin.AlwaysPrepared["divine_smite"] = 2;
             Classes["paladin"] = paladin;
+
+            var ranger = new ClassDef
+            {
+                Id = "ranger", Name = "Ranger", HitDie = 10, PrimaryAbility = Ability.DEX,
+                SavingThrows = new[] { Ability.STR, Ability.DEX }, SkillChoices = 3,
+                SkillOptions = new[] { Skill.AnimalHandling, Skill.Athletics, Skill.Insight, Skill.Investigation, Skill.Nature, Skill.Perception, Skill.Stealth, Skill.Survival },
+                LightArmor = true, MediumArmor = true, Shields = true, MartialWeapons = true, WeaponMasteries = 2,
+                Caster = CasterType.Half, SpellAbility = Ability.WIS, PreparedSpells = Table(2, 3, 4, 5, 6, 6, 7, 7, 9, 9),
+                Description = "A wilderness hunter and tracker with a bow, a blade and a little nature magic. Marks a target and never lets it go.",
+                StartingWeapon = "longbow", StartingArmor = "leather",
+                StartingItems = { "shortsword", "shortsword", "potion_healing", "rations", "torch" },
+            };
+            ranger.Features.Add(new FeatureDef(1, "Spellcasting", "Cast Ranger spells using Wisdom."));
+            ranger.Features.Add(new FeatureDef(1, "Favored Enemy", "Hunter's Mark is always prepared, and you can cast it twice per Long Rest without a slot."));
+            ranger.Features.Add(new FeatureDef(1, "Weapon Mastery", "Use the mastery properties of 2 kinds of weapons."));
+            ranger.Features.Add(new FeatureDef(2, "Deft Explorer", "Expertise in one of your skills, and two extra languages."));
+            ranger.Features.Add(new FeatureDef(2, "Fighting Style", "Choose a combat specialty (Archery, Defense, Dueling)."));
+            ranger.Features.Add(new FeatureDef(3, "Ranger Subclass", "You become a Hunter."));
+            ranger.AlwaysPrepared["hunters_mark"] = 1;
+            ranger.Subclass = new SubclassDef
+            {
+                Id = "hunter", Name = "Hunter",
+                Description = "The shield between civilization and the things in the dark woods.",
+                Features =
+                {
+                    new FeatureDef(3, "Hunter's Lore", "You learn the immunities, resistances and vulnerabilities of creatures marked by your Hunter's Mark."),
+                    new FeatureDef(3, "Hunter's Prey", "Colossus Slayer (+1d8 once per turn against a wounded creature) or Horde Breaker (an extra attack against a second creature next to your target)."),
+                },
+            };
+            Classes["ranger"] = ranger;
+
+            var druid = new ClassDef
+            {
+                Id = "druid", Name = "Druid", HitDie = 8, PrimaryAbility = Ability.WIS,
+                SavingThrows = new[] { Ability.INT, Ability.WIS }, SkillChoices = 2,
+                SkillOptions = new[] { Skill.Arcana, Skill.AnimalHandling, Skill.Insight, Skill.Medicine, Skill.Nature, Skill.Perception, Skill.Religion, Skill.Survival },
+                LightArmor = true, Shields = true,
+                Caster = CasterType.Full, SpellAbility = Ability.WIS,
+                CantripsKnown = Table(2, 2, 2, 3), PreparedSpells = Table(4, 5, 6, 7),
+                Description = "A keeper of the wild with the old magic of root and storm. Heals, tangles foes in vines, and turns into a wolf when it matters.",
+                StartingWeapon = "quarterstaff", StartingArmor = "leather", StartingShield = true,
+                StartingItems = { "sickle", "potion_healing", "rations", "torch" },
+            };
+            druid.Features.Add(new FeatureDef(1, "Spellcasting", "Cast Druid spells using Wisdom."));
+            druid.Features.Add(new FeatureDef(1, "Druidic", "You know the secret language of druids."));
+            druid.Features.Add(new FeatureDef(1, "Primal Order", "Magician (an extra cantrip, WIS to Arcana and Nature) or Warden (medium armor and martial weapons)."));
+            druid.Features.Add(new FeatureDef(2, "Wild Shape", "Bonus Action: turn into a beast you know (wolf, boar, cat, frog; bear at 4). 2 uses; one back on a Short Rest. Temporary HP = your level; no spellcasting while shaped."));
+            druid.Features.Add(new FeatureDef(2, "Wild Companion", "Spend a Wild Shape use to summon a spirit familiar."));
+            druid.Features.Add(new FeatureDef(3, "Druid Subclass", "You join the Circle of the Land."));
+            druid.Subclass = new SubclassDef
+            {
+                Id = "land", Name = "Circle of the Land",
+                Description = "Mystics bound to a land: its spells are always on your tongue.",
+                Features =
+                {
+                    new FeatureDef(3, "Circle Spells", "Choose a land (arid, polar or temperate): its spells are always prepared."),
+                    new FeatureDef(3, "Land's Aid", "Magic action, spend a Wild Shape use: a burst of thorns (CON save, 2d6 necrotic) and one creature in it heals 2d6."),
+                },
+            };
+            Classes["druid"] = druid;
+
+            var sorcerer = new ClassDef
+            {
+                Id = "sorcerer", Name = "Sorcerer", HitDie = 6, PrimaryAbility = Ability.CHA,
+                SavingThrows = new[] { Ability.CON, Ability.CHA }, SkillChoices = 2,
+                SkillOptions = new[] { Skill.Arcana, Skill.Deception, Skill.Insight, Skill.Intimidation, Skill.Persuasion, Skill.Religion },
+                Caster = CasterType.Full, SpellAbility = Ability.CHA,
+                CantripsKnown = Table(4, 4, 4, 5), PreparedSpells = Table(2, 4, 6, 7),
+                Description = "Magic is in your blood (a dragon's, in your case). Fewer spells than a wizard, but you can bend and twist every one of them.",
+                StartingWeapon = "spear", StartingItems = { "dagger", "dagger", "potion_healing", "rations", "torch" },
+            };
+            sorcerer.Features.Add(new FeatureDef(1, "Spellcasting", "Cast Sorcerer spells using Charisma."));
+            sorcerer.Features.Add(new FeatureDef(1, "Innate Sorcery", "Bonus Action, twice per Long Rest: for 1 minute your spell save DC is +1 and your spell attacks have Advantage."));
+            sorcerer.Features.Add(new FeatureDef(2, "Font of Magic", "Sorcery Points equal to your level: turn spell slots into points, or points into slots."));
+            sorcerer.Features.Add(new FeatureDef(2, "Metamagic", "Two ways to twist your spells (Quickened, Empowered, Careful, Distant, Extended, Twinned)."));
+            sorcerer.Features.Add(new FeatureDef(3, "Sorcerer Subclass", "Your magic is Draconic."));
+            sorcerer.Subclass = new SubclassDef
+            {
+                Id = "draconic", Name = "Draconic Sorcery",
+                Description = "A dragon ancestor's fire still burns in you. (In Sundermere, that matters.)",
+                Features =
+                {
+                    new FeatureDef(3, "Draconic Resilience", "+1 HP per sorcerer level, and without armor your AC is 10 + DEX + CHA."),
+                    new FeatureDef(3, "Draconic Spells", "Alter Self, Chromatic Orb, Command and Dragon's Breath are always prepared."),
+                },
+                AlwaysPreparedSpells = { "alter_self", "chromatic_orb", "command", "dragons_breath" },
+            };
+            Classes["sorcerer"] = sorcerer;
+
+            var warlock = new ClassDef
+            {
+                Id = "warlock", Name = "Warlock", HitDie = 8, PrimaryAbility = Ability.CHA,
+                SavingThrows = new[] { Ability.WIS, Ability.CHA }, SkillChoices = 2,
+                SkillOptions = new[] { Skill.Arcana, Skill.Deception, Skill.History, Skill.Intimidation, Skill.Investigation, Skill.Nature, Skill.Religion },
+                LightArmor = true,
+                Caster = CasterType.Pact, SpellAbility = Ability.CHA,
+                CantripsKnown = Table(2, 2, 2, 3), PreparedSpells = Table(2, 3, 4, 5),
+                Description = "You made a deal with an ancient ember-spirit for power. Few spell slots, but they come back on every short rest, and Eldritch Blast never gets old.",
+                StartingWeapon = "sickle", StartingArmor = "leather",
+                StartingItems = { "dagger", "dagger", "potion_healing", "rations", "torch" },
+            };
+            warlock.Features.Add(new FeatureDef(1, "Eldritch Invocations", "Secret gifts from your patron (one at level 1, three at level 2)."));
+            warlock.Features.Add(new FeatureDef(1, "Pact Magic", "Cast Warlock spells using Charisma. Your few slots are all the same level and come back on a Short Rest."));
+            warlock.Features.Add(new FeatureDef(2, "Magical Cunning", "Once per Long Rest, spend 1 minute to regain half your pact slots."));
+            warlock.Features.Add(new FeatureDef(3, "Warlock Subclass", "Your patron is an Ember Spirit."));
+            warlock.Subclass = new SubclassDef
+            {
+                Id = "ember", Name = "Ember Patron",
+                Description = "An ancient fire-spirit from the dragons' age, hungry to be remembered. (SRD: the Fiend Patron.)",
+                Features =
+                {
+                    new FeatureDef(3, "Ember's Blessing", "When you drop a hostile creature to 0 HP, gain temporary HP equal to your CHA modifier + warlock level."),
+                    new FeatureDef(3, "Ember Patron Spells", "Burning Hands, Command, Scorching Ray and Suggestion are always prepared."),
+                },
+                AlwaysPreparedSpells = { "burning_hands", "command", "scorching_ray", "suggestion" },
+            };
+            Classes["warlock"] = warlock;
         }
 
         /// <summary>Standard weapon mastery picks for a new Fighter (player can change them).</summary>
@@ -338,6 +455,7 @@ namespace DnD.Rules.Content
         {
             { "fighter", DefaultFighterMasteries }, { "rogue", new[] { "shortsword", "dagger" } }, { "barbarian", new[] { "greataxe", "handaxe" } },
             { "paladin", new[] { "longsword", "javelin" } },
+            { "ranger", new[] { "longbow", "shortsword" } },
         };
     }
 }

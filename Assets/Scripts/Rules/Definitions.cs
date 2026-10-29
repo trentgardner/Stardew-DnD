@@ -7,6 +7,8 @@ namespace DnD.Rules
     /// <summary>How a spell resolves mechanically. The engine handles each kind generically.</summary>
     public enum SpellKind
     {
+        /// <summary>Puts an effect on an enemy with no attack roll or save (Hunter's Mark).</summary>
+        Mark,
         /// <summary>Spell attack roll vs AC, then damage.</summary>
         Attack,
         /// <summary>Targets make a saving throw; damage (half on success if HalfOnSave).</summary>
@@ -104,7 +106,7 @@ namespace DnD.Rules
         public FeatureDef(int level, string name, string text) { Level = level; Name = name; Text = text; }
     }
 
-    public enum CasterType { None, Full, Half }
+    public enum CasterType { None, Full, Half, Pact }
 
     public class ClassDef
     {
@@ -161,6 +163,13 @@ namespace DnD.Rules
         {
             if (type == CasterType.None || slotLevel < 1 || slotLevel > 9) return 0;
             if (type == CasterType.Half) return slotLevel > 5 ? 0 : Half[classLevel, slotLevel - 1];
+            if (type == CasterType.Pact)
+            {
+                // Warlock Pact Magic: a few slots, all of one level (they come back on a Short Rest).
+                int pactLevel = classLevel >= 9 ? 5 : classLevel >= 7 ? 4 : classLevel >= 5 ? 3 : classLevel >= 3 ? 2 : 1;
+                int count = classLevel >= 17 ? 4 : classLevel >= 11 ? 3 : classLevel >= 2 ? 2 : 1;
+                return slotLevel == pactLevel ? count : 0;
+            }
             return Full[classLevel, slotLevel - 1];
         }
     }

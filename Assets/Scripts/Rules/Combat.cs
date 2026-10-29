@@ -74,6 +74,7 @@ namespace DnD.Rules
                 if (e.DisadvantageOnNextAttack) dis.Add(e.Name.ToLower());
                 if (e.AdvantageOnNextAttack) adv.Add(e.Name.ToLower());
             }
+            if (atk.IsSpell && attacker.HasEffect("innate_sorcery")) adv.Add("innate sorcery");
             bool strMelee = !atk.Ranged && !atk.IsSpell && attacker is PlayerCharacter apc && (atk.Weapon == null || !atk.Weapon.Has(WeaponProperty.Finesse) || apc.Mod(Ability.STR) >= apc.Mod(Ability.DEX));
             if (strMelee && attacker.HasEffect("reckless")) adv.Add("reckless");
             if (target.HasEffect("reckless")) adv.Add("target is reckless");
@@ -144,6 +145,27 @@ namespace DnD.Rules
                     r.Turn.SneakAttackUsed = true;
                     roll.Dice.AddRange(Dice.RollDamage(new DiceExpr(sneak, 6), r.Critical).Dice);
                     roll.Terms.Add(new RollTerm("sneak attack", 0));
+                }
+                // Hunter's Mark: +1d6 force on weapon hits against the creature you marked.
+                if (atk.Weapon != null && r.Target.Effects.Any(e => e.Id == "hunters_mark" && e.Source == pc))
+                {
+                    var mark = Dice.RollDamage(new DiceExpr(1, 6), r.Critical);
+                    if (roll.Extra == null) { roll.Extra = mark; roll.ExtraType = DamageType.Force; }
+                    else roll.Dice.AddRange(mark.Dice);
+                }
+                // Hex: +1d6 necrotic on any attack hit against the creature you cursed.
+                if (r.Target.Effects.Any(e => e.Id == "hex" && e.Source == pc))
+                {
+                    var hex = Dice.RollDamage(new DiceExpr(1, 6), r.Critical);
+                    if (roll.Extra == null) { roll.Extra = hex; roll.ExtraType = DamageType.Necrotic; }
+                    else roll.Dice.AddRange(hex.Dice);
+                }
+                // Hunter: Colossus Slayer, once per turn against a creature that's already hurt.
+                if (pc.HunterPrey == "colossus_slayer" && atk.Weapon != null && r.Target.HP < r.Target.MaxHP && !r.Turn.ColossusUsed)
+                {
+                    r.Turn.ColossusUsed = true;
+                    roll.Dice.AddRange(Dice.RollDamage(new DiceExpr(1, 8), r.Critical).Dice);
+                    roll.Terms.Add(new RollTerm("colossus slayer", 0));
                 }
                 // Berserker: Frenzy, the first hit each turn while raging recklessly.
                 if (pc.HasFeature("Frenzy") && pc.Raging && pc.HasEffect("reckless") && !r.Turn.FrenzyUsed && !atk.Ranged && !atk.IsSpell)
@@ -259,6 +281,7 @@ namespace DnD.Rules
                 Ranged = s.RangeFt > 5,
                 Spell = s,
                 Ability = caster.Class.SpellAbility,
+                DamageMod = s.Id == "eldritch_blast" && caster.Invocations.Contains("agonizing_blast") ? caster.SpellMod : 0,
             };
         }
 
@@ -310,6 +333,8 @@ namespace DnD.Rules
 
         public static bool PaySlot(PlayerCharacter caster, SpellDef s, int slotLevel)
         {
+            // Ranger: Favored Enemy casts Hunter's Mark without a slot (a few times per Long Rest).
+            if (s.Id == "hunters_mark" && caster.SpendResource("favored_enemy")) return true;
             if (s.IsCantrip) return true;
             if (slotLevel < s.Level || caster.SlotsLeft(slotLevel) <= 0) return false;
             caster.SlotsUsed[slotLevel]++;
@@ -333,7 +358,9 @@ namespace DnD.Rules
         public bool Dashed, Disengaged;
         public bool CastLeveledSpellThisTurn;
         public bool CleaveUsed;
-        public bool SneakAttackUsed, FrenzyUsed;
+        public bool SneakAttackUsed, FrenzyUsed, ColossusUsed, HordeBreakerUsed;
+        /// <summary>Sorcerer Quickened Spell: the next action spell this turn costs the Bonus Action instead.</summary>
+        public bool QuickenNextSpell;
 
         public void Reset(Creature c)
         {
@@ -344,7 +371,7 @@ namespace DnD.Rules
             Dashed = Disengaged = false;
             CastLeveledSpellThisTurn = false;
             CleaveUsed = false;
-            SneakAttackUsed = FrenzyUsed = false;
+            SneakAttackUsed = FrenzyUsed = ColossusUsed = HordeBreakerUsed = QuickenNextSpell = false;
         }
     }
 

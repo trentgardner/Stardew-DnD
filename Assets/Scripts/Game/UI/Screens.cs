@@ -353,8 +353,29 @@ namespace DnD.Game
 
             _menu.Clear();
             if (pc.CanLevelUp) _menu.Add($"★ LEVEL UP to {pc.Level + 1}!", StartLevelUp);
+            if (pc.ResourceMax("wild_shape") > 0 && !Slot.InCombat) _menu.Add(pc.WildShape != null ? $"Wild Shape: return to your own form" : $"Wild Shape ({pc.ResourceLeft("wild_shape")} left)…", OpenWildShape);
             _menu.Add("Close", Close);
             _menu.Build();
+        }
+
+        /// <summary>Out of combat: pick a beast to become (or turn back), e.g. a cat to squeeze through a gap.</summary>
+        void OpenWildShape()
+        {
+            var pc = Slot.Character;
+            if (pc.WildShape != null) { pc.EndWildShape(null); WildShapeFx.Transform(Slot.Avatar, pc); Close(); return; }
+            var opts = new List<(string, Action)>();
+            foreach (var form in pc.WildShapeForms())
+            {
+                var def = MonstersDb.Get(form);
+                string f = form;
+                opts.Add(($"{def.Name}: AC {def.AC}, speed {def.Speed} ft. {def.Description}", () =>
+                {
+                    if (pc.StartWildShape(f, null)) { WildShapeFx.Transform(Slot.Avatar, pc); Close(); }
+                    else Hud.Toast("No Wild Shape uses left. (One comes back on a short rest.)", UIKit.Bad);
+                }));
+            }
+            opts.Add(("Never mind", () => { }));
+            Hud.Push(new ChoiceScreen("Wild Shape", $"Become a beast you know. You keep your mind and HP, gain {pc.Level} temporary HP, and can't cast spells until you change back.", opts, false));
         }
 
         /// <summary>Opens the level-up screen (the player's own choices); the sheet refreshes afterwards.</summary>
