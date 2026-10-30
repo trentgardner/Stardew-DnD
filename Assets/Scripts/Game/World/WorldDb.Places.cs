@@ -250,15 +250,18 @@ namespace DnD.Game
             perrin.Schedule.Add(new ScheduleEntry(19, null, 0, 0, "walking back to town, taking notes as he goes"));
             perrin.Schedule.Add(new ScheduleEntry(20, "tavern", 5, 7, "at a corner table, writing a very long letter"));
             perrin.Schedule.Add(new ScheduleEntry(23, null, 0, 0, "asleep in the Drake's spare room"));
+            perrin.Schedule.Add(new ScheduleEntry(8, "tavern", 5, 7, "taking Hearthday off to write letters home (they're mostly about pie)", Hearthday));
             Npcs[perrin.Id] = perrin;
 
             var ssark = new NpcDef { Id = "ssark", Name = "Elder Ssark", Title = "Elder of the Warrens", Look = "npc_ssark", Dialogue = "ssark" };
             ssark.Schedule.Add(new ScheduleEntry(0, "warrens", 18, 6, "dozing by the door of the great hut"));
             ssark.Schedule.Add(new ScheduleEntry(7, "warrens", 18, 6, "sitting outside the great hut, telling stories to the hatchlings"));
+            ssark.Schedule.Add(new ScheduleEntry(7, "warrens", 20, 8, "leading the Hearthday egg-song", Hearthday));
             Npcs[ssark.Id] = ssark;
             var tik = new NpcDef { Id = "tik", Name = "Tik", Title = "Trader of Shinies", Look = "npc_tik", Dialogue = "tik", ShopId = "kobold" };
             tik.Schedule.Add(new ScheduleEntry(0, "warrens", 30, 10, "asleep under the stall, guarding it"));
             tik.Schedule.Add(new ScheduleEntry(6, "warrens", 30, 10, "polishing shinies at the stall"));
+            tik.Schedule.Add(new ScheduleEntry(6, "warrens", 31, 10, "haggling extra hard (it's market day, even underground)", Coinday));
             Npcs[tik.Id] = tik;
 
             // gawkers: the crater is the most exciting thing to happen to Thistledown in years
