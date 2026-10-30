@@ -47,6 +47,7 @@ namespace RulesTests
             SorcererTests();
             KnockoutTests();
             DragonTests();
+            BalanceTests();
 
             Console.WriteLine($"\n{_passed} passed, {_failed} failed");
             return _failed == 0 ? 0 : 1;

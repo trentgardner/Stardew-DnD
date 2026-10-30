@@ -412,6 +412,9 @@ namespace DnD.Game
             AddLog(text);
         }
 
+        /// <summary>The last few log lines (narration, toasts), oldest first.</summary>
+        public IReadOnlyList<string> LogLines => _logLines;
+
         public void AddLog(string line)
         {
             _logLines.Add(line);

@@ -42,6 +42,8 @@ namespace DnD.Game
         public string[] StageText;
         public List<QuestTrigger> Triggers = new List<QuestTrigger>();
         public QuestReward Reward;
+        /// <summary>XP for reaching a stage (milestones on a long quest), paid once to every ready player.</summary>
+        public Dictionary<int, int> StageXp = new Dictionary<int, int>();
         public int Last => StageText.Length - 1;
     }
 
@@ -62,6 +64,8 @@ namespace DnD.Game
             Add(new QuestDef
             {
                 Id = "fallen_star", Title = "The Fallen Star", Giver = "rhoswen",
+                // Milestones so the main story alone gets a party to level 3 by the egg (co-op splits fight XP).
+                StageXp = { [FallenStar.Trail] = 100, [FallenStar.Warrens] = 100, [FallenStar.Egg] = 100 },
                 StageText = new[] {
                     "", "Captain Vale asked you to find where the star fell, in the hills past Whisperwood's north trail.",
                     "The crater is empty. Something carried the star away on small clawed feet, and things keep going missing in town. Follow the tracks, or catch the thief in the act after dark.",
