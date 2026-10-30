@@ -122,6 +122,8 @@ namespace DnD.Game
         public Vector2Int? EggPos;
         public Vector2Int? BedPos;
         public Vector2Int? ShopCounter;
+        /// <summary>Room puzzle pieces (plates, levers, blocks, mirrors, light, gates), or null.</summary>
+        public PuzzleDef Puzzle;
 
         public int Width => Map[0].Length;
         public int Height => Map.Length;

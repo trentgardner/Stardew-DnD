@@ -85,6 +85,8 @@ namespace DnD.Game
                 if ("qOY".IndexOf(zone.CharAt(kv.Key)) < 0)
                     zone.Prop(kv.Key, kv.Value.Sprite).AddComponent<SecretInteractable>().Def = kv.Value;
 
+            if (def.Puzzle != null) PuzzleRoom.Build(zone);
+
             zone._base.CompressBounds();
             zone._ground.CompressBounds();
             zone._solid.CompressBounds();
@@ -148,6 +150,16 @@ namespace DnD.Game
         }
         bool NextToCobbles(Vector2Int m) =>
             CharAt(m + Vector2Int.left) == 'o' || CharAt(m + Vector2Int.right) == 'o' || CharAt(m + Vector2Int.up) == 'o' || CharAt(m + Vector2Int.down) == 'o';
+
+        /// <summary>Puzzle pieces come and go: a block slides, a gate opens. Toggles the invisible blocker on one tile.</summary>
+        public void SetSolid(Vector2Int m, bool solid)
+        {
+            if (!InBounds(m)) return;
+            _solid.SetTile(Cell(m), solid ? GetTile("tile_none", true) : null);
+            Blocked[m.x, m.y] = solid;
+        }
+
+        public GameObject PuzzleProp(Vector2Int m, string sprite, bool glow) => Prop(m, sprite, glow);
 
         /// <summary>Invisible blocker under props (trees, tables...).</summary>
         void Solid(Vector2Int m) { _solid.SetTile(Cell(m), GetTile("tile_none", true)); Blocked[m.x, m.y] = true; }
@@ -312,6 +324,7 @@ namespace DnD.Game
                 var p = new Vector2Int(Mathf.RoundToInt(Mathf.Lerp(a.x, b.x, t)), Mathf.RoundToInt(Mathf.Lerp(a.y, b.y, t)));
                 char c = CharAt(p);
                 if (c == 'X' || c == 'W' || c == 'w' || c == 'T' || c == 'U' || c == 'R' || c == 'G' || c == 'S' || c == 'P' || c == 'e' || c == 'H') return false;
+                if (c == 'Z' && Blocked[p.x, p.y]) return false; // a closed puzzle gate
             }
             return true;
         }
