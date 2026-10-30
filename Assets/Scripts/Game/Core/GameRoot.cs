@@ -443,6 +443,7 @@ namespace DnD.Game
         void OnHourChanged(int hour)
         {
             foreach (var n in _npcs) n.UpdateSchedule(false);
+            StoryTick();
             if (hour == 0) RefreshRecruits();
             if (hour == 2)
             {
@@ -741,6 +742,12 @@ namespace DnD.Game
             World.DefeatedDay[groupId] = Clock.Day;
             int xp = 0;
             var defs = new List<MonsterDef>();
+            if (!_groups.ContainsKey(groupId))
+            {
+                // Settled from afar (no one spawned right now): the group's full roster counts.
+                var def = Zones.Values.SelectMany(z => z.Def.EnemyGroups).FirstOrDefault(x => x.Id == groupId);
+                if (def != null) foreach (var m in def.Members) { var md = MonstersDb.Get(m.MonsterId); xp += md.XP; defs.Add(md); }
+            }
             if (_groups.TryGetValue(groupId, out var agents))
                 foreach (var a in agents)
                 {
@@ -852,6 +859,27 @@ namespace DnD.Game
         float _nextItemCheck;
 
         /// <summary>Quest-gated groups appear or leave as their quest moves on.</summary>
+        /// <summary>
+        /// Timed story events, checked every in-game hour and on waking (so sleeping through one never soft-locks it).
+        /// Lost Child: Maddie wanders into Whisperwood on a Tideday afternoon (after the first few days); by 8 pm the watch finds her if you haven't.
+        /// </summary>
+        public void StoryTick()
+        {
+            if (Quests.Stage("lost_child") == 0 && Clock.Day > 3 && Clock.WeekdayIndex == WorldDb.Tideday && Clock.Hour >= 15 && Clock.Hour < 20)
+            {
+                World.SetFlag("maddie_lost");
+                World.Lock("lost_child_deadline", 20 * 60 - Clock.Minutes);
+                Quests.Start("lost_child");
+                foreach (var p in Players.Where(x => x.IsReady)) p.Hud.Narrate("Shouting on the square: Maddie hasn't come home. Her parents last saw her heading west, toward Whisperwood, following \"the pretty lights\".");
+            }
+            if (Quests.Active("lost_child") && !World.IsLocked("lost_child_deadline"))
+            {
+                World.SetFlag("maddie_found");
+                Quests.Set("lost_child", QuestDb.Get("lost_child").Last, null, 1f / 3f);
+                foreach (var p in Players.Where(x => x.IsReady)) p.Hud.Narrate("Captain Vale's watch found Maddie at the edge of Whisperwood after dark: cold, muddy and absolutely fine, and very cross that the fairies had to go home.", false);
+            }
+        }
+
         /// <summary>Story flags can move people around (someone gets a job, goes home, ends up in a cell).</summary>
         public void RefreshNpcs() { foreach (var n in _npcs) if (n) n.UpdateSchedule(false); }
 
@@ -1015,6 +1043,7 @@ namespace DnD.Game
                 foreach (var c in CompanionsOf(p)) if (c.Character != null) { if (c.Character.IsDead && Settings.Difficulty == Difficulty.Story) c.Character.Revive(0, null); c.Character.LongRest(true, null); }
                 _lastLongRest[p.Index] = NowAbs;
                 p.Hud.Narrate($"You wake refreshed. It's {Clock.Weekday}, day {Clock.Day}." + (!ate ? " (You went to bed hungry.)" : ""));
+                StoryTick();
             }
             _sleeping.Clear();
             SaveSystem.Save(true);

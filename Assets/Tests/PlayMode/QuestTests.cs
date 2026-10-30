@@ -397,5 +397,213 @@ namespace DnD.Tests
             Assert.IsTrue(g.World.Flag("wick_hired"));
             Assert.AreEqual("tavern", WorldDb.Current(WorldDb.Npcs["wick"], 12, 0, g.World)?.Zone, "Wick works at the Drake now");
         }
+
+        // ============================================================ Task 6: wilds quests
+
+        static SecretInteractable Spot(string id) => Object.FindObjectsByType<SecretInteractable>().Single(s => s.Def.Id == id);
+
+        [UnityTest]
+        public IEnumerator GoatsComeHomeAndTobinPays()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(30), "druid", "elf");
+            yield return null;
+            Choose(p, "tobin", StartNode(p, "tobin"), "Need a hand with anything");
+            Assert.AreEqual(1, g.Quests.Stage("goats"));
+            foreach (var id in new[] { "goat_1", "goat_2", "goat_3" })
+            {
+                Assert.IsTrue(Spot(id).Available(p), id);
+                Spot(id).Resolve(p, CheckOutcome.Success);
+                Assert.IsFalse(Spot(id).Available(p), $"{id} trots home once calmed");
+            }
+            Assert.AreEqual(2, g.Quests.Stage("goats"), "all three goats home");
+            int xp = p.Character.XP;
+            Choose(p, "tobin", StartNode(p, "tobin"), "Your goats are home");
+            Assert.IsTrue(g.Quests.Done("goats"));
+            Assert.AreEqual(75, p.Character.XP - xp);
+            Assert.AreEqual(1, p.Character.CountOf("goat_bell"));
+        }
+
+        [UnityTest]
+        public IEnumerator HauntedMillPeacefulAndFightPaySameXp()
+        {
+            var g = GameRoot.I;
+            int owlbear = MonstersDb.Get("owlbear").XP;
+            Assert.AreEqual(700, owlbear, "SRD owlbear: CR 3, 700 XP");
+            int[] gained = new int[2];
+            for (int run = 0; run < 2; run++)
+            {
+                // The fight run needs a player who acts on their turns (confirms every prompt), like TalkingAndFightingPayTheSameXp.
+                var p = g.DebugStart(run == 0 ? Still(31) : new FuzzInput(4) { ConfirmChance = 1, CancelChance = 0, EndTurnChance = 0, MenuChance = 0 }, "fighter", "human");
+                yield return null;
+                g.Warp(p, "forest", new Vector2Int(44, 18), false); // discover Whisperwood first, so its +15 XP isn't counted below
+                yield return null;
+                p.Hud.CloseAll();
+                g.Quests.Stages["east_road"] = 3;
+                g.Clock.Minutes = 21 * 60; // the "ghost" only wails at night
+                Choose(p, "hobb", StartNode(p, "hobb"), "Anything else bothering you");
+                Assert.AreEqual(1, g.Quests.Stage("haunted_mill"));
+                Assert.IsTrue(Spot("mill_noises").Available(p), "the noises are there at night");
+                int before = p.Character.XP;
+                Spot("mill_noises").Resolve(p, CheckOutcome.Success);
+                Assert.AreEqual(2, g.Quests.Stage("haunted_mill"));
+                if (run == 0)
+                {
+                    Spot("owlbear_cub").Resolve(p, CheckOutcome.Success);
+                    Assert.AreEqual(3, g.Quests.Stage("haunted_mill"));
+                    g.Warp(p, "forest", new Vector2Int(44, 18), false);
+                    yield return null;
+                    Spot("owlbear_den").Resolve(p, CheckOutcome.Success);
+                }
+                else
+                {
+                    g.Warp(p, "forest", new Vector2Int(44, 18), false);
+                    yield return null;
+                    p.Hud.CloseAll();
+                    g.StartGroupCombat("forest_owlbear", p);
+                    foreach (var u in g.Combats.Single().Units) if (u.C.Team == Team.Enemies) u.C.HP = 0;
+                    Time.timeScale = 4;
+                    float start = Time.realtimeSinceStartup;
+                    while (g.AnyInCombat && Time.realtimeSinceStartup - start < 60f) yield return null;
+                    Time.timeScale = 1;
+                    Assert.IsFalse(g.AnyInCombat, "the fight should end once the owlbear is down");
+                }
+                Assert.IsTrue(g.Quests.Done("haunted_mill"), $"run {run}: the mill is quiet (stage {g.Quests.Stage("haunted_mill")}, defeated {g.World.DefeatedGroups.Contains("forest_owlbear")})");
+                gained[run] = p.Character.XP - before;
+                g.QuitToTitle();
+                yield return null;
+            }
+            Assert.AreEqual(owlbear + 150, gained[0], "returning the cub pays the owlbear's XP plus the quest");
+            Assert.AreEqual(gained[0], gained[1], "peaceful and fighting pay the same");
+        }
+
+        [UnityTest]
+        public IEnumerator WolfBountyCompletesFromAnyResolution()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(33), "ranger", "human");
+            yield return null;
+            Choose(p, "rhoswen", StartNode(p, "rhoswen"), "Anything need doing");
+            Assert.AreEqual(1, g.Quests.Stage("wolf_bounty"), "the notice-board bounty comes with the odd jobs");
+            g.Warp(p, "forest", new Vector2Int(44, 18), false);
+            yield return null;
+            g.PacifyGroup("forest_wolves", p);
+            Assert.AreEqual(2, g.Quests.Stage("wolf_bounty"), "talking the wolves down counts");
+            g.Warp(p, "town", new Vector2Int(25, 19), false);
+            yield return null;
+            int xp = p.Character.XP; // (after the town-discovery XP)
+            Choose(p, "rhoswen", StartNode(p, "rhoswen"), "The wolves are dealt with");
+            Assert.IsTrue(g.Quests.Done("wolf_bounty"));
+            Assert.AreEqual(50, p.Character.XP - xp);
+        }
+
+        [UnityTest]
+        public IEnumerator LostChildResolvesEvenIfYouSleep()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(34), "cleric", "human");
+            yield return null;
+            g.Clock.Day = 2; g.Clock.Minutes = 15 * 60; // Tideday, but too early in the game
+            g.StoryTick();
+            Assert.AreEqual(0, g.Quests.Stage("lost_child"), "not in the first days");
+            g.Clock.Day = 9; g.Clock.Minutes = 15 * 60; // the second Tideday
+            g.StoryTick();
+            Assert.AreEqual(1, g.Quests.Stage("lost_child"), "Maddie goes missing on a Tideday afternoon");
+            Assert.AreEqual("forest", WorldDb.Current(WorldDb.Npcs["maddie"], 17, g.Clock.WeekdayIndex, g.World)?.Zone);
+            int xp = p.Character.XP;
+            g.Clock.Day = 10; g.Clock.Minutes = 7 * 60; // slept through it
+            g.StoryTick();
+            Assert.IsTrue(g.Quests.Done("lost_child"), "the watch found her: never a soft-lock");
+            Assert.AreEqual(50, p.Character.XP - xp, "smaller reward when the watch finds her");
+            Assert.AreEqual("town", WorldDb.Current(WorldDb.Npcs["maddie"], 15, g.Clock.WeekdayIndex, g.World)?.Zone, "Maddie is home safe");
+
+            // In time: tracks, then Maddie herself.
+            g.QuitToTitle();
+            yield return null;
+            p = g.DebugStart(Still(35), "ranger", "elf");
+            yield return null;
+            g.Clock.Day = 9; g.Clock.Minutes = 15 * 60;
+            g.StoryTick();
+            Spot("lost_tracks_1").Resolve(p, CheckOutcome.Success);
+            Spot("lost_tracks_2").Resolve(p, CheckOutcome.Success);
+            Assert.AreEqual(3, g.Quests.Stage("lost_child"));
+            xp = p.Character.XP;
+            Choose(p, "maddie", StartNode(p, "maddie"), "Maddie! Everyone's looking");
+            Assert.IsTrue(g.Quests.Done("lost_child"));
+            Assert.AreEqual(150, p.Character.XP - xp);
+        }
+
+        [UnityTest]
+        public IEnumerator HerbsFromThreeZonesComplete()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(36), "druid", "human");
+            yield return null;
+            Choose(p, "elowen", StartNode(p, "elowen"), "Can I help with anything");
+            Assert.AreEqual(1, g.Quests.Stage("elowens_herbs"));
+            var zones = new System.Collections.Generic.HashSet<string>();
+            foreach (var z in g.Zones.Values)
+                foreach (var kv in z.Def.Secrets)
+                    if (kv.Value.QuestId == "elowens_herbs") zones.Add(z.Def.Id);
+            CollectionAssert.AreEquivalent(new[] { "forest", "ford", "town" }, zones, "one herb in each of three places");
+            foreach (var id in new[] { "herb_moonpetal", "herb_riverleaf", "herb_hearthroot" })
+            {
+                Assert.AreEqual(1, g.Quests.Stage("elowens_herbs"));
+                Spot("spot_" + id).Resolve(p, CheckOutcome.Success);
+                Assert.AreEqual(1, p.Character.CountOf(id), id);
+            }
+            Assert.AreEqual(2, g.Quests.Stage("elowens_herbs"));
+            int xp = p.Character.XP;
+            Choose(p, "elowen", StartNode(p, "elowen"), "I've brought your herbs");
+            Assert.IsTrue(g.Quests.Done("elowens_herbs"));
+            Assert.AreEqual(100, p.Character.XP - xp);
+            Assert.AreEqual(0, p.Character.CountOf("herb_moonpetal"));
+        }
+
+        [UnityTest]
+        public IEnumerator FaeTricksterPaysXpEitherWay()
+        {
+            var g = GameRoot.I;
+            for (int run = 0; run < 2; run++)
+            {
+                var p = g.DebugStart(Still(37 + run), "wizard", "gnome");
+                yield return null;
+                g.Clock.Minutes = 19 * 60;
+                Assert.AreEqual("forest", WorldDb.Current(WorldDb.Npcs["thimble"], 19, 0, g.World)?.Zone, "Thimble is at the pond in the evening");
+                int xp = p.Character.XP;
+                string node = Choose(p, "thimble", StartNode(p, "thimble"), "A riddle game");
+                bool right = run == 1;
+                node = Choose(p, "thimble", node, right ? "A river" : "A dragon");
+                node = Choose(p, "thimble", node, right ? "Footsteps" : "Cake");
+                Choose(p, "thimble", node, right ? "Tomorrow" : "Winter");
+                Assert.IsTrue(g.Quests.Done("fae_trickster"));
+                Assert.AreEqual(100, p.Character.XP - xp, "the XP comes either way");
+                Assert.AreEqual(right ? 1 : 0, p.Character.CountOf("fae_trinket"), right ? "two or more right: the trinket" : "all wrong: just a laugh");
+                g.QuitToTitle();
+                yield return null;
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator EveryQuestCanStart()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(39), "bard", "human");
+            yield return null;
+            // Each Phase 4 quest has a starting point a player can reach: a giver's option or a world trigger.
+            g.Quests.Stages["east_road"] = 3;
+            g.World.AddFriendship("brannoc", 200);
+            Choose(p, "rhoswen", StartNode(p, "rhoswen"), "Anything need doing");
+            Choose(p, "tamsin", StartNode(p, "tamsin"), "You look worried");
+            Choose(p, "brannoc", "shop", "How's the poetry");
+            Choose(p, "pip", StartNode(p, "pip"), "You look upset");
+            Choose(p, "tobin", StartNode(p, "tobin"), "Need a hand with anything");
+            Choose(p, "hobb", StartNode(p, "hobb"), "Anything else bothering you");
+            Choose(p, "elowen", StartNode(p, "elowen"), "Can I help with anything");
+            Choose(p, "thimble", StartNode(p, "thimble"), "A riddle game");
+            g.Clock.Day = 9; g.Clock.Minutes = 15 * 60; g.StoryTick();
+            foreach (var id in new[] { "bad_blood", "wolf_bounty", "pond_ring", "secret_poems", "pips_barrel", "goats", "haunted_mill", "elowens_herbs", "fae_trickster", "lost_child" })
+                Assert.GreaterOrEqual(g.Quests.Stage(id), 1, id);
+        }
     }
 }

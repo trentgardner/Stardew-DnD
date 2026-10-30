@@ -1,3 +1,4 @@
+using System.Linq;
 using DnD.Rules;
 
 namespace DnD.Game
@@ -160,6 +161,57 @@ namespace DnD.Game
                 c => "He hops off the barrel and trudges toward the watch house. Captain Vale will keep him two nights, with a blanket and, knowing her, extra supper.").Bye("I'll tell her.");
             d.Node("hired", who, c => "Pip says I'm the best sweeper she's ever had! And Mother Elowen gave Mum the medicine at half price when Pip told her. Thanks. Really.").Bye("Proud of you, Wick.");
             d.Node("cell", who, c => "Two nights. The blanket's itchy. The Captain keeps giving me extra stew, though, so. Could be worse.").Bye("Hang in there.");
+            return d;
+        }
+
+        // =================================================================== Mister Thimble (the fae trickster)
+
+        static int FaeScore(DCtx c) => new[] { "fae_right_1", "fae_right_2", "fae_right_3" }.Count(c.G.World.Flag);
+
+        static void FaeBegin(DCtx c)
+        {
+            foreach (var f in new[] { "fae_right_1", "fae_right_2", "fae_right_3", "fae_hint_1", "fae_hint_2", "fae_hint_3" }) c.G.World.Flags.Remove(f);
+            c.G.Quests.Start("fae_trickster", c.P);
+        }
+
+        /// <summary>One riddle: three answers (one right), plus an Arcana roll for a hint that takes a wrong answer away.</summary>
+        static void Riddle(Dialogue d, int n, string riddle, string right, string wrongA, string wrongB, string next)
+        {
+            const string who = "Mister Thimble";
+            d.Node("r" + n, who, c => riddle)
+                .Say(right, next, doIt: c => c.G.World.SetFlag("fae_right_" + n))
+                .Say(wrongA, next)
+                .Say(wrongB, next, show: c => !c.G.World.Flag("fae_hint_" + n))
+                .Roll(Skill.Arcana, 13, "(Arcana) Think about how fae riddles work...", "r" + n, "r" + n, social: false,
+                      show: c => !c.G.World.Flag("fae_hint_" + n), onSuccess: c => c.G.World.SetFlag("fae_hint_" + n));
+        }
+
+        static Dialogue Thimble()
+        {
+            var d = new Dialogue("thimble", c => "start");
+            const string who = "Mister Thimble";
+            d.Node("start", who, c => c.G.Quests.Done("fae_trickster")
+                    ? "Back again, clever-boots? The Court stirs, you know. Things are waking up that have slept since your grandmother's grandmother."
+                    : "Oh, a VISITOR. How lovely. How rare. How delicious. Do you like games? I like games. I like games with prizes.",
+                c => "Something sits on a lily pad that isn't there: a little gentleman with a frog's face, a fox's grin, and a waistcoat stitched from moth wings.")
+                .Say("A riddle game? I'm in.", "r1", show: c => !c.G.Quests.Done("fae_trickster"), doIt: FaeBegin)
+                .Opt(new DOption { Text = "A rematch? (For the mirror.)", Next = "r1", OncePerDay = true, Do = FaeBegin,
+                    Show = c => c.G.Quests.Done("fae_trickster") && !c.G.World.Flag("fae_trinket_won") })
+                .Bye("(Back away slowly.)");
+            Riddle(d, 1, "First! I have a mouth but never eat, a bed but never sleep, and I run all day without legs. What am I?", "A river.", "A dragon.", "A lazy innkeeper.", "r2");
+            Riddle(d, 2, "Second! The more of me you take, the more of me you leave behind. What am I?", "Footsteps.", "Cake.", "Memories.", "r3");
+            Riddle(d, 3, "Last! I am always coming, but I never, ever arrive. What am I?", "Tomorrow.", "Winter.", "The post.", "verdict");
+            d.Node("verdict", who,
+                c => FaeScore(c) >= 2
+                    ? $"{FaeScore(c)} of 3! Oh, you're DELIGHTFUL. A prize, as promised: a mirror that never fogs. Mind your reflection; it has opinions."
+                    : "Ha! Hahaha! Oh, that was TERRIBLE. Wonderful! You made me laugh, and laughter is the oldest payment there is. Come back another night and try again, if you dare.",
+                c => "He bows so low his nose touches the water. \"Tell no one you met me. The Court is waking, and it does so love new toys.\"",
+                c =>
+                {
+                    if (FaeScore(c) >= 2 && !c.G.World.Flag("fae_trinket_won")) { c.G.World.SetFlag("fae_trinket_won"); c.G.GiveItem(c.P, "fae_trinket"); }
+                    c.G.Quests.Set("fae_trickster", 2, c.P);
+                })
+                .Bye("Good night, Mister Thimble.");
             return d;
         }
 

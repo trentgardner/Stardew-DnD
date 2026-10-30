@@ -229,12 +229,12 @@ namespace DnD.Tests
                         Assert.IsTrue(g.Zones[e.Zone].IsWalkable(e.Pos), $"{npc.Id} at {e.Zone} {e.Pos} ({e.Activity})");
         }
 
-        [UnityTest, Timeout(800000)] // 15 conversations x 3 rounds of 400 frames
+        [UnityTest, Timeout(900000)] // 16 conversations x 3 rounds of 400 frames
         public IEnumerator FuzzEveryConversation()
         {
             var g = GameRoot.I;
             var p = g.DebugStart(new FuzzInput(11) { ConfirmChance = 0.12f, CancelChance = 0.005f }, "cleric", "dwarf");
-            foreach (var id in new[] { "brannoc", "elowen", "pip", "rhoswen", "tobin", "maddie", "snik", "wren", "hobb", "garrick", "hesper", "dunstan", "lark", "tamsin", "wick" })
+            foreach (var id in new[] { "brannoc", "elowen", "pip", "rhoswen", "tobin", "maddie", "snik", "wren", "hobb", "garrick", "hesper", "dunstan", "lark", "tamsin", "wick", "thimble" })
             {
                 for (int round = 0; round < 3; round++)
                 {

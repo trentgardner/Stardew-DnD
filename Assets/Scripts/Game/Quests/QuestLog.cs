@@ -27,7 +27,10 @@ namespace DnD.Game
         }
 
         /// <summary>Moves a quest forward (never back). `by` is who did it: they get the reward item.</summary>
-        public void Set(string id, int stage, PlayerSlot by = null)
+        public void Set(string id, int stage, PlayerSlot by = null) => Set(id, stage, by, 1f);
+
+        /// <summary>rewardScale shrinks XP and coin (e.g. 1/3 when the watch found the lost child instead of you).</summary>
+        public void Set(string id, int stage, PlayerSlot by, float rewardScale)
         {
             if (Stage(id) >= stage) return;
             Stages[id] = stage;
@@ -37,12 +40,12 @@ namespace DnD.Game
             {
                 string msg = stage == 1 ? $"New quest: {q.Title}" : stage >= q.Last ? $"Quest complete: {q.Title}" : $"Quest updated: {q.Title}";
                 foreach (var p in g.Players) p.Hud?.Toast(msg, UIKit.Gold);
-                if (stage >= q.Last) PayReward(q, by);
+                if (stage >= q.Last) PayReward(q, by, rewardScale);
             }
             Changed?.Invoke();
         }
 
-        void PayReward(QuestDef q, PlayerSlot by)
+        void PayReward(QuestDef q, PlayerSlot by, float scale)
         {
             if (!Paid.Add(q.Id) || q.Reward == null) return;
             var g = GameRoot.I;
@@ -50,8 +53,9 @@ namespace DnD.Game
             var players = g.Players.Where(p => p.IsReady && p.Character != null).ToList();
             foreach (var p in players)
             {
-                if (r.Copper > 0) g.GiveCopper(p, r.Copper);
-                g.GiveXP(p, r.Xp, q.Title);
+                int cp = (int)(r.Copper * scale), xp = (int)(r.Xp * scale);
+                if (cp > 0) g.GiveCopper(p, cp);
+                g.GiveXP(p, xp, q.Title);
             }
             var taker = by != null && by.Character != null ? by : players.FirstOrDefault();
             if (r.Item != null && taker != null) g.GiveItem(taker, r.Item);
@@ -64,11 +68,18 @@ namespace DnD.Game
         {
             foreach (var q in QuestDb.All.Values)
                 foreach (var t in q.Triggers)
-                    if (t.On == e && t.Id == id && Stage(q.Id) == t.FromStage)
+                    if (t.On == e && Stage(q.Id) == t.FromStage && Matches(t, id))
                     {
                         Set(q.Id, t.ToStage, by);
                         break;
                     }
+        }
+
+        static bool Matches(QuestTrigger t, string id)
+        {
+            if (t.AllOf == null) return t.Id == id;
+            var w = GameRoot.I?.World;
+            return w != null && System.Array.IndexOf(t.AllOf, id) >= 0 && t.AllOf.All(w.Flag);
         }
 
         /// <summary>After loading: quests already finished (including in saves from before rewards were tracked) count as paid.</summary>

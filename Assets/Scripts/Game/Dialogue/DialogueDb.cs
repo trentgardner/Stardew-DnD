@@ -32,6 +32,7 @@ namespace DnD.Game
                 case "lark": d = Lark(); break;
                 case "tamsin": d = Tamsin(); break;
                 case "wick": d = Wick(); break;
+                case "thimble": d = Thimble(); break;
                 case "recruit": d = Recruit(); break;
                 case "companion": d = Companion(); break;
                 default: d = new Dialogue(id, c => "start"); d.Node("start", null, c => "...").Bye(); break;
@@ -133,6 +134,10 @@ namespace DnD.Game
         {
             var d = new Dialogue("elowen", c => "start");
             const string who = "Mother Elowen";
+            d.Node("herbs_ask", who, c => "Bless you. My remedy shelf is nearly bare. I need three herbs: moonpetal from Whisperwood, riverleaf from the bank at Miller's Ford, and hearthroot from the South Lane green. Gently, mind. Roots and all.",
+                c => "She sketches each plant on a scrap of paper with surprising skill.",
+                c => c.G.Quests.Start("elowens_herbs", c.P)).Say("Roots and all. Got it.", "start");
+            d.Node("herbs_done", who, c => "Oh, beautifully picked! You've a healer's hands. Here: take the first remedy from the new batch.").Say("Thank you, Mother.", "start");
             d.Node("poem_read", who, c => "\"Thou art the dawn upon my anvil'd heart...\" Oh. Oh, my. Who... who wrote this?",
                 c => "She reads it twice. The second time her lips move. By the end she is pressing it flat against her chest.")
                 .Roll(Skill.Insight, 13, "(Read her) How does she really feel about it?", "poem_insight", "poem_insight_no", social: false)
@@ -155,6 +160,14 @@ namespace DnD.Game
                     : $"Light keep you, {Sir(c)}. What brings you to Aurelith's house?",
                 c => "An older woman with laugh lines, flour on her sleeves and an air of absolute calm.")
                 .Say("I'd like to see what the temple offers.", doIt: c => { c.Screen.Close(); c.G.OpenShop(c.P, "temple"); }, end: true)
+                .Say("Can I help with anything around the temple?", "herbs_ask", show: c => c.G.Quests.Stage("elowens_herbs") == 0)
+                .Say("I've brought your herbs.", "herbs_done", show: c => c.G.Quests.Stage("elowens_herbs") == 2
+                        && c.G.HasQuestItem(c.P, "herb_moonpetal") && c.G.HasQuestItem(c.P, "herb_riverleaf") && c.G.HasQuestItem(c.P, "herb_hearthroot"),
+                      doIt: c =>
+                      {
+                          foreach (var h in new[] { "herb_moonpetal", "herb_riverleaf", "herb_hearthroot" }) c.G.TakeQuestItem(c.P, h);
+                          c.G.Quests.Set("elowens_herbs", 3, c.P);
+                      })
                 .Say("Someone asked me to give you this.", "poem_read", show: c => c.G.Quests.Active("secret_poems") && c.G.HasQuestItem(c.P, "brannoc_poem"),
                       doIt: c => c.G.TakeQuestItem(c.P, "brannoc_poem"))
                 .Say("Please, bring back my friend.", "revive", show: c => c.G.AnyDeadAlly(c.P))
@@ -269,8 +282,9 @@ namespace DnD.Game
             const string who = "Captain Rhoswen Vale";
             d.Node("jobs", who, c => "Anything? Ha. Hesper Meadowsweet and Dunstan Burrow are at war over a FENCE on the South Lane. Last week a bee was involved. Could you talk sense into them before I have to arrest two beekeepers?",
                 c => "She pulls a crumpled list from her belt. It is long. Several items are underlined three times.",
-                c => c.G.Quests.Start("bad_blood", c.P))
+                c => { c.G.Quests.Start("bad_blood", c.P); c.G.Quests.Start("wolf_bounty", c.P); })
                 .Say("I'll see what I can do.", end: true);
+            d.Node("wolves_paid", who, c => "The wolves? Ha! Good. Bounty's fifteen gold. Don't let my uncle see me hand it over, he thinks the watch budget is for biscuits.").Bye("Pleasure doing business.");
             d.Node("intro", who, c => "You there! You look... capable. Something fell out of the sky last night near the old copper mine. Since then: four chickens gone, Brannoc's kettle, and Tobin's spoon. My entire watch is four people, and one of them is my uncle.",
                 c => "A half-elf in a dented breastplate, dark circles under her eyes, hand resting on a well-used sword.")
                 .Say("I'll look into it.", "accept", c => c.G.Quests.Start("fallen_star"))
@@ -303,8 +317,13 @@ namespace DnD.Game
                 .Say("Do you ever get a night off, Captain?", "flirt")
                 .Bye("Take care, Captain.");
             foreach (var id in new[] { "intro", "progress", "dragon", "after" })
-                if (d.Nodes.TryGetValue(id, out var n)) n.Options.Insert(System.Math.Max(0, n.Options.Count - 1),
-                    new DOption { Text = "Anything need doing around town?", Next = "jobs", Show = c => c.G.Quests.Stage("bad_blood") == 0 });
+                if (d.Nodes.TryGetValue(id, out var n))
+                {
+                    n.Options.Insert(System.Math.Max(0, n.Options.Count - 1),
+                        new DOption { Text = "Anything need doing around town?", Next = "jobs", Show = c => c.G.Quests.Stage("bad_blood") == 0 || c.G.Quests.Stage("wolf_bounty") == 0 });
+                    n.Options.Insert(System.Math.Max(0, n.Options.Count - 1),
+                        new DOption { Text = "The wolves are dealt with.", Next = "wolves_paid", Show = c => c.G.Quests.Stage("wolf_bounty") == 2, Do = c => c.G.Quests.Set("wolf_bounty", 3, c.P) });
+                }
             return d;
         }
 
@@ -320,7 +339,13 @@ namespace DnD.Game
                 c => "A weathered old farmer leaning on a hoe, looking utterly betrayed by the universe.",
                 c => { if (!c.G.World.Flag("spoon_returned")) c.G.Quests.Start("spoon"); })
                 .Roll(Skill.Insight, 10, "Are you sure it wasn't just a lizard?", "insight", "insight", social: false)
+                .Say("Need a hand with anything else?", "goats_ask", show: c => c.G.Quests.Stage("goats") == 0)
+                .Say("Your goats are home.", "goats_done", show: c => c.G.Quests.Stage("goats") == 2, doIt: c => c.G.Quests.Set("goats", 3, c.P))
                 .Bye("I'll keep an eye out.");
+            d.Node("goats_ask", who, c => "Now that you mention it: my goats! Three of 'em ate through the fence and went off into Whisperwood. Clementine, Biscuit and Lord Horace. Lord Horace is the ringleader.",
+                c => "Tobin points at a goat-shaped hole in his fence with a trembling finger.",
+                c => c.G.Quests.Start("goats", c.P)).Say("I'll bring them home.", "start");
+            d.Node("goats_done", who, c => "Clementine! Biscuit! LORD HORACE! Oh, you lot. Here: take Horace's old bell. He hates it. Keeps him from sneaking up on people.").Say("Thanks, Tobin.", "start");
             d.Node("insight", who, c => c.LastOutcome >= CheckOutcome.Success
                     ? "A regular lizard doesn't say 'FOR THE GREAT ONE' on its way out the window, does it? Does it?!"
                     : "Don't you take that tone. I know what I saw. Mostly.").Bye("Fair point.");
@@ -332,8 +357,17 @@ namespace DnD.Game
 
         static Dialogue Maddie()
         {
-            var d = new Dialogue("maddie", c => "start");
+            var d = new Dialogue("maddie", c => c.G.Quests.Active("lost_child") ? "lost" : "start");
             const string who = "Maddie";
+            d.Node("lost", who, c => "Shh! You'll scare them! The little lights are DANCING. They said I could stay for one more song. ...How many songs has it been? Is it dark?",
+                c => "Maddie sits cross-legged by the fairy ring, muddy to the knees, surrounded by a slow swirl of tiny lights. She looks completely happy and slightly frozen.")
+                .Say("Maddie! Everyone's looking for you! Let's get you home.", "found", doIt: c =>
+                {
+                    c.G.World.SetFlag("maddie_found");
+                    c.G.Quests.Set("lost_child", QuestDb.Get("lost_child").Last, c.P);
+                });
+            d.Node("found", who, c => "Okay. Can we come back tomorrow? The lights said I'm a very good dancer. Better than you, probably.",
+                c => "The lights swirl once around you both, like a wave goodbye, and wink out.").Bye("Probably. Let's go.");
             d.Node("start", who, c => "Are you an ADVENTURER? Have you ever fought a dragon? I'm going to be a dragon when I grow up.",
                 c => "A gap-toothed kid holding a stick with absolute seriousness.")
                 .Say("Did you see the falling star?", "star")
@@ -454,7 +488,11 @@ namespace DnD.Game
                     c => "Hobb shakes your hand with both of his, leaving two floury prints.")
                 .Say("Glad to help.", "reward", doIt: c => c.G.CompleteEastRoad(c.P));
             d.Node("reward", who, c => "Here: twenty-five gold, and the best healing draught in the valley. My late wife's recipe. Don't tell the temple.").Bye("Thank you, Hobb.");
+            d.Node("mill_ask", who, c => "Bothering me? No. Well. There's a ghost. In the mill. Wails all night like a kettle with a broken heart. I'm not SCARED. I just sleep in the garden now. By choice.",
+                c => "Hobb's eyes dart toward the mill. He has, you notice, a frying pan within reach at all times.",
+                c => c.G.Quests.Start("haunted_mill", c.P)).Say("I'll have a look after dark.", "done");
             d.Node("done", who, c => c.G.World.Flag("wren_legit") ? "Wheel's turning, bridge is coming along, and Wren's crew eat me out of house and home. Best problem I've had in years." : "Wheel's turning again! Come by any time.")
+                .Say("Anything else bothering you?", "mill_ask", show: c => c.G.Quests.Stage("haunted_mill") == 0)
                 .Roll(Skill.Persuasion, 10, "Any chance of a sack of flour for the road?", "flour", "noflour", onSuccess: c => c.G.GiveItem(c.P, "rations", 2))
                 .Bye();
             d.Node("flour", who, c => "For you? Always. Here, some biscuits too.").Bye("Thanks!");

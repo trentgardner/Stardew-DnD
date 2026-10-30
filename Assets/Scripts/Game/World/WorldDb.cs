@@ -79,6 +79,10 @@ namespace DnD.Game
         public int AdvanceTo = -1;
         public string SetsFlag;
         public bool IsQuestSpot => QuestId != null;
+        /// <summary>Only there after dark (20:00 to 05:00).</summary>
+        public bool NightOnly;
+        /// <summary>Success settles this enemy group peacefully (full XP, as if talked down), e.g. returning a lost cub.</summary>
+        public string PacifiesGroup;
     }
 
     /// <summary>The sign hanging beside a building's door: the prompt names the building, reading it gives the text.</summary>
@@ -220,6 +224,15 @@ namespace DnD.Game
                 AlreadyFound = "The pond is just a pond again.",
                 Items = { new KeyValuePair<string, int>("pond_ring", 1) },
             };
+            town.Secrets[new Vector2Int(25, 47)] = new SecretDef
+            {
+                Id = "spot_herb_hearthroot", Sprite = "obj_herb", Prompt = "Dig up the hearthroot", Skill = Rules.Skill.Medicine, DC = 12,
+                QuestId = "elowens_herbs", QuestStage = 1, SetsFlag = "got_herb_hearthroot",
+                Success = "You dig carefully around the knobbly root and lift it out whole. It's warm, like a stone left in the sun.",
+                Failure = "The root snaps. Useless. There's another one sprouting nearby; it'll be ready tomorrow.",
+                AlreadyFound = "Just a hole, already filling with clover.",
+                Items = { new KeyValuePair<string, int>("herb_hearthroot", 1) },
+            };
             town.Secrets[new Vector2Int(31, 5)] = new SecretDef
             {
                 Id = "barrel_tracks", Sprite = "obj_barrel_tapped", Prompt = "Look around behind the Drake", Skill = Rules.Skill.Investigation, DC = 12,
@@ -277,6 +290,57 @@ namespace DnD.Game
             wolves.Members.Add(new EnemySpawn("wolf", 36, 6));
             wolves.Members.Add(new EnemySpawn("wolf", 39, 7));
             forest.EnemyGroups.Add(wolves);
+            // ---- Phase 4 quest spots and the owlbear
+            var goats = new[] { (8, 13, "goat_1", "A goat is chewing on a fern, looking deeply pleased with itself."), (30, 24, "goat_2", "A goat is standing on a stump, staring at nothing, as goats do."), (12, 27, "goat_3", "A goat is trying to eat the goblins' washing line.") };
+            foreach (var (gx, gy, gid, gtext) in goats)
+                forest.Secrets[new Vector2Int(gx, gy)] = new SecretDef
+                {
+                    Id = gid, Sprite = "mon_goat_0", Prompt = "Coax the goat home", Skill = Rules.Skill.AnimalHandling, DC = 11,
+                    QuestId = "goats", QuestStage = 1, SetsFlag = gid,
+                    Success = gtext + " You scratch behind its horns, it sniffs your pockets, and then it trots off toward Thistledown like this was its idea all along.",
+                    Failure = gtext + " It butts you squarely in the knee and goes back to eating. (Try again tomorrow, when it's in a better mood.)",
+                    AlreadyFound = "That goat's gone home.",
+                };
+            forest.Secrets[new Vector2Int(3, 9)] = new SecretDef
+            {
+                Id = "owlbear_den", Sprite = "obj_log", Prompt = "Return the cub to the owlbear den", Skill = Rules.Skill.Nature, DC = 10,
+                QuestId = "haunted_mill", QuestStage = 3, PacifiesGroup = "forest_owlbear",
+                Success = "You find the den: a hollow under a fallen oak, lined with feathers. The cub wriggles free and tumbles inside. From the dark comes a low, enormous hoot. Then a softer one. You back away very, very slowly, and nothing follows you.",
+                Failure = "Every hollow log looks like a den, and none of them smell like owlbear. The cub sneezes on you. Try again tomorrow.",
+                AlreadyFound = "The den is quiet. Somewhere inside, something small is snoring.",
+            };
+            forest.Secrets[new Vector2Int(40, 20)] = new SecretDef
+            {
+                Id = "lost_tracks_1", Sprite = "fx_leaf_0", Prompt = "Look for Maddie's tracks", Skill = Rules.Skill.Survival, DC = 13,
+                QuestId = "lost_child", QuestStage = 1, AdvanceTo = 2,
+                Success = "Small boot prints in the soft earth, and a stick sword dropped beside them. She went west, deeper in.",
+                Failure = "Leaves, mud, deer prints. Nothing small enough to be Maddie's.",
+                AlreadyFound = "Her trail leads west.",
+            };
+            forest.Secrets[new Vector2Int(16, 21)] = new SecretDef
+            {
+                Id = "lost_tracks_2", Sprite = "fx_leaf_0", Prompt = "Follow the tiny lights", Skill = Rules.Skill.Perception, DC = 13,
+                QuestId = "lost_child", QuestStage = 2, AdvanceTo = 3,
+                Success = "Between the trees: tiny lights, bobbing like fireflies, all drifting the same way. Toward the fairy ring. And faintly, a child laughing.",
+                Failure = "Trees. More trees. Was that a light? No. Maybe.",
+                AlreadyFound = "The lights drift toward the fairy ring.",
+            };
+            forest.Secrets[new Vector2Int(27, 9)] = new SecretDef
+            {
+                Id = "spot_herb_moonpetal", Sprite = "obj_herb", Prompt = "Pick the glowing moonpetal", Skill = Rules.Skill.Nature, DC = 12,
+                QuestId = "elowens_herbs", QuestStage = 1, SetsFlag = "got_herb_moonpetal",
+                Success = "You ease the moonpetal out roots and all, the way Elowen showed you. It glows softly in your hand.",
+                Failure = "You tug, and the petals close up tight and dim. It'll open again tomorrow.",
+                AlreadyFound = "Just leaves here now.",
+                Items = { new KeyValuePair<string, int>("herb_moonpetal", 1) },
+            };
+            var owlbear = new EnemyGroupDef { Id = "forest_owlbear", SightTiles = 7, Style = EncounterStyle.Beasts, Unique = true, Label = "the owlbear", TalkDC = 14, ScareDC = 16,
+                QuestId = "haunted_mill", MinStage = 2, MaxStage = 3,
+                Spotted = "Branches split. An OWLBEAR shoulders out of the trees: feathers bristling, beak clacking, eyes searching for something. She's huge. (The DM leans in: this is a deadly fight for a young party.) She hasn't charged... yet.",
+                Befriended = "You keep your voice low and your hands open. The owlbear's feathers slowly flatten. She huffs, sniffs the air (the cub's scent is on you), and lumbers off toward the lake." };
+            owlbear.Members.Add(new EnemySpawn("owlbear", 2, 7));
+            forest.EnemyGroups.Add(owlbear);
+
             var stash = new ChestDef { Id = "goblin_stash", Pos = new Vector2Int(7, 30), Copper = 1200 };
             stash.Items.Add(new KeyValuePair<string, int>("rations", 3));
             stash.Items.Add(new KeyValuePair<string, int>("gemstone", 1));
@@ -409,6 +473,31 @@ namespace DnD.Game
                 AlreadyFound = "The fish are wise to you today.",
                 Items = { new KeyValuePair<string, int>("rations", 2) },
             };
+            ford.Secrets[new Vector2Int(38, 22)] = new SecretDef
+            {
+                Id = "mill_noises", Sprite = "obj_crate", Prompt = "Listen for the 'ghost'", Skill = Rules.Skill.Investigation, DC = 11,
+                QuestId = "haunted_mill", QuestStage = 1, AdvanceTo = 2, NightOnly = true,
+                Success = "The wailing is coming from behind the flour sacks. You ease one aside... and two enormous round eyes blink up at you. A fluffy, feathery, furious OWLBEAR CUB, about the size of a dog, with flour on its beak.",
+                Failure = "A wail... from the left? The right? Under the mill? You lose it in the creak of the wheel. Try again tomorrow night.",
+                AlreadyFound = "The cub is here, watching you.",
+            };
+            ford.Secrets[new Vector2Int(39, 22)] = new SecretDef
+            {
+                Id = "owlbear_cub", Sprite = "mon_owlbear_cub_0", Prompt = "Calm the owlbear cub", Skill = Rules.Skill.AnimalHandling, DC = 13,
+                QuestId = "haunted_mill", QuestStage = 2, AdvanceTo = 3,
+                Success = "You crouch, hum, and hold out a crust. The cub sniffs, nibbles, and then climbs into your arms like it's been waiting all week for someone to ask. It is very heavy. It smells of flour.",
+                Failure = "The cub hisses, puffs up to twice its size, and hides behind the sacks. Maybe tomorrow, with a snack.",
+                AlreadyFound = "The cub is snoozing in your arms.",
+            };
+            ford.Secrets[new Vector2Int(32, 12)] = new SecretDef
+            {
+                Id = "spot_herb_riverleaf", Sprite = "obj_herb", Prompt = "Gather riverleaf from the bank", Skill = Rules.Skill.Nature, DC = 11,
+                QuestId = "elowens_herbs", QuestStage = 1, SetsFlag = "got_herb_riverleaf",
+                Success = "Cool green leaves, picked from the base so the plant will grow back. They smell of mint and mud.",
+                Failure = "You grab a handful of something. It's nettles. It's definitely nettles. Try again tomorrow.",
+                AlreadyFound = "The riverleaf patch is growing back.",
+                Items = { new KeyValuePair<string, int>("herb_riverleaf", 1) },
+            };
             var toll = new EnemyGroupDef { Id = "ford_toll", ParleyDialogue = "wren", SightTiles = 7, Unique = true, Label = "the Ford Wardens", TalkDC = 14, ScareDC = 14,
                 Befriended = "Wren sighs and lowers her boathook. \"Fine. FINE. Go on through.\"" };
             toll.Members.Add(new EnemySpawn("wren", 19, 5));
@@ -493,6 +582,8 @@ namespace DnD.Game
             maddie.Schedule.Add(new ScheduleEntry(8, "town", 35, 27, "feeding the ducks (bread, against the rules)", Leafday));
             maddie.Schedule.Add(new ScheduleEntry(9, "temple", 4, 6, "at the Hearthday service, fidgeting", Hearthday));
             maddie.Schedule.Add(new ScheduleEntry(11, "town", 16, 47, "playing on the South Lane green", Hearthday));
+            maddie.Schedule.Add(new ScheduleEntry(15, "forest", 14, 21, "lost in the woods, following tiny lights") { RequiresFlag = "maddie_lost", ForbidFlag = "maddie_found" });
+            maddie.Schedule.Add(new ScheduleEntry(19, "forest", 14, 21, "lost in the woods, following tiny lights") { RequiresFlag = "maddie_lost", ForbidFlag = "maddie_found" });
             Npcs[maddie.Id] = maddie;
 
             var hobb = new NpcDef { Id = "hobb", Name = "Old Hobb", Title = "Miller", Look = "npc_hobb", Dialogue = "hobb" };
@@ -580,6 +671,13 @@ namespace DnD.Game
             wick.Schedule.Add(new ScheduleEntry(0, "watchhouse", 10, 2, "sulking in the holding cell") { RequiresLock = "wick_cell" });
             wick.Schedule.Add(new ScheduleEntry(10, "tavern", 12, 3, "sweeping on his day off, for tips", Hearthday) { RequiresFlag = "wick_hired" });
             Npcs[wick.Id] = wick;
+
+            var thimble = new NpcDef { Id = "thimble", Name = "Mister Thimble", Title = "Fae trickster", Look = "npc_thimble", Dialogue = "thimble" };
+            thimble.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "somewhere else entirely"));
+            thimble.Schedule.Add(new ScheduleEntry(18, "forest", 6, 9, "sitting on a lily pad that isn't there"));
+            thimble.Schedule.Add(new ScheduleEntry(23, null, 0, 0, "somewhere else entirely"));
+            thimble.Schedule.Add(new ScheduleEntry(18, null, 0, 0, "away at Court (it's Hearthday)", Hearthday));
+            Npcs[thimble.Id] = thimble;
         }
 
         /// <summary>Where an NPC should be at a given hour and weekday (story conditions need the world; without it they never apply).</summary>

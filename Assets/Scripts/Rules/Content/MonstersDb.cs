@@ -112,6 +112,14 @@ namespace DnD.Rules.Content
                 Description = "Big, strong, and very interested in your lunch.",
                 Attacks = { Melee("Rend", 4, "1d6+2", DamageType.Slashing) }, ProficientSkills = { Skill.Perception },
             };
+            All["owlbear"] = new MonsterDef
+            {
+                Id = "owlbear", Name = "Owlbear", SpriteId = "mon_owlbear", AC = 13, HitDice = DiceExpr.Parse("7d10+21"),
+                Scores = new[] { 20, 12, 17, 3, 12, 7 }, Darkvision = 60, CR = 3, XP = 700, Speed = 40,
+                Description = "Half owl, half bear, all mother. (SRD Owlbear. This engine gives it one Rend per turn instead of two.)",
+                Attacks = { Melee("Rend", 7, "2d8+5", DamageType.Slashing) },
+                ProficientSkills = { Skill.Perception }, Traits = { "Keen sight and smell", "Protective of her cub" },
+            };
             All["boar"] = new MonsterDef
             {
                 Id = "boar", Name = "Boar", SpriteId = "mon_boar", AC = 11, HitDice = DiceExpr.Parse("2d8+4"),

@@ -57,7 +57,18 @@ namespace DnD.Game
 
         public override string PromptText(PlayerSlot p) => Def.Prompt;
 
-        bool Present => !Def.IsQuestSpot || GameRoot.I.Quests.Stage(Def.QuestId) == Def.QuestStage;
+        bool Present
+        {
+            get
+            {
+                if (!Def.IsQuestSpot) return true;
+                var g = GameRoot.I;
+                if (g.Quests.Stage(Def.QuestId) != Def.QuestStage) return false;
+                if (!Def.Daily && g.World.Flag(FoundKey)) return false; // done: the goat went home, the herb is picked
+                if (Def.NightOnly && g.Clock.Hour >= 5 && g.Clock.Hour < 20) return false;
+                return true;
+            }
+        }
         public override bool Available(PlayerSlot p) => Present;
 
         SpriteRenderer _sr;
@@ -105,7 +116,7 @@ namespace DnD.Game
                 Sfx.Play("secret"); // the found-a-secret jingle
                 bool first = !w.Flag(FoundKey);
                 w.SetFlag(FoundKey);
-                g.AwardOnce(p, FoundKey, Def.DC * (outcome == CheckOutcome.CriticalSuccess ? 3 : 2), "finding a secret");
+                if (!Def.IsQuestSpot) g.AwardOnce(p, FoundKey, Def.DC * (outcome == CheckOutcome.CriticalSuccess ? 3 : 2), "finding a secret"); // quest spots: the quest pays
                 foreach (var kv in Def.Items) g.GiveItem(p, kv.Key, kv.Value);
                 if (Def.Copper > 0)
                 {
@@ -120,6 +131,7 @@ namespace DnD.Game
                     text += "\n\n" + Def.FirstTimeText;
                 }
                 if (Def.SetsFlag != null) w.SetFlag(Def.SetsFlag);
+                if (Def.PacifiesGroup != null) g.PacifyGroup(Def.PacifiesGroup, p, fled: true);
                 if (Def.IsQuestSpot && Def.AdvanceTo > 0) g.Quests.Set(Def.QuestId, Def.AdvanceTo, p);
                 g.Quests.Notify(QuestEvent.SecretFound, Def.Id, p);
                 p.Hud.Push(new MessageScreen(Def.Prompt, text));
