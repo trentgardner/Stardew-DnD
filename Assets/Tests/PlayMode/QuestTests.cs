@@ -605,5 +605,47 @@ namespace DnD.Tests
             foreach (var id in new[] { "bad_blood", "wolf_bounty", "pond_ring", "secret_poems", "pips_barrel", "goats", "haunted_mill", "elowens_herbs", "fae_trickster", "lost_child" })
                 Assert.GreaterOrEqual(g.Quests.Stage(id), 1, id);
         }
+
+        // ============================================================ Task 7: the bar brawl
+
+        [UnityTest]
+        public IEnumerator BarBrawlIsNonlethal()
+        {
+            var g = GameRoot.I;
+            // A player who rolls their dice (initiative waits for the roll), like the other fight tests.
+            var p = g.DebugStart(new FuzzInput(4) { ConfirmChance = 1, CancelChance = 0, EndTurnChance = 0, MenuChance = 0 }, "cleric", "dwarf");
+            yield return null;
+            g.Clock.Day = 6; g.Clock.Minutes = 19 * 60; // Coinday evening: payday for the farmhands
+            g.Warp(p, "tavern", new Vector2Int(8, 9), false);
+            yield return null;
+            p.Hud.CloseAll();
+            string node = Choose(p, "pip", StartNode(p, "pip"), "Who are the rowdy lot");
+            Choose(p, "pip", node, "(Roll up your sleeves)");
+            Assert.AreEqual(1, g.Quests.Stage("bar_brawl"));
+            yield return null;
+            yield return null;
+            var c = g.Combats.SingleOrDefault();
+            Assert.IsNotNull(c, "the brawl starts");
+            Assert.IsTrue(c.Brawl);
+            var actions = c.ActionsFor(p);
+            Assert.IsFalse(actions.Any(a => a.Group == ActionGroup.Spells), "NO MAGIC IN MY BAR");
+            Assert.IsFalse(actions.Any(a => a.Group == ActionGroup.Items), "no potions in a fistfight");
+            Assert.IsTrue(actions.Any(a => a.Name.StartsWith("Unarmed Strike")), "fists");
+            Assert.IsTrue(actions.Any(a => a.Name.StartsWith("Tankard")), "and furniture");
+            Assert.IsTrue(p.Character.Nonlethal);
+
+            p.Character.TakeDamage(999, DamageType.Bludgeoning, false, new System.Collections.Generic.List<string>());
+            Assert.IsFalse(p.Character.IsDead, "knocked out, not killed");
+            Time.timeScale = 4;
+            float start = Time.realtimeSinceStartup;
+            while (g.AnyInCombat && Time.realtimeSinceStartup - start < 30f) yield return null;
+            Time.timeScale = 1;
+            Assert.IsFalse(g.AnyInCombat, "the brawl ends when the party is knocked out");
+            yield return null;
+            Assert.AreEqual("tavern", p.Zone.Def.Id, "losing a brawl is not a party wipe (no trip to the temple)");
+            Assert.AreEqual(1, p.Character.HP, "you wake up at 1 HP");
+            Assert.IsFalse(p.Character.Nonlethal, "back to normal rules after the brawl");
+            Assert.IsTrue(g.Quests.Done("bar_brawl"), "you were magnificent anyway");
+        }
     }
 }

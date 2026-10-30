@@ -164,7 +164,40 @@ namespace DnD.Game
 
         // ================================================================== action list
 
+        /// <summary>What a player could do on their turn right now (tests and tooltips).</summary>
+        public List<CombatAction> ActionsFor(PlayerSlot p)
+        {
+            var u = Units.First(x => x.Owner == p);
+            if (u.Cb != null) return BuildActions(u);
+            // Before initiative is rolled: answer as if it were the start of their turn, without touching the fight.
+            u.Cb = new Combatant(u.C);
+            try { return BuildActions(u); } finally { u.Cb = null; }
+        }
+
+        /// <summary>Non-magical things you can still do in a fistfight.</summary>
+        static readonly string[] BrawlAllowed = { "Move", "Unarmed Strike", "Tankard", "Dash", "Disengage", "Dodge", "End Turn", "Auto", "Rage", "Raging",
+            "Reckless Attack", "Second Wind", "Action Surge", "Martial Arts strike", "Flurry of Blows", "Patient Defense", "Step of the Wind", "Hide (Cunning)",
+            "Steady Aim", "Bardic Inspiration" };
+
         List<CombatAction> BuildActions(Unit u)
+        {
+            var all = BuildAllActions(u);
+            if (!Brawl) return all;
+            var pc = (PlayerCharacter)u.C;
+            var t = u.Cb.Turn;
+            var fists = pc.UnarmedStrike();
+            // Improvised weapon (2024): 1d4, no proficiency bonus.
+            var tankard = new AttackOption { Name = "Tankard (improvised)", ToHit = pc.Mod(Ability.STR), Damage = new DiceExpr(1, 4), DamageMod = pc.Mod(Ability.STR),
+                DamageType = DamageType.Bludgeoning, Ability = Ability.STR };
+            var list = all.Where(a => BrawlAllowed.Any(n => a.Name.StartsWith(n))).ToList();
+            list.Insert(1, Need(new CombatAction { Name = "Unarmed Strike", Cost = ActionCost.Action, Target = Targeting.Enemy, RangeFt = 5,
+                Tooltip = $"Unarmed Strike: {AbilityUtil.Fmt(fists.ToHit)} to hit, {fists.Damage} {AbilityUtil.Fmt(fists.DamageMod)} bludgeoning", Run = (me, tile) => AttackAction(me, UnitAt(tile), fists) }, t, pc));
+            list.Insert(2, Need(new CombatAction { Name = "Tankard (improvised, 1d4)", Cost = ActionCost.Action, Target = Targeting.Enemy, RangeFt = 5,
+                Tooltip = "Improvised weapon: 1d4 bludgeoning, no proficiency bonus. Pip will bill you.", Run = (me, tile) => AttackAction(me, UnitAt(tile), tankard) }, t, pc));
+            return list;
+        }
+
+        List<CombatAction> BuildAllActions(Unit u)
         {
             var pc = (PlayerCharacter)u.C;
             var t = u.Cb.Turn;

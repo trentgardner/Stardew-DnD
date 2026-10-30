@@ -219,6 +219,7 @@ namespace DnD.Game
                 .Roll(Skill.Persuasion, 12, "First drink's on the house, right?", "drink_yes", "drink_no")
                 .Say("Shop for supplies.", doIt: c => { c.Screen.Close(); c.G.OpenShop(c.P, "tavern"); }, end: true)
                 .Say("You look upset, Pip. What's wrong?", "barrel", show: c => c.G.Quests.Stage("pips_barrel") == 0)
+                .Say("Who are the rowdy lot in the corner?", "brawl_ask", show: c => c.G.Quests.Stage("bar_brawl") == 0 && c.G.Clock.WeekdayIndex == WorldDb.Coinday && c.G.Clock.Hour >= 18)
                 .Roll(Skill.Persuasion, 13, "(Persuade) Give Wick a job? He's a good kid in a bad spot.", "wick_job", "wick_nojob",
                       show: c => c.G.Quests.Stage("pips_barrel") == 3 && c.G.World.Flag("wick_mercy"),
                       adv: c => AdvantageState.Advantage,
@@ -229,6 +230,10 @@ namespace DnD.Game
                 .Say("I'll pay for the barrel myself. (10 gp)", "barrel_paid", show: c => c.G.Quests.Active("pips_barrel") && c.PC.Copper >= 1000,
                       doIt: c => { c.PC.Copper -= 1000; c.G.World.SetFlag("wick_caught"); c.G.Quests.Set("pips_barrel", 4, c.P); })
                 .Bye();
+            d.Node("brawl_ask", who, c => "Farmhands. Payday. They've had three ciders each and decided they're the toughest folk in the valley. They're asking for a challenger. Fists only, mind! No magic in my bar, and if anyone DIES I'm banning everybody.",
+                c => "In the corner, three broad farmhands are arm-wrestling the furniture. One of them waves at you, grinning, and cracks his knuckles.")
+                .Say("(Roll up your sleeves) All right. Who's first?", end: true, doIt: c => { c.G.Quests.Start("bar_brawl", c.P); c.G.StartBrawlSoon(c.P); })
+                .Say("Not tonight.", "start");
             d.Node("barrel", who, c => "Someone pinched a whole barrel of Hearthfire Stout from behind the Drake! A WHOLE barrel. Do you know how hard those are to roll? Whoever it is has legs of iron and no shame.",
                 c => "Pip is polishing the same tankard so hard it squeaks.",
                 c => c.G.Quests.Start("pips_barrel", c.P)).Say("I'll look around out back.", "start");

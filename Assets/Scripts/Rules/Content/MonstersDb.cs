@@ -112,6 +112,14 @@ namespace DnD.Rules.Content
                 Description = "Big, strong, and very interested in your lunch.",
                 Attacks = { Melee("Rend", 4, "1d6+2", DamageType.Slashing) }, ProficientSkills = { Skill.Perception },
             };
+            All["brawler"] = new MonsterDef
+            {
+                Id = "brawler", Name = "Rowdy Farmhand", SpriteId = "npc_brawler", AC = 10, HitDice = DiceExpr.Parse("2d8+2"),
+                Scores = new[] { 13, 10, 12, 10, 10, 10 }, CR = 0.125, XP = 25,
+                Description = "Payday, cider, and something to prove. (SRD Commoner, a little sturdier; unarmed.)",
+                Attacks = { Melee("Fists and furniture", 3, "1d4+1", DamageType.Bludgeoning) },
+                Traits = { "Just here for a good time" },
+            };
             All["owlbear"] = new MonsterDef
             {
                 Id = "owlbear", Name = "Owlbear", SpriteId = "mon_owlbear", AC = 13, HitDice = DiceExpr.Parse("7d10+21"),

@@ -43,6 +43,8 @@ namespace DnD.Game
         /// <summary>Quest-gated group: only around while QuestId's stage is within MinStage..MaxStage (QuestId null = always).</summary>
         public string QuestId;
         public int MinStage, MaxStage;
+        /// <summary>A nonlethal fistfight: no magic, no weapons, no items, nobody dies (knocked out instead), no party wipe.</summary>
+        public bool Brawl;
         public bool InStage(QuestLog q) => QuestId == null || (q.Stage(QuestId) >= MinStage && q.Stage(QuestId) <= MaxStage);
     }
 
@@ -355,9 +357,16 @@ namespace DnD.Game
             shop.Warps.Add(new WarpDef(6, 8, "town", 14, 15));
             Zones[shop.Id] = shop;
 
+            var tavernBrawl = new EnemyGroupDef { Id = "drake_brawlers", Brawl = true, Unique = true, Style = EncounterStyle.None, SightTiles = 0, Label = "the farmhands",
+                QuestId = "bar_brawl", MinStage = 1, MaxStage = 1 };
+            tavernBrawl.Members.Add(new EnemySpawn("brawler", 12, 6));
+            tavernBrawl.Members.Add(new EnemySpawn("brawler", 13, 8));
+            tavernBrawl.Members.Add(new EnemySpawn("brawler", 11, 9));
+
             var tavern = new ZoneDef { Id = "tavern", Name = "The Sleeping Drake", Map = Maps.Tavern, Indoors = true, DefaultSpawn = new Vector2Int(8, 9), SafeForLongRest = true,
                 EnterNarration = "The Sleeping Drake is warm, loud and smells like stew. Above the hearth hangs a carved wooden dragon, asleep, with a little nightcap." };
             tavern.Warps.Add(new WarpDef(8, 10, "town", 32, 11));
+            tavern.EnemyGroups.Add(tavernBrawl);
             Zones[tavern.Id] = tavern;
 
             var temple = new ZoneDef { Id = "temple", Name = "Temple of the Dawnmother", Map = Maps.Temple, Indoors = true, DefaultSpawn = new Vector2Int(5, 7), SafeForLongRest = true,

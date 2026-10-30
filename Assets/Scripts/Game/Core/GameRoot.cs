@@ -662,12 +662,14 @@ namespace DnD.Game
             if (!_groups.TryGetValue(groupId, out var agents) || agents.All(a => a == null || a.Monster.IsDown)) return;
             var zone = agents.First(a => a != null).Zone;
             var c = new CombatInstance(this, zone, groupId);
+            c.Brawl = agents.First(a => a != null).Group.Brawl;
             foreach (var a in agents.Where(a => a != null && !a.Monster.IsDown)) { a.StopAllCoroutines(); a.Moving = false; c.AddUnit(a.Monster, a, enemy: a); }
             foreach (var p in Players.Where(p => p.IsReady && p.Zone == zone && !p.InCombat && !p.Character.IsDead))
             {
                 if (p != instigator && Vector2.Distance(p.MapPos, instigator.MapPos) > 12) continue;
                 p.Hud.CloseAll();
                 c.AddUnit(p.Character, p.Avatar, p);
+                if (c.Brawl) { p.Character.Nonlethal = true; p.Hud.Narrate("Pip leaps onto the bar: \"FISTS ONLY! NO MAGIC IN MY BAR! And nobody DIES, or you're ALL banned!\""); continue; } // companions sit this one out
                 foreach (var comp in CompanionsOf(p))
                     if (comp.Character != null && !comp.Character.IsDead && comp.Actor.Zone == zone && Vector2.Distance(comp.Actor.MapPos, p.MapPos) <= 12)
                         c.AddUnit(comp.Character, comp.Actor, comp: comp);
@@ -685,10 +687,36 @@ namespace DnD.Game
         public void OnCombatFinished(CombatInstance c, bool victory)
         {
             Combats.Remove(c);
+            if (c.Brawl) { EndBrawl(c, victory); return; }
             foreach (var u in c.Units.Where(u => u.C is PlayerCharacter pc && pc.IsDead)) _deathTime[u.C.Uid] = NowAbs;
             if (!victory) StartCoroutine(PartyWipe(c));
             else if (c.GroupId != null) OnGroupResolved(c.GroupId);
         }
+
+        /// <summary>Everyone wakes up at 1 HP, the farmhands buy a round, and nobody goes to the temple.</summary>
+        void EndBrawl(CombatInstance c, bool victory)
+        {
+            foreach (var u in c.Units)
+            {
+                if (u.C is PlayerCharacter pc)
+                {
+                    pc.Nonlethal = false;
+                    if (pc.HP <= 0 && !pc.IsDead) { pc.HP = 1; pc.Stable = false; pc.DeathSuccesses = pc.DeathFailures = 0; }
+                }
+                else if (u.C.HP <= 0) u.C.HP = 1;
+            }
+            var p = c.Humans.FirstOrDefault();
+            Quests.Set("bar_brawl", QuestDb.Get("bar_brawl").Last, p, victory ? 1f : 0.5f);
+            World.AddFriendship("tobin", 50);
+            foreach (var h in c.Humans)
+                h.Hud.Narrate(victory
+                    ? "The last farmhand hits the floor, laughing. Everyone gets up, everyone's sore, and the farmhands buy the next round. Pip charges them double for the broken stool."
+                    : "You wake up on the tavern floor with a damp cloth on your head and a cider in your hand. \"You were MAGNIFICENT,\" says a farmhand with a black eye. \"Same time next week?\"");
+        }
+
+        /// <summary>Starts the bar brawl a frame later (after the conversation window has closed).</summary>
+        public void StartBrawlSoon(PlayerSlot p) => StartCoroutine(StartBrawlNextFrame(p));
+        IEnumerator StartBrawlNextFrame(PlayerSlot p) { yield return null; StartGroupCombat("drake_brawlers", p); }
 
         IEnumerator PartyWipe(CombatInstance c)
         {

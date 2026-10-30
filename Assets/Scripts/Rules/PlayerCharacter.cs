@@ -83,6 +83,8 @@ namespace DnD.Rules
 
         public int DeathSuccesses, DeathFailures;
         public bool Stable;
+        /// <summary>A nonlethal fight (a bar brawl): at 0 HP you're knocked out, unconscious and stable (2024 knockout rule). No death saves, no massive-damage death.</summary>
+        public bool Nonlethal;
         public bool HeroicInspiration;
 
         /// <summary>Bardic Inspiration die held from an ally (0 = none).</summary>
@@ -427,6 +429,14 @@ namespace DnD.Rules
             EndWildShape(log); // dropping to 0 HP ends Wild Shape
             int overflow = -HP;
             HP = 0;
+            if (Nonlethal)
+            {
+                if (hpBefore > 0) log?.Add($"{Name} is knocked out cold!");
+                Stable = true;
+                DeathSuccesses = DeathFailures = 0;
+                ConcentratingOn = null;
+                return;
+            }
             if (hpBefore > 0)
             {
                 // Massive damage: remaining damage >= max HP kills outright.

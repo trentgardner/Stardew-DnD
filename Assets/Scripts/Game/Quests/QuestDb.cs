@@ -185,6 +185,14 @@ namespace DnD.Game
             });
             Add(new QuestDef
             {
+                Id = "bar_brawl", Title = "Bar Brawl at the Drake", Giver = "pip",
+                StageText = new[] {
+                    "", "Payday at the Sleeping Drake, and the farmhands want a fistfight. Pip's rules: fists only, no magic, nobody dies.",
+                    "Complete. Win or lose, the Drake will be talking about it for weeks." },
+                Reward = new QuestReward { Xp = 100, Npc = "pip", Friendship = 50 },
+            });
+            Add(new QuestDef
+            {
                 Id = "fae_trickster", Title = "The Fae Trickster", Giver = "thimble",
                 StageText = new[] {
                     "", "Mister Thimble, a fae with a frog's face and a fox's grin, wants to play a riddle game at the pond in Whisperwood.",

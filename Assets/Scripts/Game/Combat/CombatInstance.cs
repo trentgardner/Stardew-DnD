@@ -34,6 +34,8 @@ namespace DnD.Game
     {
         public Zone Zone;
         public string GroupId;
+        /// <summary>A bar brawl (EnemyGroupDef.Brawl): fists and furniture only, everyone is knocked out instead of dying.</summary>
+        public bool Brawl;
         public readonly Encounter Enc = new Encounter();
         public readonly List<Unit> Units = new List<Unit>();
         public bool Finished;
