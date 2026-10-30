@@ -381,6 +381,9 @@ namespace DnD.Game
             _narratorTimer = 4f + text.Length * 0.045f;
         }
 
+        /// <summary>Hides the narrator's box now (a cutscene wants the screen).</summary>
+        public void HideNarration() { _narratorTimer = 0; _narrator.gameObject.SetActive(false); }
+
         /// <summary>The toasts on screen right now, newest first (as displayed, including "×N").</summary>
         public List<string> ToastTexts => _toastItems.Select(x => x.t.text).ToList();
         readonly Dictionary<Text, (string text, int n)> _toastKey = new Dictionary<Text, (string, int)>();

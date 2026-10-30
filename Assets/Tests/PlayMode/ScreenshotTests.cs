@@ -99,6 +99,34 @@ namespace DnD.Tests
             Capture("p5_04_festival_square");
         }
 
+        /// <summary>Phase 6: the hatching mid-scene, and the dragon's pet menu with a heart bubble.</summary>
+        [UnityTest]
+        public IEnumerator CapturePhase6Dragon()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new FuzzInput(6) { ConfirmChance = 0, CancelChance = 0, EndTurnChance = 0, MenuChance = 0 }, "sorcerer", "human");
+            yield return Settle();
+            g.Warp(p, "egg_shrine", new Vector2Int(13, 4), false); // two steps below the egg, as when you walk up to it
+            yield return Settle(20);
+            g.PacifyGroup("mine_egg", p);
+            p.Hud.CloseAll();
+            g.HatchEgg(p, Vector3.zero);
+            float t = Time.time;
+            while (Time.time - t < 5.6f) yield return null; // just after the flash: the hatchling on its shell
+            Capture("p6_01_hatching");
+            for (int i = 0; i < 900 && !(p.Hud.Top is MessageScreen); i++) yield return null;
+            p.Hud.Top?.Close();
+            yield return Settle(3);
+            (p.Hud.Top as NameEntryScreen)?.Submit();
+            yield return Settle(40);
+            p.Hud.CloseAll();
+            var pet = g.DragonAgent.GetComponent<DragonPet>();
+            pet.Emote("heart");
+            pet.OpenMenu(p);
+            yield return Settle(5);
+            Capture("p6_02_dragon_menu");
+        }
+
         [UnityTest]
         public IEnumerator CaptureKeyScenes()
         {

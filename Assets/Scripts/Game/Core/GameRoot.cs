@@ -194,7 +194,7 @@ namespace DnD.Game
             Combats.Clear();
             StopAllCoroutines();
             if (_worldRoot) Destroy(_worldRoot.gameObject);
-            Zones.Clear(); _npcs.Clear(); _groups.Clear(); Companions.Clear(); Dragon = null; _recruitAgents.Clear(); TavernRecruits.Clear();
+            Zones.Clear(); _npcs.Clear(); _groups.Clear(); Companions.Clear(); Dragon = null; MusicOverride = null; _recruitAgents.Clear(); TavernRecruits.Clear();
             _deathTime.Clear(); _sleeping.Clear(); _lastLongRest.Clear(); _parley.Clear(); _pendingPlayers.Clear();
             World = new WorldState();
             Quests = new QuestLog();
@@ -400,6 +400,7 @@ namespace DnD.Game
         /// <summary>Fight music if anyone's fighting, otherwise Player 1's zone (the town has a quieter night tune).</summary>
         public string WantedMusic()
         {
+            if (MusicOverride != null) return MusicOverride;
             if (AnyInCombat) return "music_fight";
             var lead = Players.FirstOrDefault(p => p.IsReady);
             if (lead == null) return null;
@@ -538,6 +539,11 @@ namespace DnD.Game
             Quests.Notify(QuestEvent.ZoneEntered, zoneId, p);
             string key = $"entered:{p.Index}:{zoneId}:{Clock.Day}";
             if (!World.IsLocked(key)) { World.Lock(key, 24 * 60); p.Hud.Narrate(zone.Def.EnterNarration, !World.Flag("seen:" + zoneId)); World.SetFlag("seen:" + zoneId); }
+            if (zoneId == "town" && Dragon != null && !World.Flag("dragon_town_intro"))
+            {
+                World.SetFlag("dragon_town_intro");
+                p.Hud.Narrate($"Heads turn as you walk into Thistledown. A child points at {World.DragonName} and shrieks with delight. A goose takes one look and leaves town.");
+            }
 
             if (zone.Def.Dark && p.Character.Darkvision <= 0 && !p.Avatar.HasLight)
             {
@@ -938,6 +944,7 @@ namespace DnD.Game
             SpawnDragon(p);
             foreach (var x in Players.Where(x => x.IsReady)) GiveXP(x, 100, "hatching the egg");
             p.Hud.Narrate($"{World.DragonName} chirps happily and scrambles up to ride on your shoulder... then falls off. Then tries again. Return to Captain Vale!");
+            foreach (var x in Players.Where(x => x.IsReady && x != p)) x.Hud.Toast($"The egg hatched! Say hello to {World.DragonName}.", UIKit.Gold);
         }
 
         /// <summary>Any short or long rest: the dragon is back to full health, brave again, and its nose and breath are fresh.</summary>
@@ -958,16 +965,21 @@ namespace DnD.Game
         {
             World.EggHatched = true;
             Quests.Set("fallen_star", FallenStar.Hatched, p);
-            Sfx.Play("crit");
-            p.Hud.Push(new MessageScreen("The Egg Hatches",
-                "The egg pulses once, twice, then splits with a sound like a log cracking in a fire. A tiny, damp, furious red dragon tumbles out, sneezes a puff of sparks onto your boots, looks up at you...\n\n...and decides, with total certainty, that you are its mother.",
-                () =>
-                {
-                    var names = new[] { "Cinder", "Ember", "Pebble", "Sir Toasty", "Biscuit" };
-                    p.Hud.Push(new ChoiceScreen("Name your dragon", "The dragonling chirps expectantly.",
-                        names.Select(n => (n, (Action)(() => NameDragon(p, n)))).ToList(), false));
-                }));
+            // Everyone in the room watches; the scene ends in the narration and the naming (HatchScene).
+            var scenes = new List<HatchCutscene>();
+            foreach (var x in Players.Where(x => x.IsReady && x.Zone == p.Zone))
+            {
+                x.Hud.CloseAll();
+                x.Hud.HideNarration();
+                var s = new HatchCutscene();
+                x.Hud.Push(s);
+                scenes.Add(s);
+            }
+            StartCoroutine(HatchScene.Play(this, p, eggPos, scenes));
         }
+
+        /// <summary>Set by a scene (the hatching) to play its own music instead of the zone's.</summary>
+        public string MusicOverride;
 
         // ================================================================== economy, quests, XP
 

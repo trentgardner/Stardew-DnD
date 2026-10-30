@@ -465,5 +465,102 @@ namespace DnD.Tests
                     if (row.Contains('y')) { count++; Assert.IsTrue(z.Dark, $"{z.Id} has a cold brazier but isn't dark"); }
             Assert.Greater(count, 0, "some dark places have cold braziers to light");
         }
+
+        // ============================================================ Task 5: the hatching scene and naming
+
+        static IEnumerator WaitFor(System.Func<bool> cond, int frames = 900)
+        {
+            for (int i = 0; i < frames && !cond(); i++) yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator HatchSceneEndsInNamingAndSpawnsTheDragon()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(40), "fighter", "human");
+            g.Warp(p, "egg_shrine", WorldDb.Zones["egg_shrine"].DefaultSpawn, false);
+            yield return Frames(2);
+            g.PacifyGroup("mine_egg", p);
+            p.Hud.CloseAll();
+            int xp = p.Character.XP;
+            g.HatchEgg(p, Vector3.zero);
+            Assert.IsTrue(p.Hud.Top is HatchCutscene, "the hatching plays as a little scene");
+            Assert.IsNull(g.Dragon, "no dragon until it's named");
+            yield return WaitFor(() => p.Hud.Top is MessageScreen);
+            Assert.IsTrue(p.Hud.Top is MessageScreen, "the scene ends in the narration");
+            p.Hud.Top.Close();
+            yield return WaitFor(() => p.Hud.Top is NameEntryScreen, 10);
+            var naming = p.Hud.Top as NameEntryScreen;
+            Assert.IsNotNull(naming, "then you name your dragon");
+            foreach (var ch in "Ziggy") naming.Type(ch);
+            naming.Submit();
+            yield return Frames(2);
+            Assert.AreEqual("Ziggy", g.World.DragonName);
+            Assert.IsNotNull(g.Dragon);
+            Assert.AreEqual("Ziggy", g.Dragon.Name);
+            Assert.AreEqual(FallenStar.Hatched, g.Quests.Stage("fallen_star"));
+            Assert.GreaterOrEqual(p.Character.XP, xp + 100);
+            Assert.IsNull(GameObject.Find("HatchlingProp"), "the scene cleans up after itself");
+        }
+
+        [UnityTest]
+        public IEnumerator NameEntryRejectsEmptyAndKeepsDefault()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(41), "fighter", "human");
+            yield return Frames(2);
+            string got = null;
+            var s = new NameEntryScreen(n => got = n);
+            p.Hud.Push(s);
+            yield return null;
+            foreach (var ch in "3!") s.Type(ch);
+            Assert.AreEqual("", s.Typed, "digits and symbols aren't name letters");
+            s.Submit();
+            Assert.AreEqual("Cinder", got, "an empty name keeps the default");
+
+            got = null;
+            var s2 = new NameEntryScreen(n => got = n);
+            p.Hud.Push(s2);
+            yield return null;
+            foreach (var ch in "Sir Reginald Toastypants") s2.Type(ch);
+            Assert.AreEqual(16, s2.Typed.Length, "names stop at 16 letters");
+            s2.Type('\b');
+            Assert.AreEqual(15, s2.Typed.Length, "backspace works");
+            s2.Close(); // Esc / ✕: keep what's typed
+            yield return Frames(2);
+            Assert.AreEqual("Sir Reginald To", got);
+        }
+
+        [UnityTest]
+        public IEnumerator HatchSceneCanBeSkipped()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(42), "fighter", "human");
+            g.Warp(p, "egg_shrine", WorldDb.Zones["egg_shrine"].DefaultSpawn, false);
+            yield return Frames(2);
+            g.PacifyGroup("mine_egg", p);
+            p.Hud.CloseAll();
+            g.HatchEgg(p, Vector3.zero);
+            var scene = (HatchCutscene)p.Hud.Top;
+            scene.Skip();
+            yield return Frames(2);
+            Assert.IsFalse(p.Hud.Top is MessageScreen, "no skipping in the first second (a stray key press)");
+            float t = Time.time;
+            yield return WaitFor(() => Time.time - t > 1.1f);
+            scene.Skip();
+            yield return Frames(3);
+            Assert.IsTrue(p.Hud.Top is MessageScreen, "skipped straight to the narration");
+        }
+
+        [Test]
+        public void TownsfolkNoticeTheDragon()
+        {
+            foreach (var id in new[] { "pip", "brannoc", "elowen", "perrin" })
+            {
+                Assert.IsTrue(WorldDb.Npcs.ContainsKey(id), id);
+                Assert.IsTrue(DialogueDb.DragonAsides.ContainsKey(id), $"{id} has a line about the dragon");
+                StringAssert.Contains("{0}", DialogueDb.DragonAsides[id], "the aside uses the dragon's name");
+            }
+        }
     }
 }

@@ -153,6 +153,8 @@ namespace DnD.Game
 
         public void SetSpeaker(string name) { if (_speaker != null) _speaker.text = name; }
 
+        bool _asideDone;
+
         public void Goto(string nodeId)
         {
             if (Root == null || _speaker == null) return; // window already gone
@@ -161,6 +163,7 @@ namespace DnD.Game
             _node.OnEnter?.Invoke(_ctx);   // may override the speaker (recruits) or close the window
             if (Closed) return;
             string narration = _node.Narration?.Invoke(_ctx);
+            if (!_asideDone) { _asideDone = true; var aside = DialogueDb.DragonAside(_ctx); if (aside != null) narration = string.IsNullOrEmpty(narration) ? aside : aside + " " + narration; }
             _narr.text = narration ?? "";
             _line.text = _node.Text != null ? _node.Text(_ctx) : "";
             if (_node.Speaker != null && !string.IsNullOrEmpty(_line.text)) _line.text = "\"" + _line.text + "\"";
