@@ -51,6 +51,16 @@ common actions take one click or one key, and nothing needs dragging unless you 
 - 2024 rules: swapping a weapon in combat uses the free object interaction (once per turn).
 - Existing tests for inventory behaviour (drag, split, right-click options, give potion, trade) must keep passing.
 
+## Settled while reviewing the design [Claude's calls]
+
+- **The shield belongs to the main set.** Swapping to the off-set stows the shield (no shield AC) and swapping back re-straps it, so a sword-and-board
+  fighter can swap to a longbow (BG3 behaviour). Equipping a two-handed weapon *into the main set* still requires taking the shield off, as today.
+- **Hotbar clicks never move your character.** A click that lands on the HUD hotbar is consumed by it (the same pointer-over-UI rule the combat bar uses).
+- **Filter groups:** Gear = weapons, armour, shields, wondrous items and gear; Use = consumables (potions, scrolls, food, torches, treats); Treasure =
+  treasure; Quest = quest items. All = everything.
+- **Junk storage:** a per-character list of item ids (saved with the character), so co-op partners keep separate junk marks.
+- **Off-set weapon storage:** `PlayerCharacter.OffSetWeapon` (saved; null on old saves), plus `ShieldStowed`.
+
 ## Left to the builder
 
 Exact layout and colours (match UIKit), the radial wheel's look, which keys show in footer hints, test names.
