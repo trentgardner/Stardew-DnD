@@ -134,7 +134,7 @@ namespace DnD.Game
                 }
                 if (p.Kind == PieceKind.Lever) _on[p.Id] = false;
                 if (p.Kind == PieceKind.Mirror) _dir[p.Id] = p.Dir;
-                if (p.Kind == PieceKind.Mirror || p.Kind == PieceKind.Light || p.Kind == PieceKind.Crystal) Zone.SetSolid(p.Pos, true);
+                if (p.Kind == PieceKind.Mirror || p.Kind == PieceKind.Light || p.Kind == PieceKind.Crystal || p.Kind == PieceKind.Lever) Zone.SetSolid(p.Pos, true);
             }
             Refresh();
         }

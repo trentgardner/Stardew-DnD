@@ -14,6 +14,7 @@ namespace DnD.Game
                 case "ssark": return Ssark();
                 case "tik": return Tik();
                 case "snik_caught": return SnikCaught();
+                case "watch_armor": return WatchArmor();
                 default: return null;
             }
         }
@@ -26,6 +27,7 @@ namespace DnD.Game
                 case "tobin": CraterLine(d, "Old Tobin", "Seventy years I've lived under that sky and the stars stayed UP. Now look. A hole. In my hills. Who's going to fill it in, eh? Not the Academy, I'll tell you that."); break;
                 case "maddie": CraterLine(d, "Maddie", "I'm looking for star bits! Mum says if I find one I can keep it. Perrin says I'm not allowed to touch anything. Perrin isn't my mum."); break;
                 case "snik": SnikFriend(d); break;
+                case "rhoswen": RhoswenTowerLines(d); break;
                 case "wick": CraterLine(d, "Wick", "Did you know the crystals tickle? Don't tell the Academy man. He gets a vein in his forehead."); break;
             }
         }
@@ -141,6 +143,52 @@ namespace DnD.Game
                 c => "Snik hops from foot to foot, saucepan rattling. The egg-guards drop their slings and start a song of welcome that is loud, sincere and spectacularly off-key. The egg pulses, warm as a hearth.",
                 c => c.G.PacifyGroup("mine_egg", c.P))
                 .Say("(Approach the egg)", end: true);
+        }
+
+        // =================================================================== The last watchman (the Old Watchtower)
+
+        static void ArmorKneels(DCtx c) => c.G.PacifyGroup("tower_armor", c.P);
+
+        static Dialogue WatchArmor()
+        {
+            var d = new Dialogue("watch_armor", c => "start");
+            const string who = "The Last Watchman";
+            d.Node("start", who, c => "...WHO... CLIMBS... THE TOWER. SPEAK THE WATCHWORD.",
+                c => "The suit of armor by the lantern creaks upright. Dust pours from its joints. There's nobody inside it, only a faint glow where a face should be, and the smell, very faint, of lamp oil. Its gauntlet closes on the hilt of a sword that has not been drawn in centuries.")
+                .Say("(Recite the words from the wall) \"" + WorldDb.FirstIdeal + "\"", "kneel", ArmorKneels, show: c => c.G.World.Flag("secret:tower_inscription"))
+                .Roll(Skill.History, 10, "(Recall the old watchword) The Oathbound kept the light...", "kneel", "wrong", onSuccess: ArmorKneels, show: c => !c.G.World.Flag("secret:tower_inscription"), social: false)
+                .Roll(Skill.Religion, 13, "We serve the light too. The same light you kept.", "kneel", "wrong", onSuccess: ArmorKneels)
+                .Roll(Skill.Persuasion, 15, "Your watch is over, sentinel. Let us carry it now.", "kneel", "wrong", onSuccess: ArmorKneels)
+                .Say("(Draw your weapon)", doIt: c => { c.Screen.Close(); c.G.StartGroupCombat("tower_armor", c.P); }, end: true);
+            d.Node("kneel", who, c => "...THE WATCH... IS KEPT.",
+                c => "The armor lowers its sword, sinks to one knee with a long groan of old iron, and bows its empty helm toward the lantern. The glow inside it fades, gently, like a lamp being turned down at the end of a long night. It does not move again.")
+                .Bye("(Leave it to its rest)");
+            d.Node("wrong", who, c => "...THAT IS NOT. THE WATCHWORD.",
+                c => "The empty helm turns toward you. The sword comes up. Roll initiative!")
+                .Say("(Fight!)", doIt: c => { c.Screen.Close(); c.G.StartGroupCombat("tower_armor", c.P); }, end: true);
+            return d;
+        }
+
+        /// <summary>Captain Vale hands out the watchtower job once the main quest is under way, and hears what the inscription says.</summary>
+        static void RhoswenTowerLines(Dialogue d)
+        {
+            const string who = "Captain Rhoswen Vale";
+            d.Node("tower_job", who, c => "Actually... yes. There's an old watchtower on the ridge north of Miller's Ford. Older than the village. My grandmother said there were words carved at the top that nobody's read in a hundred years. With stars falling out of the sky, I'd like to know what our ancestors were watching FOR.",
+                c => "She taps the ridge on a map pinned inside her breastplate. The map is mostly coffee stains.",
+                c => c.G.Quests.Start("watchtower", c.P))
+                .Say("I'll scout it.", end: true);
+            d.Node("tower_done", who, c => "\"" + WorldDb.FirstIdeal + "\"",
+                c => "She repeats it under her breath, then again, and goes very quiet. Then she pulls out a notebook and writes it down. Then she writes it down again, more neatly. \"The watch keeps the light so others may sleep. ...That's the job, isn't it. That was always the job.\"",
+                c => c.G.Quests.Set("watchtower", 3, c.P))
+                .Bye("It is.");
+            foreach (var id in new[] { "intro", "progress", "dragon", "after" })
+                if (d.Nodes.TryGetValue(id, out var n))
+                {
+                    n.Options.Insert(System.Math.Max(0, n.Options.Count - 1),
+                        new DOption { Text = "Any other work, Captain?", Next = "tower_job", Show = c => c.G.Quests.Stage("watchtower") == 0 && c.G.Quests.Stage("fallen_star") >= FallenStar.Trail });
+                    n.Options.Insert(System.Math.Max(0, n.Options.Count - 1),
+                        new DOption { Text = "I read the words at the top of the watchtower.", Next = "tower_done", Show = c => c.G.Quests.Stage("watchtower") == 2 });
+                }
         }
 
         // =================================================================== Elder Ssark (the Kobold Warrens)

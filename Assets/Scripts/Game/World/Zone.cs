@@ -205,7 +205,7 @@ namespace DnD.Game
                     else Debug.LogWarning($"{Def.Id}: no SecretDef at {m}");
                     break;
                 case 'X': Wall(m, Def.Dark ? "tile_cave_wall" : "tile_cliff"); break; // rock in the mine, green cliffs outdoors
-                case 'W': Wall(m, Def.Id == "temple" ? "tile_stone_wall" : "tile_house_wall"); break;
+                case 'W': Wall(m, Def.Id == "temple" || Def.Id == "watchtower" ? "tile_stone_wall" : "tile_house_wall"); break;
                 case 'w': Wall(m, "tile_window"); break;
                 case 'U': Wall(m, "tile_roof_blue"); break;
                 case 'R': Wall(m, "tile_roof"); break;

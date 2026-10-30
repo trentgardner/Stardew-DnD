@@ -945,3 +945,28 @@ pattern p5_beam
 ................
 end
 paint fx_beam p5_beam a=ffe082 b=ffd54a w=fffde7
+# ---------------------------------------------------------------- Phase 5: the Old Watchtower
+still mon_animated_armor_src "Actor/Character/Knight/SpriteSheet.png"
+tint  mon_animated_armor_0 mon_animated_armor_src_0 200 0.3 0.8
+tint  mon_animated_armor_1 mon_animated_armor_src_1 200 0.3 0.8
+paint item_watchwarden_cloak cloak k=1e2428 a=546e7a b=90a4ae c=ffd54a
+audio music_watchtower "Audio/Musics/30 - Ruins.ogg"
+pattern p5_inscription
+................
+................
+...kkkkkkkkkk...
+..kaaaaaaaaaak..
+..kabbbabbbbak..
+..kaaaaaaaaaak..
+..kabbabbbabak..
+..kaaaaaaaaaak..
+..kabbbbabbbak..
+..kaaaaaaaaaak..
+..kaaacccaaaak..
+..kaacyyycaaak..
+..kaaacccaaaak..
+..kkkkkkkkkkkk..
+................
+................
+end
+paint obj_inscription p5_inscription k=1e2428 a=9aa4ab b=4a5258 c=6d4a2a y=ffd54a

@@ -6,6 +6,62 @@ namespace DnD.Game
     /// <summary>Phase 5's new places: Starfall Crater, the Kobold Warrens, the egg shrine and the Old Watchtower.</summary>
     public static partial class WorldDb
     {
+        /// <summary>The First Ideal of the Oathbound, carved at the top of the Old Watchtower. Wording pending lore approval.</summary>
+        public const string FirstIdeal = "Light before rest. The watch keeps the light so others may sleep.";
+
+        static void BuildWatchtower()
+        {
+            var z = new ZoneDef
+            {
+                Id = "watchtower", Name = "The Old Watchtower", Map = Maps.Watchtower, DefaultSpawn = new Vector2Int(15, 24), Music = "music_watchtower",
+                EnterNarration = "On the ridge above the ford, a broken tower of grey stone stands against the sky. Ivy holds half of it together. The courtyard wall has fallen in places, and a stone sentry still keeps watch at the gate, its face worn smooth by a few hundred years of weather.",
+            };
+            z.Warps.Add(new WarpDef(15, 25, "ford", 36, 1));
+            z.Warps.Add(new WarpDef(16, 25, "ford", 37, 1));
+            z.Signs[new Vector2Int(9, 21)] = "A stone sentry in a long cloak, one hand raised as if to say 'halt' and the other holding a lantern carved from the same stone. Rain has worn away the face.\n\nAt its feet, half buried in moss: \"WE KEEP THE LIGHT.\"";
+
+            var pz = new PuzzleDef();
+            // 1. The three fires: light the first and the last, let the middle sleep.
+            pz.Pieces.Add(new PuzzlePiece { Id = "lever_1", Kind = PieceKind.Lever, Pos = new Vector2Int(18, 12),
+                Hint = "A worn plaque beside the levers, in old letters: \"The watch lit the first fire and the last, and let the middle sleep.\"", HintSkill = Rules.Skill.History, HintDC = 12 });
+            pz.Pieces.Add(new PuzzlePiece { Id = "lever_2", Kind = PieceKind.Lever, Pos = new Vector2Int(20, 12) });
+            pz.Pieces.Add(new PuzzlePiece { Id = "lever_3", Kind = PieceKind.Lever, Pos = new Vector2Int(22, 12) });
+            pz.Pieces.Add(new PuzzlePiece { Id = "gate_1", Kind = PieceKind.Gate, Pos = new Vector2Int(10, 11), OpensWhen = new[] { "lever_1", "!lever_2", "lever_3" }, Latches = true });
+            // 2. The heavy floor: two plates, one block. Solo players use the block; in co-op, a friend or a waiting companion stands on the other.
+            pz.Pieces.Add(new PuzzlePiece { Id = "plate_a", Kind = PieceKind.Plate, Pos = new Vector2Int(7, 8) });
+            pz.Pieces.Add(new PuzzlePiece { Id = "plate_b", Kind = PieceKind.Plate, Pos = new Vector2Int(14, 8) });
+            pz.Pieces.Add(new PuzzlePiece { Id = "block", Kind = PieceKind.Block, Pos = new Vector2Int(10, 9) });
+            pz.Pieces.Add(new PuzzlePiece { Id = "gate_2", Kind = PieceKind.Gate, Pos = new Vector2Int(10, 6), OpensWhen = new[] { "plate_a", "plate_b" }, Latches = true });
+            // 3. The sunlit stair: bounce the window's light off both mirrors onto the crystal by the stair gate.
+            pz.Pieces.Add(new PuzzlePiece { Id = "window", Kind = PieceKind.Light, Pos = new Vector2Int(8, 1), Dir = 2 });
+            pz.Pieces.Add(new PuzzlePiece { Id = "mirror_1", Kind = PieceKind.Mirror, Pos = new Vector2Int(8, 4), Dir = 0,
+                Hint = "Scratches on the floor show where the light once fell: straight down from the window, then east along the wall, then up to the crystal by the stair.", HintSkill = Rules.Skill.Investigation, HintDC = 13 });
+            pz.Pieces.Add(new PuzzlePiece { Id = "mirror_2", Kind = PieceKind.Mirror, Pos = new Vector2Int(14, 4), Dir = 1 });
+            pz.Pieces.Add(new PuzzlePiece { Id = "crystal", Kind = PieceKind.Crystal, Pos = new Vector2Int(15, 2) });
+            pz.Pieces.Add(new PuzzlePiece { Id = "gate_3", Kind = PieceKind.Gate, Pos = new Vector2Int(16, 3), OpensWhen = new[] { "crystal" }, Latches = true });
+            z.Puzzle = pz;
+
+            // The lantern room.
+            z.Secrets[new Vector2Int(21, 2)] = new SecretDef
+            {
+                Id = "tower_inscription", Sprite = "obj_inscription", Prompt = "Read the inscription", Skill = Rules.Skill.History, DC = 10,
+                Success = "Carved into the lantern-stone, in letters that were old when Thistledown was young:\n\n\"" + FirstIdeal + "\"\n\nBelow it, a sigil: a sword and a lantern, crossed. The mark of the Oathbound, the knightly orders who once kept towers like this one all across the valley.",
+                Failure = "The letters are old, and moss has crept into them. You make out 'light' and 'watch' and lose the rest. Fresh eyes tomorrow.",
+                AlreadyFound = "\"" + FirstIdeal + "\"",
+            };
+            var chest = new ChestDef { Id = "tower_chest", Pos = new Vector2Int(24, 3) };
+            chest.Items.Add(new KeyValuePair<string, int>("watchwarden_cloak", 1));
+            chest.Items.Add(new KeyValuePair<string, int>("potion_healing", 2));
+            z.Chests.Add(chest);
+            var armor = new EnemyGroupDef { Id = "tower_armor", ParleyDialogue = "watch_armor", Unique = true, Style = EncounterStyle.None, SightTiles = 4, Label = "the last watchman" };
+            armor.Members.Add(new EnemySpawn("animated_armor", 19, 3));
+            z.EnemyGroups.Add(armor);
+            Zones[z.Id] = z;
+
+            Zones["ford"].Warps.Add(new WarpDef(36, 0, "watchtower", 15, 24));
+            Zones["ford"].Warps.Add(new WarpDef(37, 0, "watchtower", 16, 24));
+        }
+
         static void BuildCrater()
         {
             var z = new ZoneDef

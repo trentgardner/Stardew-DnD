@@ -110,7 +110,7 @@ namespace DnD.Game
 
         public static readonly string[] Ford =
         {
-            "TTTTTTTTTTTTTTTTTTTTTTTTTTj~~TTTTTTTTTTTTTTTTT",
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTj~~TTTTTTT,,TTTTTTTT",
             "TTTTTTTT.T..TTT.TT.TT.TT..T~~j..T.TT..TTTTTTTT",
             "TT...........t.c...........~~jt..............T",
             "T...........t.x...xtt...r..~~..........t....TT",
@@ -359,6 +359,37 @@ namespace DnD.Game
             "XXXXXXXXXXX::::XXXXXXXXXXX",
             "XXXXXXXXXXX:EE:XXXXXXXXXXX",
             "XXXXXXXXXXXXXXXXXXXXXXXXXX",
+        };
+
+        /// <summary>Phase 5: the Old Watchtower on the ridge north of Miller's Ford. Courtyard, then three puzzle rooms climbing to the lantern room.</summary>
+        public static readonly string[] Watchtower =
+        {
+            "TTTTTWWWWWWWWWWWWWWWWWWWWWWTTTTT",
+            "TTTT.WWW@WWWWWWWWWWWWWWWWWW.T..T",
+            "T....W:::::::::%W::::q:::WW....T",
+            "TT...W::::::::::Z:::::::cWW....T",
+            "TT...W::/:::::/:W::::::::WW....T",
+            "T....W::::::::::WWWWWWWWWWW...TT",
+            "TT...WWWWWZWWWWWWWWWWWWWWWW...TT",
+            "T....W::::::::::WWWWWWWWWWW...TT",
+            "T....W:Q::::::Q:WWWWWWWWWWW...TT",
+            "TT...W::::J:::::WWWWWWWWWWW...TT",
+            "TT...Wr:::::::::WWWWWWWWWWW....T",
+            "T....WWWWWZWWWWWWWWWWWWWWWW....T",
+            "T....W::::::::::::I:I:I:x:W....T",
+            "T....W::::::::::::::::::::W....T",
+            "T....WP::::::::::::::::::rW...TT",
+            "T....WWWWWWWWWW::WWWWWWWWWW....T",
+            "T.............::::.............T",
+            "T...t...h..t...::...h......t..TT",
+            "T..............::......*.......T",
+            "TT..Pr.rP.rrP..::..rPrrrPrrrP.TT",
+            "T..............::..............T",
+            "TT.......S.....::........t.....T",
+            "TT.h........*..::.....t.......TT",
+            "TT....t........::..*......h....T",
+            "T.T.T.T..T.TT.T::.TT.T..TTT....T",
+            "TTTTTTTTTTTTTTT,,TTTTTTTTTTTTTTT",
         };
     }
 }

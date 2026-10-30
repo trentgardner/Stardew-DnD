@@ -80,6 +80,19 @@ namespace DnD.Game
             });
             Add(new QuestDef
             {
+                Id = "watchtower", Title = "The Watchtower Inscription", Giver = "rhoswen",
+                StageText = new[] {
+                    "", "Captain Vale asked you to scout the Old Watchtower on the ridge north of Miller's Ford.",
+                    "You read the inscription at the top of the tower. Tell Captain Vale what it says.",
+                    "Complete. Captain Vale has copied the words into her notebook. Twice." },
+                Triggers = {
+                    new QuestTrigger(QuestEvent.SecretFound, "tower_inscription", 0, 2),
+                    new QuestTrigger(QuestEvent.SecretFound, "tower_inscription", 1, 2),
+                },
+                Reward = new QuestReward { Xp = 200, Copper = 2000, Npc = "rhoswen", Friendship = 50 },
+            });
+            Add(new QuestDef
+            {
                 Id = "go_between", Title = "Snik Speaks for You", Giver = null,
                 StageText = new[] {
                     "", "Snik agreed to speak for you in the kobold warrens below the old mine. Meet him at the village gate.",

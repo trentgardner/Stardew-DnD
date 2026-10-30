@@ -191,6 +191,10 @@ namespace DnD.Rules.Content
                 "+1 AC. Woven from thread that shimmers between colors when nobody's looking directly at it.",
                 "Fae of the Court of Blossoms trade these for favors. Never ask which favor.", ac: 1);
 
+            Wondrous("watchwarden_cloak", "Watchwarden's Cloak", WornSlot.Cloak, 500, true,
+                "Cloak of Protection: +1 AC and +1 to all saving throws.",
+                "Worn by the tower's last watch. Still smells, very faintly, of lamp oil.", ac: 1, save: 1);
+
             Wondrous("oathbound_signet", "Oathbound Signet", WornSlot.Ring, 300, true,
                 "+1 to all saving throws.",
                 "A ring of the long-gone Oathbound knights. Engraved inside: 'Journey before comfort.'", save: 1);

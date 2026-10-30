@@ -107,6 +107,14 @@ namespace DnD.Rules.Content
                 PackTactics = true, SunlightSensitivity = true, Traits = { "Pack Tactics", "Sunlight Sensitivity" },
                 Loot = { new KeyValuePair<string, float>("copper_trinket", 1f) }, CopperMin = 50, CopperMax = 200,
             };
+            All["animated_armor"] = new MonsterDef
+            {
+                Id = "animated_armor", Name = "The Last Watchman", SpriteId = "mon_animated_armor", AC = 18, HitDice = DiceExpr.Parse("6d8+6"),
+                Scores = new[] { 14, 11, 13, 1, 3, 1 }, Darkvision = 60, CR = 1, XP = 200, Speed = 25,
+                Description = "An empty suit of watch-armor that never stopped standing guard. (SRD Animated Armor. This engine gives it one Slam per turn instead of two; it is immune to poison and psychic damage in the books.)",
+                Attacks = { Melee("Slam", 4, "1d6+2", DamageType.Bludgeoning) },
+                Traits = { "Antimagic Susceptibility", "False Appearance", "Immune: poison, psychic" },
+            };
             All["giant_fire_beetle"] = new MonsterDef
             {
                 Id = "giant_fire_beetle", Name = "Giant Fire Beetle", SpriteId = "mon_fire_beetle", AC = 13, HitDice = DiceExpr.Parse("1d6+1"),

@@ -105,7 +105,7 @@ namespace DnD.Tests
         }
 
         static PuzzleRoom Room(GameRoot g) => g.Zones["test_puzzle"].GetComponent<PuzzleRoom>();
-        static PuzzlePieceObject Piece(string id) => Object.FindObjectsByType<PuzzlePieceObject>().Single(x => x.Piece.Id == id);
+        static PuzzlePieceObject Piece(string id) => Object.FindObjectsByType<PuzzlePieceObject>().Single(x => x.Room.Zone.Def.Id == "test_puzzle" && x.Piece.Id == id);
 
         [UnityTest]
         public IEnumerator BlockOnlyMovesOntoFreeFloor()
@@ -251,6 +251,120 @@ namespace DnD.Tests
             room.Refresh();
             Assert.IsFalse(room.IsOn("gate"), "step off the plate and it closes");
             Assert.IsFalse(p.Zone.IsWalkable(new Vector2Int(7, 4)));
+        }
+
+        // ============================================================ Task 6: the Old Watchtower
+
+        static PuzzlePieceObject PieceIn(Zone z, string id) => Object.FindObjectsByType<PuzzlePieceObject>().Single(x => x.Room.Zone == z && x.Piece.Id == id);
+        static bool Reach(Zone z, Vector2Int a, Vector2Int b) => z.FindPath(a, b, null, 20000).Count > 0;
+
+        [UnityTest]
+        public IEnumerator WatchtowerReachableFromTheFord()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(5), "fighter", "human");
+            yield return Frames(2);
+            var w = WorldDb.Zones["ford"].Warps.Find(x => x.At == new Vector2Int(36, 0));
+            Assert.IsNotNull(w, "the ford's north edge leads up the ridge");
+            Assert.AreEqual("watchtower", w.ToZone);
+            Assert.IsTrue(Reach(g.Zones["ford"], WorldDb.Zones["ford"].DefaultSpawn, new Vector2Int(36, 1)), "the ford's west bank reaches the ridge trail");
+            g.Warp(p, w.ToZone, w.ToPos, false);
+            yield return Frames(2);
+            Assert.AreEqual("watchtower", p.Zone.Def.Id);
+            var back = p.Zone.Def.Warps.Find(x => x.ToZone == "ford");
+            Assert.IsTrue(Reach(p.Zone, p.MapPos, back.At));
+        }
+
+        [UnityTest]
+        public IEnumerator WatchtowerSolvesInOrder()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(6), "fighter", "human");
+            yield return Frames(2);
+            g.Warp(p, "watchtower", WorldDb.Zones["watchtower"].DefaultSpawn, false);
+            yield return Frames(2);
+            var z = p.Zone;
+            var room = z.GetComponent<PuzzleRoom>();
+            var hall = new Vector2Int(12, 13);       // room 1
+            var heavy = new Vector2Int(10, 8);       // room 2
+            var stair = new Vector2Int(10, 3);       // room 3
+            var lantern = new Vector2Int(20, 3);     // the lantern room
+            Assert.IsTrue(Reach(z, p.MapPos, hall), "the courtyard leads into the first room");
+            Assert.IsFalse(Reach(z, hall, heavy), "gate 1 starts shut");
+
+            // 1. the three fires (the plaque's been read, so the levers just pull)
+            g.World.SetFlag("puzzlehint:watchtower:lever_1");
+            g.Warp(p, "watchtower", new Vector2Int(20, 13), false);
+            yield return Frames(2);
+            PieceIn(z, "lever_1").Interact(p);
+            PieceIn(z, "lever_2").Interact(p);
+            Assert.IsFalse(room.IsOn("gate_1"), "the middle fire must sleep");
+            PieceIn(z, "lever_2").Interact(p);
+            PieceIn(z, "lever_3").Interact(p);
+            Assert.IsTrue(room.IsOn("gate_1"));
+            Assert.IsTrue(Reach(z, hall, heavy), "gate 1 opens the way to the heavy floor");
+            Assert.IsFalse(Reach(z, heavy, stair), "gate 2 is still shut");
+
+            // 2. the heavy floor: the block onto plate A (push west along row 9, then north), the player on plate B
+            foreach (var from in new[] { new Vector2Int(11, 9), new Vector2Int(10, 9), new Vector2Int(9, 9) })
+            {
+                g.Warp(p, "watchtower", from, false);
+                yield return Frames(1);
+                PieceIn(z, "block").Interact(p);
+            }
+            Assert.AreEqual(new Vector2Int(7, 9), room.PosOf("block"));
+            g.Warp(p, "watchtower", new Vector2Int(7, 10), false);
+            yield return Frames(1);
+            PieceIn(z, "block").Interact(p);
+            Assert.AreEqual(new Vector2Int(7, 8), room.PosOf("block"), "the block sits on plate A");
+            g.Warp(p, "watchtower", new Vector2Int(14, 8), false);
+            yield return Frames(2);
+            room.Refresh();
+            Assert.IsTrue(room.IsOn("gate_2"));
+            Assert.IsTrue(Reach(z, heavy, stair), "gate 2 opens the way to the sunlit stair");
+            Assert.IsFalse(Reach(z, stair, lantern), "gate 3 is still shut");
+
+            // 3. the sunlit stair
+            g.World.SetFlag("puzzlehint:watchtower:mirror_1");
+            g.Warp(p, "watchtower", new Vector2Int(9, 3), false);
+            yield return Frames(2);
+            room.Refresh();
+            Assert.Greater(room.BeamTiles.Count, 0, "the window casts a beam");
+            Assert.IsFalse(room.IsOn("crystal"));
+            PieceIn(z, "mirror_1").Interact(p);
+            Assert.IsFalse(room.IsOn("crystal"), "one mirror isn't enough");
+            PieceIn(z, "mirror_2").Interact(p);
+            Assert.IsTrue(room.IsOn("crystal"), "both mirrors bounce the light onto the crystal");
+            Assert.IsTrue(room.IsOn("gate_3"));
+            Assert.IsTrue(Reach(z, stair, lantern), "the lantern room is open");
+        }
+
+        [UnityTest]
+        public IEnumerator ArmorStandsDownToTheWatchword()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(7), "fighter", "human");
+            yield return Frames(2);
+            g.Quests.Start("watchtower", p);
+            foreach (var gate in new[] { "gate_1", "gate_2", "gate_3" }) g.World.SetFlag("puzzle:watchtower:" + gate);
+            g.Warp(p, "watchtower", new Vector2Int(21, 3), false);
+            yield return Frames(15);
+            p.Hud.CloseAll();
+            var words = Object.FindObjectsByType<SecretInteractable>().Single(s => s.Def.Id == "tower_inscription");
+            words.Resolve(p, CheckOutcome.Success);
+            p.Hud.CloseAll();
+            Assert.IsTrue(g.World.Flag("secret:tower_inscription"));
+            Assert.AreEqual(2, g.Quests.Stage("watchtower"), "reading the inscription moves the quest on");
+
+            int xp = p.Character.XP;
+            var grp = WorldDb.Zones["watchtower"].EnemyGroups.Find(x => x.Id == "tower_armor");
+            var d = DialogueDb.Get("watch_armor");
+            var c = new DCtx { P = p, Group = grp };
+            var opt = d.Nodes["start"].Options.First(o => o.Text.StartsWith("(Recite") && o.Show(c));
+            Assert.IsFalse(opt.Check.HasValue, "you read it on the wall: no roll needed");
+            opt.Do(c);
+            Assert.IsTrue(g.World.PacifiedGroups.Contains("tower_armor"));
+            Assert.AreEqual(MonstersDb.Get("animated_armor").XP, p.Character.XP - xp, "the watchman kneels: full XP");
         }
     }
 }
