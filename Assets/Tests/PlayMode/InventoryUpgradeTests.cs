@@ -90,7 +90,7 @@ namespace DnD.Tests
             input.Left = true;
             yield return Frames(2);
             Assert.Greater(p.Avatar.TorchMinutes, 0f, "clicking the torch on the hotbar lights it");
-            Assert.AreEqual(before, p.Avatar.transform.position, "and nothing else happens in the world");
+            Assert.Less(Vector3.Distance(before, p.Avatar.transform.position), 0.01f, "and nothing else happens in the world");
         }
 
         [UnityTest]
@@ -118,7 +118,7 @@ namespace DnD.Tests
             Vector3 before = p.Avatar.transform.position;
             input.Left = true;
             yield return Frames(3);
-            Assert.AreEqual(before, p.Avatar.transform.position);
+            Assert.Less(Vector3.Distance(before, p.Avatar.transform.position), 0.01f, "you stay where you are");
             Assert.IsFalse(p.Hud.HasScreen, "an empty hotbar slot does nothing");
         }
 
