@@ -5,6 +5,9 @@ namespace DnD.Game
     /// <summary>Things that happen in the world that can move a quest along.</summary>
     public enum QuestEvent { ZoneEntered, GroupResolved, ItemGained, FlagSet, SecretFound }
 
+    /// <summary>Stages of the main quest, "fallen_star" (save version 2 numbering).</summary>
+    public static class FallenStar { public const int Crater = 1, Trail = 2, Warrens = 3, Egg = 4, Hatched = 5, Done = 6; }
+
     /// <summary>When event On happens with this Id and the quest is at FromStage, it moves to ToStage.</summary>
     public class QuestTrigger
     {
@@ -57,11 +60,20 @@ namespace DnD.Game
             {
                 Id = "fallen_star", Title = "The Fallen Star", Giver = "rhoswen",
                 StageText = new[] {
-                    "", "Captain Vale asked you to investigate the old copper mine north of Thistledown, where something fell from the sky.",
+                    "", "Captain Vale asked you to find where the star fell, in the hills past Whisperwood's north trail.",
+                    "The crater is empty. Something carried the star away on small clawed feet, and things keep going missing in town. Follow the tracks, or catch the thief in the act after dark.",
+                    "The trail leads into the old copper mine and down, to the kobolds' warrens.",
                     "You found the source: a glowing red egg in the depths of the mine, guarded by devoted kobolds.",
                     "The egg hatched! A baby dragon has chosen you. Return to Captain Vale.",
                     "Complete. Thistledown has a dragon now. The capital will hear of this soon..." },
-                Triggers = { new QuestTrigger(QuestEvent.GroupResolved, "mine_egg", 1, 2), new QuestTrigger(QuestEvent.GroupResolved, "mine_egg", 0, 2) },
+                Triggers = {
+                    new QuestTrigger(QuestEvent.SecretFound, "crater_hollow", FallenStar.Crater, FallenStar.Trail),
+                    new QuestTrigger(QuestEvent.SecretFound, "crater_tracks", FallenStar.Trail, FallenStar.Warrens),
+                    new QuestTrigger(QuestEvent.GroupResolved, "mine_egg", 0, FallenStar.Egg),
+                    new QuestTrigger(QuestEvent.GroupResolved, "mine_egg", FallenStar.Crater, FallenStar.Egg),
+                    new QuestTrigger(QuestEvent.GroupResolved, "mine_egg", FallenStar.Trail, FallenStar.Egg),
+                    new QuestTrigger(QuestEvent.GroupResolved, "mine_egg", FallenStar.Warrens, FallenStar.Egg),
+                },
                 Reward = new QuestReward { Xp = 300, Copper = 5000, Npc = "rhoswen", Friendship = 100 },
             });
             Add(new QuestDef

@@ -8,6 +8,8 @@
 //          S dragon statue  O well  m market stall  P ruined pillar  F campfire
 //          Y fairy ring  q hidden spot (searched with a skill check, see ZoneDef.Secrets)
 //          K anvil/forge  N bench  p planter  L washing line
+//          d scorched earth  e glowing crystals  H kobold hut  i brazier  V stairs down
+//          puzzle pieces (see ZoneDef.Puzzle): Q plate  I lever  J push block  Z gate  / mirror  @ light source  % light crystal
 namespace DnD.Game
 {
     public static class Maps

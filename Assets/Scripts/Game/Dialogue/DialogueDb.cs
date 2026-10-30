@@ -280,8 +280,8 @@ namespace DnD.Game
             {
                 int s = c.G.Quests.Stage("fallen_star");
                 if (s == 0) return "intro";
-                if (c.G.World.EggHatched && s < 4) return "dragon";
-                if (s >= 4) return "after";
+                if (c.G.World.EggHatched && s < FallenStar.Done) return "dragon";
+                if (s >= FallenStar.Done) return "after";
                 return "progress";
             });
             const string who = "Captain Rhoswen Vale";
@@ -290,7 +290,7 @@ namespace DnD.Game
                 c => { c.G.Quests.Start("bad_blood", c.P); c.G.Quests.Start("wolf_bounty", c.P); })
                 .Say("I'll see what I can do.", end: true);
             d.Node("wolves_paid", who, c => "The wolves? Ha! Good. Bounty's fifteen gold. Don't let my uncle see me hand it over, he thinks the watch budget is for biscuits.").Bye("Pleasure doing business.");
-            d.Node("intro", who, c => "You there! You look... capable. Something fell out of the sky last night near the old copper mine. Since then: four chickens gone, Brannoc's kettle, and Tobin's spoon. My entire watch is four people, and one of them is my uncle.",
+            d.Node("intro", who, c => "You there! You look... capable. Something fell out of the sky last night, in the hills past Whisperwood's north trail. Since then: four chickens gone, Brannoc's kettle, and Tobin's spoon. My entire watch is four people, and one of them is my uncle.",
                 c => "A half-elf in a dented breastplate, dark circles under her eyes, hand resting on a well-used sword.")
                 .Say("I'll look into it.", "accept", c => c.G.Quests.Start("fallen_star"))
                 .Roll(Skill.Insight, 11, "(Read her) You're more worried than you're letting on.", "insight_yes", "insight_no", social: false)
@@ -302,10 +302,10 @@ namespace DnD.Game
             d.Node("insight_no", who, c => "Worried? I'm a captain. Captains don't worry, we... strategize.").Say("Right. I'll look into it.", "accept", c => c.G.Quests.Start("fallen_star")).Bye("Good luck with that.");
             d.Node("pay_yes", who, c => "Ugh. Fine. Ten gold now, more when it's done. Don't spend it all at the Drake.").Say("Deal.", "accept", c => c.G.Quests.Start("fallen_star"));
             d.Node("pay_no", who, c => "It pays in the gratitude of a grateful village. And my undying respect. That's all I've got.").Say("...Fine. I'll do it.", "accept", c => c.G.Quests.Start("fallen_star"));
-            d.Node("accept", who, c => "Thank you. Truly. The mine's north of the square, past the warning sign. Bring a light, it's black as pitch in there. And {name}? Come back in one piece.".Replace("{name}", Sir(c)))
+            d.Node("accept", who, c => "Thank you. Truly. Take the north trail through Whisperwood and keep climbing; you can't miss the scorch marks. Bring a light in case it leads somewhere dark. And {name}? Come back in one piece.".Replace("{name}", Sir(c)))
                 .Say("Do you ever get a night off, Captain?", "flirt", show: c => c.Hearts >= 1)
                 .Bye("I'll be back.");
-            d.Node("progress", who, c => "Any luck at the mine? Be careful down there. Whatever's singing, it's been at it all night again.")
+            d.Node("progress", who, c => "Any luck? Whatever came down out there, the singing from the hills has been at it all night again.")
                 .Roll(Skill.Persuasion, 14, "You know, you could come with me. Strictly for strategy.", "flirt_yes", "flirt_no", show: c => c.Hearts >= 2, role: "Charm")
                 .Bye("Working on it.");
             d.Node("flirt", who, c => "A night off? I've heard of those. Like unicorns. Ask me again when the village stops being on fire.",

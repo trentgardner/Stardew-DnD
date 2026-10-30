@@ -862,7 +862,7 @@ namespace DnD.Game
         public void HatchEgg(PlayerSlot p, Vector3 eggPos)
         {
             World.EggHatched = true;
-            Quests.Set("fallen_star", 3, p);
+            Quests.Set("fallen_star", FallenStar.Hatched, p);
             Sfx.Play("crit");
             p.Hud.Push(new MessageScreen("The Egg Hatches",
                 "The egg pulses once, twice, then splits with a sound like a log cracking in a fire. A tiny, damp, furious red dragon tumbles out, sneezes a puff of sparks onto your boots, looks up at you...\n\n...and decides, with total certainty, that you are its mother.",
@@ -1000,7 +1000,7 @@ namespace DnD.Game
 
         public void CompleteFallenStar(PlayerSlot p)
         {
-            Quests.Set("fallen_star", 4, p);
+            Quests.Set("fallen_star", FallenStar.Done, p);
         }
 
         public void CompleteEastRoad(PlayerSlot p)

@@ -113,7 +113,7 @@ namespace DnD.Game
 
         string FloorFor(Vector2Int m)
         {
-            if (Def.Id == "mine") return "tile_cave_floor";
+            if (Def.Dark) return "tile_cave_floor";
             if (Def.Id == "temple") return "tile_stone_floor";
             if (Def.Indoors) return "tile_wood_floor";
             if (Def.Id == "forest") return ((m.x * 5 + m.y * 11) % 4 == 0) ? "tile_forest_grass_v1" : "tile_forest_grass";
@@ -211,6 +211,14 @@ namespace DnD.Game
                     break;
                 case 'M': Ground(m, "tile_mine_entrance"); break;
                 case 'E': Ground(m, "tile_exit_up"); break;
+                case 'V': Ground(m, "tile_stairs_down"); break;
+                case 'd': Ground(m, "tile_scorched"); break;
+                case 'e': Ground(m, floor); Solid(m); Prop(m, "obj_crystal", true); break;
+                case 'H': Ground(m, floor); Solid(m); Prop(m, "obj_hut"); break;
+                case 'i': Ground(m, floor); Solid(m); Prop(m, "obj_brazier", true); break;
+                // puzzle pieces: the puzzle layer dresses these; a closed gate and a push block are solid
+                case 'Z': case 'J': Ground(m, floor); Solid(m); break;
+                case 'Q': case 'I': case '/': case '@': case '%': Ground(m, floor); break;
                 case 'T': Ground(m, floor); Solid(m); Prop(m, "obj_tree"); break;
                 case 't': Ground(m, floor); Solid(m); Prop(m, "obj_tree"); break;
                 case 'h': Ground(m, floor); Solid(m); Prop(m, "obj_bush"); break;
@@ -302,7 +310,7 @@ namespace DnD.Game
                 float t = i / (float)steps;
                 var p = new Vector2Int(Mathf.RoundToInt(Mathf.Lerp(a.x, b.x, t)), Mathf.RoundToInt(Mathf.Lerp(a.y, b.y, t)));
                 char c = CharAt(p);
-                if (c == 'X' || c == 'W' || c == 'w' || c == 'T' || c == 'U' || c == 'R' || c == 'G' || c == 'S' || c == 'P') return false;
+                if (c == 'X' || c == 'W' || c == 'w' || c == 'T' || c == 'U' || c == 'R' || c == 'G' || c == 'S' || c == 'P' || c == 'e' || c == 'H') return false;
             }
             return true;
         }

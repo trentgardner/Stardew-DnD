@@ -45,7 +45,7 @@ namespace DnD.Game
     [Serializable]
     public class SaveData
     {
-        public int Version = 1;
+        public int Version = 2;
         public string PlaythroughId, PlaythroughName;
         public string SavedAt;
         public bool IsAuto;
@@ -145,8 +145,20 @@ namespace DnD.Game
 
         public static SaveData Read(string path)
         {
-            try { return JsonUtility.FromJson<SaveData>(File.ReadAllText(path)); }
+            try { var d = JsonUtility.FromJson<SaveData>(File.ReadAllText(path)); if (d != null) Migrate(d); return d; }
             catch (Exception e) { Debug.LogError($"Couldn't read save {path}: {e.Message}"); return null; }
+        }
+
+        /// <summary>Brings an older save up to the current numbering. Safe to call more than once.</summary>
+        public static void Migrate(SaveData d)
+        {
+            if (d.Version < 2)
+            {
+                // v2 put the crater, the trail and the warrens in front of the old mine stages: 1→3, 2→4, 3→5, 4→6
+                var fs = d.Quests.Find(kv => kv.K == "fallen_star");
+                if (fs != null && fs.V > 0) fs.V += 2;
+                d.Version = 2;
+            }
         }
 
         public static void DeletePlaythrough(string id)

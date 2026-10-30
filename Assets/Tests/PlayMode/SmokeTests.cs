@@ -597,11 +597,11 @@ namespace DnD.Tests
             g.Warp(p, "mine", new Vector2Int(19, 9), false);
             yield return null;
             g.PacifyGroup("mine_egg", p);
-            Assert.AreEqual(2, g.Quests.Stage("fallen_star"));
+            Assert.AreEqual(FallenStar.Egg, g.Quests.Stage("fallen_star"));
             Assert.AreEqual(1, p.Character.CountOf("copper_kettle"));
             g.HatchEgg(p, Vector3.zero);
             Assert.IsTrue(g.World.EggHatched);
-            Assert.AreEqual(3, g.Quests.Stage("fallen_star"));
+            Assert.AreEqual(FallenStar.Hatched, g.Quests.Stage("fallen_star"));
         }
     }
 }
