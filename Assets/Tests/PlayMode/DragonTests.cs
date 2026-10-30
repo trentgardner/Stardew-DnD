@@ -314,5 +314,86 @@ namespace DnD.Tests
             var second = g.Combats.First(x => x.GroupId == "forest_goblins");
             Assert.IsNull(DragonUnit(second), "already busy with the wolves");
         }
+
+        // ============================================================ Task 3: pet, fetch, treats, bond
+
+        static DragonPet Pet(GameRoot g) => g.DragonAgent.GetComponent<DragonPet>();
+
+        [UnityTest]
+        public IEnumerator PettingRaisesBondOncePerHour()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(20), "fighter", "human");
+            yield return Frames(2);
+            Hatch(g, p);
+            yield return null;
+            Assert.IsNotNull(Pet(g), "the dragon has its pet behaviour");
+            Assert.AreEqual(0, g.World.DragonBond);
+            Pet(g).PetIt(p);
+            Pet(g).PetIt(p);
+            Assert.AreEqual(2, g.World.DragonBond, "petting counts once an hour");
+            g.Clock.Advance(61);
+            Pet(g).PetIt(p);
+            Assert.AreEqual(4, g.World.DragonBond);
+        }
+
+        [UnityTest]
+        public IEnumerator TreatNeedsAndConsumesATreat()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(21), "fighter", "human");
+            yield return Frames(2);
+            Hatch(g, p);
+            yield return null;
+            Assert.IsFalse(Pet(g).GiveTreat(p), "no treat in the bag");
+            Assert.AreEqual(0, g.World.DragonBond);
+            p.Character.AddItem("dragon_treat");
+            Assert.IsTrue(Pet(g).GiveTreat(p));
+            Assert.AreEqual(0, p.Character.CountOf("dragon_treat"), "eaten");
+            Assert.AreEqual(5, g.World.DragonBond);
+            Assert.IsTrue(ShopDb.Stock("tavern").Contains("dragon_treat"), "Pip sells them");
+            Assert.IsTrue(ShopDb.Stock("general").Contains("dragon_treat"), "and so does the general store");
+        }
+
+        [UnityTest]
+        public IEnumerator FetchBringsTheStickBack()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(22), "fighter", "human");
+            g.Warp(p, "town", WorldDb.Zones["town"].DefaultSpawn, false);
+            yield return Frames(2);
+            Hatch(g, p);
+            yield return Frames(30);
+            int bond = g.World.DragonBond;
+            yield return Pet(g).Fetch(p);
+            Assert.LessOrEqual(Vector2.Distance(g.DragonAgent.transform.position, p.Avatar.transform.position), 1.5f, "back at your side");
+            Assert.IsNull(GameObject.Find("FetchStick"), "the stick is gone (it has it)");
+            Assert.AreEqual(bond + 3, g.World.DragonBond);
+        }
+
+        [UnityTest]
+        public IEnumerator BondTierShowsOnTheJournal()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(23), "fighter", "human");
+            yield return Frames(2);
+            Hatch(g, p, "Pebble");
+            g.World.DragonBond = 45;
+            StringAssert.Contains("Pebble", DragonPet.JournalLine());
+            StringAssert.Contains("♥♥♡♡♡", DragonPet.JournalLine());
+            g.World.DragonBond = 100;
+            StringAssert.Contains("♥♥♥♥♥", DragonPet.JournalLine());
+        }
+
+        [UnityTest]
+        public IEnumerator BondNeverGoesPastAHundred()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(24), "fighter", "human");
+            yield return Frames(2);
+            Hatch(g, p);
+            DragonPet.AddBond(p, 250, "test");
+            Assert.AreEqual(100, g.World.DragonBond);
+        }
     }
 }

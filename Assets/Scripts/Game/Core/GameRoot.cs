@@ -724,6 +724,7 @@ namespace DnD.Game
         public void OnCombatFinished(CombatInstance c, bool victory)
         {
             Combats.Remove(c);
+            if (victory && c.Units.Any(u => u.C is Dragonling)) DragonPet.AddBond(c.Humans.FirstOrDefault(), 1, "a fight won together");
             DragonBackOut();
             if (c.Brawl) { EndBrawl(c, victory); return; }
             foreach (var u in c.Units.Where(u => u.C is PlayerCharacter pc && pc.IsDead)) _deathTime[u.C.Uid] = NowAbs;
@@ -896,6 +897,7 @@ namespace DnD.Game
             Dragon.HP = Mathf.Clamp(Dragon.MaxHP - World.DragonDamage, 0, Dragon.MaxHP);
             var d = CompanionAgent.Create(leader, "mon_dragonling", false, null);
             d.IsDragon = true;
+            d.gameObject.AddComponent<DragonPet>();
             d.Actor.Creature = Dragon;
             d.Actor.name = World.DragonName;
             Companions.Add(d);
@@ -1157,7 +1159,8 @@ namespace DnD.Game
                 p.Character.LongRest(ate, log);
                 foreach (var c in CompanionsOf(p)) if (c.Character != null) { if (c.Character.IsDead && Settings.Difficulty == Difficulty.Story) c.Character.Revive(0, null); c.Character.LongRest(true, null); }
                 _lastLongRest[p.Index] = NowAbs;
-                p.Hud.Narrate($"You wake refreshed. It's {Clock.Weekday}, day {Clock.Day}." + (!ate ? " (You went to bed hungry.)" : ""));
+                p.Hud.Narrate($"You wake refreshed. It's {Clock.Weekday}, day {Clock.Day}." + (!ate ? " (You went to bed hungry.)" : "") +
+                    (Dragon != null ? $" {World.DragonName} slept curled up on your pack, snoring tiny puffs of smoke." : ""));
                 StoryTick();
             }
             _sleeping.Clear();

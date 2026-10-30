@@ -486,7 +486,7 @@ namespace DnD.Game
         void Update()
         {
             if (IsDragon && GameRoot.I.DragonFighting) { Actor.Moving = false; return; } // holds its grid square
-            if (IsDragon) PickNearestLeader();
+            if (IsDragon) { PickNearestLeader(); if (GetComponent<DragonPet>()?.Busy == true) return; }
             if (Leader == null || Leader.Avatar == null || Leader.InCombat && Character != null) return;
             if (Waiting) { Actor.Moving = false; return; }
             if (Actor.Zone != Leader.Zone) { Actor.PlaceAt(Leader.Zone, Leader.MapPos); return; }
@@ -545,21 +545,11 @@ namespace DnD.Game
             return spot;
         }
 
-        public override string PromptText(PlayerSlot p) => IsDragon ? $"Pet {GameRoot.I.World.DragonName}" : $"Talk to {Character.Name}";
+        public override string PromptText(PlayerSlot p) => IsDragon ? $"Play with {GameRoot.I.World.DragonName}" : $"Talk to {Character.Name}";
 
         public override void Interact(PlayerSlot p)
         {
-            if (IsDragon)
-            {
-                string[] lines =
-                {
-                    $"{GameRoot.I.World.DragonName} chirps and headbutts your hand. A tiny puff of smoke escapes their nostrils.",
-                    $"{GameRoot.I.World.DragonName} is trying to eat a pebble. You gently take it away. They look betrayed.",
-                    $"{GameRoot.I.World.DragonName} curls around your ankle, radiating warmth like a happy little hearth.",
-                };
-                p.Hud.Narrate(lines[Random.Range(0, lines.Length)]);
-                return;
-            }
+            if (IsDragon) { GetComponent<DragonPet>().OpenMenu(p); return; }
             p.Hud.Push(new DialogueScreen("companion", null, this));
         }
     }

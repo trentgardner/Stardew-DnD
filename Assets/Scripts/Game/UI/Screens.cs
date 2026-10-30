@@ -81,13 +81,13 @@ namespace DnD.Game
                     return new List<string> {
                         "potion_healing", "torch", "rations", "dagger", "handaxe", "javelin", "mace", "quarterstaff", "spear", "shortbow", "light_crossbow",
                         "shortsword", "scimitar", "rapier", "longsword", "battleaxe", "warhammer", "flail", "greatsword", "greataxe", "maul", "longbow",
-                        "padded", "leather", "studded_leather", "hide", "chain_shirt", "scale_mail", "breastplate", "chain_mail", "splint", "shield", "starfall_staff" };
+                        "padded", "leather", "studded_leather", "hide", "chain_shirt", "scale_mail", "breastplate", "chain_mail", "splint", "shield", "starfall_staff", "dragon_treat" };
                 case "temple":
                     var t = new List<string> { "ember_of_return", "potion_healing", "potion_greater_healing", "scroll_revivify" };
                     if (GameRoot.I.World.Hearts("elowen") >= 3) t.Add("dawnmothers_charm");
                     return t;
                 case "tavern":
-                    return new List<string> { "rations", "torch", "potion_healing" };
+                    return new List<string> { "rations", "torch", "potion_healing", "dragon_treat" };
                 case "kobold":
                     return new List<string> { "torch", "rations", "potion_healing", "lucky_pebble" };
                 case "forge":
@@ -556,7 +556,7 @@ namespace DnD.Game
                 if (!g.World.Friendship.ContainsKey(n.Id)) continue;
                 sb.AppendLine($"{n.Name} — {new string('♥', h)}{new string('♡', Mathf.Max(0, 5 - h))}");
             }
-            if (g.World.EggHatched) sb.AppendLine($"\n{g.World.DragonName} the dragonling — ♥♥♥♥♥ (obviously)");
+            if (g.World.EggHatched) sb.AppendLine("\n" + DragonPet.JournalLine());
             var rt = UIKit.Rect(Root, "Text", Vector2.zero, Vector2.one, new Vector2(14, 22), new Vector2(-14, -28));
             var label = UIKit.Label(rt, sb.ToString().TrimEnd(), 10, UIKit.Ink);
             // Many quests at once: shrink the text to fit the window rather than clip it.
