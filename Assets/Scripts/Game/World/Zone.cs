@@ -74,6 +74,16 @@ namespace DnD.Game
             for (int row = 0; row < def.Height; row++)
                 for (int col = 0; col < def.Width; col++)
                     zone.BuildCell(new Vector2Int(col, row), def.Map[row][col]);
+            // Building signs hang on the wall right of each door.
+            foreach (var kv in def.DoorSigns)
+            {
+                var sign = zone.Prop(kv.Key + Vector2Int.right, "obj_hanging_sign").AddComponent<SignInteractable>();
+                sign.Title = kv.Value.Name; sign.Prompt = $"Read sign: {kv.Value.Name}"; sign.Text = kv.Value.Text; sign.Reach = 1.8f;
+            }
+            // Quest spots can sit on any walkable tile (they come and go with their quest's stage).
+            foreach (var kv in def.Secrets)
+                if ("qOY".IndexOf(zone.CharAt(kv.Key)) < 0)
+                    zone.Prop(kv.Key, kv.Value.Sprite).AddComponent<SecretInteractable>().Def = kv.Value;
 
             zone._base.CompressBounds();
             zone._ground.CompressBounds();
@@ -119,7 +129,7 @@ namespace DnD.Game
             { ',', (TileShape.Blob, ",bDEM") },   // dirt paths run into bridges, doors and the mine mouth
             { ';', (TileShape.Blob, ";") },       // sand
             { '~', (TileShape.Blob, "~b") },      // water (a bridge has water under it)
-            { 'o', (TileShape.Blob, "oSOm") },    // cobbled square around the statue, well and stalls
+            { 'o', (TileShape.Blob, "oSOmNp") },  // cobbled square around the statue, well, stalls, benches and planters
             { 'X', (TileShape.Rect, "XM") },      // cliffs (the mine entrance is cut into them)
             { 'R', (TileShape.Rect, "R") },
             { 'U', (TileShape.Rect, "U") },
@@ -136,6 +146,9 @@ namespace DnD.Game
             string v = TileStyler.Variant(baseId, st.shape, (dx, dy) => st.same.IndexOf(CharAt(new Vector2Int(m.x + dx, m.y + dy))) >= 0, m.x, m.y);
             return ArtRegistry.Resolve(v, baseId);
         }
+        bool NextToCobbles(Vector2Int m) =>
+            CharAt(m + Vector2Int.left) == 'o' || CharAt(m + Vector2Int.right) == 'o' || CharAt(m + Vector2Int.up) == 'o' || CharAt(m + Vector2Int.down) == 'o';
+
         /// <summary>Invisible blocker under props (trees, tables...).</summary>
         void Solid(Vector2Int m) { _solid.SetTile(Cell(m), GetTile("tile_none", true)); Blocked[m.x, m.y] = true; }
 
@@ -160,6 +173,10 @@ namespace DnD.Game
                 case 'o': Ground(m, "tile_cobbles"); break;
                 case 'm': Ground(m, "tile_cobbles"); Solid(m); Prop(m, "obj_stall"); break;
                 case 'P': Ground(m, floor); Solid(m); Prop(m, "obj_pillar"); break;
+                case 'K': Ground(m, floor); Solid(m); Prop(m, "obj_forge", true); break;
+                case 'N': Ground(m, NextToCobbles(m) ? "tile_cobbles" : floor); Solid(m); Prop(m, "obj_bench"); break;
+                case 'p': Ground(m, NextToCobbles(m) ? "tile_cobbles" : floor); Solid(m); Prop(m, "obj_planter"); break;
+                case 'L': Ground(m, floor); Solid(m); Prop(m, "obj_washing_line"); break;
                 case 'F': Ground(m, floor); Solid(m); Prop(m, "obj_campfire", true); break;
                 case 'S':
                     Ground(m, "tile_cobbles"); Solid(m);

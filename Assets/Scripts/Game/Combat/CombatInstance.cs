@@ -34,6 +34,8 @@ namespace DnD.Game
     {
         public Zone Zone;
         public string GroupId;
+        /// <summary>A bar brawl (EnemyGroupDef.Brawl): fists and furniture only, everyone is knocked out instead of dying.</summary>
+        public bool Brawl;
         public readonly Encounter Enc = new Encounter();
         public readonly List<Unit> Units = new List<Unit>();
         public bool Finished;
@@ -193,11 +195,12 @@ namespace DnD.Game
         {
             var u = AddUnit(p.Character, p.Avatar, p);
             u.Cb = Enc.Join(p.Character);
+            if (Brawl) p.Character.Nonlethal = true; // brawl rules for everyone (and companions still sit it out)
             p.Hud.ShowLog(true);
             p.Hud.CloseAll();
             p.Hud.Push(new CombatHud(this));
             p.Hud.Narrate($"You rush into the fight! (Initiative {u.Cb.Initiative})");
-            foreach (var c in G.CompanionsOf(p)) if (c.Character != null) { var cu = AddUnit(c.Character, c.Actor, comp: c); cu.Cb = Enc.Join(c.Character); }
+            if (!Brawl) foreach (var c in G.CompanionsOf(p)) if (c.Character != null) { var cu = AddUnit(c.Character, c.Actor, comp: c); cu.Cb = Enc.Join(c.Character); }
             DrawGrid(true);
             RefreshTracker();
         }

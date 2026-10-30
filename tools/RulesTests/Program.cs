@@ -45,6 +45,7 @@ namespace RulesTests
             DruidTests();
             WarlockTests();
             SorcererTests();
+            KnockoutTests();
 
             Console.WriteLine($"\n{_passed} passed, {_failed} failed");
             return _failed == 0 ? 0 : 1;

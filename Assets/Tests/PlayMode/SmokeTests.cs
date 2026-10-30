@@ -218,7 +218,8 @@ namespace DnD.Tests
                     foreach (var m in grp.Members)
                         Assert.IsTrue(z.IsWalkable(m.Pos), $"{z.Def.Id} {grp.Id} spawn {m.Pos}");
                 foreach (var kv in z.Def.Secrets)
-                    Assert.IsTrue("qOY".IndexOf(z.CharAt(kv.Key)) >= 0, $"{z.Def.Id} secret {kv.Value.Id} at {kv.Key} is not on a secret tile");
+                    if (kv.Value.IsQuestSpot) Assert.IsTrue(z.IsWalkable(kv.Key) || "qOY".IndexOf(z.CharAt(kv.Key)) >= 0, $"{z.Def.Id} quest spot {kv.Value.Id} at {kv.Key} is blocked");
+                    else Assert.IsTrue("qOY".IndexOf(z.CharAt(kv.Key)) >= 0, $"{z.Def.Id} secret {kv.Value.Id} at {kv.Key} is not on a secret tile");
                 foreach (var c in z.Def.Chests)
                     Assert.AreEqual('c', z.CharAt(c.Pos), $"{z.Def.Id} chest {c.Id}");
             }
@@ -228,12 +229,12 @@ namespace DnD.Tests
                         Assert.IsTrue(g.Zones[e.Zone].IsWalkable(e.Pos), $"{npc.Id} at {e.Zone} {e.Pos} ({e.Activity})");
         }
 
-        [UnityTest, Timeout(400000)] // 9 conversations x 3 rounds of 400 frames
+        [UnityTest, Timeout(900000)] // 16 conversations x 3 rounds of 400 frames
         public IEnumerator FuzzEveryConversation()
         {
             var g = GameRoot.I;
             var p = g.DebugStart(new FuzzInput(11) { ConfirmChance = 0.12f, CancelChance = 0.005f }, "cleric", "dwarf");
-            foreach (var id in new[] { "brannoc", "elowen", "pip", "rhoswen", "tobin", "maddie", "snik", "wren", "hobb" })
+            foreach (var id in new[] { "brannoc", "elowen", "pip", "rhoswen", "tobin", "maddie", "snik", "wren", "hobb", "garrick", "hesper", "dunstan", "lark", "tamsin", "wick", "thimble" })
             {
                 for (int round = 0; round < 3; round++)
                 {

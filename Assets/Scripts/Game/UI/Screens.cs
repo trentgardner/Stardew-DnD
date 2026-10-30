@@ -88,11 +88,16 @@ namespace DnD.Game
                     return t;
                 case "tavern":
                     return new List<string> { "rations", "torch", "potion_healing" };
+                case "forge":
+                    // Garrick makes everything mundane he can: every non-magical weapon, armor and shield.
+                    return ItemsDb.All.Values.Where(d => d.PriceCp > 0 && !d.QuestItem &&
+                        ((d is WeaponDef w && w.Rarity == null) || d.Kind == ItemKind.Armor || d.Kind == ItemKind.Shield))
+                        .OrderBy(d => d.Kind).ThenBy(d => d.PriceCp).Select(d => d.Id).ToList();
                 default: return new List<string>();
             }
         }
 
-        public static string Owner(string shop) => shop == "general" ? "Brannoc" : shop == "temple" ? "Mother Elowen" : "Pip";
+        public static string Owner(string shop) => shop == "general" ? "Brannoc" : shop == "temple" ? "Mother Elowen" : shop == "forge" ? "Garrick" : "Pip";
 
         /// <summary>Base price in copper with difficulty scaling for Embers of Return.</summary>
         public static int BasePrice(ItemDef def)
@@ -526,13 +531,17 @@ namespace DnD.Game
             var g = GameRoot.I;
             var sb = new System.Text.StringBuilder("<b>Quests</b>\n");
             bool any = false;
-            foreach (var q in QuestLog.Defs.Values)
+            var done = new List<string>();
+            foreach (var q in QuestDb.All.Values)
             {
                 int st = g.Quests.Stage(q.Id);
                 if (st == 0) continue;
                 any = true;
-                sb.AppendLine($"{(g.Quests.Done(q.Id) ? "✓" : "•")} <b>{q.Title}</b>: {q.StageText[Mathf.Min(st, q.StageText.Length - 1)]}");
+                if (g.Quests.Done(q.Id)) { done.Add(q.Title); continue; }
+                string giver = q.Giver != null && WorldDb.Npcs.TryGetValue(q.Giver, out var n) ? $" <i>({n.Name})</i>" : "";
+                sb.AppendLine($"• <b>{q.Title}</b>{giver}: {q.StageText[Mathf.Min(st, q.Last)]}");
             }
+            if (done.Count > 0) sb.AppendLine($"✓ <i>Completed:</i> {string.Join(", ", done)}");
             if (!any) sb.AppendLine("Nothing yet. Maybe talk to people? Captain Vale looked like she needed help.");
             sb.AppendLine("\n<b>Friends in Thistledown</b>");
             foreach (var n in WorldDb.Npcs.Values)
@@ -543,7 +552,10 @@ namespace DnD.Game
             }
             if (g.World.EggHatched) sb.AppendLine($"\n{g.World.DragonName} the dragonling — ♥♥♥♥♥ (obviously)");
             var rt = UIKit.Rect(Root, "Text", Vector2.zero, Vector2.one, new Vector2(14, 22), new Vector2(-14, -28));
-            UIKit.Label(rt, sb.ToString(), 10, UIKit.Ink);
+            var label = UIKit.Label(rt, sb.ToString().TrimEnd(), 10, UIKit.Ink);
+            // Many quests at once: shrink the text to fit the window rather than clip it.
+            label.verticalOverflow = VerticalWrapMode.Truncate;
+            label.resizeTextForBestFit = true; label.resizeTextMinSize = 6; label.resizeTextMaxSize = 10;
         }
 
         public override void Tick() { if (In.Cancel || In.Journal || In.Confirm) Close(); }

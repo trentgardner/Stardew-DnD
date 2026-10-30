@@ -320,7 +320,7 @@ namespace DnD.Game
         public void UpdateSchedule(bool teleport)
         {
             var g = GameRoot.I;
-            var e = WorldDb.Current(Def, g.Clock.Hour, g.Clock.WeekdayIndex);
+            var e = WorldDb.Current(Def, g.Clock.Hour, g.Clock.WeekdayIndex, g.World);
             if (e == _current && !teleport) return;
             _current = e;
             if (_walk != null) { StopCoroutine(_walk); _walk = null; Actor.Moving = false; }

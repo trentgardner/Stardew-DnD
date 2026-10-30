@@ -59,6 +59,7 @@ namespace DnD.Game
         public int DragonLeader = -1;
         // world
         public List<KV> Friendship = new List<KV>(), LastMet = new List<KV>(), Quests = new List<KV>(), DefeatedDay = new List<KV>();
+        public List<string> QuestsPaid = new List<string>();
         public List<KF> Locks = new List<KF>();
         public List<string> Flags = new List<string>(), Opened = new List<string>(), Defeated = new List<string>(), Pacified = new List<string>(), XpAwarded = new List<string>();
         public List<string> ShopModKeys = new List<string>();
@@ -182,6 +183,7 @@ namespace DnD.Game
             foreach (var kv in w.Friendship) d.Friendship.Add(new KV(kv.Key, kv.Value));
             foreach (var kv in w.LastMetDay) d.LastMet.Add(new KV(kv.Key, kv.Value));
             foreach (var kv in g.Quests.Stages) d.Quests.Add(new KV(kv.Key, kv.Value));
+            d.QuestsPaid.AddRange(g.Quests.Paid);
             foreach (var kv in w.DefeatedDay) d.DefeatedDay.Add(new KV(kv.Key, kv.Value));
             foreach (var kv in w.Locks) d.Locks.Add(new KF(kv.Key, kv.Value));
             d.Flags.AddRange(w.Flags); d.Opened.AddRange(w.OpenedChests); d.Defeated.AddRange(w.DefeatedGroups); d.Pacified.AddRange(w.PacifiedGroups); d.XpAwarded.AddRange(w.XpAwarded);
@@ -260,6 +262,8 @@ namespace DnD.Game
             foreach (var kv in d.Friendship) w.Friendship[kv.K] = kv.V;
             foreach (var kv in d.LastMet) w.LastMetDay[kv.K] = kv.V;
             foreach (var kv in d.Quests) g.Quests.Stages[kv.K] = kv.V;
+            foreach (var q in d.QuestsPaid) g.Quests.Paid.Add(q);
+            g.Quests.MarkFinishedAsPaid();
             foreach (var kv in d.DefeatedDay) w.DefeatedDay[kv.K] = kv.V;
             foreach (var kv in d.Locks) w.Locks[kv.K] = kv.V;
             foreach (var f in d.Flags) w.Flags.Add(f);

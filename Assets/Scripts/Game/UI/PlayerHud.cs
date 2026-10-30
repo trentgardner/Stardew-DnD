@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using DnD.Rules;
 using DnD.Rules.Content;
 using UnityEngine;
@@ -254,7 +255,7 @@ namespace DnD.Game
             {
                 var (t, time) = _toastItems[i];
                 float left = time - Time.unscaledTime;
-                if (left <= 0) { Destroy(t.transform.parent.gameObject); _toastItems.RemoveAt(i); continue; }
+                if (left <= 0) { _toastKey.Remove(t); Destroy(t.transform.parent.gameObject); _toastItems.RemoveAt(i); continue; }
                 var col = t.color; col.a = Mathf.Clamp01(left); t.color = col;
             }
             for (int i = 0; i < _toastItems.Count; i++)
@@ -379,8 +380,23 @@ namespace DnD.Game
             _narratorTimer = 4f + text.Length * 0.045f;
         }
 
+        /// <summary>The toasts on screen right now, newest first (as displayed, including "×N").</summary>
+        public List<string> ToastTexts => _toastItems.Select(x => x.t.text).ToList();
+        readonly Dictionary<Text, (string text, int n)> _toastKey = new Dictionary<Text, (string, int)>();
+
         public void Toast(string text, Color? color = null)
         {
+            // The same message again while it's still showing: count it up instead of stacking copies.
+            for (int i = 0; i < _toastItems.Count; i++)
+            {
+                var old = _toastItems[i].t;
+                if (old == null || !_toastKey.TryGetValue(old, out var k) || k.text != text) continue;
+                _toastKey[old] = (text, k.n + 1);
+                old.text = $"{text} ×{k.n + 1}";
+                _toastItems[i] = (old, Time.unscaledTime + 4f);
+                AddLog(text);
+                return;
+            }
             var box = UIKit.Box(_toasts, "Toast", new Vector2(1, 1), new Vector2(170, 18), Vector2.zero);
             UIKit.Panel(box, true);
             var t = UIKit.Label(box, text, 9, color ?? UIKit.Parchment, TextAnchor.MiddleCenter);
@@ -388,6 +404,7 @@ namespace DnD.Game
             t.verticalOverflow = VerticalWrapMode.Truncate;
             t.rectTransform.offsetMin = new Vector2(4, 1); t.rectTransform.offsetMax = new Vector2(-4, -1);
             _toastItems.Insert(0, (t, Time.unscaledTime + 4f));
+            _toastKey[t] = (text, 1);
             AddLog(text);
         }
 

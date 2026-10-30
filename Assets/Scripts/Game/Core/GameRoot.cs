@@ -65,6 +65,7 @@ namespace DnD.Game
             Application.targetFrameRate = 60;
             QualitySettings.vSyncCount = 1;
             Clock.HourChanged += OnHourChanged;
+            Quests.Changed += OnQuestsChanged;
             AttackResolver.ConcentrationCheckNeeded += (c, dmg) => Combats.FirstOrDefault(x => x.Units.Any(u => u.C == c))?.ConcentrationCheck(c, dmg);
             AttackResolver.PushRequested += (from, to, ft) =>
             {
@@ -192,6 +193,7 @@ namespace DnD.Game
             _deathTime.Clear(); _sleeping.Clear(); _lastLongRest.Clear(); _parley.Clear(); _pendingPlayers.Clear();
             World = new WorldState();
             Quests = new QuestLog();
+            Quests.Changed += OnQuestsChanged;
             Clock = new GameClock();
             Clock.HourChanged += OnHourChanged;
             foreach (var p in Players) { if (p.Avatar) Destroy(p.Avatar.gameObject); p.Avatar = null; p.Character = null; p.Combat = null; }
@@ -347,6 +349,9 @@ namespace DnD.Game
             // Drop-in: an unassigned controller (or the keyboard) presses Start / Enter.
             TryDropIn();
 
+            // Quests waiting for an item notice it however it arrived (loot, chests, trades, gifts).
+            if (Time.unscaledTime >= _nextItemCheck) { _nextItemCheck = Time.unscaledTime + 0.5f; CheckQuestItems(); }
+
             // Clock runs unless every ready player is busy (menus, dialogue, dice, combat).
             var ready = Players.Where(p => p.IsReady).ToList();
             if (ready.Count > 0 && !ready.All(p => p.IsBusy) && _sleeping.Count == 0)
@@ -438,6 +443,7 @@ namespace DnD.Game
         void OnHourChanged(int hour)
         {
             foreach (var n in _npcs) n.UpdateSchedule(false);
+            StoryTick();
             if (hour == 0) RefreshRecruits();
             if (hour == 2)
             {
@@ -501,7 +507,7 @@ namespace DnD.Game
             foreach (var n in _npcs) n.UpdateSchedule(false);
 
             AwardOnce(p, "zone:" + zoneId, 15, $"discovering {zone.Def.Name}");
-            if (zoneId == "ford") Quests.Start("east_road");
+            Quests.Notify(QuestEvent.ZoneEntered, zoneId, p);
             string key = $"entered:{p.Index}:{zoneId}:{Clock.Day}";
             if (!World.IsLocked(key)) { World.Lock(key, 24 * 60); p.Hud.Narrate(zone.Def.EnterNarration, !World.Flag("seen:" + zoneId)); World.SetFlag("seen:" + zoneId); }
 
@@ -529,6 +535,16 @@ namespace DnD.Game
                 World.DefeatedDay.Remove(g.Id);
                 if (_groups.TryGetValue(g.Id, out var old)) foreach (var a in old) if (a) Destroy(a.gameObject);
                 _groups.Remove(g.Id);
+            }
+            if (!g.InStage(Quests))
+            {
+                // A quest-gated group that isn't part of the story right now (not yet, or not any more).
+                if (_groups.TryGetValue(g.Id, out var gone) && !Combats.Any(c => c.GroupId == g.Id && !c.Finished) && !_parley.Contains(g.Id))
+                {
+                    foreach (var a in gone) if (a) Destroy(a.gameObject);
+                    _groups.Remove(g.Id);
+                }
+                return;
             }
             if (World.DefeatedGroups.Contains(g.Id) || _groups.ContainsKey(g.Id)) return;
             if (World.PacifiedGroups.Contains(g.Id) && World.Flag("fled:" + g.Id)) return;
@@ -573,8 +589,7 @@ namespace DnD.Game
         /// <summary>Story hooks for a group being dealt with, whichever way it went (fight, talk, scare).</summary>
         void OnGroupResolved(string groupId)
         {
-            if (groupId == "mine_egg") Quests.Set("fallen_star", 2);
-            if (groupId == "ford_toll") Quests.Set("east_road", 2);
+            Quests.Notify(QuestEvent.GroupResolved, groupId);
         }
 
         /// <summary>Paid off: the group lets you be (no XP, they're still there, and you can still deal with them later).</summary>
@@ -637,8 +652,7 @@ namespace DnD.Game
                 var taker = humans.FirstOrDefault(h => h.Character.Bag.SpaceFor(it) > 0) ?? humans.First();
                 if (taker.Character.AddItem(it) > 0) World.Storage.Add(it, 1);
                 foreach (var h in humans) h.Hud.Toast($"{taker.Character.Name} got: {ItemsDb.Get(it)?.Name}", UIKit.Gold);
-                if (it == "copper_kettle") Quests.Start("kettle");
-                if (it == "lucky_spoon") Quests.Start("spoon");
+                Quests.Notify(QuestEvent.ItemGained, it, taker);
             }
         }
 
@@ -648,12 +662,14 @@ namespace DnD.Game
             if (!_groups.TryGetValue(groupId, out var agents) || agents.All(a => a == null || a.Monster.IsDown)) return;
             var zone = agents.First(a => a != null).Zone;
             var c = new CombatInstance(this, zone, groupId);
+            c.Brawl = agents.First(a => a != null).Group.Brawl;
             foreach (var a in agents.Where(a => a != null && !a.Monster.IsDown)) { a.StopAllCoroutines(); a.Moving = false; c.AddUnit(a.Monster, a, enemy: a); }
             foreach (var p in Players.Where(p => p.IsReady && p.Zone == zone && !p.InCombat && !p.Character.IsDead))
             {
                 if (p != instigator && Vector2.Distance(p.MapPos, instigator.MapPos) > 12) continue;
                 p.Hud.CloseAll();
                 c.AddUnit(p.Character, p.Avatar, p);
+                if (c.Brawl) { p.Character.Nonlethal = true; p.Hud.Narrate("Pip leaps onto the bar: \"FISTS ONLY! NO MAGIC IN MY BAR! And nobody DIES, or you're ALL banned!\""); continue; } // companions sit this one out
                 foreach (var comp in CompanionsOf(p))
                     if (comp.Character != null && !comp.Character.IsDead && comp.Actor.Zone == zone && Vector2.Distance(comp.Actor.MapPos, p.MapPos) <= 12)
                         c.AddUnit(comp.Character, comp.Actor, comp: comp);
@@ -671,10 +687,36 @@ namespace DnD.Game
         public void OnCombatFinished(CombatInstance c, bool victory)
         {
             Combats.Remove(c);
+            if (c.Brawl) { EndBrawl(c, victory); return; }
             foreach (var u in c.Units.Where(u => u.C is PlayerCharacter pc && pc.IsDead)) _deathTime[u.C.Uid] = NowAbs;
             if (!victory) StartCoroutine(PartyWipe(c));
             else if (c.GroupId != null) OnGroupResolved(c.GroupId);
         }
+
+        /// <summary>Everyone wakes up at 1 HP, the farmhands buy a round, and nobody goes to the temple.</summary>
+        void EndBrawl(CombatInstance c, bool victory)
+        {
+            foreach (var u in c.Units)
+            {
+                if (u.C is PlayerCharacter pc)
+                {
+                    pc.Nonlethal = false;
+                    if (pc.HP <= 0 && !pc.IsDead) { pc.HP = 1; pc.Stable = false; pc.DeathSuccesses = pc.DeathFailures = 0; }
+                }
+                else if (u.C.HP <= 0) u.C.HP = 1;
+            }
+            var p = c.Humans.FirstOrDefault();
+            Quests.Set("bar_brawl", QuestDb.Get("bar_brawl").Last, p, victory ? 1f : 0.5f);
+            World.AddFriendship("tobin", 50);
+            foreach (var h in c.Humans)
+                h.Hud.Narrate(victory
+                    ? "The last farmhand hits the floor, laughing. Everyone gets up, everyone's sore, and the farmhands buy the next round. Pip charges them double for the broken stool."
+                    : "You wake up on the tavern floor with a damp cloth on your head and a cider in your hand. \"You were MAGNIFICENT,\" says a farmhand with a black eye. \"Same time next week?\"");
+        }
+
+        /// <summary>Starts the bar brawl a frame later (after the conversation window has closed).</summary>
+        public void StartBrawlSoon(PlayerSlot p) => StartCoroutine(StartBrawlNextFrame(p));
+        IEnumerator StartBrawlNextFrame(PlayerSlot p) { yield return null; StartGroupCombat("drake_brawlers", p); }
 
         IEnumerator PartyWipe(CombatInstance c)
         {
@@ -728,6 +770,12 @@ namespace DnD.Game
             World.DefeatedDay[groupId] = Clock.Day;
             int xp = 0;
             var defs = new List<MonsterDef>();
+            if (!_groups.ContainsKey(groupId))
+            {
+                // Settled from afar (no one spawned right now): the group's full roster counts.
+                var def = Zones.Values.SelectMany(z => z.Def.EnemyGroups).FirstOrDefault(x => x.Id == groupId);
+                if (def != null) foreach (var m in def.Members) { var md = MonstersDb.Get(m.MonsterId); xp += md.XP; defs.Add(md); }
+            }
             if (_groups.TryGetValue(groupId, out var agents))
                 foreach (var a in agents)
                 {
@@ -814,7 +862,7 @@ namespace DnD.Game
         public void HatchEgg(PlayerSlot p, Vector3 eggPos)
         {
             World.EggHatched = true;
-            Quests.Set("fallen_star", 3);
+            Quests.Set("fallen_star", 3, p);
             Sfx.Play("crit");
             p.Hud.Push(new MessageScreen("The Egg Hatches",
                 "The egg pulses once, twice, then splits with a sound like a log cracking in a fire. A tiny, damp, furious red dragon tumbles out, sneezes a puff of sparks onto your boots, looks up at you...\n\n...and decides, with total certainty, that you are its mother.",
@@ -836,6 +884,64 @@ namespace DnD.Game
 
         public void OpenShop(PlayerSlot p, string shop) => p.Hud.Push(new ShopScreen(shop));
 
+        float _nextItemCheck;
+
+        /// <summary>Quest-gated groups appear or leave as their quest moves on.</summary>
+        /// <summary>
+        /// Timed story events, checked every in-game hour and on waking (so sleeping through one never soft-locks it).
+        /// Lost Child: Maddie wanders into Whisperwood on a Tideday afternoon (after the first few days); by 8 pm the watch finds her if you haven't.
+        /// </summary>
+        public void StoryTick()
+        {
+            if (Quests.Stage("lost_child") == 0 && Clock.Day > 3 && Clock.WeekdayIndex == WorldDb.Tideday && Clock.Hour >= 15 && Clock.Hour < 20)
+            {
+                World.SetFlag("maddie_lost");
+                World.Lock("lost_child_deadline", 20 * 60 - Clock.Minutes);
+                Quests.Start("lost_child");
+                foreach (var p in Players.Where(x => x.IsReady)) p.Hud.Narrate("Shouting on the square: Maddie hasn't come home. Her parents last saw her heading west, toward Whisperwood, following \"the pretty lights\".");
+            }
+            if (Quests.Active("lost_child") && !World.IsLocked("lost_child_deadline"))
+            {
+                World.SetFlag("maddie_found");
+                Quests.Set("lost_child", QuestDb.Get("lost_child").Last, null, 1f / 3f);
+                foreach (var p in Players.Where(x => x.IsReady)) p.Hud.Narrate("Captain Vale's watch found Maddie at the edge of Whisperwood after dark: cold, muddy and absolutely fine, and very cross that the fairies had to go home.", false);
+            }
+        }
+
+        /// <summary>Story flags can move people around (someone gets a job, goes home, ends up in a cell).</summary>
+        public void RefreshNpcs() { foreach (var n in _npcs) if (n) n.UpdateSchedule(false); }
+
+        void OnQuestsChanged()
+        {
+            RefreshNpcs();
+            foreach (var z in Zones.Values)
+                foreach (var grp in z.Def.EnemyGroups)
+                    if (grp.QuestId != null) SpawnGroupIfNeeded(z, grp);
+        }
+
+        /// <summary>A quest item counts wherever the party keeps it: this player's bag, a partner's, or home storage.</summary>
+        public bool HasQuestItem(PlayerSlot p, string id) =>
+            p.Character.CountOf(id) > 0 || Players.Any(x => x.Character != null && x.Character.CountOf(id) > 0) || World.Storage.Count(id) > 0;
+
+        /// <summary>Hands one quest item over (from this player first, then a partner, then home storage).</summary>
+        public bool TakeQuestItem(PlayerSlot p, string id)
+        {
+            if (p.Character.RemoveItem(id)) return true;
+            foreach (var x in Players) if (x.Character != null && x.Character.RemoveItem(id)) return true;
+            return World.Storage.Remove(id, 1);
+        }
+
+        void CheckQuestItems()
+        {
+            foreach (var q in QuestDb.All.Values)
+                foreach (var t in q.Triggers)
+                {
+                    if (t.On != QuestEvent.ItemGained || Quests.Stage(q.Id) != t.FromStage) continue;
+                    var holder = Players.FirstOrDefault(p => p.IsReady && p.Character != null && p.Character.CountOf(t.Id) > 0);
+                    if (holder != null) Quests.Notify(QuestEvent.ItemGained, t.Id, holder);
+                }
+        }
+
         public void GiveItem(PlayerSlot p, string id, int count = 1)
         {
             int left = p.Character.AddItem(id, count);
@@ -843,6 +949,7 @@ namespace DnD.Game
             if (left > 0) p.Hud.Toast($"No room for {name}! (Stored at home.)", UIKit.Bad);
             if (left > 0) World.Storage.Add(id, left);
             else p.Hud.Toast($"Received: {name}", UIKit.Gold);
+            Quests.Notify(QuestEvent.ItemGained, id, p);
         }
 
         public void GiveCopper(PlayerSlot p, int cp)
@@ -879,42 +986,37 @@ namespace DnD.Game
 
         public void ReturnKettle(PlayerSlot p)
         {
-            p.Character.RemoveItem("copper_kettle");
+            TakeQuestItem(p, "copper_kettle");
             World.KettleReturned = true;
-            Quests.Set("kettle", 2);
-            World.AddFriendship("brannoc", 100);
-            GiveXP(p, 100, "returning Brannoc's kettle");
+            Quests.Set("kettle", 2, p);
         }
 
         public void ReturnSpoon(PlayerSlot p)
         {
-            p.Character.RemoveItem("lucky_spoon");
+            TakeQuestItem(p, "lucky_spoon");
             World.SetFlag("spoon_returned");
-            Quests.Set("spoon", 2);
-            World.AddFriendship("tobin", 100);
-            GiveItem(p, "potion_healing");
-            GiveXP(p, 75, "returning Tobin's spoon");
+            Quests.Set("spoon", 2, p);
         }
 
         public void CompleteFallenStar(PlayerSlot p)
         {
-            if (Quests.Stage("fallen_star") >= 4) return;
-            Quests.Set("fallen_star", 4);
-            World.AddFriendship("rhoswen", 100);
-            foreach (var x in Players.Where(x => x.IsReady)) { GiveCopper(x, 5000); GiveXP(x, 300, "The Fallen Star"); }
+            Quests.Set("fallen_star", 4, p);
         }
 
         public void CompleteEastRoad(PlayerSlot p)
         {
-            if (Quests.Stage("east_road") >= 3) return;
-            Quests.Set("east_road", 3);
-            World.AddFriendship("hobb", 100);
-            foreach (var x in Players.Where(x => x.IsReady)) { GiveCopper(x, 2500); GiveXP(x, 150, "Miller's Ford"); }
-            GiveItem(p, "potion_greater_healing");
+            Quests.Set("east_road", 3, p);
         }
 
         public void RentRoom(PlayerSlot p)
         {
+            if (World.Flag("pip_free_room") && !World.Flag("pip_free_room_used"))
+            {
+                World.SetFlag("pip_free_room_used");
+                p.Hud.Toast("Pip: \"This one's on the house. For Wick.\"", UIKit.Gold);
+                BeginLongRest(p);
+                return;
+            }
             if (p.Character.Copper < 50) { p.Hud.Toast("You can't afford a room (5 sp).", UIKit.Bad); return; }
             p.Character.Copper -= 50;
             BeginLongRest(p);
@@ -969,6 +1071,7 @@ namespace DnD.Game
                 foreach (var c in CompanionsOf(p)) if (c.Character != null) { if (c.Character.IsDead && Settings.Difficulty == Difficulty.Story) c.Character.Revive(0, null); c.Character.LongRest(true, null); }
                 _lastLongRest[p.Index] = NowAbs;
                 p.Hud.Narrate($"You wake refreshed. It's {Clock.Weekday}, day {Clock.Day}." + (!ate ? " (You went to bed hungry.)" : ""));
+                StoryTick();
             }
             _sleeping.Clear();
             SaveSystem.Save(true);
