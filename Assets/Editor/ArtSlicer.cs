@@ -16,6 +16,7 @@ using UnityEngine;
 ///                                                  → {prefix}_down_0..3, _up_0..3, _side_0..3 (side = right column)
 ///   still &lt;prefix&gt; &lt;sheet&gt; [frames=2]            non-directional actor: down-column frames → {prefix}_0..n-1
 ///   tint  &lt;id&gt; &lt;fromId&gt; &lt;hueDeg&gt; [sat×] [val×]  recolored copy of an id already written by this run
+///   swap  &lt;id&gt; &lt;fromId&gt; RRGGBB=RRGGBB...  exact palette swap of an id already written by this run
 ///   over  &lt;id&gt; &lt;baseId&gt; &lt;sheet&gt; &lt;col&gt; &lt;row&gt;     a tile drawn over an id already written (flowers on grass...)
 ///   strip &lt;prefix&gt; &lt;sheet&gt; &lt;frames&gt; [frameW]   side-facing animal strip (frames left to right) → {prefix}_0..n-1
 ///   icon  &lt;id&gt; &lt;file&gt;                           a small loose image (items) centered on a 16x16 canvas
@@ -138,6 +139,20 @@ public static class ArtSlicer
                         count += Write(written, a[1], Tint(src, float.Parse(a[3], System.Globalization.CultureInfo.InvariantCulture), sat, val));
                         break;
                     }
+                    case "swap":
+                    {
+                        if (!written.TryGetValue(a[2], out var src)) throw new Exception($"swap source {a[2]} not written earlier in ArtMap");
+                        var map = new Dictionary<Color32, Color32>();
+                        for (int k = 3; k < a.Count; k++)
+                        {
+                            var kv = a[k].Split('=');
+                            ColorUtility.TryParseHtmlString("#" + kv[0], out var from);
+                            ColorUtility.TryParseHtmlString("#" + kv[1], out var to);
+                            map[(Color32)from] = (Color32)to;
+                        }
+                        count += Write(written, a[1], Swap(src, map));
+                        break;
+                    }
                     case "over":
                     {
                         if (!written.TryGetValue(a[2], out var under)) throw new Exception($"over base {a[2]} not written earlier in ArtMap");
@@ -226,6 +241,23 @@ public static class ArtSlicer
         }
         var t = new Texture2D(src.width, src.height, TextureFormat.RGBA32, false);
         t.SetPixels(px);
+        t.Apply();
+        return t;
+    }
+
+    /// <summary>Exact colour replacement (alpha kept): for recolouring a sprite's palette, e.g. a brown dog into a black-and-white one.</summary>
+    static Texture2D Swap(Texture2D src, Dictionary<Color32, Color32> map)
+    {
+        var px = src.GetPixels32();
+        for (int i = 0; i < px.Length; i++)
+        {
+            var c = px[i];
+            if (c.a == 0) continue;
+            var key = new Color32(c.r, c.g, c.b, 255);
+            if (map.TryGetValue(key, out var n)) px[i] = new Color32(n.r, n.g, n.b, c.a);
+        }
+        var t = new Texture2D(src.width, src.height, TextureFormat.RGBA32, false);
+        t.SetPixels32(px);
         t.Apply();
         return t;
     }

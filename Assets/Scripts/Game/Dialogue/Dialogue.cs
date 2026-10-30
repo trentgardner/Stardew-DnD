@@ -121,6 +121,7 @@ namespace DnD.Game
         {
             _dialogueId = dialogueId;
             _ctx = new DCtx { Npc = npc, Comp = comp, Recruit = recruit, Group = group };
+            _aboutCompanion = (object)comp != null;
         }
 
         /// <summary>Facing hostiles you must pick something (talk, sneak, fight...), so there's no walking away mid-standoff.</summary>
@@ -153,6 +154,10 @@ namespace DnD.Game
 
         public void SetSpeaker(string name) { if (_speaker != null) _speaker.text = name; }
 
+        bool _asideDone;
+        /// <summary>A chat with a companion: it ends by itself if they leave the party meanwhile (e.g. the other player sent them to the Drake).</summary>
+        bool _aboutCompanion;
+
         public void Goto(string nodeId)
         {
             if (Root == null || _speaker == null) return; // window already gone
@@ -161,6 +166,7 @@ namespace DnD.Game
             _node.OnEnter?.Invoke(_ctx);   // may override the speaker (recruits) or close the window
             if (Closed) return;
             string narration = _node.Narration?.Invoke(_ctx);
+            if (!_asideDone) { _asideDone = true; var aside = DialogueDb.DragonAside(_ctx); if (aside != null) narration = string.IsNullOrEmpty(narration) ? aside : aside + " " + narration; }
             _narr.text = narration ?? "";
             _line.text = _node.Text != null ? _node.Text(_ctx) : "";
             if (_node.Speaker != null && !string.IsNullOrEmpty(_line.text)) _line.text = "\"" + _line.text + "\"";
@@ -261,6 +267,7 @@ namespace DnD.Game
 
         public override void Tick()
         {
+            if (_aboutCompanion && _ctx.Comp == null) { Close(); return; } // they left the party
             if (_rolling) return;
             _menu.Tick(In, Cam);
             if (In.Cancel && !Closed && ShowCloseButton) Close();

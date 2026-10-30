@@ -51,6 +51,27 @@ namespace DnD.Game
     public class SecretInteractable : Interactable
     {
         public SecretDef Def;
+        /// <summary>The dragon sniffed it out: it sparkles, and the next check for it has Advantage.</summary>
+        public bool Sniffed { get; private set; }
+        public AdvantageState CheckAdvantage => Sniffed ? AdvantageState.Advantage : AdvantageState.Normal;
+        SpriteRenderer _sparkle;
+
+        public void MarkSniffed()
+        {
+            Sniffed = true;
+            if (_sparkle == null)
+            {
+                var go = new GameObject("Sniffed");
+                go.transform.SetParent(transform, false);
+                go.transform.localPosition = new Vector3(0, 0.55f, 0);
+                _sparkle = go.AddComponent<SpriteRenderer>();
+                _sparkle.sprite = ArtRegistry.Get("fx_sniff");
+                _sparkle.sortingOrder = 30000;
+            }
+            _sparkle.enabled = true;
+        }
+
+        void ClearSniffed() { Sniffed = false; if (_sparkle != null) _sparkle.enabled = false; }
         public override float Range => 1.5f;
         string FoundKey => "secret:" + Def.Id;
         string TodayKey(PlayerSlot p) => $"secret:{Def.Id}:{p.Index}";
@@ -74,6 +95,7 @@ namespace DnD.Game
         SpriteRenderer _sr;
         void Update()
         {
+            if (_sparkle != null && _sparkle.enabled) _sparkle.color = new Color(1, 1, 1, 0.55f + 0.45f * Mathf.Sin(Time.time * 5f));
             if (!Def.IsQuestSpot) return;
             if (_sr == null) _sr = GetComponent<SpriteRenderer>();
             if (_sr != null) _sr.enabled = Present;
@@ -93,8 +115,10 @@ namespace DnD.Game
             }
 
             var pc = p.Character;
-            string sub = $"{SkillUtil.Name(Def.Skill)} ({SkillUtil.AbilityOf(Def.Skill)}) {AbilityUtil.Fmt(pc.SkillBonus(Def.Skill))} · DC hidden";
-            p.Hud.Dice.RollD20($"{SkillUtil.Name(Def.Skill)} Check", sub, () => Checks.RollSkill(pc, Def.Skill, AdvantageState.Normal), Def.DC, true,
+            var adv = CheckAdvantage;
+            string sub = $"{SkillUtil.Name(Def.Skill)} ({SkillUtil.AbilityOf(Def.Skill)}) {AbilityUtil.Fmt(pc.SkillBonus(Def.Skill))} · DC hidden" + (Sniffed ? $" · Advantage (Sniff)" : "");
+            ClearSniffed();
+            p.Hud.Dice.RollD20($"{SkillUtil.Name(Def.Skill)} Check", sub, () => Checks.RollSkill(pc, Def.Skill, adv), Def.DC, true,
                 r => Resolve(p, Checks.ResolveCheck(r, Def.DC)));
         }
 

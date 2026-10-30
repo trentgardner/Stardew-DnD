@@ -26,6 +26,11 @@ namespace DnD.Game
         public readonly List<PlayerSlot> Players = new List<PlayerSlot>();
         public readonly Dictionary<string, Zone> Zones = new Dictionary<string, Zone>();
         public readonly List<CompanionAgent> Companions = new List<CompanionAgent>();
+        /// <summary>The party's baby dragon (null until the egg hatches). Its world body is DragonAgent.</summary>
+        public Dragonling Dragon { get; private set; }
+        public CompanionAgent DragonAgent => Companions.FirstOrDefault(c => c != null && c.IsDragon);
+        /// <summary>The highest level among the ready players (the dragon grows with the party).</summary>
+        public int PartyLevel => Players.Where(p => p.IsReady).Select(p => p.Character.Level).DefaultIfEmpty(1).Max();
         public readonly List<CharacterFactory.Recruit> TavernRecruits = new List<CharacterFactory.Recruit>();
         public readonly List<CombatInstance> Combats = new List<CombatInstance>();
         public string PlaythroughId, PlaythroughName;
@@ -189,7 +194,7 @@ namespace DnD.Game
             Combats.Clear();
             StopAllCoroutines();
             if (_worldRoot) Destroy(_worldRoot.gameObject);
-            Zones.Clear(); _npcs.Clear(); _groups.Clear(); Companions.Clear(); _recruitAgents.Clear(); TavernRecruits.Clear();
+            Zones.Clear(); _npcs.Clear(); _groups.Clear(); Companions.Clear(); Dragon = null; MusicOverride = null; _recruitAgents.Clear(); TavernRecruits.Clear();
             _deathTime.Clear(); _sleeping.Clear(); _lastLongRest.Clear(); _parley.Clear(); _pendingPlayers.Clear();
             World = new WorldState();
             Quests = new QuestLog();
@@ -206,6 +211,7 @@ namespace DnD.Game
             int i = 0;
             foreach (var def in WorldDb.Zones.Values) Zones[def.Id] = Zone.Build(def, i++, _worldRoot);
             foreach (var npc in WorldDb.Npcs.Values) _npcs.Add(NpcAgent.Create(npc));
+            TownDog.Spawn(this); // Buoy, the neighbourhood dog
             foreach (var z in Zones.Values) foreach (var g in z.Def.EnemyGroups) SpawnGroupIfNeeded(z, g);
             RefreshRecruits();
         }
@@ -395,6 +401,7 @@ namespace DnD.Game
         /// <summary>Fight music if anyone's fighting, otherwise Player 1's zone (the town has a quieter night tune).</summary>
         public string WantedMusic()
         {
+            if (MusicOverride != null) return MusicOverride;
             if (AnyInCombat) return "music_fight";
             var lead = Players.FirstOrDefault(p => p.IsReady);
             if (lead == null) return null;
@@ -533,6 +540,11 @@ namespace DnD.Game
             Quests.Notify(QuestEvent.ZoneEntered, zoneId, p);
             string key = $"entered:{p.Index}:{zoneId}:{Clock.Day}";
             if (!World.IsLocked(key)) { World.Lock(key, 24 * 60); p.Hud.Narrate(zone.Def.EnterNarration, !World.Flag("seen:" + zoneId)); World.SetFlag("seen:" + zoneId); }
+            if (zoneId == "town" && Dragon != null && !World.Flag("dragon_town_intro"))
+            {
+                World.SetFlag("dragon_town_intro");
+                p.Hud.Narrate($"Heads turn as you walk into Thistledown. A child points at {World.DragonName} and shrieks with delight. A goose takes one look and leaves town.");
+            }
 
             if (zone.Def.Dark && p.Character.Darkvision <= 0 && !p.Avatar.HasLight)
             {
@@ -651,6 +663,7 @@ namespace DnD.Game
         public void OnCombatRetreat(CombatInstance c)
         {
             Combats.Remove(c);
+            DragonBackOut();
             if (c.GroupId != null) CalmGroup(c.GroupId);
             foreach (var h in c.Humans) h.Hud.Narrate("You got away! They've lost track of you for now. Rest up, then finish this however you like.");
         }
@@ -704,6 +717,7 @@ namespace DnD.Game
                     if (comp.Character != null && !comp.Character.IsDead && comp.Actor.Zone == zone && Vector2.Distance(comp.Actor.MapPos, p.MapPos) <= 12)
                         c.AddUnit(comp.Character, comp.Actor, comp: comp);
             }
+            AddDragonTo(c, false);
             if (!c.Units.Any(u => u.Owner != null))
             {
                 // Nobody's there to fight (e.g. a conversation ended in a threat while you stood elsewhere): don't run a fight with no heroes.
@@ -717,6 +731,8 @@ namespace DnD.Game
         public void OnCombatFinished(CombatInstance c, bool victory)
         {
             Combats.Remove(c);
+            if (victory && c.Units.Any(u => u.C is Dragonling)) DragonPet.AddBond(c.Humans.FirstOrDefault(), 1, "a fight won together");
+            DragonBackOut();
             if (c.Brawl) { EndBrawl(c, victory); return; }
             foreach (var u in c.Units.Where(u => u.C is PlayerCharacter pc && pc.IsDead)) _deathTime[u.C.Uid] = NowAbs;
             if (!victory) StartCoroutine(PartyWipe(c));
@@ -874,6 +890,7 @@ namespace DnD.Game
 
         public void DismissCompanion(CompanionAgent c)
         {
+            if (c == null || !Companions.Contains(c)) return; // already gone (two players chose it at once)
             Companions.Remove(c);
             var r = new CharacterFactory.Recruit { Character = c.Character, Quirk = c.Quirk, PersuasionDC = 8, HireCostCp = 0,
                 Pitch = $"{c.Character.Name}, your old companion, waves you over. \"Back for me?\"" };
@@ -884,31 +901,87 @@ namespace DnD.Game
 
         void SpawnDragon(PlayerSlot leader)
         {
+            Dragon = new Dragonling(PartyLevel) { Name = World.DragonName };
+            Dragon.HP = Mathf.Clamp(Dragon.MaxHP - World.DragonDamage, 0, Dragon.MaxHP);
             var d = CompanionAgent.Create(leader, "mon_dragonling", false, null);
             d.IsDragon = true;
+            d.gameObject.AddComponent<DragonPet>();
+            d.Actor.Creature = Dragon;
+            d.Actor.name = World.DragonName;
             Companions.Add(d);
+        }
+
+        /// <summary>The dragon is in some fight right now (it only ever joins one).</summary>
+        public bool DragonFighting => Dragon != null && Combats.Any(c => !c.Finished && c.Units.Any(u => u.C == Dragon));
+
+        /// <summary>
+        /// Brings the dragon into a fight if it's close to one of the players in it (12 tiles), brave, free, and not told to wait.
+        /// late: the fight is already running (it joins the initiative order now).
+        /// </summary>
+        public void AddDragonTo(CombatInstance c, bool late)
+        {
+            var agent = DragonAgent;
+            if (Dragon == null || agent == null || c.Brawl || World.DragonScared || agent.Waiting || !agent.gameObject.activeSelf) return;
+            if (agent.Actor.Zone != c.Zone || DragonFighting) return;
+            if (!c.Humans.Any(h => Vector2.Distance(h.MapPos, agent.Actor.MapPos) <= 12)) return;
+            agent.Actor.Moving = false;
+            var u = c.AddUnit(Dragon, agent.Actor, comp: agent);
+            if (late) u.Cb = c.Enc.Join(Dragon);
+        }
+
+        /// <summary>After a fight: a dragon that ran off scared pops back out at its leader's side (still scared until a rest).</summary>
+        void DragonBackOut()
+        {
+            var a = DragonAgent;
+            if (a == null || a.gameObject.activeSelf || DragonFighting) return;
+            a.gameObject.SetActive(true);
+            if (a.Leader != null && a.Leader.IsReady) a.Actor.PlaceAt(a.Leader.Zone, a.Leader.MapPos);
+        }
+
+        /// <summary>Names the new hatchling and brings it into the party (called by the naming screen).</summary>
+        public void NameDragon(PlayerSlot p, string name)
+        {
+            if (Dragon != null) return;
+            World.DragonName = string.IsNullOrWhiteSpace(name) ? "Cinder" : name.Trim();
+            SpawnDragon(p);
+            foreach (var x in Players.Where(x => x.IsReady)) GiveXP(x, 100, "hatching the egg");
+            p.Hud.Narrate($"{World.DragonName} chirps happily and scrambles up to ride on your shoulder... then falls off. Then tries again. Return to Captain Vale!");
+            foreach (var x in Players.Where(x => x.IsReady && x != p)) x.Hud.Toast($"The egg hatched! Say hello to {World.DragonName}.", UIKit.Gold);
+        }
+
+        /// <summary>Any short or long rest: the dragon is back to full health, brave again, and its nose and breath are fresh.</summary>
+        public void OnPartyRest(bool longRest)
+        {
+            World.DragonScared = false;
+            World.DragonSniffUsed = false;
+            World.DragonDamage = 0;
+            if (Dragon == null) return;
+            Dragon.SetPartyLevel(PartyLevel);
+            Dragon.HP = Dragon.MaxHP;
+            Dragon.BreathReady = true;
+            var a = DragonAgent;
+            if (a != null && !a.gameObject.activeSelf) a.gameObject.SetActive(true);
         }
 
         public void HatchEgg(PlayerSlot p, Vector3 eggPos)
         {
             World.EggHatched = true;
             Quests.Set("fallen_star", FallenStar.Hatched, p);
-            Sfx.Play("crit");
-            p.Hud.Push(new MessageScreen("The Egg Hatches",
-                "The egg pulses once, twice, then splits with a sound like a log cracking in a fire. A tiny, damp, furious red dragon tumbles out, sneezes a puff of sparks onto your boots, looks up at you...\n\n...and decides, with total certainty, that you are its mother.",
-                () =>
-                {
-                    var names = new[] { "Cinder", "Ember", "Pebble", "Sir Toasty", "Biscuit" };
-                    p.Hud.Push(new ChoiceScreen("Name your dragon", "The dragonling chirps expectantly.",
-                        names.Select(n => (n, (Action)(() =>
-                        {
-                            World.DragonName = n;
-                            SpawnDragon(p);
-                            foreach (var x in Players.Where(x => x.IsReady)) GiveXP(x, 100, "hatching the egg");
-                            p.Hud.Narrate($"{n} chirps happily and scrambles up to ride on your shoulder... then falls off. Then tries again. Return to Captain Vale!");
-                        }))).ToList(), false));
-                }));
+            // Everyone in the room watches; the scene ends in the narration and the naming (HatchScene).
+            var scenes = new List<HatchCutscene>();
+            foreach (var x in Players.Where(x => x.IsReady && x.Zone == p.Zone))
+            {
+                x.Hud.CloseAll();
+                x.Hud.HideNarration();
+                var s = new HatchCutscene();
+                x.Hud.Push(s);
+                scenes.Add(s);
+            }
+            StartCoroutine(HatchScene.Play(this, p, eggPos, scenes));
         }
+
+        /// <summary>Set by a scene (the hatching) to play its own music instead of the zone's.</summary>
+        public string MusicOverride;
 
         // ================================================================== economy, quests, XP
 
@@ -1100,10 +1173,12 @@ namespace DnD.Game
                 p.Character.LongRest(ate, log);
                 foreach (var c in CompanionsOf(p)) if (c.Character != null) { if (c.Character.IsDead && Settings.Difficulty == Difficulty.Story) c.Character.Revive(0, null); c.Character.LongRest(true, null); }
                 _lastLongRest[p.Index] = NowAbs;
-                p.Hud.Narrate($"You wake refreshed. It's {Clock.Weekday}, day {Clock.Day}." + (!ate ? " (You went to bed hungry.)" : ""));
+                p.Hud.Narrate($"You wake refreshed. It's {Clock.Weekday}, day {Clock.Day}." + (!ate ? " (You went to bed hungry.)" : "") +
+                    (Dragon != null ? $" {World.DragonName} slept curled up on your pack, snoring tiny puffs of smoke." : ""));
                 StoryTick();
             }
             _sleeping.Clear();
+            OnPartyRest(true);
             SaveSystem.Save(true);
             _lastAutosave = Time.unscaledTime;
         }

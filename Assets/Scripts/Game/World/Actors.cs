@@ -485,6 +485,8 @@ namespace DnD.Game
 
         void Update()
         {
+            if (IsDragon && GameRoot.I.DragonFighting) { Actor.Moving = false; return; } // holds its grid square
+            if (IsDragon) { PickNearestLeader(); if (GetComponent<DragonPet>()?.Busy == true) return; }
             if (Leader == null || Leader.Avatar == null || Leader.InCombat && Character != null) return;
             if (Waiting) { Actor.Moving = false; return; }
             if (Actor.Zone != Leader.Zone) { Actor.PlaceAt(Leader.Zone, Leader.MapPos); return; }
@@ -497,6 +499,29 @@ namespace DnD.Game
                 Actor.Face(target);
                 transform.position = Vector3.MoveTowards(transform.position, target, Mathf.Max(3.5f, d * 2f) * Time.deltaTime);
             }
+        }
+
+        /// <summary>
+        /// The dragon belongs to the whole party: it follows whichever ready player is nearest (same zone first).
+        /// It only switches when someone is clearly nearer (3+ tiles), so it never flickers between two players.
+        /// </summary>
+        void PickNearestLeader()
+        {
+            var g = GameRoot.I;
+            if (g.Dragon != null && g.Dragon.MaxHP != Dragonling.MaxHPFor(g.PartyLevel)) g.Dragon.SetPartyLevel(g.PartyLevel);
+            if (Leader != null && Leader.InCombat) return; // don't swap mid-fight
+            bool leaderOk = Leader != null && Leader.IsReady;
+            bool leaderHere = leaderOk && Leader.Zone == Actor.Zone;
+            PlayerSlot best = null;
+            float bestD = float.MaxValue;
+            foreach (var p in g.Players)
+            {
+                if (!p.IsReady || p == Leader || p.InCombat || p.Zone != Actor.Zone) continue;
+                float d = Vector2.Distance(p.MapPos, Actor.MapPos);
+                if (d < bestD) { bestD = d; best = p; }
+            }
+            if (best == null) { if (!leaderOk) foreach (var p in g.Players) if (p.IsReady) { Leader = p; break; } return; }
+            if (!leaderOk || !leaderHere || bestD + 3f <= Vector2.Distance(Leader.MapPos, Actor.MapPos)) Leader = best;
         }
 
         /// <summary>
@@ -520,21 +545,11 @@ namespace DnD.Game
             return spot;
         }
 
-        public override string PromptText(PlayerSlot p) => IsDragon ? $"Pet {GameRoot.I.World.DragonName}" : $"Talk to {Character.Name}";
+        public override string PromptText(PlayerSlot p) => IsDragon ? $"Play with {GameRoot.I.World.DragonName}" : $"Talk to {Character.Name}";
 
         public override void Interact(PlayerSlot p)
         {
-            if (IsDragon)
-            {
-                string[] lines =
-                {
-                    $"{GameRoot.I.World.DragonName} chirps and headbutts your hand. A tiny puff of smoke escapes their nostrils.",
-                    $"{GameRoot.I.World.DragonName} is trying to eat a pebble. You gently take it away. They look betrayed.",
-                    $"{GameRoot.I.World.DragonName} curls around your ankle, radiating warmth like a happy little hearth.",
-                };
-                p.Hud.Narrate(lines[Random.Range(0, lines.Length)]);
-                return;
-            }
+            if (IsDragon) { GetComponent<DragonPet>().OpenMenu(p); return; }
             p.Hud.Push(new DialogueScreen("companion", null, this));
         }
     }

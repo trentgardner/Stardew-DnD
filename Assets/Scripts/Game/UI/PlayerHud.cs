@@ -323,6 +323,7 @@ namespace DnD.Game
             var members = new List<(string name, Creature c)>();
             foreach (var comp in g.CompanionsOf(Slot)) if (comp.Character != null) members.Add((comp.Character.Name + (comp.Manual ? "" : " (auto)"), comp.Character));
             foreach (var p in g.Players) if (p != Slot && p.IsReady) members.Add((p.Character.Name, p.Character));
+            if (g.Dragon != null) members.Add((g.Dragon.Name + (g.World.DragonScared ? " (scared)" : ""), g.Dragon));
             if (members.Count != _partyRows.Count)
             {
                 UIKit.Clear(_party);
@@ -379,6 +380,9 @@ namespace DnD.Game
             _narratorText.text = text;
             _narratorTimer = 4f + text.Length * 0.045f;
         }
+
+        /// <summary>Hides the narrator's box now (a cutscene wants the screen).</summary>
+        public void HideNarration() { _narratorTimer = 0; _narrator.gameObject.SetActive(false); }
 
         /// <summary>The toasts on screen right now, newest first (as displayed, including "×N").</summary>
         public List<string> ToastTexts => _toastItems.Select(x => x.t.text).ToList();

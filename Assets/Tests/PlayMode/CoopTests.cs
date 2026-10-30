@@ -545,6 +545,31 @@ namespace DnD.Tests
             Assert.AreSame(p1, comp.Leader);
         }
 
+        /// <summary>
+        /// Both players talking to the same companion: one sends them to the Drake. The other's conversation must close
+        /// (it used to stay open on a destroyed companion, and choosing "Leave the party" again threw).
+        /// </summary>
+        [UnityTest]
+        public IEnumerator DismissedCompanionClosesThePartnersConversation()
+        {
+            var g = GameRoot.I;
+            var p1 = g.DebugStart(new FuzzInput(31) { ConfirmChance = 0, CancelChance = 0, MenuChance = 0, EndTurnChance = 0 }, "fighter", "human");
+            var p2 = g.DebugStart(new FuzzInput(32) { ConfirmChance = 0, CancelChance = 0, MenuChance = 0, EndTurnChance = 0 }, "cleric", "elf");
+            yield return Frames(2);
+            var pc = DnD.Rules.CharacterFactory.Create(DnD.Rules.CharacterFactory.DefaultChoices("fighter", "dwarf", "Tova"));
+            var comp = g.SpawnCompanion(p1, pc, "hums");
+            p1.Hud.CloseAll(); p2.Hud.CloseAll();
+            comp.Interact(p1);
+            comp.Interact(p2);
+            yield return Frames(2);
+            Assert.IsTrue(p2.Hud.Top is DialogueScreen);
+            g.DismissCompanion(comp);
+            yield return Frames(3);
+            Assert.IsFalse(p2.Hud.Top is DialogueScreen, "P2's chat with a companion who has left closes by itself");
+            Assert.IsFalse(p1.Hud.Top is DialogueScreen);
+            g.DismissCompanion(comp); // a stale second dismissal is harmless
+        }
+
         [UnityTest]
         public IEnumerator PartnerLeavingWhileYouWaitInBedEndsTheNight()
         {

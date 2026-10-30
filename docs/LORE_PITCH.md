@@ -1,7 +1,7 @@
 # Lore Pitch: *Embers of Sundermere* (working title)
 
-> **Status: PITCH. Waiting for approval.** Nothing here is final. The playtest build uses these names
-> as placeholders. Everything is stored as data, so renaming or rewriting costs almost nothing.
+> **Status: ACCEPTED (2026-10-28, "for the time being"); the Act I side-content names were approved on 2026-10-30.**
+> Everything is stored as data, so renaming or rewriting later still costs almost nothing.
 
 Tone: **Matthew Mercer's lived-in, epic world + Brennan Lee Mulligan's heart, humor and player-driven stories.**
 Bright high fantasy. Dragons at the center. No grimdark, no lich kings, no undead overlords.
@@ -104,9 +104,9 @@ There's a main track, but **how it ends is up to you**. Planned endings include:
 
 ---
 
-## Pending approval: Act I side content
+## Act I side content (approved 2026-10-30)
 
-Side characters added while building Act I. They're placeholders until you OK them (rename or cut freely):
+Side characters added while building Act I (approved by the user; still easy to rename):
 - **Wren** and the **Ford Wardens** (toll crew at Miller's Ford) and **Old Hobb** the miller.
 - **Garrick Ashforge**, the South Lane blacksmith. Loud, warm, friendly rivalry with Brannoc (pints every Emberday).
 - **Hesper Meadowsweet** and **Dunstan Burrow**, feuding beekeepers. Her late husband Albert built the fence; Dunstan was his best friend.
@@ -122,6 +122,9 @@ Side characters added while building Act I. They're placeholders until you OK th
   - **Krag**, the kobold war-boss (he comes up to your belt and has a great deal to prove).
   - **The First Ideal** of the Oathbound, carved at the top of the Old Watchtower:
     *"Light before rest. The watch keeps the light so others may sleep."* (Written fresh rather than quoting the books directly.)
+- Phase 6:
+  - **The hatchling**: named by the players (default *Cinder*).
+  - **Buoy**, Thistledown's neighbourhood dog, a black-and-white Australian Shepherd (a real dog's name: a dedication; keep him in every act).
 
 ## Questions for you
 1. Do you like the **egg → baby dragon companion** hook? (I think your fiance will.)

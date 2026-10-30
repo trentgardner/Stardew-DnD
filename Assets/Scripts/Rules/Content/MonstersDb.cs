@@ -160,6 +160,16 @@ namespace DnD.Rules.Content
                 Attacks = { Melee("Gore", 3, "1d6+1", DamageType.Piercing) },
                 Traits = { "Bad temper" },
             };
+            // The party's hatchling (see Dragonling): HP comes from the party's level, not from hit dice.
+            All["dragonling"] = new MonsterDef
+            {
+                Id = "dragonling", Name = "Dragonling", SpriteId = "mon_dragonling", AC = 13, HitDice = DiceExpr.Parse("3d4"),
+                Scores = new[] { 10, 14, 13, 6, 12, 12 }, Darkvision = 60, Speed = 30,
+                Description = "A newly hatched red dragon the size of a cat. Fiercely loyal, easily distracted by shiny things.",
+                Attacks = { Melee("Bite", 4, "1d4+2", DamageType.Piercing) },
+                ProficientSkills = { Skill.Perception }, Resistances = { DamageType.Fire },
+                Traits = { "Ember Breath (Recharge 5–6)", "Scared, not slain: at 0 HP it flees until the next rest" },
+            };
         }
 
         public static MonsterDef Get(string id) => All.TryGetValue(id, out var m) ? m : null;
