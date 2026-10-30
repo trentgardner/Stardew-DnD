@@ -15,8 +15,8 @@ common actions take one click or one key, and nothing needs dragging unless you 
    The same treatment on the hovered or cursor cell in the inventory, with the info panel always describing it.
 2. **Hotbar controls (KB/M parity with the controller).** Mouse wheel or **Q / R** move the selection; **X** uses the selected item; **1–0, -, =** still
    use a slot instantly (unchanged). **Left-click a hotbar slot uses it, right-click opens its options** (BG3). A small key hint sits under the hotbar.
-3. **Weapon hot-swap.** A second weapon set (BG3-style melee/ranged): equipment gains an **Off-set weapon** slot. **F** (KB) / **D-pad Up** (pad) swaps
-   the two sets. Outside combat: free. In combat: free once per turn (it's your free object interaction), shown as "Swap Weapons" on the action bar.
+3. **Weapon hot-swap.** A second weapon set (BG3-style melee/ranged): equipment gains an **Off-set weapon** slot. **Z** (KB) / **hold X** (pad; a tap of X still uses the selected hotbar item) swaps
+   the two sets [Claude's call: F is already Interact and every pad button is taken]. Outside combat: free. In combat: free once per turn (it's your free object interaction), shown as "Swap Weapons" on the action bar.
 4. **Compare before you equip.** Hovering or selecting gear shows its stats against what's equipped in that slot, with green/red differences:
    weapons: average damage and to-hit; armor/shields: AC; other gear: its effect line. "(equipped)" on the item you're wearing.
 5. **No forced dragging.** Every move has a one-click/one-key form:
