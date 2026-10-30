@@ -74,25 +74,32 @@ namespace DnD.Game
 
         public override void Build()
         {
-            // Trade with your partner if they're standing nearby and nothing else is open.
-            if (_otherInv == null)
-            {
-                foreach (var p in GameRoot.I.Players)
-                    if (p != Slot && p.IsReady && p.Zone == Slot.Zone && Vector2.Distance(p.Avatar.transform.position, Slot.Avatar.transform.position) < 3f)
-                        _partner = p;
-            }
+            if (_tabs == null) BuildTabs();
             var other = OtherInv;
-            float h = other != null ? 345 : 265;
+            int otherCount = other != null ? Mathf.Min(other.Size, 36) : 0, otherRows = Mathf.CeilToInt(otherCount / 12f);
+            float h = other != null ? 265 + 24 + otherRows * 24 : 265;
             Window(new Vector2(320, h), other != null ? null : "Inventory");
 
             float y = other != null ? -8 : -26;
             if (other != null)
             {
-                var title = UIKit.Rect(Root, "OtherTitle", new Vector2(0, 1), new Vector2(1, 1), new Vector2(10, y - 16), new Vector2(-10, y));
-                UIKit.Label(title, _partner != null ? $"Trade with {_partner.Character.Name}" : _otherTitle, 12, UIKit.Ink, TextAnchor.MiddleLeft).fontStyle = FontStyle.Bold;
-                y -= 18;
-                MakeGrid(other, _otherCells, y, Mathf.Min(other.Size, 24));
-                y -= Mathf.CeilToInt(Mathf.Min(other.Size, 24) / 12f) * 24 + 6;
+                // Tabs: one per bag you can reach (click, or LT/RT on a controller). A single bag just gets a title.
+                float x = 10;
+                for (int i = 0; i < _tabs.Count; i++)
+                {
+                    var t = _tabs[i];
+                    string label = t.Partner != null ? $"Trade: {t.Label}" : t.Label;
+                    float w = Mathf.Clamp(label.Length * 7 + 14, 50, 120);
+                    var rt = UIKit.Rect(Root, "Tab" + i, new Vector2(0, 1), new Vector2(0, 1), new Vector2(x, y - 18), new Vector2(x + w, y));
+                    if (_tabs.Count > 1) UIKit.Image(rt, i == _tab ? new Color(1f, 0.85f, 0.45f) : new Color(0.85f, 0.8f, 0.7f, 0.6f));
+                    var lbl = UIKit.Label(rt, label, i == _tab ? 11 : 10, UIKit.Ink, _tabs.Count > 1 ? TextAnchor.MiddleCenter : TextAnchor.MiddleLeft);
+                    if (i == _tab) lbl.fontStyle = FontStyle.Bold;
+                    _tabRts.Add(rt);
+                    x += w + 4;
+                }
+                y -= 22;
+                MakeGrid(other, _otherCells, y, otherCount);
+                y -= otherRows * 24 + 6;
             }
             var bagTitle = UIKit.Rect(Root, "BagTitle", new Vector2(0, 1), new Vector2(1, 1), new Vector2(10, y - 16), new Vector2(-10, y));
             UIKit.Label(bagTitle, "Backpack (top row = hotbar)", 11, UIKit.Ink, TextAnchor.MiddleLeft).fontStyle = FontStyle.Bold;
@@ -129,7 +136,46 @@ namespace DnD.Game
             Redraw();
         }
 
-        Inventory OtherInv => _otherInv ?? _partner?.Character.Bag;
+        /// <summary>One bag shown beside yours: the chest/loot/storage you opened, a companion, or your co-op partner.</summary>
+        class Tab { public string Label; public Inventory Inv; public PlayerSlot Partner; }
+        List<Tab> _tabs;
+        int _tab;
+        readonly List<RectTransform> _tabRts = new List<RectTransform>();
+
+        /// <summary>What's in the panel beside your backpack right now (null when there's nobody and nothing).</summary>
+        public Inventory OtherInv => _tabs != null && _tabs.Count > 0 ? _tabs[_tab].Inv : null;
+        public IReadOnlyList<string> Tabs => (_tabs ?? new List<Tab>()).ConvertAll(t => t.Label);
+
+        /// <summary>Shows another bag beside yours. A stack you're holding stays in your hand (so you can carry it across).</summary>
+        public void SelectTab(int i)
+        {
+            if (_tabs == null || i < 0 || i >= _tabs.Count || i == _tab) return;
+            _tab = i;
+            _partner = _tabs[_tab].Partner;
+            Rebuild();
+        }
+
+        /// <summary>The chest you opened (if any) first, then each companion, then a co-op partner within 3 tiles.</summary>
+        void BuildTabs()
+        {
+            _tabs = new List<Tab>();
+            var g = GameRoot.I;
+            if (_otherInv != null) _tabs.Add(new Tab { Label = _otherTitle, Inv = _otherInv });
+            foreach (var comp in g.CompanionsOf(Slot))
+                if (comp.Character != null) _tabs.Add(new Tab { Label = comp.Character.Name, Inv = comp.Character.Bag });
+            foreach (var p in g.Players)
+                if (p != Slot && p.IsReady && p.Zone == Slot.Zone && Vector2.Distance(p.Avatar.transform.position, Slot.Avatar.transform.position) < 3f)
+                    _tabs.Add(new Tab { Label = p.Character.Name, Inv = p.Character.Bag, Partner = p });
+            _tab = Mathf.Clamp(_tab, 0, Mathf.Max(0, _tabs.Count - 1));
+            _partner = _tabs.Count > 0 ? _tabs[_tab].Partner : null;
+        }
+
+        void Rebuild()
+        {
+            if (Root) Object.Destroy(Root.gameObject);
+            _bagCells.Clear(); _otherCells.Clear(); _equipCells.Clear(); _tabRts.Clear();
+            Build();
+        }
 
         void MakeGrid(Inventory inv, List<Cell> into, float y, int count)
         {
@@ -245,6 +291,15 @@ namespace DnD.Game
                 Hud.Toast("Your partner left, so the trade is closed.", UIKit.Dim);
                 Close();
                 return;
+            }
+            // Switching bags: click a tab (mouse) or LT/RT (controller).
+            if (_tabs != null && _tabs.Count > 1)
+            {
+                if (In.UsesMouse && In.MouseLeft)
+                    for (int i = 0; i < _tabRts.Count; i++)
+                        if (UIKit.Contains(_tabRts[i], In.MouseScreen, Cam)) { SelectTab(i); return; }
+                if (!In.UsesMouse && In.Spells) { SelectTab((_tab + 1) % _tabs.Count); return; }
+                if (!In.UsesMouse && In.Journal) { SelectTab((_tab + _tabs.Count - 1) % _tabs.Count); return; }
             }
             var cells = Panel(_panel);
 
@@ -416,7 +471,7 @@ namespace DnD.Game
                         opts.Add(($"Send to {who.Name}", () => { SendTo(index, who.Bag, who.Name); Redraw(); }));
                     }
             if (OtherInv != null)
-                opts.Add((mine ? $"Send to {(_partner != null ? _partner.Character.Name : _otherTitle)}" : "Take", () => { _panel = mine ? 0 : 1; _cursor = index; QuickTransfer(); }));
+                opts.Add((mine ? $"Send to {_tabs[_tab].Label}" : "Take", () => { _panel = mine ? 0 : 1; _cursor = index; QuickTransfer(); }));
             else if (mine)
                 opts.Add((index < Inventory.HotbarSize ? "Move to backpack" : "Move to hotbar", () => { _panel = 0; _cursor = index; QuickTransfer(); }));
             if (st.Count > 1) opts.Add(("Split stack (pick up half)", () => { _held = inv.PickUpHalf(index); Redraw(); }));
@@ -448,6 +503,7 @@ namespace DnD.Game
                 if (to < 0) Hud.Toast(c.Index < Inventory.HotbarSize ? "Your backpack is full." : "Your hotbar is full.", UIKit.Bad);
             }
             else if (_partner != null && c.Inv == Bag) SendToPartner(c.Index);
+            else if (c.Inv == Bag) SendTo(c.Index, target, _tabs[_tab].Label); // says so if it doesn't all fit
             else c.Inv.QuickTransfer(c.Index, target);
             Sfx.Play("ui");
             Redraw();

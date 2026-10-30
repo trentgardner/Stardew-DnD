@@ -279,5 +279,66 @@ namespace DnD.Tests
             Assert.AreEqual(5, p.Character.CountOf("rations"), "nothing is lost when their bag is full");
             Assert.IsTrue(p.Hud.ToastTexts.Any(t => t.Contains("full")), "and you're told why");
         }
+            // ============================================================ Task 5: party bags side by side
+
+        [UnityTest]
+        public IEnumerator CompanionBagShowsAsATab()
+        {
+            var g = GameRoot.I;
+            var input = new ScriptInput();
+            PlayerSlot p = null;
+            yield return Ready(g, input, x => p = x, "rations");
+            var pc = CharacterFactory.Create(CharacterFactory.DefaultChoices("fighter", "dwarf", "Tova"));
+            g.SpawnCompanion(p, pc, "hums");
+            var inv = new InventoryScreen(null, null);
+            p.Hud.Push(inv);
+            yield return null;
+            Assert.IsTrue(inv.Tabs.Contains("Tova"), "a companion's bag sits beside yours");
+            inv.SelectTab(inv.Tabs.ToList().IndexOf("Tova"));
+            yield return null;
+            Assert.AreSame(pc.Bag, inv.OtherInv);
+            inv.SendTo(0, inv.OtherInv, "Tova");
+            Assert.AreEqual(0, p.Character.CountOf("rations"));
+        }
+
+        [UnityTest]
+        public IEnumerator ChestComesFirstThenParty()
+        {
+            var g = GameRoot.I;
+            var input = new ScriptInput();
+            PlayerSlot p = null;
+            yield return Ready(g, input, x => p = x);
+            var pc = CharacterFactory.Create(CharacterFactory.DefaultChoices("fighter", "dwarf", "Tova"));
+            g.SpawnCompanion(p, pc, "hums");
+            var inv = new InventoryScreen(g.World.Storage, "Home storage");
+            p.Hud.Push(inv);
+            yield return null;
+            CollectionAssert.AreEqual(new[] { "Home storage", "Tova" }, inv.Tabs.ToArray());
+            Assert.AreSame(g.World.Storage, inv.OtherInv, "the chest you opened is shown first");
+        }
+
+        [UnityTest]
+        public IEnumerator BothPlayersTradeAtOnce()
+        {
+            var g = GameRoot.I;
+            var p1 = g.DebugStart(new ScriptInput(), "fighter", "human");
+            var p2 = g.DebugStart(new ScriptInput(), "cleric", "elf");
+            g.Warp(p1, "town", WorldDb.Zones["town"].DefaultSpawn, false);
+            g.Warp(p2, "town", WorldDb.Zones["town"].DefaultSpawn, false);
+            yield return Frames(3);
+            p1.Hud.CloseAll(); p2.Hud.CloseAll();
+            p1.Character.Bag.Slots[0] = new ItemStack("rations", 3);
+            p2.Character.Bag.Slots[0] = new ItemStack("torch", 4);
+            int r2 = p2.Character.CountOf("rations"), t1 = p1.Character.CountOf("torch");
+            var a = new InventoryScreen(null, null); p1.Hud.Push(a);
+            var b = new InventoryScreen(null, null); p2.Hud.Push(b);
+            yield return null;
+            Assert.AreSame(p2.Character.Bag, a.OtherInv, "your partner standing by you shows up to trade");
+            a.SendTo(0, a.OtherInv, p2.Character.Name);
+            b.SendTo(0, b.OtherInv, p1.Character.Name);
+            yield return null;
+            Assert.AreEqual(r2 + 3, p2.Character.CountOf("rations"));
+            Assert.AreEqual(t1 + 4, p1.Character.CountOf("torch"));
+        }
     }
 }
