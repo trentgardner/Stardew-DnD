@@ -79,7 +79,8 @@ namespace DnD.Game
         {
             if (t.AllOf == null) return t.Id == id;
             var w = GameRoot.I?.World;
-            return w != null && System.Array.IndexOf(t.AllOf, id) >= 0 && t.AllOf.All(w.Flag);
+            if (w == null || System.Array.IndexOf(t.AllOf, id) < 0) return false;
+            return t.AtLeast > 0 ? t.AllOf.Count(w.Flag) >= t.AtLeast : t.AllOf.All(w.Flag);
         }
 
         /// <summary>After loading: quests already finished (including in saves from before rewards were tracked) count as paid.</summary>

@@ -69,6 +69,7 @@ namespace DnD.Game
         public bool EggHatched, KettleReturned;
         public string DragonName;
         public int RecruitWeek, RecruitSeed;
+        public int FestivalDoneDay;
     }
 
     public class SaveInfo
@@ -203,6 +204,7 @@ namespace DnD.Game
             foreach (var s in w.Storage.Slots) { d.StorageIds.Add(s?.ItemId ?? ""); d.StorageCounts.Add(s?.Count ?? 0); }
             d.EggHatched = w.EggHatched; d.KettleReturned = w.KettleReturned; d.DragonName = w.DragonName;
             d.RecruitWeek = w.RecruitWeek; d.RecruitSeed = w.RecruitSeed;
+            d.FestivalDoneDay = w.FestivalDoneDay;
             return d;
         }
 
@@ -288,6 +290,7 @@ namespace DnD.Game
                 if (!string.IsNullOrEmpty(d.StorageIds[i])) w.Storage.Slots[i] = new ItemStack(d.StorageIds[i], d.StorageCounts[i]);
             w.EggHatched = d.EggHatched; w.KettleReturned = d.KettleReturned; w.DragonName = string.IsNullOrEmpty(d.DragonName) ? "Cinder" : d.DragonName;
             w.RecruitWeek = d.RecruitWeek; w.RecruitSeed = d.RecruitSeed;
+            w.FestivalDoneDay = d.FestivalDoneDay;
         }
     }
 }

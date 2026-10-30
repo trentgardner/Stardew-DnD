@@ -18,6 +18,9 @@ namespace DnD.Game
         public string[] AllOf;
         public QuestTrigger(QuestEvent on, string id, int from, int to) { On = on; Id = id; FromStage = from; ToStage = to; }
         public static QuestTrigger AllFlags(int from, int to, params string[] flags) => new QuestTrigger(QuestEvent.FlagSet, null, from, to) { AllOf = flags };
+        /// <summary>FlagSet only: with AllOf, fires once at least this many of them are set (0 = all of them).</summary>
+        public int AtLeast;
+        public static QuestTrigger FlagsAtLeast(int from, int to, int n, params string[] flags) => new QuestTrigger(QuestEvent.FlagSet, null, from, to) { AllOf = flags, AtLeast = n };
     }
 
     /// <summary>Paid once when the quest reaches its last stage. Xp and Copper go to every player; Item to whoever finished it.</summary>
@@ -77,6 +80,15 @@ namespace DnD.Game
                     new QuestTrigger(QuestEvent.GroupResolved, "mine_egg", FallenStar.Warrens, FallenStar.Egg),
                 },
                 Reward = new QuestReward { Xp = 300, Copper = 5000, Npc = "rhoswen", Friendship = 100 },
+            });
+            Add(new QuestDef
+            {
+                Id = "harvest_festival", Title = "The Harvest Festival", Giver = "pip",
+                StageText = new[] {
+                    "", "Pip says the Harvest Festival is on Day 10 in the square, from nine bells. Try the games!",
+                    "Complete. You ate too much pie. Everyone did." },
+                Triggers = { QuestTrigger.FlagsAtLeast(1, 2, 3, "fest_bob", "fest_archery", "fest_pie", "fest_stage") },
+                Reward = new QuestReward { Xp = 150, Copper = 1000, Npc = "pip", Friendship = 50 },
             });
             Add(new QuestDef
             {

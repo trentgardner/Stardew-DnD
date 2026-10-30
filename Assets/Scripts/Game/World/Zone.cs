@@ -86,6 +86,13 @@ namespace DnD.Game
                     zone.Prop(kv.Key, kv.Value.Sprite).AddComponent<SecretInteractable>().Def = kv.Value;
 
             if (def.Puzzle != null) PuzzleRoom.Build(zone);
+            foreach (var (pos, sprite) in def.FestivalProps) zone.Prop(pos, sprite).AddComponent<FestivalDressing>();
+            foreach (var (pos, kind) in def.FestivalGames)
+            {
+                var stand = zone.Prop(pos, FestivalGameSprite(kind));
+                stand.AddComponent<FestivalDressing>();
+                stand.AddComponent<FestivalGame>().Kind = kind;
+            }
 
             zone._base.CompressBounds();
             zone._ground.CompressBounds();
@@ -158,6 +165,9 @@ namespace DnD.Game
             _solid.SetTile(Cell(m), solid ? GetTile("tile_none", true) : null);
             Blocked[m.x, m.y] = solid;
         }
+
+        static string FestivalGameSprite(FestivalKind k) =>
+            k == FestivalKind.AppleBob ? "obj_apple_barrel" : k == FestivalKind.Archery ? "obj_archery_butt" : k == FestivalKind.PieJudging ? "obj_pie_table" : "obj_stage";
 
         public GameObject PuzzleProp(Vector2Int m, string sprite, bool glow) => Prop(m, sprite, glow);
 

@@ -124,6 +124,9 @@ namespace DnD.Game
         public Vector2Int? ShopCounter;
         /// <summary>Room puzzle pieces (plates, levers, blocks, mirrors, light, gates), or null.</summary>
         public PuzzleDef Puzzle;
+        /// <summary>Dressing that only appears during the Harvest Festival (never solid), and where the festival games stand.</summary>
+        public List<(Vector2Int, string)> FestivalProps = new List<(Vector2Int, string)>();
+        public List<(Vector2Int, FestivalKind)> FestivalGames = new List<(Vector2Int, FestivalKind)>();
 
         public int Width => Map[0].Length;
         public int Height => Map.Length;
@@ -197,7 +200,7 @@ namespace DnD.Game
             town.Signs[new Vector2Int(29, 41)] = "THISTLEDOWN WATCH\n\nCaptain R. Vale, commanding.\nOffice hours: whenever the Captain is not out doing something more important.\n\nBelow, in a child's handwriting: \"and maddie (deputy)\"";
             town.Signs[new Vector2Int(12, 45)] = "SOUTH LANE GREEN\n\nPlease do not feed the ducks bread. Or pie. Or Mrs Meadowsweet's honey cake. They have had ENOUGH, Dunstan.";
             town.Signs[new Vector2Int(27, 5)] = "DANGER: OLD COPPER MINE. CLOSED BY ORDER OF THE WATCH.\n\nSomeone has drawn a small, very proud dragon on the sign in charcoal.";
-            town.Signs[new Vector2Int(19, 14)] = "THISTLEDOWN NOTICE BOARD\n\nMISSING: 4 chickens, 1 copper kettle, Old Tobin's lucky spoon.\nReport suspicious small scaly persons to Captain Vale.\n\nAlso: did ANYONE else see the falling star last night?";
+            town.Signs[new Vector2Int(19, 14)] = "THISTLEDOWN NOTICE BOARD\n\nMISSING: 4 chickens, 1 copper kettle, Old Tobin's lucky spoon.\nReport suspicious small scaly persons to Captain Vale.\n\nAlso: did ANYONE else see the falling star last night?\n\nHARVEST FESTIVAL! Day 10, in the square, from nine bells. Apple bobbing, archery, the great pie contest, and the stage is open to all! (Free cider. Ask Pip.)";
             town.Signs[new Vector2Int(25, 16)] = "A weathered stone dragon curls around the top of a pillar, wings half-open, one eye closed as if winking.\n\nThe plaque reads: \"EMBERWING, WHO SAT WITH US A WHILE.\"\n\nThe village kids rub its nose for luck. The nose is very shiny.";
             town.Signs[new Vector2Int(2, 16)] = "WEST: WHISPERWOOD\n\nStay on the path. Don't dance in the mushroom rings.\n(Or DO. We're a sign, not your mother.)";
             town.Signs[new Vector2Int(46, 16)] = "EAST ROAD: MILLER'S FORD, then PORT VARREL, 3 DAYS\n\nBridge out at Miller's Ford. Travelers report 'toll-keepers' at the ford upstream.\n\nThe orchard is open. The apples are not free. - Tobin";
@@ -700,6 +703,13 @@ namespace DnD.Game
         public static ScheduleEntry Current(NpcDef npc, int hour, int weekday, WorldState world = null)
         {
             ScheduleEntry best = null;
+            // The festival beats everything while it runs: the whole village is in the square.
+            if (world != null && world.IsLocked(Festival.Lock))
+            {
+                foreach (var e in npc.Schedule)
+                    if (e.RequiresLock == Festival.Lock && e.FromHour <= hour && (best == null || e.FromHour >= best.FromHour)) best = e;
+                if (best != null) return best;
+            }
             // Later entries win; at the same hour, story-conditional beats weekday beats generic.
             // Each runs from its hour until the next entry of any kind.
             foreach (var e in npc.Schedule)

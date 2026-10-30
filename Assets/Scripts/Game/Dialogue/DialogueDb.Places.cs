@@ -15,6 +15,7 @@ namespace DnD.Game
                 case "tik": return Tik();
                 case "snik_caught": return SnikCaught();
                 case "watch_armor": return WatchArmor();
+                case "pie_judging": return PieJudging();
                 default: return null;
             }
         }
@@ -28,6 +29,7 @@ namespace DnD.Game
                 case "maddie": CraterLine(d, "Maddie", "I'm looking for star bits! Mum says if I find one I can keep it. Perrin says I'm not allowed to touch anything. Perrin isn't my mum."); break;
                 case "snik": SnikFriend(d); break;
                 case "rhoswen": RhoswenTowerLines(d); break;
+                case "pip": PipFestival(d); break;
                 case "wick": CraterLine(d, "Wick", "Did you know the crystals tickle? Don't tell the Academy man. He gets a vein in his forehead."); break;
             }
         }
@@ -189,6 +191,52 @@ namespace DnD.Game
                     n.Options.Insert(System.Math.Max(0, n.Options.Count - 1),
                         new DOption { Text = "I read the words at the top of the watchtower.", Next = "tower_done", Show = c => c.G.Quests.Stage("watchtower") == 2 });
                 }
+        }
+
+        // =================================================================== The Harvest Festival
+
+        static string FeudCallback(DCtx c) => c.G.Quests.Done("bad_blood")
+            ? "\n\nHesper and Dunstan look at each other. \"...Same as the fence, then,\" says Dunstan. \"Same as the fence,\" says Hesper. Nobody knows what that means except them, and they're both smiling."
+            : "";
+
+        static Dialogue PieJudging()
+        {
+            var d = new Dialogue("pie_judging", c => "start");
+            const string who = "Brannoc Ironkettle";
+            d.Node("start", who, c => "Ahem. As this year's head judge, I have been asked to choose between Mistress Meadowsweet's Honey Crumble and Master Burrow's Golden Honey Tart. I have been asked by both of them. Repeatedly. You will assist me.",
+                c => "Two pies sit on the trestle table, golden and steaming. Behind them stand Hesper and Dunstan, arms folded, not looking at each other with tremendous effort.")
+                .Roll(Skill.Insight, 13, "(Taste both, very carefully)", "honey", "both_good",
+                      onSuccess: c => FestivalGame.Finish(c.P, FestivalKind.PieJudging, true, null),
+                      onFailure: c => FestivalGame.Finish(c.P, FestivalKind.PieJudging, false, null), social: false)
+                .Roll(Skill.Persuasion, 12, "Ladies and gentlemen, I declare a diplomatic tie!", "tie", "tie_fail",
+                      onSuccess: c => FestivalGame.Finish(c.P, FestivalKind.PieJudging, true, null),
+                      onFailure: c => FestivalGame.Finish(c.P, FestivalKind.PieJudging, false, null));
+            d.Node("honey", who, c => "Well? WELL?",
+                c => "Halfway through the second slice it hits you: Dunstan's tart tastes EXACTLY like Hesper's honey. Because it IS Hesper's honey. You glance at Dunstan. Dunstan glances at the sky. Hesper's mouth falls open. Then she starts laughing so hard she has to sit down. (You win a ribbon for your palate.)" + FeudCallback(c))
+                .Bye("Everybody wins. Especially me. I ate both.");
+            d.Node("both_good", who, c => "Your verdict?",
+                c => "You eat a slice of each. Then another slice of each. They're both wonderful. You have no idea. Brannoc sighs and declares the judging 'inconclusive, pending further pie.'" + FeudCallback(c))
+                .Bye("More pie is the only scientific answer.");
+            d.Node("tie", who, c => "...A tie. A TIE. Well. I suppose... I suppose that is very diplomatic.",
+                c => "The crowd cheers. Hesper and Dunstan each look outraged, then relieved, then very slightly pleased, and shake hands over the pies. Brannoc pins a ribbon on YOU, for 'services to peace.'" + FeudCallback(c))
+                .Bye("Services to peace. I'll take it.");
+            d.Node("tie_fail", who, c => "A tie? Nobody likes a tie! The people want BLOOD! Well. Pie.",
+                c => "The crowd boos, good-naturedly. Somebody throws a crust. In the end, Old Tobin is declared the winner, though he didn't enter. He's delighted." + FeudCallback(c))
+                .Bye("Long live Tobin.");
+            return d;
+        }
+
+        /// <summary>Pip is out in the square during the festival, pouring cider and explaining the games.</summary>
+        static void PipFestival(Dialogue d)
+        {
+            var inner = d.Start;
+            d.Start = c => c.G.World.IsLocked(Festival.Lock) && c.Npc != null && c.Npc.Actor != null && c.Npc.Actor.Zone != null && c.Npc.Actor.Zone.Def.Id == "town" ? "festival" : inner(c);
+            d.Node("festival", "Pip Thistlewhit", c => "HAPPY HARVEST! Cider? It's free today. Well, it's free for you. Don't tell Tobin. There's apple bobbing by the well, archery at the east end, Brannoc's judging the pies, and the stage is open to anyone brave enough!",
+                c => "Pip has a cider jug in each hand and a wreath of wheat on his head that keeps sliding over one eye.")
+                .Say("Which game should I try?", "festival_tip")
+                .Bye("Happy harvest, Pip!");
+            d.Node("festival_tip", "Pip Thistlewhit", c => "All of them! Try three and you'll have had a PROPER festival, and I'll stand you a round. Well. Another round.")
+                .Bye("Three it is.");
         }
 
         // =================================================================== Elder Ssark (the Kobold Warrens)

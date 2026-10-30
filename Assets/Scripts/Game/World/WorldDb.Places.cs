@@ -62,6 +62,36 @@ namespace DnD.Game
             Zones["ford"].Warps.Add(new WarpDef(37, 0, "watchtower", 16, 24));
         }
 
+        /// <summary>The Harvest Festival: the square's dressing, the four games, and where everyone stands while it runs.</summary>
+        static void BuildFestival()
+        {
+            var town = Zones["town"];
+            town.FestivalGames.Add((new Vector2Int(22, 15), FestivalKind.AppleBob));
+            town.FestivalGames.Add((new Vector2Int(31, 15), FestivalKind.Archery));
+            town.FestivalGames.Add((new Vector2Int(27, 19), FestivalKind.PieJudging));
+            town.FestivalGames.Add((new Vector2Int(25, 13), FestivalKind.BardStage));
+            foreach (var pos in new[] { new Vector2Int(20, 13), new Vector2Int(30, 13), new Vector2Int(18, 17), new Vector2Int(32, 17) })
+                town.FestivalProps.Add((pos, "obj_bunting"));
+            town.FestivalProps.Add((new Vector2Int(23, 19), "obj_pie_table"));
+
+            void At(string npc, int x, int y, string activity) =>
+                Npcs[npc].Schedule.Add(new ScheduleEntry(Festival.OpenHour, "town", x, y, activity) { RequiresLock = Festival.Lock });
+            At("pip", 30, 20, "pouring free cider at the stall");
+            At("brannoc", 27, 18, "judging the pie contest with tremendous seriousness");
+            At("hesper", 26, 20, "guarding her Honey Crumble");
+            At("dunstan", 28, 20, "guarding his Golden Honey Tart");
+            At("maddie", 23, 15, "running the apple-bobbing barrel (and getting soaked)");
+            At("rhoswen", 30, 16, "running the archery butts");
+            At("lark", 24, 14, "dancing by the stage");
+            At("tamsin", 26, 14, "dancing by the stage (badly, happily)");
+            At("tobin", 21, 18, "on his third slice of pie");
+            At("elowen", 19, 20, "blessing the harvest loaves");
+            At("garrick", 24, 22, "arm-wrestling all comers");
+            At("wick", 22, 20, "sneaking extra pie");
+            At("hobb", 32, 19, "complaining that the cider's too sweet");
+            At("perrin", 20, 19, "taking notes on 'quaint local customs'");
+        }
+
         static void BuildCrater()
         {
             var z = new ZoneDef
@@ -241,6 +271,7 @@ namespace DnD.Game
             Npcs["wick"].Schedule.Add(new ScheduleEntry(17, null, 0, 0, "at home with his mum", Coinday) { ForbidFlag = "barrel_tracks" });
             Npcs["wick"].Schedule.Add(new ScheduleEntry(14, "crater", 13, 21, "poking a crystal with a stick (it's his day off)", Coinday) { RequiresFlag = "wick_hired" });
             Npcs["wick"].Schedule.Add(new ScheduleEntry(17, null, 0, 0, "home with his mum, who's feeling better", Coinday) { RequiresFlag = "wick_hired" });
+            BuildFestival();
         }
     }
 }

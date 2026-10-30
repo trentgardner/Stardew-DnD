@@ -393,12 +393,13 @@ namespace DnD.Game
         int _lastW, _lastH;
 
         /// <summary>Fight music if anyone's fighting, otherwise Player 1's zone (the town has a quieter night tune).</summary>
-        string WantedMusic()
+        public string WantedMusic()
         {
             if (AnyInCombat) return "music_fight";
             var lead = Players.FirstOrDefault(p => p.IsReady);
             if (lead == null) return null;
             var z = lead.Zone.Def;
+            if (z.Id == "town" && World.IsLocked(Festival.Lock)) return "music_festival";
             bool night = Clock.Hour >= 20 || Clock.Hour < 6;
             return night && !z.Indoors && !z.Dark && Music.HasRealClip(z.MusicId + "_night") ? z.MusicId + "_night" : z.MusicId;
         }
@@ -442,6 +443,7 @@ namespace DnD.Game
 
         void OnHourChanged(int hour)
         {
+            FestivalTick();
             foreach (var n in _npcs) n.UpdateSchedule(false);
             StoryTick();
             if (hour == 0) RefreshRecruits();
@@ -458,6 +460,18 @@ namespace DnD.Game
                     p.Hud.Narrate("It's very late. Your eyelids feel like lead. (Find a bed: home, the tavern, or the temple.)", false);
                 }
             }
+        }
+
+        /// <summary>The Harvest Festival: Pip spreads the word from day 6; on a festival day the square fills from nine bells.</summary>
+        void FestivalTick()
+        {
+            if (!InGame) return;
+            if (Clock.Day >= Festival.AnnounceDay && Quests.Stage("harvest_festival") == 0) Quests.Start("harvest_festival");
+            if (World.IsLocked(Festival.Lock) || !Festival.IsOn(Clock, World.FestivalDoneDay)) return;
+            if (Combats.Any(c => c.Zone != null && c.Zone.Def.Id == "town")) return; // never mid-fight in town; the next hour will do
+            World.Lock(Festival.Lock, Festival.CloseHour * 60 - Clock.Minutes);
+            foreach (var p in Players.Where(x => x.IsReady))
+                p.Hud.Narrate("Bunting, fiddles and the smell of pie: the Harvest Festival has begun in the square!", true);
         }
 
         void RefreshRecruits()
