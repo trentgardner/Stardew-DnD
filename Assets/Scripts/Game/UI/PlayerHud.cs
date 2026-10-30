@@ -323,6 +323,7 @@ namespace DnD.Game
             var members = new List<(string name, Creature c)>();
             foreach (var comp in g.CompanionsOf(Slot)) if (comp.Character != null) members.Add((comp.Character.Name + (comp.Manual ? "" : " (auto)"), comp.Character));
             foreach (var p in g.Players) if (p != Slot && p.IsReady) members.Add((p.Character.Name, p.Character));
+            if (g.Dragon != null) members.Add((g.Dragon.Name + (g.World.DragonScared ? " (scared)" : ""), g.Dragon));
             if (members.Count != _partyRows.Count)
             {
                 UIKit.Clear(_party);

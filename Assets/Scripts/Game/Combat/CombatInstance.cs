@@ -17,10 +17,23 @@ namespace DnD.Game
         public EnemyAgent Enemy;
         public CompanionAgent Comp;
         public Combatant Cb;
+        public CombatInstance Fight;
         public int DeathRound = -1;
         public Vector2Int Pos => A.MapPos;
-        /// <summary>Who makes this unit's decisions and rolls its dice: its player, or the leader of a companion under manual command.</summary>
-        public PlayerSlot Ctrl => Owner ?? (Comp != null && Comp.Manual && Comp.Leader != null && Comp.Leader.InCombat ? Comp.Leader : null);
+        /// <summary>
+        /// Who makes this unit's decisions and rolls its dice: its player, or the leader of a companion under manual command.
+        /// The dragon belongs to everyone: if its leader isn't in this fight, whichever player is gives the orders.
+        /// </summary>
+        public PlayerSlot Ctrl
+        {
+            get
+            {
+                if (Owner != null) return Owner;
+                if (Comp == null || !Comp.Manual || Fight == null) return null;
+                if (Comp.Leader != null && Fight.Humans.Contains(Comp.Leader)) return Comp.Leader;
+                return Comp.IsDragon ? Fight.Humans.FirstOrDefault() : null;
+            }
+        }
         public bool IsHuman => Ctrl != null;
         public string Name => C.Name;
         public bool Active => !C.IsDead && !C.IsDown;
@@ -53,7 +66,7 @@ namespace DnD.Game
         {
             var existing = Units.FirstOrDefault(x => x.C == c);
             if (existing != null) return existing;
-            var u = new Unit { C = c, A = a, Owner = owner, Enemy = enemy, Comp = comp };
+            var u = new Unit { C = c, A = a, Owner = owner, Enemy = enemy, Comp = comp, Fight = this };
             Units.Add(u);
             if (enemy != null) enemy.InCombat = true;
             if (owner != null) owner.Combat = this;
@@ -132,6 +145,7 @@ namespace DnD.Game
                 var log = new List<string>();
                 Enc.StartTurn(log);
                 foreach (var l in log) Log(l);
+                if (cur.C is Dragonling && cur.Active) RechargeBreath(cur, null);
                 RefreshTracker();
 
                 if (cur.C.IsDead) { /* skip */ }
@@ -201,11 +215,14 @@ namespace DnD.Game
             p.Hud.Push(new CombatHud(this));
             p.Hud.Narrate($"You rush into the fight! (Initiative {u.Cb.Initiative})");
             if (!Brawl) foreach (var c in G.CompanionsOf(p)) if (c.Character != null) { var cu = AddUnit(c.Character, c.Actor, comp: c); cu.Cb = Enc.Join(c.Character); }
+            G.AddDragonTo(this, true);
             DrawGrid(true);
             RefreshTracker();
         }
 
         // ================================================================== helpers
+
+        public IReadOnlyList<string> LogLines => _log;
 
         public void Log(string line)
         {
@@ -246,9 +263,16 @@ namespace DnD.Game
             return false;
         }
 
+        /// <summary>Who keeps a fight going on the players' side. The hatchling doesn't: it can't win a fight alone.</summary>
+        bool PlayersUp => Units.Any(u => u.C.Team == Team.Players && u.Active && !(u.C is Dragonling));
+
+        /// <summary>A dragon that ran off scared leaves the grid (it no longer blocks a tile or takes turns).</summary>
+        void PurgeScaredDragon() => Units.RemoveAll(u => u.C is Dragonling && u.C.IsDown);
+
         bool CheckEnd()
         {
-            bool playersUp = Units.Any(u => u.C.Team == Team.Players && u.Active);
+            PurgeScaredDragon();
+            bool playersUp = PlayersUp;
             bool enemiesUp = Units.Any(u => u.C.Team == Team.Enemies && u.Active);
             if (playersUp && enemiesUp) return false;
             Finish(playersUp);

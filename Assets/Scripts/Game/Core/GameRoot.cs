@@ -656,6 +656,7 @@ namespace DnD.Game
         public void OnCombatRetreat(CombatInstance c)
         {
             Combats.Remove(c);
+            DragonBackOut();
             if (c.GroupId != null) CalmGroup(c.GroupId);
             foreach (var h in c.Humans) h.Hud.Narrate("You got away! They've lost track of you for now. Rest up, then finish this however you like.");
         }
@@ -709,6 +710,7 @@ namespace DnD.Game
                     if (comp.Character != null && !comp.Character.IsDead && comp.Actor.Zone == zone && Vector2.Distance(comp.Actor.MapPos, p.MapPos) <= 12)
                         c.AddUnit(comp.Character, comp.Actor, comp: comp);
             }
+            AddDragonTo(c, false);
             if (!c.Units.Any(u => u.Owner != null))
             {
                 // Nobody's there to fight (e.g. a conversation ended in a threat while you stood elsewhere): don't run a fight with no heroes.
@@ -722,6 +724,7 @@ namespace DnD.Game
         public void OnCombatFinished(CombatInstance c, bool victory)
         {
             Combats.Remove(c);
+            DragonBackOut();
             if (c.Brawl) { EndBrawl(c, victory); return; }
             foreach (var u in c.Units.Where(u => u.C is PlayerCharacter pc && pc.IsDead)) _deathTime[u.C.Uid] = NowAbs;
             if (!victory) StartCoroutine(PartyWipe(c));
@@ -896,6 +899,33 @@ namespace DnD.Game
             d.Actor.Creature = Dragon;
             d.Actor.name = World.DragonName;
             Companions.Add(d);
+        }
+
+        /// <summary>The dragon is in some fight right now (it only ever joins one).</summary>
+        public bool DragonFighting => Dragon != null && Combats.Any(c => !c.Finished && c.Units.Any(u => u.C == Dragon));
+
+        /// <summary>
+        /// Brings the dragon into a fight if it's close to one of the players in it (12 tiles), brave, free, and not told to wait.
+        /// late: the fight is already running (it joins the initiative order now).
+        /// </summary>
+        public void AddDragonTo(CombatInstance c, bool late)
+        {
+            var agent = DragonAgent;
+            if (Dragon == null || agent == null || c.Brawl || World.DragonScared || agent.Waiting || !agent.gameObject.activeSelf) return;
+            if (agent.Actor.Zone != c.Zone || DragonFighting) return;
+            if (!c.Humans.Any(h => Vector2.Distance(h.MapPos, agent.Actor.MapPos) <= 12)) return;
+            agent.Actor.Moving = false;
+            var u = c.AddUnit(Dragon, agent.Actor, comp: agent);
+            if (late) u.Cb = c.Enc.Join(Dragon);
+        }
+
+        /// <summary>After a fight: a dragon that ran off scared pops back out at its leader's side (still scared until a rest).</summary>
+        void DragonBackOut()
+        {
+            var a = DragonAgent;
+            if (a == null || a.gameObject.activeSelf || DragonFighting) return;
+            a.gameObject.SetActive(true);
+            if (a.Leader != null && a.Leader.IsReady) a.Actor.PlaceAt(a.Leader.Zone, a.Leader.MapPos);
         }
 
         /// <summary>Names the new hatchling and brings it into the party (called by the naming screen).</summary>

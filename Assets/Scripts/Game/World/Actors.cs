@@ -485,6 +485,7 @@ namespace DnD.Game
 
         void Update()
         {
+            if (IsDragon && GameRoot.I.DragonFighting) { Actor.Moving = false; return; } // holds its grid square
             if (IsDragon) PickNearestLeader();
             if (Leader == null || Leader.Avatar == null || Leader.InCombat && Character != null) return;
             if (Waiting) { Actor.Moving = false; return; }

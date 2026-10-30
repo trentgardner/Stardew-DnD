@@ -159,5 +159,160 @@ namespace DnD.Tests
             Assert.AreEqual(0, g.World.DragonBond);
             Assert.IsFalse(g.World.DragonScared);
         }
+
+        // ============================================================ Task 2: the dragon in combat
+
+        /// <summary>P1 in the forest by the wolves, the dragon hatched and at their side.</summary>
+        static IEnumerator ByTheWolves(GameRoot g, PlayerSlot p)
+        {
+            Hatch(g, p);
+            g.Warp(p, "forest", new Vector2Int(34, 8), false);
+            yield return Frames(3);
+            p.Hud.CloseAll();
+        }
+
+        static Unit DragonUnit(CombatInstance c) => c.Units.FirstOrDefault(u => u.C is Dragonling);
+
+        [UnityTest]
+        public IEnumerator DragonJoinsFightNearAPlayer()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(10), "fighter", "human");
+            yield return Frames(2);
+            yield return ByTheWolves(g, p);
+            Assert.AreEqual("forest", g.DragonAgent.Actor.Zone.Def.Id, "the dragon came along");
+            g.StartGroupCombat("forest_wolves", p);
+            var c = g.Combats.Single();
+            var du = DragonUnit(c);
+            Assert.IsNotNull(du, "the dragon fights alongside");
+            Assert.IsTrue(du.Comp.IsDragon);
+            Assert.AreSame(p, du.Ctrl, "under the player's command by default");
+        }
+
+        [UnityTest]
+        public IEnumerator ScaredDragonSitsOut()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(11), "fighter", "human");
+            yield return Frames(2);
+            yield return ByTheWolves(g, p);
+            g.World.DragonScared = true;
+            g.StartGroupCombat("forest_wolves", p);
+            Assert.IsNull(DragonUnit(g.Combats.Single()), "a scared dragon hides behind the party");
+        }
+
+        [UnityTest]
+        public IEnumerator EitherPlayerCommandsTheDragon()
+        {
+            var g = GameRoot.I;
+            var p1 = g.DebugStart(Still(12), "fighter", "human");
+            var p2 = g.DebugStart(Still(13), "cleric", "elf");
+            yield return Frames(2);
+            yield return ByTheWolves(g, p1);
+            g.Warp(p2, "forest", new Vector2Int(34, 9), false);
+            p1.Avatar.PlaceAt(p1.Zone, WorldDb.Zones["forest"].DefaultSpawn); // P1 wanders off, far from the wolves
+            yield return null;
+            var agent = g.DragonAgent;
+            agent.Leader = p1;
+            agent.Actor.PlaceAt(p2.Zone, new Vector2Int(33, 9));
+            g.StartGroupCombat("forest_wolves", p2);
+            var c = g.Combats.Single();
+            Assert.IsFalse(p1.InCombat, "P1 is too far away to join");
+            var du = DragonUnit(c);
+            Assert.IsNotNull(du);
+            Assert.AreSame(p2, du.Ctrl, "the player in the fight commands the dragon");
+        }
+
+        [UnityTest]
+        public IEnumerator EmberBreathRollsASaveAndRecharges()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(14), "fighter", "human");
+            yield return Frames(2);
+            yield return ByTheWolves(g, p);
+            g.DragonAgent.Manual = false; // its own dice on the ticker, no tray to click through
+            g.StartGroupCombat("forest_wolves", p);
+            var c = g.Combats.Single();
+            var du = DragonUnit(c);
+            if (du.Cb == null) du.Cb = new Combatant(du.C);
+            var wolf = c.Units.First(u => u.C.Team == Team.Enemies);
+            wolf.A.PlaceAt(c.Zone, du.Pos + Vector2Int.right);
+            yield return c.EmberBreath(du, wolf.Pos);
+            Assert.IsTrue(c.LogLines.Any(l => l.Contains("DEX save")), "the wolf rolls a visible DEX save");
+            Assert.IsFalse(g.Dragon.BreathReady, "the breath needs to recharge");
+            c.RechargeBreath(du, () => 4);
+            Assert.IsFalse(g.Dragon.BreathReady, "a 4 doesn't recharge it");
+            c.RechargeBreath(du, () => 6);
+            Assert.IsTrue(g.Dragon.BreathReady, "a 6 does");
+            Assert.IsTrue(c.LogLines.Any(l => l.Contains("Recharge")), "the recharge roll is shown");
+            var acts = c.DragonActions(du).Select(a => a.Name).ToList();
+            CollectionAssert.AreEqual(new[] { "Move", "Attack (Bite)", "Ember Breath", "Dodge", "Auto", "End Turn" }, acts);
+        }
+
+        [UnityTest]
+        public IEnumerator ScaredDragonLeavesFightAndPartyCanStillWin()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new FuzzInput(15) { CancelChance = 0, MenuChance = 0 }, "fighter", "human"); // clicks through the dice trays
+            yield return Frames(2);
+            yield return ByTheWolves(g, p);
+            g.StartGroupCombat("forest_wolves", p);
+            var c = g.Combats.Single();
+            var du = DragonUnit(c);
+            g.Dragon.TakeDamage(999, DamageType.Piercing, false, new System.Collections.Generic.List<string>());
+            c.OnDamaged(du);
+            Assert.IsTrue(g.World.DragonScared);
+            Assert.IsFalse(g.Dragon.IsDead, "it never dies");
+            Assert.IsFalse(du.A.gameObject.activeSelf, "it bolts out of the fight");
+            Assert.IsTrue(c.LogLines.Any(l => l.Contains("retreats, scared")));
+            Assert.IsFalse(c.Finished, "the fight goes on");
+
+            foreach (var u in c.Units) if (u.C.Team == Team.Enemies) u.C.HP = 0;
+            Time.timeScale = 4;
+            float start = Time.realtimeSinceStartup;
+            while (g.AnyInCombat && Time.realtimeSinceStartup - start < 60f) yield return null;
+            Time.timeScale = 1;
+            Assert.IsFalse(g.AnyInCombat);
+            Assert.IsTrue(g.World.DefeatedGroups.Contains("forest_wolves"), "a victory");
+            yield return Frames(2);
+            Assert.IsTrue(g.DragonAgent.gameObject.activeSelf, "it comes back out once the fight is over");
+            Assert.IsTrue(g.World.DragonScared, "still scared until a rest");
+        }
+
+        [UnityTest]
+        public IEnumerator DragonIsNotEnoughToKeepAFightGoing()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new FuzzInput(16) { CancelChance = 0, MenuChance = 0 }, "fighter", "human"); // clicks through the dice trays
+            yield return Frames(2);
+            yield return ByTheWolves(g, p);
+            g.StartGroupCombat("forest_wolves", p);
+            var c = g.Combats.Single();
+            Assert.IsTrue(DragonUnit(c).Active);
+            g.Dragon.MaxHP = g.Dragon.HP = 999; // the wolves can't knock it out, so only the rule can end the fight
+            p.Character.HP = 0;
+            Time.timeScale = 4;
+            float start = Time.realtimeSinceStartup;
+            while (!c.Finished && Time.realtimeSinceStartup - start < 60f) yield return null;
+            Time.timeScale = 1;
+            Assert.IsTrue(c.Finished, "the hatchling alone doesn't keep a lost fight going");
+        }
+
+        [UnityTest]
+        public IEnumerator DragonJoinsOnlyOneFight()
+        {
+            var g = GameRoot.I;
+            var p1 = g.DebugStart(Still(17), "fighter", "human");
+            var p2 = g.DebugStart(Still(18), "cleric", "elf");
+            yield return Frames(2);
+            yield return ByTheWolves(g, p1);
+            g.StartGroupCombat("forest_wolves", p1);
+            Assert.IsNotNull(DragonUnit(g.Combats.Single()));
+            g.Warp(p2, "forest", new Vector2Int(11, 25), false);
+            g.DragonAgent.Actor.PlaceAt(p2.Zone, new Vector2Int(11, 26));
+            g.StartGroupCombat("forest_goblins", p2);
+            var second = g.Combats.First(x => x.GroupId == "forest_goblins");
+            Assert.IsNull(DragonUnit(second), "already busy with the wolves");
+        }
     }
 }

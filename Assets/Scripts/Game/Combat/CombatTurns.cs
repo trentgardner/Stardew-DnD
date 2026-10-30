@@ -36,7 +36,7 @@ namespace DnD.Game
         IEnumerator PlayerTurn(Unit u)
         {
             var p = u.Ctrl;
-            var pc = (PlayerCharacter)u.C;
+            var pc = u.C; // a player character, or the dragon
             var hud = p.Hud.Find<CombatHud>();
             if (hud == null) { hud = new CombatHud(this); p.Hud.Push(hud); }
             p.Hud.Narrate(u.Owner != null ? $"Your turn, {pc.Name}!" : $"{pc.Name}'s turn. Your orders?", u.Owner == null);
@@ -157,7 +157,8 @@ namespace DnD.Game
 
         bool CheckEndQuiet()
         {
-            bool playersUp = Units.Any(x => x.C.Team == Team.Players && x.Active);
+            PurgeScaredDragon();
+            bool playersUp = PlayersUp;
             bool enemiesUp = Units.Any(x => x.C.Team == Team.Enemies && x.Active);
             return !playersUp || !enemiesUp;
         }
@@ -181,6 +182,7 @@ namespace DnD.Game
 
         List<CombatAction> BuildActions(Unit u)
         {
+            if (u.C is Dragonling) return DragonActions(u);
             var all = BuildAllActions(u);
             if (!Brawl) return all;
             var pc = (PlayerCharacter)u.C;
@@ -662,10 +664,11 @@ namespace DnD.Game
             OnDamaged(target);
         }
 
-        void OnDamaged(Unit target)
+        public void OnDamaged(Unit target)
         {
             if (target.C.IsDead && target.DeathRound < 0) target.DeathRound = Enc.Round;
             if (target.C is PlayerCharacter shaped) WildShapeFx.Sync(target.A, shaped);
+            if (target.C is Dragonling && target.C.IsDown) { ScareOffDragon(target); return; }
             if (target.C.IsDown && target.C.Team == Team.Enemies) { target.A.Popup("Defeated!", UIKit.Gold); }
             if (target.C.IsDown && target.Owner != null) target.Owner.Hud.Narrate(target.C.IsDead ? "Everything goes dark..." : "You fall unconscious! Death saves begin on your turn...");
             else if (target.C.IsDown && target.Comp != null) target.Comp.Leader?.Hud.Narrate(target.C.IsDead ? $"{target.Name} has fallen..." : $"{target.Name} is down! Get a potion or a healing spell to them (Items: Give Potion to Ally).");
@@ -1341,6 +1344,7 @@ namespace DnD.Game
             if (u.Active && target.Active && Zone.DistanceFt(u.Pos, target.Pos) <= melee.ReachFt)
             {
                 if (u.C is PlayerCharacter) yield return AttackAction(u, target, melee);
+                else if (GoodBreath(u, target.Pos)) yield return EmberBreath(u, target.Pos);
                 else yield return AiAttack(u, target, melee);
             }
         }
