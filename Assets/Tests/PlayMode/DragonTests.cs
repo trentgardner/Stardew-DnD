@@ -562,5 +562,27 @@ namespace DnD.Tests
                 StringAssert.Contains("{0}", DialogueDb.DragonAsides[id], "the aside uses the dragon's name");
             }
         }
+            // ============================================================ Task 6: acceptance
+
+        /// <summary>Random input with the dragon along: pet menus, fetch, Sniff, fights by the wolves. Any exception fails the test.</summary>
+        [UnityTest]
+        public IEnumerator FuzzWithTheDragon()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new FuzzInput(66), "druid", "elf");
+            yield return Frames(2);
+            Hatch(g, p);
+            g.Warp(p, "forest", new Vector2Int(30, 10), false);
+            Time.timeScale = 4;
+            for (int i = 0; i < 2500; i++)
+            {
+                if (i == 1200 && !g.AnyInCombat) g.StartGroupCombat("forest_wolves", p);
+                yield return null;
+            }
+            Time.timeScale = 1;
+            Assert.IsTrue(g.InGame);
+            Assert.IsNotNull(g.Dragon);
+            Assert.IsFalse(g.Dragon.IsDead, "the dragon never dies");
+        }
     }
 }

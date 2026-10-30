@@ -37,6 +37,28 @@
 **Co-op:** your fiance presses **START** on a second controller at any time. The screen splits and she makes a
 character. You can go anywhere independently; if one of you starts a fight, the other can walk over and join it.
 
+## New in Phase 6 (the baby dragon, and Buoy)
+- **The hatching** is a little scene now: the egg glows and wobbles, cracks, flashes, and the hatchling tumbles out (any button skips it after a second). Then you **type its name** (or press "Suggest another"; empty = Cinder).
+- **The dragon belongs to the whole party.** It follows whichever player is nearest, and either player can walk up to it ("Play with ...") for its menu:
+  - **Pet** it (heart bubble), **play fetch** (it chases a stick and brings it back), **give a treat** (Smoked Pepper Jerky, 5 cp from Pip or the general store).
+  - **Sniff around**: hidden spots within about 8 steps start to sparkle, and their next check has **Advantage**. Once per rest, shared by the party.
+  - **Light that brazier**: cold braziers in the mine and the warrens light up for good. It can also **light your torch**.
+  - **Wait here / Come along**, and **in fights: your orders or its own**.
+- **Bond** (♥ hearts in the journal and its menu) grows with petting (once an hour), fetch (once an hour), treats and fights won together. It never goes down.
+- **In fights** it takes its own turn: Move, Bite (+4, 1d4+2), **Ember Breath** (a puff of fire right in front of it: 1d6, DEX save for half; comes back on a 5–6 at the start of its turn), Dodge, Auto, End Turn. If either player is in the fight, they can give it orders.
+- **It never dies.** At 0 HP it squeals and bolts for cover, then pops back out after the fight, still shaky. It sits out fights until you rest (short or long), which also fixes its HP and its nose.
+- Townsfolk notice it (Pip, Brannoc, Elowen, Perrin, Garrick each have a line), and Thistledown reacts the first time you bring it home.
+- **Buoy**, a black-and-white Australian Shepherd, is the neighbourhood dog. Find him on South Lane most days, by the Sleeping Drake's door on Hearthday, and splashing at Miller's Ford on Leafday. Pet him (the first pet each day gives Heroic Inspiration) and read his collar.
+
+### Phase 6 checklist
+- [ ] Hatch the egg: does the scene feel special? Is the name screen easy (keyboard and controller)?
+- [ ] Pet, fetch, treat. Do the hearts go up? Wait 20 seconds without moving: does it nap (Zz)?
+- [ ] Sniff in Whisperwood near a hidden spot, then search it: the dice tray says "Advantage (Sniff)".
+- [ ] Light a cold brazier in the mine, save, reload: still lit?
+- [ ] Fight with the dragon under your orders and on Auto. Breathe on two wolves. Let it get knocked out: it should flee, not die.
+- [ ] Co-op: walk apart. Does the dragon pick the nearer player without jittering between you?
+- [ ] Find Buoy. Pet him, read his collar.
+
 ## New in Phase 5 (new places)
 - **The Fallen Star is a real journey now.** Captain Vale sends you to **Starfall Crater** (Whisperwood's north trail,
   top edge of the forest). Study the empty hollow, then either follow the little clawed tracks or stake out the market

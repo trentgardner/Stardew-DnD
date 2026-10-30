@@ -152,6 +152,17 @@ Agreed between the designer (Trent) and Claude. Change a decision here first, th
 - All art and sound are looked up by name with generated fallbacks (`ART_BRIEF.md`, `ART_IMPORT_GUIDE.md`).
 - Proprietary license; SRD 5.2 used under CC-BY-4.0 (`NOTICE.md`).
 
+## The baby dragon (Phase 6)
+
+- Rules: `Dragonling : Monster` (Rules/Dragonling.cs). AC 13, HP 5 + 5 × party level (10 at L1, 25 at L4), Bite +4 1d4+2, resists fire, darkvision 60.
+  Ember Breath: the engine's 5-ft cone (up to 3 squares facing the target), 1d6 fire, DEX save DC 8 + PB + CON (= 11) for half, recharge 5–6 rolled at the start of its turn.
+  Growth hooks only: `DragonStage { Hatchling, Wyrmling, Young, Adult }`, `CanFly` (Young+).
+- It never dies: at 0 HP it "retreats, scared" (WorldState.DragonScared): it leaves the grid, sits out fights, and comes back at full HP on any short or long rest (GameRoot.OnPartyRest).
+  It doesn't count as "players still up", so it can't keep a lost fight going alone. It joins at most one fight, if it's within 12 tiles of a player in it.
+- Owned by the party: follows the nearest ready player (same zone first, 3-tile hysteresis); in a fight, its leader gives orders, or any player in that fight if the leader isn't.
+- Pet layer (World/DragonPet.cs): menu, pet/fetch (+2/+3 bond once per in-game hour per player), treats (+5), fights won (+1), bond 0–100 shown as 0–5 hearts. Sniff: once per rest, secrets within 8 tiles sparkle and get Advantage. Cold braziers (map 'y') light for good (WorldState.LitBraziers).
+- Saved: name, damage taken (old saves load at full HP), scared, bond, sniff used, lit braziers.
+
 ## Buoy (dedication)
 
 Buoy is Thistledown's neighbourhood dog: a black-and-white Australian Shepherd, a tribute to a real dog. He is NOT a companion and never fights.
