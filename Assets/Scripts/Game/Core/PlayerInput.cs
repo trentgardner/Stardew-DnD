@@ -28,6 +28,10 @@ namespace DnD.Game
         public abstract bool NextTab { get; }
         public abstract bool PrevTab { get; }
         public abstract bool AltAction { get; }    // split stack / secondary
+        /// <summary>World: use the selected hotbar item (KB: X; pad: a short tap of X, so holding X can swap weapons).</summary>
+        public virtual bool HotbarUse => AltAction;
+        /// <summary>World and combat: swap weapon sets (KB: Z; pad: hold X).</summary>
+        public virtual bool SwapWeapons => false;
         public abstract bool QuickModifier { get; } // shift (quick-transfer)
         public abstract bool SneakToggle { get; }
         public abstract bool Highlight { get; }
@@ -124,6 +128,7 @@ namespace DnD.Game
         public override Vector2 Cursor => Vector2.zero;
         public override bool UseItem => P(Key.U) || (M != null && M.middleButton.wasPressedThisFrame);
         public override bool Sort => P(Key.T);
+        public override bool SwapWeapons => P(Key.Z);
         public override bool Give => P(Key.G);
 
         static readonly Key[] HotKeys = { Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5, Key.Digit6, Key.Digit7, Key.Digit8, Key.Digit9, Key.Digit0, Key.Minus, Key.Equals };
@@ -203,6 +208,22 @@ namespace DnD.Game
         public override int HotbarPressed => -1;
         public override bool UseItem => IsConnected && Pad.buttonNorth.wasPressedThisFrame;
         public override bool Sort => IsConnected && Pad.selectButton.wasPressedThisFrame;
+        public override bool HotbarUse { get { TrackWest(); return _westUse; } }
+        public override bool SwapWeapons { get { TrackWest(); return _westSwap; } }
+
+        // X (west): a tap uses the hotbar item when released; holding it 0.4 s swaps weapons instead.
+        float _westDown = -1; bool _westFired, _westUse, _westSwap; int _westFrame = -1;
+        void TrackWest()
+        {
+            if (_westFrame == Time.frameCount) return;
+            _westFrame = Time.frameCount;
+            _westUse = _westSwap = false;
+            if (!IsConnected) return;
+            var b = Pad.buttonWest;
+            if (b.wasPressedThisFrame) { _westDown = Time.unscaledTime; _westFired = false; }
+            if (b.isPressed && _westDown >= 0 && !_westFired && Time.unscaledTime - _westDown >= 0.4f) { _westFired = true; _westSwap = true; }
+            if (b.wasReleasedThisFrame) { if (!_westFired && _westDown >= 0) _westUse = true; _westDown = -1; }
+        }
         public override bool Give => IsConnected && Pad.buttonWest.wasPressedThisFrame;
 
         public override Vector2 Cursor
@@ -300,6 +321,8 @@ namespace DnD.Game
         public override bool UseItem => Any(p => p.UseItem);
         public override bool Sort => Any(p => p.Sort);
         public override bool Give => Any(p => p.Give);
+        public override bool HotbarUse => Any(p => p.HotbarUse);
+        public override bool SwapWeapons => Any(p => p.SwapWeapons);
         public override int HotbarPressed { get { Refresh(); return _kb.HotbarPressed; } }
 
         public override Vector2 Cursor

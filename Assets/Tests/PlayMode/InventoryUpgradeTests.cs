@@ -134,5 +134,66 @@ namespace DnD.Tests
             Assert.Greater(p.Hud.HotbarSlotScale(1), 1.05f, "the selected slot stands out");
             Assert.AreEqual(1f, p.Hud.HotbarSlotScale(0), 0.001f);
         }
+            // ============================================================ Task 2: weapon sets
+
+        [UnityTest]
+        public IEnumerator ZSwapsOutsideCombat()
+        {
+            var g = GameRoot.I;
+            var input = new ScriptInput();
+            PlayerSlot p = null;
+            yield return Ready(g, input, x => p = x);
+            p.Character.MainHand = (WeaponDef)ItemsDb.Get("longsword");
+            p.Character.OffSetWeapon = (WeaponDef)ItemsDb.Get("longbow");
+            input.Swap = true;
+            yield return Frames(2);
+            Assert.AreEqual("longbow", p.Character.MainHand.Id, "Z swaps to the bow");
+            Assert.IsTrue(p.Hud.ToastTexts.Any(t => t.Contains("Longbow")), "and says so");
+        }
+
+        [UnityTest]
+        public IEnumerator WeaponSetsSurviveSaveAndLoad()
+        {
+            var g = GameRoot.I;
+            var input = new ScriptInput();
+            PlayerSlot p = null;
+            yield return Ready(g, input, x => p = x);
+            p.Character.MainHand = (WeaponDef)ItemsDb.Get("longsword");
+            p.Character.Shield = true;
+            p.Character.OffSetWeapon = (WeaponDef)ItemsDb.Get("longbow");
+            p.Character.SwapWeaponSets(out _);
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(3);
+            var pc = g.Players[0].Character;
+            Assert.AreEqual("longbow", pc.MainHand.Id);
+            Assert.AreEqual("longsword", pc.OffSetWeapon.Id);
+            Assert.IsTrue(pc.ShieldStowed && !pc.Shield, "the shield is still on your back");
+        }
+
+        [UnityTest]
+        public IEnumerator SwapIsFreeOncePerTurnInCombat()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new FuzzInput(4) { ConfirmChance = 0, CancelChance = 0, MenuChance = 0, EndTurnChance = 0 }, "fighter", "human");
+            g.Warp(p, "forest", new Vector2Int(34, 8), false);
+            yield return Frames(3);
+            p.Character.MainHand = (WeaponDef)ItemsDb.Get("longsword");
+            p.Character.OffSetWeapon = (WeaponDef)ItemsDb.Get("longbow");
+            g.StartGroupCombat("forest_wolves", p);
+            var c = g.Combats.Single();
+            var swap = c.ActionsFor(p).FirstOrDefault(a => a.Name == "Swap Weapons");
+            Assert.IsNotNull(swap, "Swap Weapons is on the action bar");
+            Assert.IsTrue(swap.Enabled);
+            Assert.AreEqual(ActionCost.Free, swap.Cost, "it costs no action");
+            var u = c.Units.First(x => x.Owner == p);
+            if (u.Cb == null) u.Cb = new Combatant(u.C);
+            var run = swap.Run(u, u.Pos);
+            while (run.MoveNext()) { }
+            Assert.AreEqual("longbow", p.Character.MainHand.Id);
+            var again = c.ActionsFor(p).First(a => a.Name == "Swap Weapons");
+            Assert.IsFalse(again.Enabled, "only once per turn");
+            StringAssert.Contains("already swapped", again.Why);
+        }
     }
 }

@@ -282,8 +282,8 @@ namespace DnD.Game
             if (hk >= 0) { Slot.Hud.HotbarIndex = hk; ItemUse.UseFromBag(Slot, hk); }
             if (input.NextTab) Slot.Hud.HotbarScroll(1);
             if (input.PrevTab) Slot.Hud.HotbarScroll(-1);
-            if (input.AltAction) ItemUse.UseFromBag(Slot, Slot.Hud.HotbarIndex);
-            if (input.UsesMouse && input.Scroll != 0) Slot.Hud.HotbarScroll(input.Scroll > 0 ? -1 : 1);
+            if (input.HotbarUse) ItemUse.UseFromBag(Slot, Slot.Hud.HotbarIndex);
+            if (input.SwapWeapons) { Slot.Character.SwapWeaponSets(out var swapMsg); Slot.Hud.Toast(swapMsg, UIKit.UtilityBlue); Sfx.Play("ui"); }            if (input.UsesMouse && input.Scroll != 0) Slot.Hud.HotbarScroll(input.Scroll > 0 ? -1 : 1);
         }
 
         public void TickLight(float gameMinutes)

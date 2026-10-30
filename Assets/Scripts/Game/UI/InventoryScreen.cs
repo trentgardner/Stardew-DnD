@@ -89,14 +89,14 @@ namespace DnD.Game
             y -= 3 * 24 + 6;
 
             // Equipment row
-            string[] eq = { "weapon", "armor", "shield", "Cloak", "Ring", "Amulet", "Trinket", "Focus" };
+            string[] eq = { "weapon", "offset", "armor", "shield", "Cloak", "Ring", "Amulet", "Trinket", "Focus" };
             for (int i = 0; i < eq.Length; i++)
             {
                 var c = MakeCell(null, i, new Vector2(12 + i * 26, y), eq[i]);
                 c.EquipSlot = eq[i];
                 _equipCells.Add(c);
             }
-            var eqLbl = UIKit.Rect(Root, "EqLbl", new Vector2(0, 1), new Vector2(1, 1), new Vector2(222, y - 22), new Vector2(-8, y));
+            var eqLbl = UIKit.Rect(Root, "EqLbl", new Vector2(0, 1), new Vector2(1, 1), new Vector2(250, y - 22), new Vector2(-4, y));
             UIKit.Label(eqLbl, "Equipped", 10, UIKit.Dim, TextAnchor.MiddleLeft);
             y -= 28;
 
@@ -147,6 +147,7 @@ namespace DnD.Game
             switch (slot)
             {
                 case "weapon": return pc.MainHand?.Id;
+                case "offset": return pc.OffSetWeapon?.Id;
                 case "armor": return pc.Armor?.Id;
                 case "shield": return pc.Shield ? "shield" : null;
                 default: return pc.Worn.Find(w => w.Slot.ToString() == slot)?.Id;
@@ -217,9 +218,9 @@ namespace DnD.Game
         }
 
         static string SlotShort(string slot) =>
-            slot == "weapon" ? "Wpn" : slot == "armor" ? "Armor" : slot == "shield" ? "Shld" : slot == "Cloak" ? "Cloak" : slot == "Ring" ? "Ring" : slot == "Amulet" ? "Amul" : slot == "Trinket" ? "Trnk" : slot == "Focus" ? "Focus" : slot;
+            slot == "weapon" ? "Wpn" : slot == "offset" ? "Wpn 2" : slot == "armor" ? "Armor" : slot == "shield" ? "Shld" : slot == "Cloak" ? "Cloak" : slot == "Ring" ? "Ring" : slot == "Amulet" ? "Amul" : slot == "Trinket" ? "Trnk" : slot == "Focus" ? "Focus" : slot;
 
-        static string SlotLong(string slot) => slot == "weapon" ? "Weapon" : slot == "armor" ? "Armor" : slot == "shield" ? "Shield" : slot;
+        static string SlotLong(string slot) => slot == "weapon" ? "Weapon" : slot == "offset" ? "Off-set weapon (swap: Z / hold X)" : slot == "armor" ? "Armor" : slot == "shield" ? "Shield" : slot;
 
         public override void Tick()
         {
@@ -370,6 +371,11 @@ namespace DnD.Game
                 bool gear = def.Kind == ItemKind.Weapon || def.Kind == ItemKind.Armor || def.Kind == ItemKind.Shield || def.Kind == ItemKind.Wondrous;
                 var cons = def as ConsumableDef;
                 if (gear) opts.Add(("Equip", () => { ItemUse.UseFromBag(Slot, index); Redraw(); }));
+                if (def is WeaponDef) opts.Add(("Equip as off-set weapon (swap: Z / hold X)", () =>
+                {
+                    if (!Slot.Character.EquipFromBag(index, out var m, offSet: true)) Hud.Toast(m, UIKit.Bad); else Hud.Toast(m, UIKit.UtilityBlue);
+                    Redraw();
+                }));
                 else if (cons != null && cons.Effect == ConsumableEffect.Heal) opts.Add(("Drink it yourself", () => { ItemUse.UseFromBag(Slot, index); Redraw(); }));
                 else if (cons != null) opts.Add(("Use", () => { ItemUse.UseFromBag(Slot, index); Redraw(); }));
                 if (cons != null && cons.Effect == ConsumableEffect.Heal)

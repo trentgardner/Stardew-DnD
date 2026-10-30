@@ -27,7 +27,8 @@ namespace DnD.Game
         public List<string> BagIds = new List<string>();
         public List<int> BagCounts = new List<int>();
         public List<KV> Resources = new List<KV>();
-        public string MainHand, Armor;
+        public string MainHand, Armor, OffSet;
+        public bool ShieldStowed;
         // where they are
         public string Zone;
         public int X, Y;
@@ -228,7 +229,7 @@ namespace DnD.Game
                 Shield = pc.Shield, Heroic = pc.HeroicInspiration, LuckyUsed = pc.LuckyRerollUsed,
                 BaseScores = (int[])pc.BaseScores.Clone(), BgBonus = (int[])pc.BackgroundBonus.Clone(), SlotsUsed = (int[])pc.SlotsUsed.Clone(),
                 Asi = (int[])pc.AsiBonus.Clone(),
-                MainHand = pc.MainHand?.Id, Armor = pc.Armor?.Id,
+                MainHand = pc.MainHand?.Id, Armor = pc.Armor?.Id, OffSet = pc.OffSetWeapon?.Id, ShieldStowed = pc.ShieldStowed,
             };
             d.Skills.AddRange(pc.SkillProficiencies.Select(s => s.ToString()));
             d.Expertise.AddRange(pc.Expertise.Select(s => s.ToString()));
@@ -255,6 +256,7 @@ namespace DnD.Game
                 Shield = d.Shield, HeroicInspiration = d.Heroic, LuckyRerollUsed = d.LuckyUsed,
                 MainHand = d.MainHand != null ? ItemsDb.Get<WeaponDef>(d.MainHand) : null,
                 Armor = d.Armor != null ? ItemsDb.Get<ArmorDef>(d.Armor) : null,
+                OffSetWeapon = !string.IsNullOrEmpty(d.OffSet) ? ItemsDb.Get<WeaponDef>(d.OffSet) : null, ShieldStowed = d.ShieldStowed,
             };
             Array.Copy(d.BaseScores, pc.BaseScores, 6);
             Array.Copy(d.BaseScores, pc.Scores, 6);

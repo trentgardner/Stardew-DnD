@@ -48,6 +48,7 @@ namespace RulesTests
             KnockoutTests();
             DragonTests();
             BalanceTests();
+            WeaponSetTests();
 
             Console.WriteLine($"\n{_passed} passed, {_failed} failed");
             return _failed == 0 ? 0 : 1;
