@@ -35,6 +35,8 @@ namespace DnD.Game
         public readonly Dictionary<string, int> Charmed = new Dictionary<string, int>(); // "npc:player" → day
         public Inventory Storage = new Inventory(36);
         public bool EggHatched;
+        /// <summary>The day the party finished the Harvest Festival quest (0 = not yet): the festival stops coming back after that.</summary>
+        public int FestivalDoneDay;
         public string DragonName = "Cinder";
         public bool KettleReturned;
         public int RecruitWeek = -1;

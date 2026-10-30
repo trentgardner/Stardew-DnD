@@ -125,6 +125,24 @@ namespace DnD.Tests
             Assert.IsEmpty(missing, "placeholder art: " + string.Join(", ", missing));
         }
 
+        /// <summary>Every sprite Phase 5 added (crater, warrens, puzzles, watchtower, festival) is real art: pack frames or ArtMap hand-drawn patterns.</summary>
+        [Test]
+        public void Phase5ArtIsReal()
+        {
+            string[] ids = {
+                "tile_scorched", "obj_crystal", "obj_brazier", "obj_tent", "obj_hut", "tile_stairs_down", "obj_star_hollow", "obj_tracks",
+                "mon_fire_beetle_0", "npc_perrin_down_0", "item_star_shard", "item_star_iron",
+                "npc_ssark_down_0", "npc_tik_down_0", "mon_kobold_warboss_0", "item_lucky_pebble", "obj_crack", "obj_crawlway",
+                "obj_plate", "obj_plate_down", "obj_lever", "obj_lever_on", "obj_push_block", "obj_mirror_a", "obj_mirror_b",
+                "obj_light_window", "obj_light_crystal", "obj_light_crystal_lit", "obj_gate", "fx_beam",
+                "mon_animated_armor_0", "obj_inscription", "item_watchwarden_cloak",
+                "obj_bunting", "obj_pie_table", "obj_apple_barrel", "obj_archery_butt", "obj_stage", "item_festival_ribbon" };
+            var missing = ids.Where(id => !ArtRegistry.IsReal(id)).ToList();
+            Assert.IsEmpty(missing, "placeholder art: " + string.Join(", ", missing));
+            foreach (var m in new[] { "music_crater", "music_warrens", "music_shrine", "music_watchtower", "music_festival" })
+                Assert.IsTrue(Music.HasRealClip(m), m);
+        }
+
         [UnityTest]
         public IEnumerator EveryZoneDrawsOnlyRealArt()
         {

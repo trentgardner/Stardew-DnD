@@ -88,6 +88,8 @@ namespace DnD.Game
                     return t;
                 case "tavern":
                     return new List<string> { "rations", "torch", "potion_healing" };
+                case "kobold":
+                    return new List<string> { "torch", "rations", "potion_healing", "lucky_pebble" };
                 case "forge":
                     // Garrick makes everything mundane he can: every non-magical weapon, armor and shield.
                     return ItemsDb.All.Values.Where(d => d.PriceCp > 0 && !d.QuestItem &&
@@ -97,7 +99,10 @@ namespace DnD.Game
             }
         }
 
-        public static string Owner(string shop) => shop == "general" ? "Brannoc" : shop == "temple" ? "Mother Elowen" : shop == "forge" ? "Garrick" : "Pip";
+        public static string Owner(string shop) => shop == "general" ? "Brannoc" : shop == "temple" ? "Mother Elowen" : shop == "forge" ? "Garrick" : shop == "kobold" ? "Tik" : "Pip";
+
+        /// <summary>What a shop pays for an item: half price, except Tik, who pays full price for anything shiny.</summary>
+        public static int SellPrice(string shop, ItemDef d) => shop == "kobold" && d.Kind == ItemKind.Treasure ? d.PriceCp : d.PriceCp / 2;
 
         /// <summary>Base price in copper with difficulty scaling for Embers of Return.</summary>
         public static int BasePrice(ItemDef def)
@@ -127,7 +132,7 @@ namespace DnD.Game
 
         int Mod => GameRoot.I.World.ShopModifier(Slot.Index, _shop);
         int BuyPrice(ItemDef d) => Mathf.Max(1, Mathf.RoundToInt(ShopDb.BasePrice(d) * (100 + Mod) / 100f));
-        static int SellPrice(ItemDef d) => d.PriceCp / 2;
+        int SellPrice(ItemDef d) => ShopDb.SellPrice(_shop, d);
 
         public override void Build()
         {

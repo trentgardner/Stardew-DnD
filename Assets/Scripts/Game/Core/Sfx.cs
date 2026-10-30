@@ -49,6 +49,7 @@ namespace DnD.Game
                 case "crit": len = 0.4f; wave = t => (Mathf.Sin(t * 2 * Mathf.PI * (440 + t * 600)) * 0.6f + Noise(rng) * 0.3f) * Mathf.Exp(-t * 6); break;
                 case "heal": len = 0.45f; wave = t => Mathf.Sin(t * 2 * Mathf.PI * (520 + t * 400)) * 0.4f * Mathf.Exp(-t * 4); break;
                 case "spell": len = 0.4f; wave = t => Mathf.Sin(t * 2 * Mathf.PI * (300 + Mathf.Sin(t * 40) * 80)) * 0.4f * Mathf.Exp(-t * 5); break;
+                case "clunk": len = 0.15f; wave = t => (Mathf.Sin(t * 2 * Mathf.PI * 70) + Noise(rng) * 0.3f) * Mathf.Exp(-t * 25) * 0.7f; break;
                 case "door": len = 0.25f; wave = t => Mathf.Sin(t * 2 * Mathf.PI * 90) * Mathf.Exp(-t * 10) * 0.6f; break;
                 case "coin": len = 0.25f; wave = t => Mathf.Sin(t * 2 * Mathf.PI * (t < 0.08f ? 990 : 1320)) * 0.35f * Mathf.Exp(-t * 8); break;
                 case "ui": len = 0.05f; wave = t => Mathf.Sin(t * 2 * Mathf.PI * 660) * 0.25f; break;

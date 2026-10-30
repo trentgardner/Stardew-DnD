@@ -5,6 +5,9 @@ namespace DnD.Game
     /// <summary>Things that happen in the world that can move a quest along.</summary>
     public enum QuestEvent { ZoneEntered, GroupResolved, ItemGained, FlagSet, SecretFound }
 
+    /// <summary>Stages of the main quest, "fallen_star" (save version 2 numbering).</summary>
+    public static class FallenStar { public const int Crater = 1, Trail = 2, Warrens = 3, Egg = 4, Hatched = 5, Done = 6; }
+
     /// <summary>When event On happens with this Id and the quest is at FromStage, it moves to ToStage.</summary>
     public class QuestTrigger
     {
@@ -15,6 +18,9 @@ namespace DnD.Game
         public string[] AllOf;
         public QuestTrigger(QuestEvent on, string id, int from, int to) { On = on; Id = id; FromStage = from; ToStage = to; }
         public static QuestTrigger AllFlags(int from, int to, params string[] flags) => new QuestTrigger(QuestEvent.FlagSet, null, from, to) { AllOf = flags };
+        /// <summary>FlagSet only: with AllOf, fires once at least this many of them are set (0 = all of them).</summary>
+        public int AtLeast;
+        public static QuestTrigger FlagsAtLeast(int from, int to, int n, params string[] flags) => new QuestTrigger(QuestEvent.FlagSet, null, from, to) { AllOf = flags, AtLeast = n };
     }
 
     /// <summary>Paid once when the quest reaches its last stage. Xp and Copper go to every player; Item to whoever finished it.</summary>
@@ -57,12 +63,59 @@ namespace DnD.Game
             {
                 Id = "fallen_star", Title = "The Fallen Star", Giver = "rhoswen",
                 StageText = new[] {
-                    "", "Captain Vale asked you to investigate the old copper mine north of Thistledown, where something fell from the sky.",
+                    "", "Captain Vale asked you to find where the star fell, in the hills past Whisperwood's north trail.",
+                    "The crater is empty. Something carried the star away on small clawed feet, and things keep going missing in town. Follow the tracks, or catch the thief in the act after dark.",
+                    "The trail leads into the old copper mine and down, to the kobolds' warrens.",
                     "You found the source: a glowing red egg in the depths of the mine, guarded by devoted kobolds.",
                     "The egg hatched! A baby dragon has chosen you. Return to Captain Vale.",
                     "Complete. Thistledown has a dragon now. The capital will hear of this soon..." },
-                Triggers = { new QuestTrigger(QuestEvent.GroupResolved, "mine_egg", 1, 2), new QuestTrigger(QuestEvent.GroupResolved, "mine_egg", 0, 2) },
+                Triggers = {
+                    new QuestTrigger(QuestEvent.SecretFound, "crater_hollow", FallenStar.Crater, FallenStar.Trail),
+                    new QuestTrigger(QuestEvent.SecretFound, "crater_tracks", FallenStar.Trail, FallenStar.Warrens),
+                    new QuestTrigger(QuestEvent.ZoneEntered, "warrens", FallenStar.Crater, FallenStar.Warrens),
+                    new QuestTrigger(QuestEvent.ZoneEntered, "warrens", FallenStar.Trail, FallenStar.Warrens),
+                    new QuestTrigger(QuestEvent.GroupResolved, "mine_egg", 0, FallenStar.Egg),
+                    new QuestTrigger(QuestEvent.GroupResolved, "mine_egg", FallenStar.Crater, FallenStar.Egg),
+                    new QuestTrigger(QuestEvent.GroupResolved, "mine_egg", FallenStar.Trail, FallenStar.Egg),
+                    new QuestTrigger(QuestEvent.GroupResolved, "mine_egg", FallenStar.Warrens, FallenStar.Egg),
+                },
                 Reward = new QuestReward { Xp = 300, Copper = 5000, Npc = "rhoswen", Friendship = 100 },
+            });
+            Add(new QuestDef
+            {
+                Id = "harvest_festival", Title = "The Harvest Festival", Giver = "pip",
+                StageText = new[] {
+                    "", "Pip says the Harvest Festival is on Day 10 in the square, from nine bells. Try the games!",
+                    "Complete. You ate too much pie. Everyone did." },
+                Triggers = { QuestTrigger.FlagsAtLeast(1, 2, 3, "fest_bob", "fest_archery", "fest_pie", "fest_stage") },
+                Reward = new QuestReward { Xp = 150, Copper = 1000, Npc = "pip", Friendship = 50 },
+            });
+            Add(new QuestDef
+            {
+                Id = "watchtower", Title = "The Watchtower Inscription", Giver = "rhoswen",
+                StageText = new[] {
+                    "", "Captain Vale asked you to scout the Old Watchtower on the ridge north of Miller's Ford.",
+                    "You read the inscription at the top of the tower. Tell Captain Vale what it says.",
+                    "Complete. Captain Vale has copied the words into her notebook. Twice." },
+                Triggers = {
+                    new QuestTrigger(QuestEvent.SecretFound, "tower_inscription", 0, 2),
+                    new QuestTrigger(QuestEvent.SecretFound, "tower_inscription", 1, 2),
+                },
+                Reward = new QuestReward { Xp = 200, Copper = 2000, Npc = "rhoswen", Friendship = 50 },
+            });
+            Add(new QuestDef
+            {
+                Id = "go_between", Title = "Snik Speaks for You", Giver = null,
+                StageText = new[] {
+                    "", "Snik agreed to speak for you in the kobold warrens below the old mine. Meet him at the village gate.",
+                    "Snik talked the gate guards round. Now he needs Elder Ssark's blessing.",
+                    "Complete. The Elder blessed you; the way to the Great Egg is open." },
+                Triggers = {
+                    new QuestTrigger(QuestEvent.GroupResolved, "warrens_gate", 1, 2),
+                    new QuestTrigger(QuestEvent.FlagSet, "elder_blessing", 1, 3),
+                    new QuestTrigger(QuestEvent.FlagSet, "elder_blessing", 2, 3),
+                },
+                Reward = new QuestReward { Xp = 150, Item = "lucky_pebble" },
             });
             Add(new QuestDef
             {

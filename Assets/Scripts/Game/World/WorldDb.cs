@@ -45,6 +45,8 @@ namespace DnD.Game
         public int MinStage, MaxStage;
         /// <summary>A nonlethal fistfight: no magic, no weapons, no items, nobody dies (knocked out instead), no party wipe.</summary>
         public bool Brawl;
+        /// <summary>If this world flag is set when they spot you, a friend vouched for you: they stand down (full XP) and VouchText is narrated.</summary>
+        public string VouchFlag, VouchText;
         public bool InStage(QuestLog q) => QuestId == null || (q.Stage(QuestId) >= MinStage && q.Stage(QuestId) <= MaxStage);
     }
 
@@ -85,6 +87,10 @@ namespace DnD.Game
         public bool NightOnly;
         /// <summary>Success settles this enemy group peacefully (full XP, as if talked down), e.g. returning a lost cub.</summary>
         public string PacifiesGroup;
+        /// <summary>A sneak route: success moves the player (and their companions) to this tile in the same zone. Once found, no roll again.</summary>
+        public Vector2Int? PassageTo;
+        /// <summary>Success opens this conversation instead of the result message (e.g. catching a thief in the act).</summary>
+        public string Dialogue;
     }
 
     /// <summary>The sign hanging beside a building's door: the prompt names the building, reading it gives the text.</summary>
@@ -116,6 +122,11 @@ namespace DnD.Game
         public Vector2Int? EggPos;
         public Vector2Int? BedPos;
         public Vector2Int? ShopCounter;
+        /// <summary>Room puzzle pieces (plates, levers, blocks, mirrors, light, gates), or null.</summary>
+        public PuzzleDef Puzzle;
+        /// <summary>Dressing that only appears during the Harvest Festival (never solid), and where the festival games stand.</summary>
+        public List<(Vector2Int, string)> FestivalProps = new List<(Vector2Int, string)>();
+        public List<(Vector2Int, FestivalKind)> FestivalGames = new List<(Vector2Int, FestivalKind)>();
 
         public int Width => Map[0].Length;
         public int Height => Map.Length;
@@ -148,7 +159,7 @@ namespace DnD.Game
         public bool Romanceable;
     }
 
-    public static class WorldDb
+    public static partial class WorldDb
     {
         public static readonly Dictionary<string, ZoneDef> Zones = new Dictionary<string, ZoneDef>();
         public static readonly Dictionary<string, NpcDef> Npcs = new Dictionary<string, NpcDef>();
@@ -189,7 +200,7 @@ namespace DnD.Game
             town.Signs[new Vector2Int(29, 41)] = "THISTLEDOWN WATCH\n\nCaptain R. Vale, commanding.\nOffice hours: whenever the Captain is not out doing something more important.\n\nBelow, in a child's handwriting: \"and maddie (deputy)\"";
             town.Signs[new Vector2Int(12, 45)] = "SOUTH LANE GREEN\n\nPlease do not feed the ducks bread. Or pie. Or Mrs Meadowsweet's honey cake. They have had ENOUGH, Dunstan.";
             town.Signs[new Vector2Int(27, 5)] = "DANGER: OLD COPPER MINE. CLOSED BY ORDER OF THE WATCH.\n\nSomeone has drawn a small, very proud dragon on the sign in charcoal.";
-            town.Signs[new Vector2Int(19, 14)] = "THISTLEDOWN NOTICE BOARD\n\nMISSING: 4 chickens, 1 copper kettle, Old Tobin's lucky spoon.\nReport suspicious small scaly persons to Captain Vale.\n\nAlso: did ANYONE else see the falling star last night?";
+            town.Signs[new Vector2Int(19, 14)] = "THISTLEDOWN NOTICE BOARD\n\nMISSING: 4 chickens, 1 copper kettle, Old Tobin's lucky spoon.\nReport suspicious small scaly persons to Captain Vale.\n\nAlso: did ANYONE else see the falling star last night?\n\nHARVEST FESTIVAL! Day 10, in the square, from nine bells. Apple bobbing, archery, the great pie contest, and the stage is open to all! (Free cider. Ask Pip.)";
             town.Signs[new Vector2Int(25, 16)] = "A weathered stone dragon curls around the top of a pillar, wings half-open, one eye closed as if winking.\n\nThe plaque reads: \"EMBERWING, WHO SAT WITH US A WHILE.\"\n\nThe village kids rub its nose for luck. The nose is very shiny.";
             town.Signs[new Vector2Int(2, 16)] = "WEST: WHISPERWOOD\n\nStay on the path. Don't dance in the mushroom rings.\n(Or DO. We're a sign, not your mother.)";
             town.Signs[new Vector2Int(46, 16)] = "EAST ROAD: MILLER'S FORD, then PORT VARREL, 3 DAYS\n\nBridge out at Miller's Ford. Travelers report 'toll-keepers' at the ford upstream.\n\nThe orchard is open. The apples are not free. - Tobin";
@@ -351,6 +362,8 @@ namespace DnD.Game
             Zones[forest.Id] = forest;
 
             BuildFord();
+            BuildCrater();
+            BuildWatchtower();
 
             var shop = new ZoneDef { Id = "shop", Name = "Ironkettle General Goods", Map = Maps.Shop, Indoors = true, DefaultSpawn = new Vector2Int(6, 7),
                 EnterNarration = "The shop smells of lamp oil and leather. Every shelf is organized with terrifying dwarven precision.", ShopCounter = new Vector2Int(6, 3) };
@@ -400,7 +413,7 @@ namespace DnD.Game
                 EnterNarration = "The air is cold and smells of wet stone... and, faintly, of woodsmoke. Somewhere deep below, many small voices are chanting." };
             mine.Warps.Add(new WarpDef(19, 28, "town", 25, 5));
             mine.Warps.Add(new WarpDef(20, 28, "town", 26, 5));
-            mine.EggPos = new Vector2Int(19, 2);
+            mine.Warps.Add(new WarpDef(19, 2, "warrens", 5, 29)); // the stairs down where the egg used to be
 
             var g1 = new EnemyGroupDef { Id = "mine_hub", Label = "the kobolds", TalkDC = 12, ScareDC = 12,
                 Spotted = "Two kobolds on guard duty leap up, spears wobbling. \"HALT! Nobody passes! Snik's orders! ...Who are you? Are you important?\"",
@@ -422,11 +435,6 @@ namespace DnD.Game
             g3.Members.Add(new EnemySpawn("kobold_slinger", 36, 12));
             g3.Members.Add(new EnemySpawn("kobold", 33, 17));
             mine.EnemyGroups.Add(g3);
-            var g4 = new EnemyGroupDef { Id = "mine_egg", ParleyDialogue = "snik", SightTiles = 7, Unique = true, Label = "Snik and the egg-guards", TalkDC = 13, ScareDC = 15 };
-            g4.Members.Add(new EnemySpawn("snik", 19, 5));
-            g4.Members.Add(new EnemySpawn("kobold", 16, 6));
-            g4.Members.Add(new EnemySpawn("kobold", 23, 6));
-            mine.EnemyGroups.Add(g4);
 
             var c1 = new ChestDef { Id = "mine_nook", Pos = new Vector2Int(4, 3), Copper = 1500 };
             c1.Items.Add(new KeyValuePair<string, int>("oathbound_signet", 1));
@@ -439,6 +447,7 @@ namespace DnD.Game
             c2.Items.Add(new KeyValuePair<string, int>("lucky_spoon", 1));
             mine.Chests.Add(c2);
             Zones[mine.Id] = mine;
+            BuildWarrens();
 
             BuildNpcs();
         }
@@ -605,6 +614,7 @@ namespace DnD.Game
             Npcs[hobb.Id] = hobb;
 
             BuildSouthLaneNpcs();
+            BuildPlacesNpcs();
         }
 
         /// <summary>The South Lane folk (Phase 4). Names are side content pending lore approval.</summary>
@@ -693,6 +703,13 @@ namespace DnD.Game
         public static ScheduleEntry Current(NpcDef npc, int hour, int weekday, WorldState world = null)
         {
             ScheduleEntry best = null;
+            // The festival beats everything while it runs: the whole village is in the square.
+            if (world != null && world.IsLocked(Festival.Lock))
+            {
+                foreach (var e in npc.Schedule)
+                    if (e.RequiresLock == Festival.Lock && e.FromHour <= hour && (best == null || e.FromHour >= best.FromHour)) best = e;
+                if (best != null) return best;
+            }
             // Later entries win; at the same hour, story-conditional beats weekday beats generic.
             // Each runs from its hour until the next entry of any kind.
             foreach (var e in npc.Schedule)

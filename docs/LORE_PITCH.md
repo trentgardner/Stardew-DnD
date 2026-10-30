@@ -115,6 +115,13 @@ Side characters added while building Act I. They're placeholders until you OK th
 - **Mister Thimble**, a frog-faced fae trickster at the forest lake. He hints that "the Court is waking" (Act II foreshadowing).
 - **Maddie's family** live in the gold-roofed house by the farm (sign only, no names yet).
 - An **owlbear** and her lost cub by the Whisperwood lake (The Haunted Mill).
+- Phase 5:
+  - **Perrin Quillby**, a nervous junior scholar from the Starfall Academy, studying the crater (and quietly reporting back).
+  - **Elder Ssark**, eldest of the kobold egg-singers. Afraid the Academy will come and take the Great Egg.
+  - **Tik**, a kobold trader with a waistcoat of buttons who pays full price for anything shiny.
+  - **Krag**, the kobold war-boss (he comes up to your belt and has a great deal to prove).
+  - **The First Ideal** of the Oathbound, carved at the top of the Old Watchtower:
+    *"Light before rest. The watch keeps the light so others may sleep."* (Written fresh rather than quoting the books directly.)
 
 ## Questions for you
 1. Do you like the **egg → baby dragon companion** hook? (I think your fiance will.)

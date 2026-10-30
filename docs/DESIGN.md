@@ -102,6 +102,27 @@ Agreed between the designer (Trent) and Claude. Change a decision here first, th
 - Maps live in `Maps.cs` as text. Town, Whisperwood and Miller's Ford were painted by a small generator script, then pasted in.
   The play-mode test `WorldDataIsConsistent` checks warps, spawns, NPC spots and secrets after any edit.
 
+## Puzzles, passages, vouching and the festival (Phase 5)
+- **Puzzle layer** (`World/Puzzle.cs`, `ZoneDef.Puzzle`): pieces on map tiles. Plates (held by any player, companion,
+  enemy or block standing on them; downed creatures don't count), levers, push blocks (one tile away from the pusher, only onto
+  free floor: never onto a creature, warp, door, gate or another block), mirrors (`/` and `\`), a light source and crystals
+  (lit when the beam's last tile is on or next to them), and gates that open when every `OpensWhen` condition holds (`!id` = off).
+  Pure logic lives in `PuzzleLogic` (`TraceBeam`, `GateOpen`) so it's unit-tested. Latched gates are world flags
+  (`puzzle:{zone}:{id}`, saved); everything else resets when the last player leaves the zone, so a stuck block never soft-locks.
+  A piece with a `Hint` offers a dice-tray check first (once found, the hint is everyone's; a failure locks it until midnight).
+- **Passages** (`SecretDef.PassageTo`): a successful check moves you and your companions through (a crack, a crawlway);
+  once found, it's a free walk-through. `SecretDef.Dialogue` opens a conversation on success (catching Snik in the act).
+- **Vouching** (`EnemyGroupDef.VouchFlag/VouchText`): if a friend spoke for you, the group stands down on sight
+  (full peaceful XP, same as talking them down).
+- **Harvest Festival** (`World/Festival.cs`): `Festival.IsOn` (day 10, then every 7 days until the quest is done, 9:00 to 22:00)
+  drives a world lock `"festival"` set on the hour tick (never while a fight is on in town). While it runs, an NPC's
+  `RequiresLock = "festival"` schedule entry beats everything, festival dressing appears, the town plays `music_festival`,
+  and four `FestivalGame`s are open (once per player per festival day). Each game is real dice: Constitution checks,
+  shortbow attack rolls (DEX + proficiency), Insight/Persuasion in the pie contest, a Performance check for tips.
+  `QuestTrigger.FlagsAtLeast` finishes the festival quest after any three games.
+- **Main quest stages** use `FallenStar` constants (Crater, Trail, Warrens, Egg, Hatched, Done). Save version 2 renumbered
+  them; `SaveSystem.Migrate` converts version 1 saves on load.
+
 ## Quests (Phase 4)
 - Quests are **data** in `QuestDb` (`Assets/Scripts/Game/Quests/`): stages with journal text, **triggers** that move them
   (zone entered, group resolved, item gained, flag set, secret found; `AllFlags` for "collect all three") and a **reward**

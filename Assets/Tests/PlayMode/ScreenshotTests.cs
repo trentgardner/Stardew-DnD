@@ -1,5 +1,6 @@
 using System.Collections;
 using System.IO;
+using System.Linq;
 using DnD.Game;
 using DnD.Rules;
 using NUnit.Framework;
@@ -57,6 +58,46 @@ namespace DnD.Tests
         }
 
         static IEnumerator Settle(int n = 30) { for (int i = 0; i < n; i++) yield return null; }
+
+        /// <summary>Phase 5: the crater, the kobold village, the light puzzle mid-solve and the festival square.</summary>
+        [UnityTest]
+        public IEnumerator CapturePhase5Places()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new FuzzInput(5) { ConfirmChance = 0, CancelChance = 0, EndTurnChance = 0, MenuChance = 0 }, "ranger", "elf");
+            yield return Settle();
+            g.Clock.Minutes = 11 * 60;
+            g.Warp(p, "crater", new Vector2Int(18, 21), false);
+            yield return Settle(40);
+            p.Hud.CloseAll();
+            yield return Settle(5);
+            Capture("p5_01_crater");
+
+            g.World.SetFlag("snik_friend");
+            g.Warp(p, "warrens", new Vector2Int(20, 9), false);
+            yield return Settle(40);
+            p.Hud.CloseAll();
+            yield return Settle(5);
+            Capture("p5_02_kobold_village");
+
+            foreach (var gate in new[] { "gate_1", "gate_2" }) g.World.SetFlag("puzzle:watchtower:" + gate);
+            g.World.SetFlag("puzzlehint:watchtower:mirror_1");
+            g.Warp(p, "watchtower", new Vector2Int(10, 3), false);
+            yield return Settle(20);
+            p.Hud.CloseAll();
+            var mirror = Object.FindObjectsByType<PuzzlePieceObject>().First(x => x.Piece.Id == "mirror_1");
+            mirror.Interact(p); // half solved: the beam now runs east along the wall toward the second mirror
+            yield return Settle(20);
+            Capture("p5_03_light_puzzle");
+
+            g.Clock.Day = 10; g.Clock.Minutes = 14 * 60 - 1; g.Clock.Advance(1);
+            g.Warp(p, "town", new Vector2Int(25, 18), false);
+            foreach (var n in Object.FindObjectsByType<NpcAgent>()) n.UpdateSchedule(true);
+            yield return Settle(40);
+            p.Hud.CloseAll();
+            yield return Settle(5);
+            Capture("p5_04_festival_square");
+        }
 
         [UnityTest]
         public IEnumerator CaptureKeyScenes()

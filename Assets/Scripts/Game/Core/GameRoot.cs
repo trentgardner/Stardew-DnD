@@ -393,12 +393,13 @@ namespace DnD.Game
         int _lastW, _lastH;
 
         /// <summary>Fight music if anyone's fighting, otherwise Player 1's zone (the town has a quieter night tune).</summary>
-        string WantedMusic()
+        public string WantedMusic()
         {
             if (AnyInCombat) return "music_fight";
             var lead = Players.FirstOrDefault(p => p.IsReady);
             if (lead == null) return null;
             var z = lead.Zone.Def;
+            if (z.Id == "town" && World.IsLocked(Festival.Lock)) return "music_festival";
             bool night = Clock.Hour >= 20 || Clock.Hour < 6;
             return night && !z.Indoors && !z.Dark && Music.HasRealClip(z.MusicId + "_night") ? z.MusicId + "_night" : z.MusicId;
         }
@@ -442,6 +443,7 @@ namespace DnD.Game
 
         void OnHourChanged(int hour)
         {
+            FestivalTick();
             foreach (var n in _npcs) n.UpdateSchedule(false);
             StoryTick();
             if (hour == 0) RefreshRecruits();
@@ -458,6 +460,18 @@ namespace DnD.Game
                     p.Hud.Narrate("It's very late. Your eyelids feel like lead. (Find a bed: home, the tavern, or the temple.)", false);
                 }
             }
+        }
+
+        /// <summary>The Harvest Festival: Pip spreads the word from day 6; on a festival day the square fills from nine bells.</summary>
+        void FestivalTick()
+        {
+            if (!InGame) return;
+            if (Clock.Day >= Festival.AnnounceDay && Quests.Stage("harvest_festival") == 0) Quests.Start("harvest_festival");
+            if (World.IsLocked(Festival.Lock) || !Festival.IsOn(Clock, World.FestivalDoneDay)) return;
+            if (Combats.Any(c => c.Zone != null && c.Zone.Def.Id == "town")) return; // never mid-fight in town; the next hour will do
+            World.Lock(Festival.Lock, Festival.CloseHour * 60 - Clock.Minutes);
+            foreach (var p in Players.Where(x => x.IsReady))
+                p.Hud.Narrate("Bunting, fiddles and the smell of pie: the Harvest Festival has begun in the square!", true);
         }
 
         void RefreshRecruits()
@@ -495,6 +509,15 @@ namespace DnD.Game
         // ================================================================== zones & warps
 
         public bool AnyPlayerIn(Zone z) => Players.Any(p => p.Zone == z);
+
+        /// <summary>Moves a player (and the companions with them) to another tile in the same zone: a crack, a crawlway.</summary>
+        public void MoveWithin(PlayerSlot p, Vector2Int pos)
+        {
+            var zone = p.Zone;
+            p.Avatar.PlaceAt(zone, pos);
+            foreach (var c in CompanionsOf(p)) if (!c.Waiting) c.Actor.PlaceAt(zone, pos);
+            SnapCamera(p);
+        }
 
         public void Warp(PlayerSlot p, string zoneId, Vector2Int pos, bool sfx)
         {
@@ -566,6 +589,13 @@ namespace DnD.Game
         {
             var g = e.Group;
             if (Combats.Any(c => c.GroupId == g.Id) || _parley.Contains(g.Id) || World.Flag("passage:" + g.Id)) return;
+            if (g.VouchFlag != null && World.Flag(g.VouchFlag))
+            {
+                // a friend spoke for you: they stand down (peaceful = full XP, same as talking them down)
+                p.Hud.Narrate(g.VouchText, true);
+                PacifyGroup(g.Id, p);
+                return;
+            }
             if (_groups.TryGetValue(g.Id, out var agents)) foreach (var a in agents) if (a) a.Alerted = true;
             if (g.ParleyDialogue != null && !World.Flag("parley:" + g.Id))
             {
@@ -862,7 +892,7 @@ namespace DnD.Game
         public void HatchEgg(PlayerSlot p, Vector3 eggPos)
         {
             World.EggHatched = true;
-            Quests.Set("fallen_star", 3, p);
+            Quests.Set("fallen_star", FallenStar.Hatched, p);
             Sfx.Play("crit");
             p.Hud.Push(new MessageScreen("The Egg Hatches",
                 "The egg pulses once, twice, then splits with a sound like a log cracking in a fire. A tiny, damp, furious red dragon tumbles out, sneezes a puff of sparks onto your boots, looks up at you...\n\n...and decides, with total certainty, that you are its mother.",
@@ -1000,7 +1030,7 @@ namespace DnD.Game
 
         public void CompleteFallenStar(PlayerSlot p)
         {
-            Quests.Set("fallen_star", 4, p);
+            Quests.Set("fallen_star", FallenStar.Done, p);
         }
 
         public void CompleteEastRoad(PlayerSlot p)

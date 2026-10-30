@@ -120,6 +120,10 @@ namespace DnD.Rules.Content
 
             All["gemstone"] = new ItemDef { Id = "gemstone", Name = "Polished Gemstone", Kind = ItemKind.Treasure, PriceCp = 1000, Icon = "item_gem", Description = "Kobolds love these." };
             All["copper_trinket"] = new ItemDef { Id = "copper_trinket", Name = "Shiny Copper Trinket", Kind = ItemKind.Treasure, PriceCp = 50, Icon = "item_trinket", Description = "Probably stolen from a farmhouse." };
+            All["star_shard"] = new ItemDef { Id = "star_shard", Name = "Star Shard", Kind = ItemKind.Treasure, PriceCp = 1000, Icon = "item_star_shard", Description = "A sliver of green-gold crystal from the crater. It glows faintly, and hums if you hold it to your ear." };
+            All["star_iron"] = new ItemDef { Id = "star_iron", Name = "Lump of Star-Iron", Kind = ItemKind.Treasure, PriceCp = 2500, Icon = "item_star_iron", Description = "Heavy, dark and pitted, still faintly warm. Garrick would love this." };
+            All["lucky_pebble"] = new ItemDef { Id = "lucky_pebble", Name = "Kobold Good-Luck Pebble", Kind = ItemKind.Treasure, PriceCp = 10, Icon = "item_lucky_pebble", Description = "A smooth grey pebble with a face scratched on it. The kobolds swear it's lucky. The face looks worried." };
+            All["festival_ribbon"] = new ItemDef { Id = "festival_ribbon", Name = "Blue Festival Ribbon", Kind = ItemKind.Treasure, PriceCp = 10, Icon = "item_festival_ribbon", Description = "A blue ribbon. It says WINNER in Maddie's handwriting." };
             All["copper_kettle"] = new ItemDef { Id = "copper_kettle", Name = "Dented Copper Kettle", Kind = ItemKind.Treasure, PriceCp = 0, Icon = "item_copper_trinket", StackSize = 1, QuestItem = true, Description = "Brannoc's grandmother's kettle. Smells faintly of kobold." };
             All["pond_ring"] = new ItemDef { Id = "pond_ring", Name = "Silver Ring", Kind = ItemKind.Treasure, PriceCp = 0, Icon = "item_ring", StackSize = 1, QuestItem = true, Description = "A silver ring with a tiny blue stone. Still a little damp. Tamsin's." };
             All["brannoc_poem"] = new ItemDef { Id = "brannoc_poem", Name = "Anonymous Poem", Kind = ItemKind.Treasure, PriceCp = 0, Icon = "item_poem", StackSize = 1, QuestItem = true, Description = "Sealed with wax and a thumbprint that is definitely Brannoc's. For Mother Elowen. From 'a secret admirer of the dawn'." };
@@ -187,6 +191,10 @@ namespace DnD.Rules.Content
             Wondrous("veilthread_cloak", "Veilthread Cloak", WornSlot.Cloak, 300, true,
                 "+1 AC. Woven from thread that shimmers between colors when nobody's looking directly at it.",
                 "Fae of the Court of Blossoms trade these for favors. Never ask which favor.", ac: 1);
+
+            Wondrous("watchwarden_cloak", "Watchwarden's Cloak", WornSlot.Cloak, 500, true,
+                "Cloak of Protection: +1 AC and +1 to all saving throws.",
+                "Worn by the tower's last watch. Still smells, very faintly, of lamp oil.", ac: 1, save: 1);
 
             Wondrous("oathbound_signet", "Oathbound Signet", WornSlot.Ring, 300, true,
                 "+1 to all saving throws.",

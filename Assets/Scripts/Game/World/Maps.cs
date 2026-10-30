@@ -8,6 +8,8 @@
 //          S dragon statue  O well  m market stall  P ruined pillar  F campfire
 //          Y fairy ring  q hidden spot (searched with a skill check, see ZoneDef.Secrets)
 //          K anvil/forge  N bench  p planter  L washing line
+//          d scorched earth  e glowing crystals  H kobold hut  i brazier  V stairs down  u tent
+//          puzzle pieces (see ZoneDef.Puzzle): Q plate  I lever  J push block  Z gate  / mirror  @ light source  % light crystal
 namespace DnD.Game
 {
     public static class Maps
@@ -70,9 +72,9 @@ namespace DnD.Game
 
         public static readonly string[] Forest =
         {
-            "TTTTTTTTTTTTTTTTTTTTTTTTT~~TTTTTTTTTTTTTTTTTTT",
-            "TTT.TTTTTTtTTT.TT..TTTTTT~~TTT.TTTTTT....TTTTT",
-            "T.T.T..TT.T.TTT.TTT..TTTT~~TTT.TTTTTTh.T*TT.TT",
+            "TTTTTTTTTTTTTTTTTTTTTTTTT~~TTT,,TTTTTTTTTTTTTT",
+            "TTT.TTTTTTtTTT.TT..TTTTTT~~TTT,,TTTTT....TTTTT",
+            "T.T.T..TT.T.TTT.TTT..TTTT~~TTT,,TTTTTh.T*TT.TT",
             "TT.....~~~...............P:::P:::P.........TTT",
             "T.T..~~~~~~~...ttt..*....:::::::q:rrh..h...TTT",
             "TTT.~~~~~~~~~.ttttt......::::s::::......tr.TTT",
@@ -108,7 +110,7 @@ namespace DnD.Game
 
         public static readonly string[] Ford =
         {
-            "TTTTTTTTTTTTTTTTTTTTTTTTTTj~~TTTTTTTTTTTTTTTTT",
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTj~~TTTTTTT,,TTTTTTTT",
             "TTTTTTTT.T..TTT.TT.TT.TT..T~~j..T.TT..TTTTTTTT",
             "TT...........t.c...........~~jt..............T",
             "T...........t.x...xtt...r..~~..........t....TT",
@@ -234,7 +236,7 @@ namespace DnD.Game
         {
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-            "XXX::::XXXXXX::::::g:::::::XXXXXXXXXXXXX",
+            "XXX::::XXXXXX::::::V:::::::XXXXXXXXXXXXX",
             "XXX:c::XXXXXX:r::::::::::r:XXXXXXXXXXXXX",
             "XXX::::XXXXXX::::::::::::::XXXXXXXXXXXXX",
             "XXX::::XXXXXX::::::::::::::XXXXXXXXXXXXX",
@@ -264,5 +266,130 @@ namespace DnD.Game
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
         };
 
+        /// <summary>Phase 5: where the "star" came down, in the hills north of Whisperwood. South edge = the forest's north trail.</summary>
+        public static readonly string[] Crater =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXX.XX..XX.X.XXXX.XX.XXXXX.XXXXXX",
+            "XXXqXXXXX.X..X.X.............X........qXXXXX",
+            "XXX,,,XXX............................,,XXXXX",
+            "XXX,,,,XX...........r...............,,.....X",
+            "XXXX,,,XX...............r..........,,.....XX",
+            "XXXXXX,,X.........................,.......XX",
+            "XXXXXXX,,............ddd........,,........XX",
+            "XX......,...e...dddddddddddd...,.........XXX",
+            "XX.............dddddddddddeddd...t.......t.X",
+            "XX............ddeeddddddddddddd...........XX",
+            "X............dddddddddddddddqddd...........X",
+            "XXt.....r....dddddddddddddddddddd...r....X.X",
+            "XXX......r..dddddddddddddddddeedd.........XX",
+            "XXX.........ddddddddddqdddddddddd........XXX",
+            "XX...r......ddddddddddddddddddddd........X.X",
+            "X.X.........dddqdddddddddddddddd.....r....XX",
+            "XXX.......e..ddddddddddddddddddd...........X",
+            "XX............dddddddddddddeddd..........XXX",
+            "XX.............dddeedddddddddd............XX",
+            "XX...............ddddddddedd......e.......XX",
+            "XXX......s......,,,,,,,,...................X",
+            "X.....u..,,.,,,,.....,,...............r...XX",
+            "XX...x..F.,,..r......,,....................X",
+            "XX...................,,.......r............X",
+            "X...........t........,,.................t..X",
+            "XX.t...........t.....,,...t....t..........XX",
+            "XX...............t...,,....Xt.......XXX..X.X",
+            "X..XXXX..X.X..XXXXXXX,,XXX.X.XXXXXXX.XX.XXXX",
+            "XXXXXXXXXXXXXXXXXXXXX,,XXXXXXXXXXXXXXXXXXXXX",
+        };
+
+        /// <summary>Phase 5: the kobold village below the old mine. Gate at the bottom, the village cavern and its stream, Krag's corridor top right.</summary>
+        public static readonly string[] Warrens =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXX::V:XXXXX",
+            "XXXXXXXXXXXXXXXX::::iX:::X:XXXXXXXX::::XXXXX",
+            "XXXXXXXXXXX:::::::::::::::::::::XXX::::XXXXX",
+            "XXXXXXXc:X::H::::HH::::::H:::::::qX::::XXXXX",
+            "XXXXXXX:H:::::::::::::::::::::::::X::::XXXXX",
+            "XXXXXX:::::::::i:::::i:::::::H:::::::::XXXXX",
+            "XXX:Xr:::::::::::::::::H:::::::::::::::XXXXX",
+            "XXXX:::::::::H:::::::::::::::::::::::XXXXXXX",
+            "XXXX::H:::::::::::::::::::::i::::::::XXXXXXX",
+            "XXXX::::::i:::::::::::::::::::mm::::XXXXXXXX",
+            "XXX:x::::::::::~~~bb~~~~::::::::::r:::XXXXXX",
+            "XXXX:::::::~~~~~~~bb~~~~~~~~::::::::~~XXXXXX",
+            "XXXX~~~~~~~~~~~:::::::::~~~~~~~~~~~X~XXXXXXX",
+            "XXXXX~~~~~~k::::::::::::::::~~~~~~~X:XXXXXXX",
+            "XXXXXXXkkkkk::::::::::::::H::::H:::XXXXXXXXX",
+            "XXXXXXXkXkkk::i:::::::::i:::::::XXXXXXXXXXXX",
+            "XXXXXXXXXXXX:::::::::::::::::::XXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXX:X::::::::X:XXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXqXXX::XXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXX:::::::::::::XXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXX:::::::::::::::XXXXXXXXXXXXXXXX",
+            "XXXXXXXXX:::::::::::::::::::XXXXXXXXXXXXXXXX",
+            "XXXXXX::::::::::::::::::::::XXXXXXXXXXXXXXXX",
+            "XXXXXX:::::::::::::::::::::XXXXXXXXXXXXXXXXX",
+            "XXXXXX::::XXXXXXX:::XX::XXXXXXXXXXXXXXXXXXXX",
+            "XXXX::::::XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXX::::XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXX::::XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXX:EE:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        };
+
+        /// <summary>Phase 5: the Shrine of the Great Egg, the deepest level of the warrens.</summary>
+        public static readonly string[] EggShrine =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXX:::::::Ag::::::rXXXXX",
+            "XXXXX::::i::::::i::::XXXXX",
+            "XXX::::::::::::::::::::XXX",
+            "XXX:q::::::::::::::::::XXX",
+            "XXX:::i::::::::::::i:::XXX",
+            "XXX::::::::::::::::::::XXX",
+            "XXX:::::::::::::::::::rXXX",
+            "XXXXXr:::::::::::::::XXXXX",
+            "XXXXXXXXXXx:::::XXXXXXXXXX",
+            "XXXXXXXXs::::::::sXXXXXXXX",
+            "XXXXXXXX:x::::::x:XXXXXXXX",
+            "XXXXXXXXXX::::::XXXXXXXXXX",
+            "XXXXXXXXXXX::::XXXXXXXXXXX",
+            "XXXXXXXXXXX::::XXXXXXXXXXX",
+            "XXXXXXXXXXX:EE:XXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXX",
+        };
+
+        /// <summary>Phase 5: the Old Watchtower on the ridge north of Miller's Ford. Courtyard, then three puzzle rooms climbing to the lantern room.</summary>
+        public static readonly string[] Watchtower =
+        {
+            "TTTTTWWWWWWWWWWWWWWWWWWWWWWTTTTT",
+            "TTTT.WWW@WWWWWWWWWWWWWWWWWW.T..T",
+            "T....W:::::::::%W::::q:::WW....T",
+            "TT...W::::::::::Z:::::::cWW....T",
+            "TT...W::/:::::/:W::::::::WW....T",
+            "T....W::::::::::WWWWWWWWWWW...TT",
+            "TT...WWWWWZWWWWWWWWWWWWWWWW...TT",
+            "T....W::::::::::WWWWWWWWWWW...TT",
+            "T....W:Q::::::Q:WWWWWWWWWWW...TT",
+            "TT...W::::J:::::WWWWWWWWWWW...TT",
+            "TT...Wr:::::::::WWWWWWWWWWW....T",
+            "T....WWWWWZWWWWWWWWWWWWWWWW....T",
+            "T....W::::::::::::I:I:I:x:W....T",
+            "T....W::::::::::::::::::::W....T",
+            "T....WP::::::::::::::::::rW...TT",
+            "T....WWWWWWWWWW::WWWWWWWWWW....T",
+            "T.............::::.............T",
+            "T...t...h..t...::...h......t..TT",
+            "T..............::......*.......T",
+            "TT..Pr.rP.rrP..::..rPrrrPrrrP.TT",
+            "T..............::..............T",
+            "TT.......S.....::........t.....T",
+            "TT.h........*..::.....t.......TT",
+            "TT....t........::..*......h....T",
+            "T.T.T.T..T.TT.T::.TT.T..TTT....T",
+            "TTTTTTTTTTTTTTT,,TTTTTTTTTTTTTTT",
+        };
     }
 }
