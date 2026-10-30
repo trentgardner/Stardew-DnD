@@ -395,5 +395,75 @@ namespace DnD.Tests
             DragonPet.AddBond(p, 250, "test");
             Assert.AreEqual(100, g.World.DragonBond);
         }
+
+        // ============================================================ Task 4: Sniff and braziers
+
+        [UnityTest]
+        public IEnumerator SniffMarksNearbySecretsAndGivesAdvantage()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(30), "fighter", "human");
+            yield return Frames(2);
+            Hatch(g, p);
+            g.Warp(p, "forest", new Vector2Int(19, 25), false);
+            yield return Frames(3);
+            var log = System.Array.Find(Object.FindObjectsByType<SecretInteractable>(), s => s.Def.Id == "forest_log");
+            Assert.IsFalse(log.Sniffed);
+            Assert.AreEqual(AdvantageState.Normal, log.CheckAdvantage);
+            Assert.IsTrue(Pet(g).Sniff(p));
+            Assert.IsTrue(log.Sniffed, "the hollow log is a few steps away");
+            Assert.AreEqual(AdvantageState.Advantage, log.CheckAdvantage, "the dragon points it out: Advantage on the check");
+            var far = Object.FindObjectsByType<SecretInteractable>().Where(s => Vector2.Distance(s.transform.position, p.Avatar.transform.position) > 9f);
+            Assert.IsTrue(far.All(s => !s.Sniffed), "secrets far away stay hidden");
+        }
+
+        [UnityTest]
+        public IEnumerator SniffOncePerShortRestShared()
+        {
+            var g = GameRoot.I;
+            var p1 = g.DebugStart(Still(31), "fighter", "human");
+            var p2 = g.DebugStart(Still(32), "cleric", "elf");
+            yield return Frames(2);
+            Hatch(g, p1);
+            yield return null;
+            Assert.IsTrue(Pet(g).Sniff(p1));
+            Assert.IsFalse(Pet(g).Sniff(p2), "one sniff per short rest for the whole party");
+            g.OnPartyRest(false);
+            Assert.IsTrue(Pet(g).Sniff(p2), "a rest clears the nose");
+        }
+
+        [UnityTest]
+        public IEnumerator LitBrazierStaysLitAfterReload()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(33), "fighter", "human");
+            yield return Frames(2);
+            Hatch(g, p);
+            g.Warp(p, "mine", WorldDb.Zones["mine"].DefaultSpawn, false);
+            yield return Frames(3);
+            var b = UnlitBrazier.All.FirstOrDefault(x => x.Key == "mine:13,2");
+            Assert.IsNotNull(b, "the mine has cold braziers");
+            Assert.IsFalse(b.Lit);
+            Assert.IsTrue(Pet(g).Light(p, b));
+            Assert.IsTrue(b.Lit);
+            Assert.IsTrue(b.GetComponent<LightSource>() != null && b.GetComponent<LightSource>().On);
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(3);
+            var again = UnlitBrazier.All.FirstOrDefault(x => x.Key == "mine:13,2");
+            Assert.IsNotNull(again);
+            Assert.IsTrue(again.Lit, "still burning after a reload");
+            Assert.IsTrue(again.GetComponent<LightSource>().On);
+        }
+
+        [Test]
+        public void UnlitBraziersOnlyWhereDark()
+        {
+            int count = 0;
+            foreach (var z in WorldDb.Zones.Values)
+                foreach (var row in z.Map)
+                    if (row.Contains('y')) { count++; Assert.IsTrue(z.Dark, $"{z.Id} has a cold brazier but isn't dark"); }
+            Assert.Greater(count, 0, "some dark places have cold braziers to light");
+        }
     }
 }

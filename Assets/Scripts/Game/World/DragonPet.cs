@@ -71,8 +71,65 @@ namespace DnD.Game
             p.Hud.Push(new ChoiceScreen(Name, $"Bond {Hearts}" + (G.World.DragonScared ? "\nStill shaky from the last fight. A rest will help." : ""), opts));
         }
 
-        /// <summary>Sniff and lighting things: added with Task 4.</summary>
-        void AddWorldOptions(PlayerSlot p, List<(string, Action)> opts) { }
+        /// <summary>Sniff, and lighting things with a tiny flame.</summary>
+        void AddWorldOptions(PlayerSlot p, List<(string, Action)> opts)
+        {
+            opts.Add((G.World.DragonSniffUsed ? "Sniff around (needs a rest first)" : "Sniff around for secrets", () => Sniff(p)));
+            var b = NearestColdBrazier(p);
+            if (b != null) opts.Add(("Light that brazier!", () => Light(p, b)));
+            if (p.Character.CountOf("torch") > 0 && p.Avatar.TorchMinutes <= 0)
+                opts.Add(("Light my torch", () =>
+                {
+                    p.Avatar.LightTorch();
+                    Emote("spark");
+                    p.Hud.Narrate($"You hold out a torch. {Name} sneezes on it. Close enough: it's lit.", false);
+                }));
+        }
+
+        public const float SniffRange = 8f;
+
+        /// <summary>
+        /// Once per short rest (shared by the party): every hidden spot within 8 tiles that nobody has found yet starts to sparkle,
+        /// and its next check rolls with Advantage.
+        /// </summary>
+        public bool Sniff(PlayerSlot p)
+        {
+            if (G.World.DragonSniffUsed) { p.Hud.Toast($"{Name}'s nose is all sniffed out. It needs a rest.", UIKit.Bad); return false; }
+            G.World.DragonSniffUsed = true;
+            var zone = _agent.Actor.Zone;
+            int found = 0;
+            foreach (var s in FindObjectsByType<SecretInteractable>())
+            {
+                if (s.Def == null || G.World.Flag("secret:" + s.Def.Id) || !s.Available(p)) continue;
+                if (zone == null || !zone.Objects.Contains(s.gameObject)) continue;
+                if (Vector2.Distance(s.transform.position, transform.position) > SniffRange) continue;
+                s.MarkSniffed();
+                found++;
+            }
+            Emote(found > 0 ? "spark" : "happy");
+            p.Hud.Narrate(found > 0
+                ? $"{Name} sniffs the air, freezes, and points their whole body at {(found == 1 ? "something" : "a few things")} nearby, tail quivering. (Sparkling spots: Advantage on the check.)"
+                : $"{Name} sniffs everywhere, sneezes, and finds nothing here.", false);
+            return true;
+        }
+
+        UnlitBrazier NearestColdBrazier(PlayerSlot p) =>
+            UnlitBrazier.All.Where(b => !b.Lit && Vector2.Distance(b.transform.position, p.Avatar.transform.position) <= 3f)
+                .OrderBy(b => Vector2.Distance(b.transform.position, p.Avatar.transform.position)).FirstOrDefault();
+
+        /// <summary>A puff of flame: the brazier lights up and stays lit.</summary>
+        public bool Light(PlayerSlot p, UnlitBrazier b)
+        {
+            if (b == null || b.Lit) return false;
+            if (_agent.Actor.Zone != p.Zone) { p.Hud.Toast($"{Name} isn't here.", UIKit.Bad); return false; }
+            G.World.LitBraziers.Add(b.Key);
+            b.SetLit();
+            _agent.Actor.Face(b.transform.position);
+            Emote("spark");
+            Sfx.Play("spell");
+            p.Hud.Narrate($"{Name} takes a deep, important breath and puffs a tiny flame. The brazier crackles to life!", false);
+            return true;
+        }
 
         static readonly string[] PetLines =
         {
