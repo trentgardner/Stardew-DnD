@@ -211,6 +211,7 @@ namespace DnD.Game
             int i = 0;
             foreach (var def in WorldDb.Zones.Values) Zones[def.Id] = Zone.Build(def, i++, _worldRoot);
             foreach (var npc in WorldDb.Npcs.Values) _npcs.Add(NpcAgent.Create(npc));
+            TownDog.Spawn(this); // Buoy, the neighbourhood dog
             foreach (var z in Zones.Values) foreach (var g in z.Def.EnemyGroups) SpawnGroupIfNeeded(z, g);
             RefreshRecruits();
         }

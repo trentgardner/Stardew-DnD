@@ -151,3 +151,10 @@ Agreed between the designer (Trent) and Claude. Change a decision here first, th
 - Unity 6.5, C#. The rules engine (`Assets/Scripts/Rules`) has no Unity dependency and is unit-tested (`tools/RulesTests`).
 - All art and sound are looked up by name with generated fallbacks (`ART_BRIEF.md`, `ART_IMPORT_GUIDE.md`).
 - Proprietary license; SRD 5.2 used under CC-BY-4.0 (`NOTICE.md`).
+
+## Buoy (dedication)
+
+Buoy is Thistledown's neighbourhood dog: a black-and-white Australian Shepherd, a tribute to a real dog. He is NOT a companion and never fights.
+He wanders his patch by day and naps on the porch at night. His weekly routine: South Lane most days, outside the Sleeping Drake on Hearthday, and Miller's Ford on Leafday.
+Walking up to him gives Pet / Look at his collar ("BUOY" on a brass tag). The first pet each day grants Heroic Inspiration.
+**He must stay in the game for its whole length.** When Acts II and III add a new home base, point `TownDog.HomeFor` at it (code: Assets/Scripts/Game/World/TownDog.cs; art: npc_buoy_0/1 in ArtMap.txt).

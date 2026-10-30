@@ -1196,3 +1196,8 @@ pattern flash
 ................
 end
 paint fx_hatch_flash flash w=fff3c4 W=ffffff
+
+# ================================================================ Buoy, the neighbourhood dog: a black-and-white Australian Shepherd (the pack's brown-and-white dog, recoloured)
+strip npc_buoy_src "Actor/Animal/DogOrange/SpriteSheetBrown.png" 2
+swap  npc_buoy_0 npc_buoy_src_0 a3754e=3a3b44 91522c=2a2b31 5c2d25=2a2b31
+swap  npc_buoy_1 npc_buoy_src_1 a3754e=3a3b44 91522c=2a2b31 5c2d25=2a2b31

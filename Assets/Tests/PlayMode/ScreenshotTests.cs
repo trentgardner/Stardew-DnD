@@ -125,6 +125,15 @@ namespace DnD.Tests
             pet.OpenMenu(p);
             yield return Settle(5);
             Capture("p6_02_dragon_menu");
+
+            p.Hud.CloseAll();
+            var buoy = Object.FindObjectsByType<TownDog>().First();
+            g.Warp(p, "town", buoy.Actor.MapPos + new Vector2Int(1, 0), false);
+            yield return Settle(20);
+            p.Hud.CloseAll();
+            buoy.PetHim(p);
+            yield return Settle(10);
+            Capture("p6_03_buoy");
         }
 
         [UnityTest]
