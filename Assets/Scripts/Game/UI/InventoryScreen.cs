@@ -202,6 +202,8 @@ namespace DnD.Game
                 string hint = hc != null && hc.EquipSlot != null ? $"equipped: {(In.UsesMouse ? "click" : "A")} to take off"
                     : _held == null ? $"{(In.UsesMouse ? "right-click" : "X")} for options" : "";
                 head += $"\n\n<b>{def.Name}</b>  ({def.Weight:0.#} lb, {def.PriceText})" + (hint.Length > 0 ? UIKit.Colorize("  · " + hint, UIKit.Dim) : "") + $"\n{def.Description}\n{extra}";
+                string cmp = ItemCompare.Describe(pc, def);
+                if (cmp.Length > 0) head += "\n" + cmp;
             }
             else if (hc != null && hc.EquipSlot != null)
                 head += $"\n\n<b>{SlotLong(hc.EquipSlot)} slot</b>: empty.\n" + UIKit.Colorize($"Equip something from your backpack: {(In.UsesMouse ? "double-click it, or right-click → Equip" : "select it and press Y")}.", UIKit.Dim);

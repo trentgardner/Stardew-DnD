@@ -197,6 +197,8 @@ namespace DnD.Game
             if (d is ArmorDef a) extra = $"\n{a.Category} armor · AC {a.BaseAC}{(a.MaxDex < 0 ? " + DEX" : a.MaxDex > 0 ? " + DEX (max 2)" : "")}{(a.StrengthRequirement > 0 ? $"\nNeeds STR {a.StrengthRequirement}" : "")}";
             if (d is WondrousDef wd) extra = $"\n<i>{wd.Lore}</i>";
             _info.text = $"<b>{d.Name}</b>\n{d.Description}{extra}\nWeight: {d.Weight:0.#} lb\nYou have: {Slot.Character.CountOf(d.Id)}";
+            string cmp = ItemCompare.Describe(Slot.Character, d);
+            if (cmp.Length > 0) _info.text += "\n" + cmp;
         }
 
         void Buy(ItemDef d)

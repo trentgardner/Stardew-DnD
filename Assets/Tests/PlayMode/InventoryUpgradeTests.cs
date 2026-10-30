@@ -195,5 +195,48 @@ namespace DnD.Tests
             Assert.IsFalse(again.Enabled, "only once per turn");
             StringAssert.Contains("already swapped", again.Why);
         }
+            // ============================================================ Task 3: compare before you equip
+
+        [UnityTest]
+        public IEnumerator CompareShowsDamageDifference()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new ScriptInput(), "fighter", "human");
+            yield return null;
+            var pc = p.Character;
+            pc.MainHand = (WeaponDef)ItemsDb.Get("longsword");
+            pc.Shield = false;
+            string text = ItemCompare.Describe(pc, ItemsDb.Get("greatsword"));
+            StringAssert.Contains("to hit", text);
+            StringAssert.Contains("vs Longsword", text, "compared with what you're holding");
+            StringAssert.Contains("<color=#5fbf5f>+", text, "a bigger average shows in green");
+            StringAssert.Contains("<color=#d9534f>-", ItemCompare.Describe(pc, ItemsDb.Get("dagger")), "a smaller one in red");
+        }
+
+        [UnityTest]
+        public IEnumerator CompareShowsArmourDifference()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new ScriptInput(), "fighter", "human");
+            yield return null;
+            var pc = p.Character;
+            pc.Armor = (ArmorDef)ItemsDb.Get("leather");
+            int ac = pc.ArmorClass;
+            string text = ItemCompare.Describe(pc, ItemsDb.Get("chain_mail"));
+            StringAssert.Contains("AC ", text);
+            StringAssert.Contains("<color=#5fbf5f>+", text, "heavier armour: more AC, in green");
+            Assert.AreEqual(ac, pc.ArmorClass, "comparing doesn't change what you're wearing");
+            Assert.AreEqual("leather", pc.Armor.Id);
+        }
+
+        [UnityTest]
+        public IEnumerator CompareMarksEquipped()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new ScriptInput(), "fighter", "human");
+            yield return null;
+            p.Character.MainHand = (WeaponDef)ItemsDb.Get("longsword");
+            StringAssert.Contains("(equipped)", ItemCompare.Describe(p.Character, ItemsDb.Get("longsword")));
+        }
     }
 }
