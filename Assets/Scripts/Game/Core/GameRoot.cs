@@ -852,8 +852,12 @@ namespace DnD.Game
         float _nextItemCheck;
 
         /// <summary>Quest-gated groups appear or leave as their quest moves on.</summary>
+        /// <summary>Story flags can move people around (someone gets a job, goes home, ends up in a cell).</summary>
+        public void RefreshNpcs() { foreach (var n in _npcs) if (n) n.UpdateSchedule(false); }
+
         void OnQuestsChanged()
         {
+            RefreshNpcs();
             foreach (var z in Zones.Values)
                 foreach (var grp in z.Def.EnemyGroups)
                     if (grp.QuestId != null) SpawnGroupIfNeeded(z, grp);
@@ -950,6 +954,13 @@ namespace DnD.Game
 
         public void RentRoom(PlayerSlot p)
         {
+            if (World.Flag("pip_free_room") && !World.Flag("pip_free_room_used"))
+            {
+                World.SetFlag("pip_free_room_used");
+                p.Hud.Toast("Pip: \"This one's on the house. For Wick.\"", UIKit.Gold);
+                BeginLongRest(p);
+                return;
+            }
             if (p.Character.Copper < 50) { p.Hud.Toast("You can't afford a room (5 sp).", UIKit.Bad); return; }
             p.Character.Copper -= 50;
             BeginLongRest(p);

@@ -70,7 +70,9 @@ namespace DnD.Game
         public bool Flag(string f) => Flags.Contains(f);
         public void SetFlag(string f)
         {
-            if (Flags.Add(f)) GameRoot.I?.Quests.Notify(QuestEvent.FlagSet, f);
+            if (!Flags.Add(f) || GameRoot.I == null) return;
+            GameRoot.I.Quests.Notify(QuestEvent.FlagSet, f);
+            GameRoot.I.RefreshNpcs();
         }
 
         public void SetShopModifier(int player, string shop, int pct, int day) => ShopModifiers[$"{player}:{shop}"] = new Vector2Int(pct, day);

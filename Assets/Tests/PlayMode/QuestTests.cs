@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using DnD.Game;
@@ -266,6 +267,135 @@ namespace DnD.Tests
                         Assert.IsTrue(z.Def.DoorSigns.TryGetValue(door, out var sign), $"{z.Def.Id}: the door at {door} has no building sign");
                         Assert.IsTrue(signs.Any(si => si.Title == sign.Name && si.PromptText(p).Contains(sign.Name)), $"{z.Def.Id}: sign '{sign.Name}' isn't in the world");
                     }
+        }
+
+        // ============================================================ Task 5: town quests
+
+        /// <summary>Plays one dialogue option the way DialogueScreen does (checks resolve to the given outcome). Returns the next node id.</summary>
+        static string Choose(PlayerSlot p, string dialogueId, string node, string optStart, bool success = true)
+        {
+            var d = DialogueDb.Get(dialogueId);
+            var npc = Object.FindObjectsByType<NpcAgent>().FirstOrDefault(n => n.Def.Dialogue == dialogueId);
+            var c = new DCtx { P = p, Npc = npc };
+            Assert.IsTrue(d.Nodes.ContainsKey(node), $"{dialogueId} has no node '{node}'");
+            var o = d.Nodes[node].Options.FirstOrDefault(x => x.Text.StartsWith(optStart));
+            Assert.IsNotNull(o, $"{dialogueId}/{node}: no option starting '{optStart}'");
+            Assert.IsTrue(o.Show(c), $"{dialogueId}/{node}: option '{optStart}' is hidden");
+            string next;
+            if (o.Check.HasValue)
+            {
+                c.LastOutcome = success ? CheckOutcome.Success : CheckOutcome.Failure;
+                (success ? o.OnSuccess : o.OnFailure)?.Invoke(c);
+                next = (success ? o.Success : o.Failure) ?? o.Next;
+            }
+            else { o.Do?.Invoke(c); next = o.Next; }
+            if (next != null && d.Nodes.TryGetValue(next, out var n)) n.OnEnter?.Invoke(c);
+            return next;
+        }
+
+        static string StartNode(PlayerSlot p, string dialogueId)
+        {
+            var npc = Object.FindObjectsByType<NpcAgent>().FirstOrDefault(n => n.Def.Dialogue == dialogueId);
+            var c = new DCtx { P = p, Npc = npc };
+            var d = DialogueDb.Get(dialogueId);
+            var id = d.Start(c);
+            d.Nodes[id].OnEnter?.Invoke(c);
+            return id;
+        }
+
+        [UnityTest]
+        public IEnumerator BadBloodMediationAndSidingBothComplete()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(20), "bard", "human");
+            yield return null;
+            Choose(p, "rhoswen", StartNode(p, "rhoswen"), "Anything need doing");
+            Assert.AreEqual(1, g.Quests.Stage("bad_blood"), "Captain Vale hands out the feud");
+            Choose(p, "hesper", StartNode(p, "hesper"), "About the fence");
+            Assert.AreEqual(1, g.Quests.Stage("bad_blood"), "one side of the story isn't enough");
+            Choose(p, "dunstan", StartNode(p, "dunstan"), "About the fence");
+            Assert.AreEqual(2, g.Quests.Stage("bad_blood"), "heard both sides");
+            int xp = p.Character.XP, h = g.World.Friendship.GetValueOrDefault("hesper"), d = g.World.Friendship.GetValueOrDefault("dunstan");
+            Choose(p, "hesper", StartNode(p, "hesper"), "(Mediate)");
+            Assert.IsTrue(g.Quests.Done("bad_blood"));
+            Assert.AreEqual(100, p.Character.XP - xp);
+            Assert.Greater(g.World.Friendship["hesper"], h, "mediation makes both happier");
+            Assert.Greater(g.World.Friendship["dunstan"], d);
+
+            // Second playthrough of the same quest: siding with one neighbor also completes it.
+            g.QuitToTitle();
+            yield return null;
+            p = g.DebugStart(Still(21), "fighter", "human");
+            yield return null;
+            g.Quests.Set("bad_blood", 2);
+            Choose(p, "dunstan", StartNode(p, "dunstan"), "(Side with Dunstan)");
+            Assert.IsTrue(g.Quests.Done("bad_blood"));
+            Assert.Less(g.World.Friendship.GetValueOrDefault("hesper"), 0, "the other side is hurt");
+        }
+
+        [UnityTest]
+        public IEnumerator PondRingCanBeFoundAndReturned()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(22), "rogue", "human");
+            yield return null;
+            Choose(p, "tamsin", StartNode(p, "tamsin"), "You look worried");
+            Assert.AreEqual(1, g.Quests.Stage("pond_ring"));
+            var spots = Object.FindObjectsByType<SecretInteractable>().Where(s => s.Def.QuestId == "pond_ring").ToList();
+            Assert.AreEqual(2, spots.Count, "dive (Athletics) or fish (Survival)");
+            Assert.IsTrue(spots.Any(s => s.Def.Skill == Skill.Athletics) && spots.Any(s => s.Def.Skill == Skill.Survival));
+            spots.First().Resolve(p, CheckOutcome.Success);
+            Assert.AreEqual(2, g.Quests.Stage("pond_ring"));
+            Assert.AreEqual(1, p.Character.CountOf("pond_ring"));
+            Assert.IsTrue(ItemsDb.Get("pond_ring").QuestItem);
+            int xp = p.Character.XP;
+            Choose(p, "tamsin", StartNode(p, "tamsin"), "I found your ring");
+            Assert.IsTrue(g.Quests.Done("pond_ring"));
+            Assert.AreEqual(0, p.Character.CountOf("pond_ring"));
+            Assert.AreEqual(100, p.Character.XP - xp);
+            Assert.IsTrue(g.World.Flag("lark_tamsin_engaged"));
+        }
+
+        [UnityTest]
+        public IEnumerator SecretPoemsRevealAddsTavernSchedule()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(23), "bard", "human");
+            yield return null;
+            Assert.AreNotEqual("tavern", WorldDb.Current(WorldDb.Npcs["elowen"], 20, WorldDb.Emberday, g.World)?.Zone);
+            g.World.AddFriendship("brannoc", 200);
+            Choose(p, "brannoc", "shop", "How's the poetry");
+            Assert.AreEqual(1, g.Quests.Stage("secret_poems"));
+            Assert.AreEqual(1, p.Character.CountOf("brannoc_poem"));
+            Choose(p, "elowen", StartNode(p, "elowen"), "Someone asked me to give you this");
+            Choose(p, "elowen", "poem_read", "It's from Brannoc");
+            Assert.IsTrue(g.Quests.Done("secret_poems"));
+            Assert.AreEqual("tavern", WorldDb.Current(WorldDb.Npcs["elowen"], 20, WorldDb.Emberday, g.World)?.Zone, "Elowen joins Brannoc at story night");
+            Assert.AreEqual("tavern", WorldDb.Current(WorldDb.Npcs["brannoc"], 20, WorldDb.Emberday, g.World)?.Zone);
+        }
+
+        [UnityTest]
+        public IEnumerator PipsBarrelMercyGivesWickAJob()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(24), "cleric", "dwarf");
+            yield return null;
+            Assert.IsNull(WorldDb.Current(WorldDb.Npcs["wick"], 12, 0, g.World)?.Zone, "Wick isn't around before the quest");
+            Choose(p, "pip", StartNode(p, "pip"), "You look upset");
+            Assert.AreEqual(1, g.Quests.Stage("pips_barrel"));
+            var spot = Object.FindObjectsByType<SecretInteractable>().Single(s => s.Def.QuestId == "pips_barrel");
+            spot.Resolve(p, CheckOutcome.Success);
+            Assert.AreEqual(2, g.Quests.Stage("pips_barrel"));
+            Assert.AreEqual("town", WorldDb.Current(WorldDb.Npcs["wick"], 12, 0, g.World)?.Zone, "the tracks lead to Wick in the orchard");
+            Choose(p, "wick", StartNode(p, "wick"), "Why'd you take it");
+            Choose(p, "wick", "why", "Come with me");
+            Assert.AreEqual(3, g.Quests.Stage("pips_barrel"));
+            int xp = p.Character.XP;
+            Choose(p, "pip", StartNode(p, "pip"), "(Persuade) Give Wick a job");
+            Assert.IsTrue(g.Quests.Done("pips_barrel"));
+            Assert.AreEqual(100, p.Character.XP - xp);
+            Assert.IsTrue(g.World.Flag("wick_hired"));
+            Assert.AreEqual("tavern", WorldDb.Current(WorldDb.Npcs["wick"], 12, 0, g.World)?.Zone, "Wick works at the Drake now");
         }
     }
 }

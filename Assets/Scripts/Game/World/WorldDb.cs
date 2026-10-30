@@ -122,6 +122,13 @@ namespace DnD.Game
         public Vector2Int Pos;
         public string Activity;  // flavor for the narrator ("tending the bar")
         public int OnlyWeekday = -1;
+        /// <summary>Story conditions: only while a world flag is set / not set, or while a timed lock runs (e.g. a night in the cell).</summary>
+        public string RequiresFlag, ForbidFlag, RequiresLock;
+        public bool Conditional => RequiresFlag != null || ForbidFlag != null || RequiresLock != null;
+        public bool Applies(WorldState w) =>
+            (RequiresFlag == null || (w != null && w.Flag(RequiresFlag))) &&
+            (ForbidFlag == null || w == null || !w.Flag(ForbidFlag)) &&
+            (RequiresLock == null || (w != null && w.IsLocked(RequiresLock)));
         public ScheduleEntry(int hour, string zone, int x, int y, string activity, int weekday = -1)
         { FromHour = hour; Zone = zone; Pos = new Vector2Int(x, y); Activity = activity; OnlyWeekday = weekday; }
     }
@@ -194,6 +201,32 @@ namespace DnD.Game
                 Success = "Tucked inside: a tin box. Three marbles, a drawing of a dragon wearing a crown, and a note: \"MADDIES TREZHUR. KEEP OWT. THIS MEENS YOU.\" You put it back exactly how you found it. Mostly.",
                 Failure = "Just a stump. A very ordinary stump. Suspiciously ordinary.",
                 AlreadyFound = "Maddie's treasure is safe. You saw nothing.",
+            };
+            town.Secrets[new Vector2Int(44, 27)] = new SecretDef
+            {
+                Id = "pond_ring_dive", Sprite = "item_ring", Prompt = "Dive for the ring", Skill = Rules.Skill.Athletics, DC = 13,
+                QuestId = "pond_ring", QuestStage = 1, AdvanceTo = 2,
+                Success = "You take a breath and go under. Cold, green, weedy... and there: a glint in the mud. You come up gasping with a silver ring in your fist.",
+                Failure = "You surface with a mouthful of pondweed and a very offended duck. Try again tomorrow, when the water settles.",
+                AlreadyFound = "Just ducks now.",
+                Items = { new KeyValuePair<string, int>("pond_ring", 1) },
+            };
+            town.Secrets[new Vector2Int(32, 30)] = new SecretDef
+            {
+                Id = "pond_ring_fish", Sprite = "item_ring", Prompt = "Fish for the ring with a bent hook", Skill = Rules.Skill.Survival, DC = 12,
+                QuestId = "pond_ring", QuestStage = 1, AdvanceTo = 2,
+                Success = "Patience, a bent hook and a steady wrist... the line snags, you ease it up, and a silver ring dangles from the hook, dripping.",
+                Failure = "You catch: one boot, two weeds, zero rings. The pond keeps its secret today.",
+                AlreadyFound = "The pond is just a pond again.",
+                Items = { new KeyValuePair<string, int>("pond_ring", 1) },
+            };
+            town.Secrets[new Vector2Int(31, 5)] = new SecretDef
+            {
+                Id = "barrel_tracks", Sprite = "obj_barrel_tapped", Prompt = "Look around behind the Drake", Skill = Rules.Skill.Investigation, DC = 12,
+                QuestId = "pips_barrel", QuestStage = 1, AdvanceTo = 2, SetsFlag = "barrel_tracks",
+                Success = "A ring in the dirt where a barrel stood. Spilled stout. And small boot prints, heavy on the heels like someone rolling something big, heading east... toward the orchard.",
+                Failure = "Mud, a cat, and the smell of old beer. Nothing that tells you anything. Maybe the light will be better tomorrow.",
+                AlreadyFound = "The trail leads east, toward the orchard.",
             };
             Zones[town.Id] = town;
 
@@ -417,6 +450,9 @@ namespace DnD.Game
             elowen.Schedule.Add(new ScheduleEntry(23, null, 0, 0, "asleep"));
             elowen.Schedule.Add(new ScheduleEntry(9, "temple", 5, 2, "leading the Hearthday service", Hearthday));
             elowen.Schedule.Add(new ScheduleEntry(11, "temple", 6, 2, "tidying up after the service", Hearthday));
+            elowen.Schedule.Add(new ScheduleEntry(19, "tavern", 10, 5, "at story night with Brannoc (holding hands under the table)", Emberday) { RequiresFlag = "poems_revealed" });
+            elowen.Schedule.Add(new ScheduleEntry(20, "tavern", 10, 5, "at story night with Brannoc (prayers can wait, just this once)", Emberday) { RequiresFlag = "poems_revealed" });
+            elowen.Schedule.Add(new ScheduleEntry(22, "temple", 6, 2, "at late prayers, humming", Emberday) { RequiresFlag = "poems_revealed" });
             Npcs[elowen.Id] = elowen;
 
             var pip = new NpcDef { Id = "pip", Name = "Pip Thistlewhit", Title = "Keeper of the Sleeping Drake", Look = "npc_pip", Dialogue = "pip", ShopId = "tavern" };
@@ -531,21 +567,37 @@ namespace DnD.Game
             tamsin.Schedule.Add(new ScheduleEntry(23, null, 0, 0, "asleep"));
             tamsin.Schedule.Add(new ScheduleEntry(9, "temple", 7, 7, "at the Hearthday service, sitting near Lark (casually)", Hearthday));
             tamsin.Schedule.Add(new ScheduleEntry(11, "town", 40, 43, "pacing on the footbridge", Hearthday));
+            tamsin.Schedule.Add(new ScheduleEntry(17, "town", 17, 47, "strolling the green with Lark") { RequiresFlag = "lark_tamsin_engaged" });
+            lark.Schedule.Add(new ScheduleEntry(17, "town", 16, 47, "strolling the green with Tamsin") { RequiresFlag = "lark_tamsin_engaged" });
             Npcs[tamsin.Id] = tamsin;
+
+            var wick = new NpcDef { Id = "wick", Name = "Wick", Title = "Apprentice troublemaker", Look = "npc_wick", Dialogue = "wick" };
+            wick.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "at home with his mum"));
+            wick.Schedule.Add(new ScheduleEntry(9, "town", 45, 7, "hiding in the orchard with a barrel") { RequiresFlag = "barrel_tracks", ForbidFlag = "wick_caught" });
+            wick.Schedule.Add(new ScheduleEntry(19, null, 0, 0, "at home with his mum") { RequiresFlag = "barrel_tracks", ForbidFlag = "wick_caught" });
+            wick.Schedule.Add(new ScheduleEntry(10, "tavern", 12, 3, "sweeping the floor (enthusiastically)") { RequiresFlag = "wick_hired" });
+            wick.Schedule.Add(new ScheduleEntry(18, null, 0, 0, "home with his mum, who's feeling better") { RequiresFlag = "wick_hired" });
+            wick.Schedule.Add(new ScheduleEntry(0, "watchhouse", 10, 2, "sulking in the holding cell") { RequiresLock = "wick_cell" });
+            wick.Schedule.Add(new ScheduleEntry(10, "tavern", 12, 3, "sweeping on his day off, for tips", Hearthday) { RequiresFlag = "wick_hired" });
+            Npcs[wick.Id] = wick;
         }
 
-        /// <summary>Where an NPC should be at a given hour and weekday.</summary>
-        public static ScheduleEntry Current(NpcDef npc, int hour, int weekday)
+        /// <summary>Where an NPC should be at a given hour and weekday (story conditions need the world; without it they never apply).</summary>
+        public static ScheduleEntry Current(NpcDef npc, int hour, int weekday, WorldState world = null)
         {
             ScheduleEntry best = null;
-            // Weekday-specific entries override generic ones from their hour until the next entry of either kind.
+            // Later entries win; at the same hour, story-conditional beats weekday beats generic.
+            // Each runs from its hour until the next entry of any kind.
             foreach (var e in npc.Schedule)
             {
                 if (e.OnlyWeekday >= 0 && e.OnlyWeekday != weekday) continue;
                 if (e.FromHour > hour) continue;
-                if (best == null || e.FromHour > best.FromHour || (e.FromHour == best.FromHour && e.OnlyWeekday >= 0)) best = e;
+                if (e.Conditional && !e.Applies(world)) continue;
+                if (best == null || e.FromHour > best.FromHour || (e.FromHour == best.FromHour && Rank(e) > Rank(best))) best = e;
             }
             return best;
         }
+
+        static int Rank(ScheduleEntry e) => (e.Conditional ? 2 : 0) + (e.OnlyWeekday >= 0 ? 1 : 0);
     }
 }

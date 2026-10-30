@@ -89,6 +89,44 @@ namespace DnD.Game
                 Triggers = { new QuestTrigger(QuestEvent.ZoneEntered, "ford", 0, 1), new QuestTrigger(QuestEvent.GroupResolved, "ford_toll", 1, 2) },
                 Reward = new QuestReward { Xp = 150, Copper = 2500, Item = "potion_greater_healing", Npc = "hobb", Friendship = 100 },
             });
+
+            // ------------------------------------------------------------ Phase 4: town quests
+            Add(new QuestDef
+            {
+                Id = "bad_blood", Title = "Bad Blood at the Bridge", Giver = "rhoswen",
+                StageText = new[] {
+                    "", "Captain Vale wants the feud on the South Lane settled before somebody gets stung. Hear out Hesper Meadowsweet and Dunstan Burrow.",
+                    "You've heard both sides of the fence. Help them talk it out, or pick a side.",
+                    "Complete. The fence on the South Lane is quiet. (For now.)" },
+                Reward = new QuestReward { Xp = 100, Copper = 1000 },
+            });
+            Add(new QuestDef
+            {
+                Id = "pond_ring", Title = "A Ring in the Pond", Giver = "tamsin",
+                StageText = new[] {
+                    "", "Tamsin dropped a ring in the town pond. Dive for it (Athletics) or fish for it (Survival) from the pond's edge.",
+                    "You found the ring! Bring it back to Tamsin.",
+                    "Complete. Tamsin finally asked. Lark said yes before the question was even finished." },
+                Reward = new QuestReward { Xp = 100, Item = "copper_trinket", Npc = "lark", Friendship = 100, Flag = "lark_tamsin_engaged" },
+            });
+            Add(new QuestDef
+            {
+                Id = "secret_poems", Title = "Brannoc's Secret Poems", Giver = "brannoc",
+                StageText = new[] {
+                    "", "Brannoc asked you to deliver an anonymous poem to Mother Elowen at the temple. Very anonymous. Extremely anonymous.",
+                    "Complete. The poem found its reader." },
+                Reward = new QuestReward { Xp = 75 },
+            });
+            Add(new QuestDef
+            {
+                Id = "pips_barrel", Title = "Pip's Missing Barrel", Giver = "pip",
+                StageText = new[] {
+                    "", "A barrel of Hearthfire Stout vanished from behind the Sleeping Drake. Look around the back of the tavern.",
+                    "Spilled stout and small boot prints lead east, toward the orchard.",
+                    "You found the thief: Wick, a teenager selling the stout to pay for his mum's medicine. Settle it with Pip.",
+                    "Complete. The Drake's stout is back where it belongs." },
+                Reward = new QuestReward { Xp = 100, Npc = "pip", Friendship = 25 },
+            });
         }
     }
 }
