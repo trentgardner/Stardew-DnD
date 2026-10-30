@@ -21,7 +21,7 @@ namespace DnD.Game
             int done = QuestDb.All.Keys.Count(id => g.Quests.Done(id)), total = QuestDb.All.Count;
             var sb = new StringBuilder();
             sb.AppendLine("<b>End of Act I: Home</b>\n");
-            sb.AppendLine($"{g.Clock.Day} days in Thistledown. {done} of {total} stories seen through.");
+            sb.AppendLine($"{g.Clock.Day} {(g.Clock.Day == 1 ? "day" : "days")} in Thistledown. {done} of {total} {(total == 1 ? "story" : "stories")} seen through.");
             if (g.Dragon != null) sb.AppendLine($"{g.World.DragonName} the dragonling, bond {DragonPet.Hearts}.");
             if (g.World.XpAwarded.Any(k => k.EndsWith(":met_buoy"))) sb.AppendLine("Buoy has decided you're his people.");
             sb.AppendLine();

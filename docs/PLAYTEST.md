@@ -37,6 +37,17 @@
 **Co-op:** your fiance presses **START** on a second controller at any time. The screen splits and she makes a
 character. You can go anywhere independently; if one of you starts a fight, the other can walk over and join it.
 
+## New in Phase 7 (Act I, start to finish)
+- **The end of Act I**: after Captain Vale's thanks you get an "End of Act I: Home" card: your days in Thistledown, quests done, your dragon's bond, a glimpse of Act II. Then you keep playing in Thistledown.
+- **Main-story milestones pay XP** (following the trail, finding the warrens, reaching the egg: 100 each), so the story alone gets you to level 3 by the egg, and doing a fair bit of side content gets you to level 4 around the hatching.
+- The narrator now marks your first nightfall and your first level-up.
+- Behind the scenes: a test plays the whole main story (with a save and reload in the middle), an XP audit keeps the pacing honest, and a balance check confirms no class falls far behind in damage.
+
+### Phase 7 checklist
+- [ ] Play the main story start to finish. Were you level 3 at the egg? Level 4 around the hatching if you did side quests?
+- [ ] After turning in to Captain Vale, does the End of Act I card feel like an ending (and a "to be continued")?
+- [ ] Anything in Act I that felt too long, too short or confusing?
+
 ## New in Phase 6 (the baby dragon, and Buoy)
 - **The hatching** is a little scene now: the egg glows and wobbles, cracks, flashes, and the hatchling tumbles out (any button skips it after a second). Then you **type its name** (or press "Suggest another"; empty = Cinder).
 - **The dragon belongs to the whole party.** It follows whichever player is nearest, and either player can walk up to it ("Play with ...") for its menu:

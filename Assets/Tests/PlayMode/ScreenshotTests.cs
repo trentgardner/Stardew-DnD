@@ -136,6 +136,26 @@ namespace DnD.Tests
             Capture("p6_03_buoy");
         }
 
+        /// <summary>Phase 7: the End of Act I card.</summary>
+        [UnityTest]
+        public IEnumerator CapturePhase7Ending()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new FuzzInput(7) { ConfirmChance = 0, CancelChance = 0, EndTurnChance = 0, MenuChance = 0 }, "paladin", "dwarf");
+            yield return Settle();
+            g.Warp(p, "town", WorldDb.Zones["town"].DefaultSpawn, false);
+            g.World.EggHatched = true;
+            g.Quests.Set("fallen_star", FallenStar.Hatched, p);
+            g.NameDragon(p, "Cinder");
+            g.World.DragonBond = 64;
+            yield return Settle(20);
+            p.Hud.CloseAll();
+            g.CompleteFallenStar(p);
+            for (int i = 0; i < 300 && !(p.Hud.Top is ActEndScreen); i++) yield return null;
+            yield return Settle(5);
+            Capture("p7_01_act_end");
+        }
+
         [UnityTest]
         public IEnumerator CaptureKeyScenes()
         {
