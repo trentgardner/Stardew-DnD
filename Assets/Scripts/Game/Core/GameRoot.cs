@@ -354,6 +354,7 @@ namespace DnD.Game
 
             // Drop-in: an unassigned controller (or the keyboard) presses Start / Enter.
             TryDropIn();
+            ActEndCards();
 
             // Quests waiting for an item notice it however it arrived (loot, chests, trades, gifts).
             if (Time.unscaledTime >= _nextItemCheck) { _nextItemCheck = Time.unscaledTime + 0.5f; CheckQuestItems(); }
@@ -450,6 +451,12 @@ namespace DnD.Game
 
         void OnHourChanged(int hour)
         {
+            if (hour == 20 && !World.Flag("first_nightfall"))
+            {
+                World.SetFlag("first_nightfall");
+                foreach (var p in Players.Where(x => x.IsReady))
+                    p.Hud.Narrate("The sun slips behind the hills and Thistledown lights its lanterns. Night is when the woods get strange: carry a torch, and know where your bed is.");
+            }
             FestivalTick();
             foreach (var n in _npcs) n.UpdateSchedule(false);
             StoryTick();
@@ -1070,6 +1077,11 @@ namespace DnD.Game
             p.Hud.Toast($"+{xp} XP ({reason})", UIKit.D20Gold);
             if (!could && p.Character.CanLevelUp) Sfx.Play("levelup");
             if (!could && p.Character.CanLevelUp) p.Hud.Toast("★ Level up available! Open your character sheet (C / View).", UIKit.D20Gold);
+            if (!could && p.Character.CanLevelUp && !World.Flag("tip_levelup:" + p.Index))
+            {
+                World.SetFlag("tip_levelup:" + p.Index);
+                p.Hud.Narrate("You feel it: everything you've been through clicks into place. (Open your character sheet, C or View, to level up and choose what you learn.)");
+            }
             foreach (var c in CompanionsOf(p)) if (c.Character != null) { c.Character.XP += xp; AutoLevel(c.Character); }
         }
 
@@ -1104,6 +1116,21 @@ namespace DnD.Game
         public void CompleteFallenStar(PlayerSlot p)
         {
             Quests.Set("fallen_star", FallenStar.Done, p);
+            World.SetFlag("act1_ended"); // each player gets the End of Act I card once their screen is free (ActEndCards)
+        }
+
+        /// <summary>After Captain Vale's thanks: the End of Act I card, once per player, when nothing else is on their screen.</summary>
+        void ActEndCards()
+        {
+            if (!World.Flag("act1_ended")) return;
+            foreach (var p in Players)
+            {
+                if (!p.IsReady || p.InCombat || p.Hud.HasScreen || p.IsBusy) continue;
+                string key = "act1_card:" + p.Index;
+                if (World.Flag(key)) continue;
+                World.SetFlag(key);
+                p.Hud.Push(new ActEndScreen(p));
+            }
         }
 
         public void CompleteEastRoad(PlayerSlot p)
