@@ -84,6 +84,7 @@ namespace DnD.Game
             if (p.IsBusy || !Present) return; // one roll at a time (two inputs in the same frame must not open two dice trays)
             var g = GameRoot.I;
             var w = g.World;
+            if (Def.PassageTo.HasValue && w.Flag(FoundKey)) { p.Hud.Narrate(Def.AlreadyFound, false); g.MoveWithin(p, Def.PassageTo.Value); return; } // a known way through
             if (!Def.Daily && w.Flag(FoundKey)) { p.Hud.Narrate(Def.AlreadyFound, false); return; }
             if (w.IsLocked(TodayKey(p)))
             {
@@ -134,6 +135,7 @@ namespace DnD.Game
                 if (Def.PacifiesGroup != null) g.PacifyGroup(Def.PacifiesGroup, p, fled: true);
                 if (Def.IsQuestSpot && Def.AdvanceTo > 0) g.Quests.Set(Def.QuestId, Def.AdvanceTo, p);
                 g.Quests.Notify(QuestEvent.SecretFound, Def.Id, p);
+                if (Def.PassageTo.HasValue) g.MoveWithin(p, Def.PassageTo.Value);
                 p.Hud.Push(new MessageScreen(Def.Prompt, text));
             }
         }

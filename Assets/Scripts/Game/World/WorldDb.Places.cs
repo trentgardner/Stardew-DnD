@@ -70,6 +70,81 @@ namespace DnD.Game
             Zones["forest"].Warps.Add(new WarpDef(31, 0, "crater", 22, 28));
         }
 
+        static void BuildWarrens()
+        {
+            var w = new ZoneDef
+            {
+                Id = "warrens", Name = "The Kobold Warrens", Map = Maps.Warrens, Dark = true, DefaultSpawn = new Vector2Int(5, 29), Music = "music_warrens",
+                EnterNarration = "The old mine's stairs spiral down into warmth and firelight. A whole village is tucked into the cavern below: little mud huts, braziers, a mushroom farm, washing hung between stalagmites. And everywhere, small voices, singing to something deeper still.",
+            };
+            w.Warps.Add(new WarpDef(5, 30, "mine", 19, 3));
+            w.Warps.Add(new WarpDef(6, 30, "mine", 19, 3));
+            w.Warps.Add(new WarpDef(37, 2, "egg_shrine", 12, 15));
+
+            var gate = new EnemyGroupDef { Id = "warrens_gate", Label = "the gate guards", TalkDC = 13, ScareDC = 13, Unique = true, SightTiles = 6, VouchFlag = "snik_friend",
+                Spotted = "Two kobolds leap up from behind a barricade of crates, spears wobbling, and a third whirls a sling. \"HALT! Is the GATE! Nobody passes the gate without the WORD!\" ...A pause. \"What is the word? We are asking you. We forgot.\"",
+                Befriended = "The guards confer in rapid squeaks, decide you're probably allowed, and haul the crates aside with a great deal of grunting.",
+                VouchText = "\"STOP! Is friends!\" Snik's voice rings out from somewhere above. The gate guards squint at you, then at each other, then shrug and haul the crates aside. \"Snik says friends. Friends pass. Wipe your feet.\"" };
+            gate.Members.Add(new EnemySpawn("kobold", 19, 22));
+            gate.Members.Add(new EnemySpawn("kobold", 22, 22));
+            gate.Members.Add(new EnemySpawn("kobold_slinger", 21, 24));
+            w.EnemyGroups.Add(gate);
+            w.Secrets[new Vector2Int(16, 20)] = new SecretDef
+            {
+                Id = "warrens_crack", Sprite = "obj_crack", Prompt = "Squeeze through the crack in the wall", Skill = Rules.Skill.Acrobatics, DC = 12, PassageTo = new Vector2Int(16, 18),
+                Success = "You turn sideways, breathe out, and wriggle through a gap no tall-one was ever meant to fit. You pop out on the far side of the gate, behind the guards' backs. Nobody saw.",
+                Failure = "You get stuck. Properly stuck. It takes a long, undignified minute to unstick yourself. Maybe tomorrow, after fewer pies.",
+                AlreadyFound = "You squeeze back through the crack.",
+            };
+
+            var warband = new EnemyGroupDef { Id = "warrens_warband", Label = "Krag's warband", TalkDC = 14, ScareDC = 15, Unique = true, SightTiles = 6, VouchFlag = "elder_blessing",
+                Spotted = "The biggest kobold you have ever seen (he comes up to your belt) plants a spear across the passage. \"I am KRAG. Nobody goes down to the Great Egg. Not without the Elder's say. Not without going through Krag.\" His two warriors try very hard to look fierce.",
+                Befriended = "Krag looks at you for a long moment, then grunts and steps aside. \"Krag is not scared. Krag is being... polite.\"",
+                VouchText = "Krag sees the Elder's mark daubed on your hand and lowers his spear, very slowly, looking deeply disappointed. \"The Elder says you pass. So. You pass.\" He sniffs. \"Krag was going to win.\"" };
+            warband.Members.Add(new EnemySpawn("kobold_warboss", 36, 6));
+            warband.Members.Add(new EnemySpawn("kobold", 35, 7));
+            warband.Members.Add(new EnemySpawn("kobold", 37, 7));
+            w.EnemyGroups.Add(warband);
+            w.Secrets[new Vector2Int(33, 5)] = new SecretDef
+            {
+                Id = "warrens_crawl", Sprite = "obj_crawlway", Prompt = "Crawl through the low tunnel", Skill = Rules.Skill.Athletics, DC = 13, PassageTo = new Vector2Int(35, 3),
+                Success = "On hands and knees through a kobold-sized tunnel, dragging yourself over loose stones. It comes out right beside the stairs down, behind Krag's warband. Krag is still glaring the wrong way.",
+                Failure = "The tunnel narrows to nothing and your shoulders won't fit past the bend. You back out, scraped and dusty. Tomorrow.",
+                AlreadyFound = "You crawl back through the low tunnel.",
+            };
+
+            var hoard = new ChestDef { Id = "warrens_hoard", Pos = new Vector2Int(7, 5), Copper = 1000 };
+            hoard.Items.Add(new KeyValuePair<string, int>("copper_trinket", 2));
+            hoard.Items.Add(new KeyValuePair<string, int>("potion_healing", 1));
+            w.Chests.Add(hoard);
+            Zones[w.Id] = w;
+
+            var s = new ZoneDef
+            {
+                Id = "egg_shrine", Name = "Shrine of the Great Egg", Map = Maps.EggShrine, Dark = true, DefaultSpawn = new Vector2Int(12, 15), Music = "music_shrine",
+                EggPos = new Vector2Int(13, 2),
+                EnterNarration = "The deepest cave of all is warm as a summer afternoon. Every surface is covered in offerings: spoons, buttons, bits of glass, a single boot. And on a heap of them at the far end, glowing red as a coal, sits an egg as big as a barrel. It's humming. You can feel it in your teeth.",
+            };
+            s.Warps.Add(new WarpDef(12, 16, "warrens", 37, 3));
+            s.Warps.Add(new WarpDef(13, 16, "warrens", 37, 3));
+            s.Signs[new Vector2Int(8, 11)] = "A heap of offerings with a label scratched into a slate:\n\nKETTLE (very shiny, from the BIG shop)\nSPOON (lucky, from OLD MAN)\nCHICKENS (warm, for egg)\n\nThere's a kettle-shaped dent in the pile. Someone has moved the kettle somewhere safer. Snik, probably.";
+            s.Signs[new Vector2Int(17, 11)] = "Scratched into the wall, in very careful kobold letters:\n\nTHE GREAT EGG FELL FROM THE SKY\nWE CARRIED IT HOME\nWE KEEP IT WARM\nWE SING TO IT\nIT SINGS BACK";
+            var egg = new EnemyGroupDef { Id = "mine_egg", ParleyDialogue = "snik", SightTiles = 7, Unique = true, Label = "Snik and the egg-guards", TalkDC = 13, ScareDC = 15 };
+            egg.Members.Add(new EnemySpawn("snik", 13, 5));
+            egg.Members.Add(new EnemySpawn("kobold", 10, 6));
+            egg.Members.Add(new EnemySpawn("kobold", 17, 6));
+            s.EnemyGroups.Add(egg);
+            s.Secrets[new Vector2Int(4, 5)] = new SecretDef
+            {
+                Id = "offering_pile", Sprite = "obj_crate", Prompt = "Dig through the offering pile", Skill = Rules.Skill.Investigation, DC = 11,
+                Success = "Under the buttons and the bent nails: a heap of copper coins... and behind a little fence of spoons, a pen holding four very content chickens, each wearing a tiny crown made of bottle caps. They've been fed, watered, and sung to. They've never been happier.",
+                Failure = "Buttons. Nails. A sock. Another sock. You lose the thread. Try again tomorrow.",
+                AlreadyFound = "The chickens cluck at you, regally.",
+                Copper = 400,
+            };
+            Zones[s.Id] = s;
+        }
+
         /// <summary>Phase 5 NPCs, and the townsfolk who wander up to gawk at the crater.</summary>
         static void BuildPlacesNpcs()
         {
@@ -80,6 +155,15 @@ namespace DnD.Game
             perrin.Schedule.Add(new ScheduleEntry(20, "tavern", 5, 7, "at a corner table, writing a very long letter"));
             perrin.Schedule.Add(new ScheduleEntry(23, null, 0, 0, "asleep in the Drake's spare room"));
             Npcs[perrin.Id] = perrin;
+
+            var ssark = new NpcDef { Id = "ssark", Name = "Elder Ssark", Title = "Elder of the Warrens", Look = "npc_ssark", Dialogue = "ssark" };
+            ssark.Schedule.Add(new ScheduleEntry(0, "warrens", 18, 6, "dozing by the door of the great hut"));
+            ssark.Schedule.Add(new ScheduleEntry(7, "warrens", 18, 6, "sitting outside the great hut, telling stories to the hatchlings"));
+            Npcs[ssark.Id] = ssark;
+            var tik = new NpcDef { Id = "tik", Name = "Tik", Title = "Trader of Shinies", Look = "npc_tik", Dialogue = "tik", ShopId = "kobold" };
+            tik.Schedule.Add(new ScheduleEntry(0, "warrens", 30, 10, "asleep under the stall, guarding it"));
+            tik.Schedule.Add(new ScheduleEntry(6, "warrens", 30, 10, "polishing shinies at the stall"));
+            Npcs[tik.Id] = tik;
 
             // gawkers: the crater is the most exciting thing to happen to Thistledown in years
             Npcs["tobin"].Schedule.Add(new ScheduleEntry(14, "crater", 14, 20, "gawking at the crater ('back in my day, stars stayed UP')", Leafday));

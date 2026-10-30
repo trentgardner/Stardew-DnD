@@ -11,6 +11,8 @@ namespace DnD.Game
             switch (id)
             {
                 case "perrin": return Perrin();
+                case "ssark": return Ssark();
+                case "tik": return Tik();
                 default: return null;
             }
         }
@@ -72,6 +74,76 @@ namespace DnD.Game
                 .Say("And will you write?", "sent_write");
             d.Node("sent_write", who, c => "I... haven't decided. Everyone here keeps giving me pie. It's very hard to write a stern report about people who keep giving you pie.").Bye("Keep eating the pie.");
             d.Node("sent_no", who, c => "Reporting? To the Academy! About the crater! Obviously! Why, who else would I- that's a very searching look. Please stop it.").Bye("Just curious.");
+            return d;
+        }
+
+        // =================================================================== Elder Ssark (the Kobold Warrens)
+
+        /// <summary>The first shiny in the bag that the Elder would accept, or null.</summary>
+        static string ShinyFor(DCtx c) => c.PC.CountOf("copper_trinket") > 0 ? "copper_trinket" : c.PC.CountOf("star_shard") > 0 ? "star_shard" : null;
+
+        /// <summary>The gate was fought, not talked down: the Elder is warier of you.</summary>
+        static bool GateFought(DCtx c) => c.G.World.DefeatedGroups.Contains("warrens_gate") && !c.G.World.PacifiedGroups.Contains("warrens_gate");
+
+        static void Bless(DCtx c) => c.G.World.SetFlag("elder_blessing");
+
+        static Dialogue Ssark()
+        {
+            var d = new Dialogue("ssark", c => c.G.World.Flag("elder_blessing") ? "blessed" : c.G.Quests.Stage("go_between") >= 2 ? "vouched" : "start");
+            const string who = "Elder Ssark";
+            System.Func<DCtx, AdvantageState> adv = c => c.G.World.Flag("ssark_insight") ? AdvantageState.Advantage : AdvantageState.Normal;
+            d.Node("start", who,
+                c => GateFought(c)
+                    ? "Tall-one. You hurt my gate-guards. They will mend. Kobolds always mend. But you will understand if I do not offer you tea."
+                    : "A tall-one. In the warrens. Sit, sit, if you can fold yourself small enough. I am Ssark, eldest of the egg-singers. You have come about the Great Egg. Everyone comes about the Great Egg.",
+                c => "A tiny, ancient kobold wrapped in a shawl knitted from at least nine different stolen scarves. Her eyes are milky, but they follow you perfectly.")
+                .Roll(Skill.Persuasion, 15, "We mean the Egg no harm. Let us see it.", "bless_yes", "bless_no", onSuccess: Bless, show: c => !GateFought(c), adv: adv)
+                .Roll(Skill.Persuasion, 17, "We mean the Egg no harm. Let us see it.", "bless_yes", "bless_no", onSuccess: Bless, show: GateFought, adv: adv)
+                .Roll(Skill.Insight, 12, "(Read her) You're afraid. But not of us.", "insight_yes", "insight_no", social: false, show: c => !c.G.World.Flag("ssark_insight"))
+                .Say("(Offer a shiny)", "shiny", c =>
+                {
+                    string item = ShinyFor(c);
+                    if (item == null) return;
+                    c.PC.RemoveItem(item);
+                    c.P.Hud.Toast($"-1 {Rules.Content.ItemsDb.Get(item).Name}", UIKit.Bad);
+                    Bless(c);
+                }, show: c => ShinyFor(c) != null)
+                .Bye("I'll leave you in peace.");
+            d.Node("insight_yes", who, c => "...Clever tall-one. Yes. Not of you. Of the OTHER tall-ones. The ones with books and wagons. The Academy. When the Egg hatches, they will come, and they will take. That is what tall-ones do with shinies.",
+                c => "Her claws tighten on her shawl. For a moment she looks every one of her very many years.",
+                c => c.G.World.SetFlag("ssark_insight"))
+                .Roll(Skill.Persuasion, 15, "Then let us help you protect it.", "bless_yes", "bless_no", onSuccess: Bless, show: c => !GateFought(c), adv: adv)
+                .Roll(Skill.Persuasion, 17, "Then let us help you protect it.", "bless_yes", "bless_no", onSuccess: Bless, show: GateFought, adv: adv)
+                .Bye("I'll think on it.");
+            d.Node("insight_no", who, c => "You stare at an old woman very hard. It is rude. I have outstared cave bears, little one.").Say("Sorry.", "start");
+            d.Node("bless_yes", who, c => "...Hm. You talk like Snik. Too much, and with your whole heart. Hold out your hand.",
+                c => "She dips a claw in a pot of red clay and draws a little curl on the back of your hand: an egg, with a flame inside. \"Krag will know it. Go down. Be gentle. It is listening.\"")
+                .Bye("Thank you, Elder.");
+            d.Node("bless_no", who, c => "Words, words. Tall-ones have so many words. Come back when you have fewer of them, and better ones.").Bye("Fair enough.");
+            d.Node("shiny", who, c => "Ohhh. Oh, that is a GOOD one. The Egg will like this one very much. Hold out your hand, generous tall-one.",
+                c => "She tucks the shiny into her shawl with a speed that suggests long practice, then daubs a little red clay curl on the back of your hand: an egg, with a flame inside. \"Krag will know it. Go down.\"")
+                .Bye("Thank you, Elder.");
+            d.Node("vouched", who, c => "Snik told me about you. Snik talks a great deal. But he says you put the ladle BACK, and you did not have to, and that a tall-one who gives back a shiny is a tall-one worth knowing. Hold out your hand.",
+                c => "She daubs a little red clay curl on the back of your hand: an egg, with a flame inside.")
+                .Say("(Hold out your hand)", "blessed", Bless);
+            d.Node("blessed", who, c => "Go down to the Great Egg, tall-one. Krag will let you pass. He will sulk, but he will let you pass.").Bye("Thank you, Elder.");
+            return d;
+        }
+
+        // =================================================================== Tik (Tik's Shiny Stall)
+
+        static Dialogue Tik()
+        {
+            var d = new Dialogue("tik", c => "start");
+            const string who = "Tik";
+            d.Node("start", who, c => "Welcome welcome WELCOME to Tik's Shiny Stall! Best shinies in the warrens! Only shinies in the warrens! Tik buys shinies at FULL PRICE. Tik is very generous. Tik is also very bad at sums.",
+                c => "A wiry kobold in a waistcoat made entirely of buttons. He rubs his claws together so fast they squeak.")
+                .Say("Let's trade.", doIt: c => { c.Screen.Close(); c.G.OpenShop(c.P, "kobold"); }, end: true)
+                .Say("What's this Great Egg everyone sings about?", "egg")
+                .Bye("Maybe later.");
+            d.Node("egg", who, c => "It fell from the sky! Boom! Right in the hills! Snik found it first, Snik always finds things first. We carried it home. Took eleven of us and a door. Now we keep it warm with shinies. Shinies are warm. Everyone knows that.")
+                .Say("Let's trade.", doIt: c => { c.Screen.Close(); c.G.OpenShop(c.P, "kobold"); }, end: true)
+                .Bye("Everyone knows that.");
             return d;
         }
     }

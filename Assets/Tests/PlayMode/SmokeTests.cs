@@ -594,7 +594,7 @@ namespace DnD.Tests
         {
             var g = GameRoot.I;
             var p = g.DebugStart(new FuzzInput(8) { ConfirmChance = 0 }, "bard", "human");
-            g.Warp(p, "mine", new Vector2Int(19, 9), false);
+            g.Warp(p, "egg_shrine", WorldDb.Zones["egg_shrine"].DefaultSpawn, false);
             yield return null;
             g.PacifyGroup("mine_egg", p);
             Assert.AreEqual(FallenStar.Egg, g.Quests.Stage("fallen_star"));

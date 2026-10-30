@@ -496,6 +496,15 @@ namespace DnD.Game
 
         public bool AnyPlayerIn(Zone z) => Players.Any(p => p.Zone == z);
 
+        /// <summary>Moves a player (and the companions with them) to another tile in the same zone: a crack, a crawlway.</summary>
+        public void MoveWithin(PlayerSlot p, Vector2Int pos)
+        {
+            var zone = p.Zone;
+            p.Avatar.PlaceAt(zone, pos);
+            foreach (var c in CompanionsOf(p)) if (!c.Waiting) c.Actor.PlaceAt(zone, pos);
+            SnapCamera(p);
+        }
+
         public void Warp(PlayerSlot p, string zoneId, Vector2Int pos, bool sfx)
         {
             if (!Zones.TryGetValue(zoneId, out var zone)) return;
@@ -566,6 +575,13 @@ namespace DnD.Game
         {
             var g = e.Group;
             if (Combats.Any(c => c.GroupId == g.Id) || _parley.Contains(g.Id) || World.Flag("passage:" + g.Id)) return;
+            if (g.VouchFlag != null && World.Flag(g.VouchFlag))
+            {
+                // a friend spoke for you: they stand down (peaceful = full XP, same as talking them down)
+                p.Hud.Narrate(g.VouchText, true);
+                PacifyGroup(g.Id, p);
+                return;
+            }
             if (_groups.TryGetValue(g.Id, out var agents)) foreach (var a in agents) if (a) a.Alerted = true;
             if (g.ParleyDialogue != null && !World.Flag("parley:" + g.Id))
             {

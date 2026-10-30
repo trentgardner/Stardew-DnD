@@ -45,6 +45,8 @@ namespace DnD.Game
         public int MinStage, MaxStage;
         /// <summary>A nonlethal fistfight: no magic, no weapons, no items, nobody dies (knocked out instead), no party wipe.</summary>
         public bool Brawl;
+        /// <summary>If this world flag is set when they spot you, a friend vouched for you: they stand down (full XP) and VouchText is narrated.</summary>
+        public string VouchFlag, VouchText;
         public bool InStage(QuestLog q) => QuestId == null || (q.Stage(QuestId) >= MinStage && q.Stage(QuestId) <= MaxStage);
     }
 
@@ -85,6 +87,8 @@ namespace DnD.Game
         public bool NightOnly;
         /// <summary>Success settles this enemy group peacefully (full XP, as if talked down), e.g. returning a lost cub.</summary>
         public string PacifiesGroup;
+        /// <summary>A sneak route: success moves the player (and their companions) to this tile in the same zone. Once found, no roll again.</summary>
+        public Vector2Int? PassageTo;
     }
 
     /// <summary>The sign hanging beside a building's door: the prompt names the building, reading it gives the text.</summary>
@@ -401,7 +405,7 @@ namespace DnD.Game
                 EnterNarration = "The air is cold and smells of wet stone... and, faintly, of woodsmoke. Somewhere deep below, many small voices are chanting." };
             mine.Warps.Add(new WarpDef(19, 28, "town", 25, 5));
             mine.Warps.Add(new WarpDef(20, 28, "town", 26, 5));
-            mine.EggPos = new Vector2Int(19, 2);
+            mine.Warps.Add(new WarpDef(19, 2, "warrens", 5, 29)); // the stairs down where the egg used to be
 
             var g1 = new EnemyGroupDef { Id = "mine_hub", Label = "the kobolds", TalkDC = 12, ScareDC = 12,
                 Spotted = "Two kobolds on guard duty leap up, spears wobbling. \"HALT! Nobody passes! Snik's orders! ...Who are you? Are you important?\"",
@@ -423,11 +427,6 @@ namespace DnD.Game
             g3.Members.Add(new EnemySpawn("kobold_slinger", 36, 12));
             g3.Members.Add(new EnemySpawn("kobold", 33, 17));
             mine.EnemyGroups.Add(g3);
-            var g4 = new EnemyGroupDef { Id = "mine_egg", ParleyDialogue = "snik", SightTiles = 7, Unique = true, Label = "Snik and the egg-guards", TalkDC = 13, ScareDC = 15 };
-            g4.Members.Add(new EnemySpawn("snik", 19, 5));
-            g4.Members.Add(new EnemySpawn("kobold", 16, 6));
-            g4.Members.Add(new EnemySpawn("kobold", 23, 6));
-            mine.EnemyGroups.Add(g4);
 
             var c1 = new ChestDef { Id = "mine_nook", Pos = new Vector2Int(4, 3), Copper = 1500 };
             c1.Items.Add(new KeyValuePair<string, int>("oathbound_signet", 1));
@@ -440,6 +439,7 @@ namespace DnD.Game
             c2.Items.Add(new KeyValuePair<string, int>("lucky_spoon", 1));
             mine.Chests.Add(c2);
             Zones[mine.Id] = mine;
+            BuildWarrens();
 
             BuildNpcs();
         }

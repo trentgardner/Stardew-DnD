@@ -236,7 +236,7 @@ namespace DnD.Game
         {
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-            "XXX::::XXXXXX::::::g:::::::XXXXXXXXXXXXX",
+            "XXX::::XXXXXX::::::V:::::::XXXXXXXXXXXXX",
             "XXX:c::XXXXXX:r::::::::::r:XXXXXXXXXXXXX",
             "XXX::::XXXXXX::::::::::::::XXXXXXXXXXXXX",
             "XXX::::XXXXXX::::::::::::::XXXXXXXXXXXXX",
@@ -299,6 +299,66 @@ namespace DnD.Game
             "XX...............t...,,....Xt.......XXX..X.X",
             "X..XXXX..X.X..XXXXXXX,,XXX.X.XXXXXXX.XX.XXXX",
             "XXXXXXXXXXXXXXXXXXXXX,,XXXXXXXXXXXXXXXXXXXXX",
+        };
+
+        /// <summary>Phase 5: the kobold village below the old mine. Gate at the bottom, the village cavern and its stream, Krag's corridor top right.</summary>
+        public static readonly string[] Warrens =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXX::V:XXXXX",
+            "XXXXXXXXXXXXXXXX::::iX:::X:XXXXXXXX::::XXXXX",
+            "XXXXXXXXXXX:::::::::::::::::::::XXX::::XXXXX",
+            "XXXXXXXc:X::H::::HH::::::H:::::::qX::::XXXXX",
+            "XXXXXXX:H:::::::::::::::::::::::::X::::XXXXX",
+            "XXXXXX:::::::::i:::::i:::::::H:::::::::XXXXX",
+            "XXX:Xr:::::::::::::::::H:::::::::::::::XXXXX",
+            "XXXX:::::::::H:::::::::::::::::::::::XXXXXXX",
+            "XXXX::H:::::::::::::::::::::i::::::::XXXXXXX",
+            "XXXX::::::i:::::::::::::::::::mm::::XXXXXXXX",
+            "XXX:x::::::::::~~~bb~~~~::::::::::r:::XXXXXX",
+            "XXXX:::::::~~~~~~~bb~~~~~~~~::::::::~~XXXXXX",
+            "XXXX~~~~~~~~~~~:::::::::~~~~~~~~~~~X~XXXXXXX",
+            "XXXXX~~~~~~k::::::::::::::::~~~~~~~X:XXXXXXX",
+            "XXXXXXXkkkkk::::::::::::::H::::H:::XXXXXXXXX",
+            "XXXXXXXkXkkk::i:::::::::i:::::::XXXXXXXXXXXX",
+            "XXXXXXXXXXXX:::::::::::::::::::XXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXX:X::::::::X:XXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXqXXX::XXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXX:::::::::::::XXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXX:::::::::::::::XXXXXXXXXXXXXXXX",
+            "XXXXXXXXX:::::::::::::::::::XXXXXXXXXXXXXXXX",
+            "XXXXXX::::::::::::::::::::::XXXXXXXXXXXXXXXX",
+            "XXXXXX:::::::::::::::::::::XXXXXXXXXXXXXXXXX",
+            "XXXXXX::::XXXXXXX:::XX::XXXXXXXXXXXXXXXXXXXX",
+            "XXXX::::::XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXX::::XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXX::::XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXX:EE:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        };
+
+        /// <summary>Phase 5: the Shrine of the Great Egg, the deepest level of the warrens.</summary>
+        public static readonly string[] EggShrine =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXX:::::::Ag::::::rXXXXX",
+            "XXXXX::::i::::::i::::XXXXX",
+            "XXX::::::::::::::::::::XXX",
+            "XXX:q::::::::::::::::::XXX",
+            "XXX:::i::::::::::::i:::XXX",
+            "XXX::::::::::::::::::::XXX",
+            "XXX:::::::::::::::::::rXXX",
+            "XXXXXr:::::::::::::::XXXXX",
+            "XXXXXXXXXXx:::::XXXXXXXXXX",
+            "XXXXXXXXs::::::::sXXXXXXXX",
+            "XXXXXXXX:x::::::x:XXXXXXXX",
+            "XXXXXXXXXX::::::XXXXXXXXXX",
+            "XXXXXXXXXXX::::XXXXXXXXXXX",
+            "XXXXXXXXXXX::::XXXXXXXXXXX",
+            "XXXXXXXXXXX:EE:XXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXX",
         };
     }
 }

@@ -197,5 +197,157 @@ namespace DnD.Tests
             Assert.AreEqual(FallenStar.Warrens, g.Quests.Stage("fallen_star"));
             Assert.IsFalse(tracks.Available(p));
         }
+
+        // ============================================================ Task 3: the Kobold Warrens and the egg shrine
+
+        /// <summary>Plays one dialogue option the way DialogueScreen does (checks resolve to the given outcome). Returns the next node id.</summary>
+        static string Choose(PlayerSlot p, string dialogueId, string node, string optStart, bool success = true, EnemyGroupDef group = null)
+        {
+            var d = DialogueDb.Get(dialogueId);
+            var npc = group != null ? null : Object.FindObjectsByType<NpcAgent>().FirstOrDefault(n => n.Def.Dialogue == dialogueId);
+            var c = new DCtx { P = p, Npc = npc, Group = group };
+            Assert.IsTrue(d.Nodes.ContainsKey(node), $"{dialogueId} has no node '{node}'");
+            var o = d.Nodes[node].Options.FirstOrDefault(x => x.Text.StartsWith(optStart) && x.Show(c));
+            Assert.IsNotNull(o, $"{dialogueId}/{node}: no visible option starting '{optStart}'");
+            string next;
+            if (o.Check.HasValue)
+            {
+                c.LastOutcome = success ? CheckOutcome.Success : CheckOutcome.Failure;
+                (success ? o.OnSuccess : o.OnFailure)?.Invoke(c);
+                next = (success ? o.Success : o.Failure) ?? o.Next;
+            }
+            else { o.Do?.Invoke(c); next = o.Next; }
+            if (next != null && d.Nodes.TryGetValue(next, out var n)) n.OnEnter?.Invoke(c);
+            return next;
+        }
+
+        static string StartNode(PlayerSlot p, string dialogueId, EnemyGroupDef group = null)
+        {
+            var npc = group != null ? null : Object.FindObjectsByType<NpcAgent>().FirstOrDefault(n => n.Def.Dialogue == dialogueId);
+            var c = new DCtx { P = p, Npc = npc, Group = group };
+            var d = DialogueDb.Get(dialogueId);
+            var id = d.Start(c);
+            d.Nodes[id].OnEnter?.Invoke(c);
+            return id;
+        }
+
+        static Vector2Int FindChar(ZoneDef z, char c)
+        {
+            for (int y = 0; y < z.Height; y++) { int x = z.Map[y].IndexOf(c); if (x >= 0) return new Vector2Int(x, y); }
+            Assert.Fail($"{z.Id} has no '{c}'");
+            return default;
+        }
+
+        [UnityTest]
+        public IEnumerator WarrensLevelsConnect()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(6), "fighter", "dwarf");
+            yield return Frames(2);
+            string[] chain = { "mine", "warrens", "egg_shrine" };
+            var arrive = WorldDb.Zones["mine"].DefaultSpawn;
+            for (int i = 0; i < chain.Length; i++)
+            {
+                var z = g.Zones[chain[i]];
+                if (i < chain.Length - 1)
+                {
+                    var down = FindChar(z.Def, 'V');
+                    Assert.IsTrue(z.FindPath(arrive, down, null, 20000).Count > 0, $"{chain[i]}: a path from {arrive} to the stairs at {down}");
+                    var w = z.WarpAt(down);
+                    Assert.IsNotNull(w, $"{chain[i]}: the stairs are a warp");
+                    Assert.AreEqual(chain[i + 1], w.ToZone);
+                    var up = g.Zones[w.ToZone].Def.Warps.Find(x => x.ToZone == chain[i]);
+                    Assert.IsNotNull(up, $"{w.ToZone} leads back up to {chain[i]}");
+                    Assert.AreEqual('E', g.Zones[w.ToZone].CharAt(up.At));
+                    arrive = w.ToPos;
+                }
+                else
+                {
+                    var egg = FindChar(z.Def, 'g');
+                    Assert.AreEqual(egg, z.Def.EggPos, "the egg lives in the shrine now");
+                    Assert.IsTrue(CanReachBeside(z, arrive, egg), "the egg can be reached");
+                }
+            }
+            Assert.IsNull(WorldDb.Zones["mine"].EggPos, "the mine has no egg any more");
+            Assert.IsTrue(WorldDb.Zones["egg_shrine"].EnemyGroups.Any(x => x.Id == "mine_egg"), "Snik guards the egg in the shrine");
+        }
+
+        [UnityTest]
+        public IEnumerator MainQuestCanSkipTheCraterAndSnik()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(7), "fighter", "dwarf");
+            yield return Frames(2);
+            g.Quests.Start("fallen_star", p);
+            Assert.AreEqual(FallenStar.Crater, g.Quests.Stage("fallen_star"));
+            g.Warp(p, "warrens", WorldDb.Zones["warrens"].DefaultSpawn, false);
+            yield return Frames(2);
+            Assert.AreEqual(FallenStar.Warrens, g.Quests.Stage("fallen_star"), "walking into the warrens skips the crater and the trail");
+            g.Warp(p, "egg_shrine", WorldDb.Zones["egg_shrine"].DefaultSpawn, false);
+            yield return Frames(2);
+            g.PacifyGroup("mine_egg", p);
+            Assert.AreEqual(FallenStar.Egg, g.Quests.Stage("fallen_star"));
+            g.HatchEgg(p, Vector3.zero);
+            Assert.AreEqual(FallenStar.Hatched, g.Quests.Stage("fallen_star"));
+        }
+
+        [UnityTest]
+        public IEnumerator CrackPassageMovesYouOnce()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(8), "rogue", "gnome");
+            yield return Frames(2);
+            g.Warp(p, "warrens", WorldDb.Zones["warrens"].DefaultSpawn, false);
+            yield return Frames(2);
+            var crack = Spot("warrens_crack");
+            Assert.IsTrue(crack.Def.PassageTo.HasValue);
+            var target = crack.Def.PassageTo.Value;
+            Assert.IsTrue(p.Zone.IsWalkable(target));
+            crack.Resolve(p, CheckOutcome.Success);
+            p.Hud.CloseAll();
+            yield return Frames(2);
+            Assert.AreEqual(target, p.MapPos, "squeezing through the crack moves you inside");
+            g.Warp(p, "warrens", WorldDb.Zones["warrens"].DefaultSpawn, false);
+            yield return Frames(2);
+            p.Hud.CloseAll();
+            crack.Interact(p);
+            Assert.IsFalse(p.Hud.Dice.IsOpen, "a found passage needs no roll");
+            yield return Frames(2);
+            Assert.AreEqual(target, p.MapPos, "once found, the crack takes you straight through");
+        }
+
+        [UnityTest]
+        public IEnumerator VouchedGroupStandsDown()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(9), "fighter", "dwarf");
+            yield return Frames(2);
+            g.World.SetFlag("snik_friend");
+            g.Warp(p, "warrens", WorldDb.Zones["warrens"].DefaultSpawn, false);
+            yield return Frames(2);
+            p.Hud.CloseAll();
+            var guard = Object.FindObjectsByType<EnemyAgent>().First(e => e.Group.Id == "warrens_gate");
+            int xp = p.Character.XP;
+            g.OnEnemyNoticed(guard, p);
+            Assert.IsTrue(g.World.PacifiedGroups.Contains("warrens_gate"));
+            int expected = guard.Group.Members.Sum(m => MonstersDb.Get(m.MonsterId).XP);
+            Assert.AreEqual(expected, p.Character.XP - xp, "standing down pays the group's full XP");
+            Assert.IsFalse(p.Hud.Top is DialogueScreen, "no encounter dialogue: they just wave you through");
+        }
+
+        [UnityTest]
+        public IEnumerator ElderBlessingByShiny()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(10), "fighter", "dwarf");
+            yield return Frames(2);
+            g.Warp(p, "warrens", WorldDb.Zones["warrens"].DefaultSpawn, false);
+            g.GiveItem(p, "copper_trinket");
+            yield return Frames(2);
+            string node = StartNode(p, "ssark");
+            Choose(p, "ssark", node, "(Offer a shiny)");
+            Assert.IsTrue(g.World.Flag("elder_blessing"));
+            Assert.AreEqual(0, p.Character.CountOf("copper_trinket"), "the shiny is hers now");
+        }
     }
 }

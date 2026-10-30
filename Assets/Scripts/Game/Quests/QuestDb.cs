@@ -69,6 +69,8 @@ namespace DnD.Game
                 Triggers = {
                     new QuestTrigger(QuestEvent.SecretFound, "crater_hollow", FallenStar.Crater, FallenStar.Trail),
                     new QuestTrigger(QuestEvent.SecretFound, "crater_tracks", FallenStar.Trail, FallenStar.Warrens),
+                    new QuestTrigger(QuestEvent.ZoneEntered, "warrens", FallenStar.Crater, FallenStar.Warrens),
+                    new QuestTrigger(QuestEvent.ZoneEntered, "warrens", FallenStar.Trail, FallenStar.Warrens),
                     new QuestTrigger(QuestEvent.GroupResolved, "mine_egg", 0, FallenStar.Egg),
                     new QuestTrigger(QuestEvent.GroupResolved, "mine_egg", FallenStar.Crater, FallenStar.Egg),
                     new QuestTrigger(QuestEvent.GroupResolved, "mine_egg", FallenStar.Trail, FallenStar.Egg),

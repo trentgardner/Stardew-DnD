@@ -98,6 +98,15 @@ namespace DnD.Rules.Content
                 Description = "Quiet, quick, and fits through gaps no person could.",
                 Attacks = { Melee("Scratch", 4, "1d1", DamageType.Slashing) }, ProficientSkills = { Skill.Perception, Skill.Stealth },
             };
+            All["kobold_warboss"] = new MonsterDef
+            {
+                Id = "kobold_warboss", Name = "Krag, Kobold War-Boss", SpriteId = "mon_kobold_warboss", AC = 14, HitDice = DiceExpr.Parse("5d6+5"),
+                Scores = new[] { 12, 15, 12, 8, 9, 12 }, Darkvision = 60, CR = 0.5, XP = 100, Speed = 30,
+                Description = "The biggest kobold in the warrens, which makes him about as tall as your belt. He has a spear, a shield made from a pot lid, and a great deal to prove.",
+                Attacks = { Melee("Spear", 4, "1d6+2", DamageType.Piercing) },
+                PackTactics = true, SunlightSensitivity = true, Traits = { "Pack Tactics", "Sunlight Sensitivity" },
+                Loot = { new KeyValuePair<string, float>("copper_trinket", 1f) }, CopperMin = 50, CopperMax = 200,
+            };
             All["giant_fire_beetle"] = new MonsterDef
             {
                 Id = "giant_fire_beetle", Name = "Giant Fire Beetle", SpriteId = "mon_fire_beetle", AC = 13, HitDice = DiceExpr.Parse("1d6+1"),
