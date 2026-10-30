@@ -33,11 +33,16 @@ namespace DnD.Game
         public void Set(string id, int stage, PlayerSlot by, float rewardScale)
         {
             if (Stage(id) >= stage) return;
+            int before = Stage(id);
             Stages[id] = stage;
             var q = QuestDb.Get(id);
             var g = GameRoot.I;
             if (q != null && g != null)
             {
+                // Milestones on the way (a jump past several pays each), once per playthrough.
+                for (int s = before + 1; s <= stage; s++)
+                    if (q.StageXp.TryGetValue(s, out int mxp) && Paid.Add($"{id}@{s}"))
+                        foreach (var p in g.Players.Where(p => p.IsReady && p.Character != null)) g.GiveXP(p, (int)(mxp * rewardScale), q.Title);
                 string msg = stage == 1 ? $"New quest: {q.Title}" : stage >= q.Last ? $"Quest complete: {q.Title}" : $"Quest updated: {q.Title}";
                 foreach (var p in g.Players) p.Hud?.Toast(msg, UIKit.Gold);
                 if (stage >= q.Last) PayReward(q, by, rewardScale);
