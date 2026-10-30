@@ -153,5 +153,76 @@ namespace DnD.Tests
         }
 
         static IEnumerator Frames(int n) { for (int i = 0; i < n; i++) yield return null; }
+            // ============================================================ Task 3: the golden path
+
+        static SecretInteractable Secret(string id) => Object.FindObjectsByType<SecretInteractable>().FirstOrDefault(s => s.Def.Id == id);
+
+        /// <summary>The main story start to finish through the game's own code paths, with a save and reload in the middle.</summary>
+        [UnityTest]
+        public IEnumerator GoldenPathActOne()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(20), "bard", "human");
+            yield return null;
+            g.Quests.Start("fallen_star", p); // Captain Vale's ask
+            Assert.AreEqual(FallenStar.Crater, g.Quests.Stage("fallen_star"));
+
+            g.Warp(p, "crater", WorldDb.Zones["crater"].DefaultSpawn, false);
+            yield return Frames(3);
+            Secret("crater_hollow").Resolve(p, DnD.Rules.CheckOutcome.Success);
+            Assert.AreEqual(FallenStar.Trail, g.Quests.Stage("fallen_star"), "the hollow: something carried the star off");
+            p.Hud.CloseAll();
+            yield return Frames(2);
+            Secret("crater_tracks").Resolve(p, DnD.Rules.CheckOutcome.Success);
+            p.Hud.CloseAll();
+
+            g.Warp(p, "warrens", WorldDb.Zones["warrens"].DefaultSpawn, false);
+            yield return Frames(3);
+            Assert.AreEqual(FallenStar.Warrens, g.Quests.Stage("fallen_star"));
+            g.PacifyGroup("warrens_gate", p);
+            g.PacifyGroup("warrens_warband", p);
+            p.Hud.CloseAll();
+
+            string path = SaveSystem.Save(false); // a break mid-story
+            g.LoadGame(path);
+            yield return Frames(3);
+            p = g.Players[0];
+            Assert.AreEqual(FallenStar.Warrens, g.Quests.Stage("fallen_star"), "the save remembers the story");
+
+            g.Warp(p, "egg_shrine", new Vector2Int(13, 4), false);
+            yield return Frames(3);
+            g.PacifyGroup("mine_egg", p); // Snik is talked down
+            Assert.AreEqual(FallenStar.Egg, g.Quests.Stage("fallen_star"));
+            p.Hud.CloseAll();
+            Object.FindObjectsByType<EggInteractable>().First().Interact(p);
+            Assert.IsTrue(p.Hud.Top is HatchCutscene);
+            float t = Time.time;
+            yield return WaitFor(() => Time.time - t > 1.1f);
+            ((HatchCutscene)p.Hud.Top).Skip();
+            yield return WaitFor(() => p.Hud.Top is MessageScreen);
+            p.Hud.Top.Close();
+            yield return WaitFor(() => p.Hud.Top is NameEntryScreen);
+            var naming = (NameEntryScreen)p.Hud.Top;
+            foreach (var ch in "Goldie") naming.Type(ch);
+            naming.Submit();
+            yield return Frames(2);
+            Assert.AreEqual("Goldie", g.Dragon.Name);
+            Assert.AreEqual(FallenStar.Hatched, g.Quests.Stage("fallen_star"));
+
+            g.Warp(p, "town", WorldDb.Zones["town"].DefaultSpawn, false);
+            yield return Frames(3);
+            p.Hud.CloseAll();
+            var vale = Object.FindObjectsByType<NpcAgent>().First(n => n.Def.Id == "rhoswen");
+            var chat = new DialogueScreen("rhoswen", vale, null);
+            p.Hud.Push(chat);
+            yield return null;
+            chat.Goto("dragon2"); // "It hatched from the 'star.'" -> she pays you
+            Assert.AreEqual(FallenStar.Done, g.Quests.Stage("fallen_star"));
+            chat.Close();
+            yield return WaitFor(() => p.Hud.Top is ActEndScreen);
+            Assert.IsTrue(p.Hud.Top is ActEndScreen, "and the act ends");
+            Assert.GreaterOrEqual(p.Character.XP, 900, "the main story alone reaches level 3");
+            Assert.IsTrue(g.DragonAgent != null && g.DragonAgent.Actor.Zone.Def.Id == "town", "the dragon came home with you");
+        }
     }
 }
