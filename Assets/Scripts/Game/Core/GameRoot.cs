@@ -26,6 +26,11 @@ namespace DnD.Game
         public readonly List<PlayerSlot> Players = new List<PlayerSlot>();
         public readonly Dictionary<string, Zone> Zones = new Dictionary<string, Zone>();
         public readonly List<CompanionAgent> Companions = new List<CompanionAgent>();
+        /// <summary>The party's baby dragon (null until the egg hatches). Its world body is DragonAgent.</summary>
+        public Dragonling Dragon { get; private set; }
+        public CompanionAgent DragonAgent => Companions.FirstOrDefault(c => c != null && c.IsDragon);
+        /// <summary>The highest level among the ready players (the dragon grows with the party).</summary>
+        public int PartyLevel => Players.Where(p => p.IsReady).Select(p => p.Character.Level).DefaultIfEmpty(1).Max();
         public readonly List<CharacterFactory.Recruit> TavernRecruits = new List<CharacterFactory.Recruit>();
         public readonly List<CombatInstance> Combats = new List<CombatInstance>();
         public string PlaythroughId, PlaythroughName;
@@ -189,7 +194,7 @@ namespace DnD.Game
             Combats.Clear();
             StopAllCoroutines();
             if (_worldRoot) Destroy(_worldRoot.gameObject);
-            Zones.Clear(); _npcs.Clear(); _groups.Clear(); Companions.Clear(); _recruitAgents.Clear(); TavernRecruits.Clear();
+            Zones.Clear(); _npcs.Clear(); _groups.Clear(); Companions.Clear(); Dragon = null; _recruitAgents.Clear(); TavernRecruits.Clear();
             _deathTime.Clear(); _sleeping.Clear(); _lastLongRest.Clear(); _parley.Clear(); _pendingPlayers.Clear();
             World = new WorldState();
             Quests = new QuestLog();
@@ -884,9 +889,37 @@ namespace DnD.Game
 
         void SpawnDragon(PlayerSlot leader)
         {
+            Dragon = new Dragonling(PartyLevel) { Name = World.DragonName };
+            Dragon.HP = Mathf.Clamp(Dragon.MaxHP - World.DragonDamage, 0, Dragon.MaxHP);
             var d = CompanionAgent.Create(leader, "mon_dragonling", false, null);
             d.IsDragon = true;
+            d.Actor.Creature = Dragon;
+            d.Actor.name = World.DragonName;
             Companions.Add(d);
+        }
+
+        /// <summary>Names the new hatchling and brings it into the party (called by the naming screen).</summary>
+        public void NameDragon(PlayerSlot p, string name)
+        {
+            if (Dragon != null) return;
+            World.DragonName = string.IsNullOrWhiteSpace(name) ? "Cinder" : name.Trim();
+            SpawnDragon(p);
+            foreach (var x in Players.Where(x => x.IsReady)) GiveXP(x, 100, "hatching the egg");
+            p.Hud.Narrate($"{World.DragonName} chirps happily and scrambles up to ride on your shoulder... then falls off. Then tries again. Return to Captain Vale!");
+        }
+
+        /// <summary>Any short or long rest: the dragon is back to full health, brave again, and its nose and breath are fresh.</summary>
+        public void OnPartyRest(bool longRest)
+        {
+            World.DragonScared = false;
+            World.DragonSniffUsed = false;
+            World.DragonDamage = 0;
+            if (Dragon == null) return;
+            Dragon.SetPartyLevel(PartyLevel);
+            Dragon.HP = Dragon.MaxHP;
+            Dragon.BreathReady = true;
+            var a = DragonAgent;
+            if (a != null && !a.gameObject.activeSelf) a.gameObject.SetActive(true);
         }
 
         public void HatchEgg(PlayerSlot p, Vector3 eggPos)
@@ -900,13 +933,7 @@ namespace DnD.Game
                 {
                     var names = new[] { "Cinder", "Ember", "Pebble", "Sir Toasty", "Biscuit" };
                     p.Hud.Push(new ChoiceScreen("Name your dragon", "The dragonling chirps expectantly.",
-                        names.Select(n => (n, (Action)(() =>
-                        {
-                            World.DragonName = n;
-                            SpawnDragon(p);
-                            foreach (var x in Players.Where(x => x.IsReady)) GiveXP(x, 100, "hatching the egg");
-                            p.Hud.Narrate($"{n} chirps happily and scrambles up to ride on your shoulder... then falls off. Then tries again. Return to Captain Vale!");
-                        }))).ToList(), false));
+                        names.Select(n => (n, (Action)(() => NameDragon(p, n)))).ToList(), false));
                 }));
         }
 
@@ -1104,6 +1131,7 @@ namespace DnD.Game
                 StoryTick();
             }
             _sleeping.Clear();
+            OnPartyRest(true);
             SaveSystem.Save(true);
             _lastAutosave = Time.unscaledTime;
         }

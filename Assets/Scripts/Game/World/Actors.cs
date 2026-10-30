@@ -485,6 +485,7 @@ namespace DnD.Game
 
         void Update()
         {
+            if (IsDragon) PickNearestLeader();
             if (Leader == null || Leader.Avatar == null || Leader.InCombat && Character != null) return;
             if (Waiting) { Actor.Moving = false; return; }
             if (Actor.Zone != Leader.Zone) { Actor.PlaceAt(Leader.Zone, Leader.MapPos); return; }
@@ -497,6 +498,29 @@ namespace DnD.Game
                 Actor.Face(target);
                 transform.position = Vector3.MoveTowards(transform.position, target, Mathf.Max(3.5f, d * 2f) * Time.deltaTime);
             }
+        }
+
+        /// <summary>
+        /// The dragon belongs to the whole party: it follows whichever ready player is nearest (same zone first).
+        /// It only switches when someone is clearly nearer (3+ tiles), so it never flickers between two players.
+        /// </summary>
+        void PickNearestLeader()
+        {
+            var g = GameRoot.I;
+            if (g.Dragon != null && g.Dragon.MaxHP != Dragonling.MaxHPFor(g.PartyLevel)) g.Dragon.SetPartyLevel(g.PartyLevel);
+            if (Leader != null && Leader.InCombat) return; // don't swap mid-fight
+            bool leaderOk = Leader != null && Leader.IsReady;
+            bool leaderHere = leaderOk && Leader.Zone == Actor.Zone;
+            PlayerSlot best = null;
+            float bestD = float.MaxValue;
+            foreach (var p in g.Players)
+            {
+                if (!p.IsReady || p == Leader || p.InCombat || p.Zone != Actor.Zone) continue;
+                float d = Vector2.Distance(p.MapPos, Actor.MapPos);
+                if (d < bestD) { bestD = d; best = p; }
+            }
+            if (best == null) { if (!leaderOk) foreach (var p in g.Players) if (p.IsReady) { Leader = p; break; } return; }
+            if (!leaderOk || !leaderHere || bestD + 3f <= Vector2.Distance(Leader.MapPos, Actor.MapPos)) Leader = best;
         }
 
         /// <summary>

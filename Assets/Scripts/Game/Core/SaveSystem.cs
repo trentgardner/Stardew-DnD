@@ -68,6 +68,9 @@ namespace DnD.Game
         public List<int> StorageCounts = new List<int>();
         public bool EggHatched, KettleReturned;
         public string DragonName;
+        public int DragonDamage, DragonBond;
+        public bool DragonScared, DragonSniffUsed;
+        public List<string> LitBraziers = new List<string>();
         public int RecruitWeek, RecruitSeed;
         public int FestivalDoneDay;
     }
@@ -206,6 +209,9 @@ namespace DnD.Game
             foreach (var kv in w.ShopModifiers) { d.ShopModKeys.Add(kv.Key); d.ShopModPct.Add(kv.Value.x); d.ShopModDay.Add(kv.Value.y); }
             foreach (var s in w.Storage.Slots) { d.StorageIds.Add(s?.ItemId ?? ""); d.StorageCounts.Add(s?.Count ?? 0); }
             d.EggHatched = w.EggHatched; d.KettleReturned = w.KettleReturned; d.DragonName = w.DragonName;
+            if (g.Dragon != null) w.DragonDamage = g.Dragon.MaxHP - g.Dragon.HP;
+            d.DragonDamage = w.DragonDamage; d.DragonBond = w.DragonBond; d.DragonScared = w.DragonScared; d.DragonSniffUsed = w.DragonSniffUsed;
+            d.LitBraziers.AddRange(w.LitBraziers);
             d.RecruitWeek = w.RecruitWeek; d.RecruitSeed = w.RecruitSeed;
             d.FestivalDoneDay = w.FestivalDoneDay;
             return d;
@@ -292,6 +298,8 @@ namespace DnD.Game
             for (int i = 0; i < d.StorageIds.Count && i < w.Storage.Size; i++)
                 if (!string.IsNullOrEmpty(d.StorageIds[i])) w.Storage.Slots[i] = new ItemStack(d.StorageIds[i], d.StorageCounts[i]);
             w.EggHatched = d.EggHatched; w.KettleReturned = d.KettleReturned; w.DragonName = string.IsNullOrEmpty(d.DragonName) ? "Cinder" : d.DragonName;
+            w.DragonDamage = d.DragonDamage; w.DragonBond = d.DragonBond; w.DragonScared = d.DragonScared; w.DragonSniffUsed = d.DragonSniffUsed;
+            if (d.LitBraziers != null) foreach (var b in d.LitBraziers) w.LitBraziers.Add(b);
             w.RecruitWeek = d.RecruitWeek; w.RecruitSeed = d.RecruitSeed;
             w.FestivalDoneDay = d.FestivalDoneDay;
         }

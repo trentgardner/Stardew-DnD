@@ -269,6 +269,7 @@ namespace DnD.Game
             var g = GameRoot.I;
             g.Clock.Advance(60);
             pc.ShortRest(null);
+            g.OnPartyRest(false);
             if (pc.Class.Id == "wizard" && pc.SpendResource("arcane_recovery"))
             {
                 int budget = (pc.Level + 1) / 2;

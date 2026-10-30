@@ -38,6 +38,16 @@ namespace DnD.Game
         /// <summary>The day the party finished the Harvest Festival quest (0 = not yet): the festival stops coming back after that.</summary>
         public int FestivalDoneDay;
         public string DragonName = "Cinder";
+        /// <summary>The dragon's damage taken (0 = full HP; the max comes from the party's level). Saved, so old saves load at full health.</summary>
+        public int DragonDamage;
+        /// <summary>Dropped to 0 HP in a fight: it hides behind the party until the next rest and sits out fights.</summary>
+        public bool DragonScared;
+        /// <summary>0–100, raised by petting, play, treats and fights won together. No fail state.</summary>
+        public int DragonBond;
+        /// <summary>Sniff is once per short rest, shared by the whole party.</summary>
+        public bool DragonSniffUsed;
+        /// <summary>Braziers the dragon has lit: "zoneId:x,y". They stay lit.</summary>
+        public readonly HashSet<string> LitBraziers = new HashSet<string>();
         public bool KettleReturned;
         public int RecruitWeek = -1;
         public int RecruitSeed;
