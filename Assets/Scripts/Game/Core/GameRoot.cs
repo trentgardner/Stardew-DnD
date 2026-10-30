@@ -890,6 +890,7 @@ namespace DnD.Game
 
         public void DismissCompanion(CompanionAgent c)
         {
+            if (c == null || !Companions.Contains(c)) return; // already gone (two players chose it at once)
             Companions.Remove(c);
             var r = new CharacterFactory.Recruit { Character = c.Character, Quirk = c.Quirk, PersuasionDC = 8, HireCostCp = 0,
                 Pitch = $"{c.Character.Name}, your old companion, waves you over. \"Back for me?\"" };
