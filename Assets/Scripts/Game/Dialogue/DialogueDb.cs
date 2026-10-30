@@ -143,12 +143,13 @@ namespace DnD.Game
                 .Roll(Skill.Insight, 13, "(Read her) How does she really feel about it?", "poem_insight", "poem_insight_no", social: false)
                 .Say("It's from Brannoc. He's been writing them for years.", "poem_revealed", doIt: c =>
                 {
+                    c.G.TakeQuestItem(c.P, "brannoc_poem"); // handed over only now: closing the window early keeps the poem
                     c.G.World.SetFlag("poems_revealed");
                     c.G.World.AddFriendship("brannoc", 100);
                     c.G.World.AddFriendship("elowen", 100);
                     c.G.Quests.Set("secret_poems", 1 + 1, c.P);
                 })
-                .Say("I promised not to say.", "poem_secret", doIt: c => { c.G.World.AddFriendship("brannoc", 150); c.G.Quests.Set("secret_poems", 2, c.P); });
+                .Say("I promised not to say.", "poem_secret", doIt: c => { c.G.TakeQuestItem(c.P, "brannoc_poem"); c.G.World.AddFriendship("brannoc", 150); c.G.Quests.Set("secret_poems", 2, c.P); });
             d.Node("poem_insight", who, c => "...",
                 c => "She is trying very hard to look serene and is failing completely. She is delighted. She has, you suspect, been hoping for exactly this for a long time.")
                 .Say("(Back)", "poem_read");
@@ -168,8 +169,7 @@ namespace DnD.Game
                           foreach (var h in new[] { "herb_moonpetal", "herb_riverleaf", "herb_hearthroot" }) c.G.TakeQuestItem(c.P, h);
                           c.G.Quests.Set("elowens_herbs", 3, c.P);
                       })
-                .Say("Someone asked me to give you this.", "poem_read", show: c => c.G.Quests.Active("secret_poems") && c.G.HasQuestItem(c.P, "brannoc_poem"),
-                      doIt: c => c.G.TakeQuestItem(c.P, "brannoc_poem"))
+                .Say("Someone asked me to give you this.", "poem_read", show: c => c.G.Quests.Active("secret_poems") && c.G.HasQuestItem(c.P, "brannoc_poem"))
                 .Say("Please, bring back my friend.", "revive", show: c => c.G.AnyDeadAlly(c.P))
                 .Say("Could I have a blessing?", "blessing", show: c => !c.PC.HasEffect("guidance"))
                 .Roll(Skill.Religion, 12, "Tell me about the Dawnmother and the old days.", "lore_yes", "lore_no", social: false)

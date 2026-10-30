@@ -112,6 +112,12 @@ namespace DnD.Tests
             yield return Settle();
             Capture("20c_forge");
             g.Clock.Minutes = 10 * 60;
+            foreach (var q in new[] { "bad_blood", "pond_ring", "goats", "elowens_herbs", "wolf_bounty", "pips_barrel" }) g.Quests.Start(q);
+            g.Quests.Stages["kettle"] = 2; g.Quests.Paid.Add("kettle");
+            p.Hud.Push(new JournalScreen());
+            yield return Settle();
+            Capture("20d_journal");
+            p.Hud.CloseAll();
 
             g.Warp(p, "town", new Vector2Int(25, 19), false);
             yield return Settle();

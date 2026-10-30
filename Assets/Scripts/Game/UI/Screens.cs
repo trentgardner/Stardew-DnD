@@ -552,7 +552,10 @@ namespace DnD.Game
             }
             if (g.World.EggHatched) sb.AppendLine($"\n{g.World.DragonName} the dragonling — ♥♥♥♥♥ (obviously)");
             var rt = UIKit.Rect(Root, "Text", Vector2.zero, Vector2.one, new Vector2(14, 22), new Vector2(-14, -28));
-            UIKit.Label(rt, sb.ToString(), 10, UIKit.Ink);
+            var label = UIKit.Label(rt, sb.ToString().TrimEnd(), 10, UIKit.Ink);
+            // Many quests at once: shrink the text to fit the window rather than clip it.
+            label.verticalOverflow = VerticalWrapMode.Truncate;
+            label.resizeTextForBestFit = true; label.resizeTextMinSize = 6; label.resizeTextMaxSize = 10;
         }
 
         public override void Tick() { if (In.Cancel || In.Journal || In.Confirm) Close(); }

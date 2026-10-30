@@ -37,6 +37,31 @@
 **Co-op:** your fiance presses **START** on a second controller at any time. The screen splits and she makes a
 character. You can go anywhere independently; if one of you starts a fight, the other can walk over and join it.
 
+## New in Phase 4 (quests and town)
+- **Thistledown grew south**: the **South Lane** has Garrick's forge (weapons and armor), Captain Vale's watch house,
+  Lark's cottage, a little green, and two beekeepers glaring at each other across a footbridge.
+- **Every building has a sign** by its door: walk up to see its name, press Interact to read it.
+- **A weekly rhythm**: Coinday is market day (stalls on the square), Hearthday morning everyone goes to the temple service,
+  Emberday evening is story night at the Drake, and Captain Vale drills the watch on Stormday mornings.
+- **12 new quests** (below). Every one can be solved without a fight, and peaceful endings pay the same XP.
+- Repeated messages now stack ("Already at full health ×3") instead of filling the screen.
+- The journal lists active quests (with who gave them) first, then a one-line list of completed ones.
+
+### Phase 4 quest checklist
+| Quest | Where it starts | Ways to finish |
+|---|---|---|
+| Bad Blood at the Bridge | Captain Vale: "Anything need doing?" | Hear Hesper and Dunstan out, then mediate (Persuasion; Insight on both gives Advantage) or pick a side |
+| Wolves on the Road | Captain Vale (same chat) | Deal with Whisperwood's wolves any way (talk, scare, fight), then collect the bounty |
+| A Ring in the Pond | Tamsin (pond, footbridge): "You look worried" | Dive (Athletics) or fish (Survival) at the pond's edge, give the ring back, watch the proposal |
+| Brannoc's Secret Poems | Brannoc, once you're friends or have heard about his poetry | Deliver the poem to Mother Elowen; reveal the poet or keep the secret |
+| Pip's Missing Barrel | Pip: "You look upset" | Search behind the Drake (Investigation), find Wick in the orchard; mercy (job), justice (cell), or pay |
+| Bar Brawl at the Drake | Pip, Coinday after 6 pm | A fistfight: no magic, no weapons, nobody dies. Win or lose, you wake up at 1 HP |
+| Goats Gone Astray | Old Tobin: "Need a hand?" | Coax three goats home in Whisperwood (Animal Handling) |
+| The Haunted Mill | Old Hobb, after the Ford quest | Listen at night by the mill, calm the owlbear cub, take it home to the den by the lake (or face its mother) |
+| Lost Child in the Woods | Starts on its own: a Tideday afternoon after day 3 | Track Maddie in Whisperwood (Survival, Perception) before 8 pm, or the watch finds her |
+| Mother Elowen's Herbs | Elowen: "Can I help?" | Moonpetal (Whisperwood), riverleaf (the ford), hearthroot (South Lane green), then bring them back |
+| The Fae Trickster | Mister Thimble at the forest lake, evenings (not Hearthday) | Answer three riddles (Arcana gives hints); 2+ right wins a trinket, XP either way |
+
 ## New since playtest 3
 - **Real art and music** (Ninja Adventure pack, CC0): characters, monsters, tiles, items, and music for every zone plus fight music.
 - **All 12 classes**: Rogue, Barbarian, Monk, Paladin, Ranger, Druid, Sorcerer and Warlock join Fighter, Wizard, Cleric

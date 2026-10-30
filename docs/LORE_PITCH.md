@@ -104,6 +104,18 @@ There's a main track, but **how it ends is up to you**. Planned endings include:
 
 ---
 
+## Pending approval: Act I side content
+
+Side characters added while building Act I. They're placeholders until you OK them (rename or cut freely):
+- **Wren** and the **Ford Wardens** (toll crew at Miller's Ford) and **Old Hobb** the miller.
+- **Garrick Ashforge**, the South Lane blacksmith. Loud, warm, friendly rivalry with Brannoc (pints every Emberday).
+- **Hesper Meadowsweet** and **Dunstan Burrow**, feuding beekeepers. Her late husband Albert built the fence; Dunstan was his best friend.
+- **Lark** (flower seller) and **Tamsin** (a quiet fisher who's been working up the nerve to propose).
+- **Wick**, a teenager who "borrowed" Pip's stout barrel to pay for his mum's medicine.
+- **Mister Thimble**, a frog-faced fae trickster at the forest lake. He hints that "the Court is waking" (Act II foreshadowing).
+- **Maddie's family** live in the gold-roofed house by the farm (sign only, no names yet).
+- An **owlbear** and her lost cub by the Whisperwood lake (The Haunted Mill).
+
 ## Questions for you
 1. Do you like the **egg → baby dragon companion** hook? (I think your fiance will.)
 2. Names: keep, change or rename anything? (*Sundermere, Thistledown, Ember Pact, Oathbound...*)

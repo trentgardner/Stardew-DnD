@@ -647,5 +647,91 @@ namespace DnD.Tests
             Assert.IsFalse(p.Character.Nonlethal, "back to normal rules after the brawl");
             Assert.IsTrue(g.Quests.Done("bar_brawl"), "you were magnificent anyway");
         }
+
+        // ============================================================ Task 8: acceptance
+
+        /// <summary>Button-mashing through town, the South Lane, Whisperwood and the ford with every quest active (spots, gated groups, Wick, Maddie, Thimble all present).</summary>
+        [UnityTest, Timeout(600000)]
+        public IEnumerator QuestWalkthroughFuzz()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new FuzzInput(12), "rogue", "half_elf");
+            yield return null;
+            foreach (var q in QuestDb.All.Keys) g.Quests.Start(q);
+            g.Quests.Set("haunted_mill", 2); g.Quests.Set("pips_barrel", 2);
+            g.World.SetFlag("maddie_lost"); g.World.Lock("lost_child_deadline", 600);
+            g.Clock.Minutes = 18 * 60 + 30; // evening: Thimble is out, the mill wails soon
+            foreach (var (zone, at) in new[] { ("town", new Vector2Int(20, 43)), ("town", new Vector2Int(25, 19)), ("forest", new Vector2Int(40, 18)), ("ford", new Vector2Int(30, 15)) })
+            {
+                g.Warp(p, zone, at, false);
+                Time.timeScale = 4;
+                for (int i = 0; i < 2000; i++) yield return null;
+                Time.timeScale = 1;
+                Assert.IsTrue(g.InGame, $"still in the game after fuzzing {zone}");
+                p.Hud.CloseAll();
+                foreach (var c in g.Combats.ToList()) c.Finished = true;
+                g.Combats.Clear();
+            }
+        }
+
+        // ============================================================ final review fixes
+
+        /// <summary>Closing the conversation after handing the poem over (before choosing reveal/keep) must not lose the poem.</summary>
+        [UnityTest]
+        public IEnumerator PoemSurvivesClosingTheConversationEarly()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(41), "bard", "human");
+            yield return null;
+            g.World.AddFriendship("brannoc", 200);
+            Choose(p, "brannoc", "shop", "How's the poetry");
+            Choose(p, "elowen", StartNode(p, "elowen"), "Someone asked me to give you this");
+            // (the player presses Esc here)
+            Assert.IsTrue(g.HasQuestItem(p, "brannoc_poem"), "the poem is only handed over once you choose what to say");
+            Assert.AreEqual(1, g.Quests.Stage("secret_poems"));
+            Choose(p, "elowen", "poem_read", "I promised not to say");
+            Assert.IsFalse(g.HasQuestItem(p, "brannoc_poem"));
+            Assert.IsTrue(g.Quests.Done("secret_poems"));
+        }
+
+        /// <summary>A co-op partner who walks into the bar brawl plays by brawl rules too (knocked out, never killed).</summary>
+        [UnityTest]
+        public IEnumerator LateJoinerToABrawlIsNonlethal()
+        {
+            var g = GameRoot.I;
+            var p1 = g.DebugStart(new FuzzInput(4) { ConfirmChance = 1, CancelChance = 0, EndTurnChance = 0, MenuChance = 0 }, "fighter", "human");
+            var p2 = g.DebugStart(Still(42), "wizard", "elf");
+            yield return null;
+            g.Clock.Day = 6; g.Clock.Minutes = 19 * 60;
+            g.Warp(p1, "tavern", new Vector2Int(8, 9), false);
+            yield return null;
+            g.Quests.Start("bar_brawl");
+            g.StartGroupCombat("drake_brawlers", p1);
+            var c = g.Combats.Single();
+            Assert.IsTrue(c.Brawl);
+            c.JoinLate(p2);
+            Assert.IsTrue(p2.Character.Nonlethal, "the late joiner is knocked out, not killed");
+            Assert.IsFalse(c.ActionsFor(p2).Any(a => a.Group == ActionGroup.Spells), "and can't cast in the bar either");
+        }
+
+        /// <summary>With every quest active at once, the journal still shows all of its text (it shrinks to fit instead of clipping).</summary>
+        [UnityTest]
+        public IEnumerator JournalFitsEveryActiveQuest()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(43), "bard", "human");
+            yield return null;
+            foreach (var q in QuestDb.All.Keys) g.Quests.Start(q);
+            p.Hud.CloseAll();
+            p.Hud.Push(new JournalScreen());
+            yield return null;
+            yield return null;
+            var label = Object.FindObjectsByType<UnityEngine.UI.Text>().Where(t => t.text.StartsWith("<b>Quests</b>")).Single();
+            Assert.AreEqual(VerticalWrapMode.Truncate, label.verticalOverflow, "the journal never spills outside its window");
+            var gen = label.cachedTextGenerator;
+            Assert.Greater(gen.characterCount, 0);
+            // (Unity counts one end-of-text marker that is never visible.)
+            Assert.AreEqual(gen.characterCount - 1, gen.characterCountVisible, "every line of the journal is visible");
+        }
     }
 }

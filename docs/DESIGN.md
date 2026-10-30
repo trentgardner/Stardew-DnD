@@ -102,6 +102,21 @@ Agreed between the designer (Trent) and Claude. Change a decision here first, th
 - Maps live in `Maps.cs` as text. Town, Whisperwood and Miller's Ford were painted by a small generator script, then pasted in.
   The play-mode test `WorldDataIsConsistent` checks warps, spawns, NPC spots and secrets after any edit.
 
+## Quests (Phase 4)
+- Quests are **data** in `QuestDb` (`Assets/Scripts/Game/Quests/`): stages with journal text, **triggers** that move them
+  (zone entered, group resolved, item gained, flag set, secret found; `AllFlags` for "collect all three") and a **reward**
+  paid exactly once on the last stage (`QuestLog.Paid` is saved; old saves count finished quests as paid).
+- Talk-driven stages are set from dialogue (`Quests.Set`). Stage numbers are part of saves: never renumber an existing quest.
+- **Quest spots** are `SecretDef`s with `QuestId`/`QuestStage`: they appear only at that stage, can sit on any walkable tile,
+  can be night-only, give no "secret" XP (the quest pays), and can advance the quest, set a flag or settle an enemy group.
+- **Quest-gated groups** (`EnemyGroupDef.QuestId/MinStage/MaxStage`) appear and leave with the story.
+- **Quest items** (`ItemDef.QuestItem`) can't be sold, never get lost on a full bag, and count from a partner's bag or home storage.
+- NPC **schedules** can depend on the story: `RequiresFlag`, `ForbidFlag`, `RequiresLock` (e.g. two nights in the cell).
+  At the same hour: story-conditional beats weekday beats everyday.
+- Timed events (`GameRoot.StoryTick`, every hour and on waking) always resolve: missing a deadline never soft-locks a quest.
+- **Brawls** (`EnemyGroupDef.Brawl`): fists and improvised weapons only, no magic or items, 2024 knockout rule
+  (`PlayerCharacter.Nonlethal`: 0 HP = unconscious and stable), companions sit out, and losing is not a party wipe.
+
 ## Story
 - Setting pitch in `LORE_PITCH.md`: **not approved yet**; names in the build are placeholders.
 - Tone: Matthew Mercer worldbuilding + Brennan Lee Mulligan heart and humor. Bright high fantasy, dragons,
