@@ -384,5 +384,78 @@ namespace DnD.Tests
             Assert.AreEqual("potion_healing", inv.Slots[3].ItemId);
             Assert.IsNull(inv.Slots[1]);
         }
+            // ============================================================ Task 7: junk
+
+        [UnityTest]
+        public IEnumerator MarkJunkAndSellAll()
+        {
+            var g = GameRoot.I;
+            var input = new ScriptInput();
+            PlayerSlot p = null;
+            yield return Ready(g, input, x => p = x);
+            var pc = p.Character;
+            pc.Bag.Slots[20] = new ItemStack("copper_trinket", 3);
+            pc.Bag.Slots[21] = new ItemStack("gemstone", 1);
+            pc.Bag.Slots[22] = new ItemStack("rations", 2);
+            Assert.IsTrue(pc.MarkJunk("copper_trinket", true));
+            Assert.IsTrue(pc.MarkJunk("gemstone", true));
+            int copper = pc.Copper;
+            int expected = 3 * ShopDb.SellPrice("general", ItemsDb.Get("copper_trinket")) + ShopDb.SellPrice("general", ItemsDb.Get("gemstone"));
+            var (items, paid) = ShopDb.SellAllJunk(p, "general");
+            Assert.AreEqual(4, items);
+            Assert.AreEqual(expected, paid);
+            Assert.AreEqual(copper + expected, pc.Copper);
+            Assert.AreEqual(0, pc.CountOf("copper_trinket"));
+            Assert.AreEqual(2, pc.CountOf("rations"), "only junk is sold");
+        }
+
+        [UnityTest]
+        public IEnumerator SellAllJunkSkipsQuestAndEquipped()
+        {
+            var g = GameRoot.I;
+            var input = new ScriptInput();
+            PlayerSlot p = null;
+            yield return Ready(g, input, x => p = x);
+            var pc = p.Character;
+            pc.Bag.Slots[20] = new ItemStack("pond_ring", 1);
+            Assert.IsFalse(pc.MarkJunk("pond_ring", true), "quest items can't be junk");
+            pc.MainHand = (WeaponDef)ItemsDb.Get("longsword");
+            pc.MarkJunk("longsword", true);
+            var (items, _) = ShopDb.SellAllJunk(p, "general");
+            Assert.AreEqual(0, items);
+            Assert.AreEqual("longsword", pc.MainHand.Id, "the sword in your hand stays there");
+            Assert.AreEqual(1, pc.CountOf("pond_ring"));
+        }
+
+        [UnityTest]
+        public IEnumerator JunkMarksSurviveSaveAndLoad()
+        {
+            var g = GameRoot.I;
+            var input = new ScriptInput();
+            PlayerSlot p = null;
+            yield return Ready(g, input, x => p = x);
+            p.Character.MarkJunk("copper_trinket", true);
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(3);
+            Assert.IsTrue(g.Players[0].Character.Junk.Contains("copper_trinket"));
+        }
+
+        [UnityTest]
+        public IEnumerator JunkOptionInTheMenu()
+        {
+            var g = GameRoot.I;
+            var input = new ScriptInput();
+            PlayerSlot p = null;
+            yield return Ready(g, input, x => p = x, "copper_trinket");
+            var inv = new InventoryScreen(null, null);
+            p.Hud.Push(inv);
+            inv.OpenOptionsFor(0);
+            Assert.IsTrue(((ChoiceScreen)p.Hud.Top).Choose("Mark as junk"));
+            Assert.IsTrue(p.Character.Junk.Contains("copper_trinket"));
+            yield return null;
+            inv.OpenOptionsFor(0);
+            Assert.IsTrue(((ChoiceScreen)p.Hud.Top).Labels.Any(l => l.StartsWith("Unmark junk")));
+        }
     }
 }

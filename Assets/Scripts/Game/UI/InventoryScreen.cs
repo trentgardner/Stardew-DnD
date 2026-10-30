@@ -47,7 +47,7 @@ namespace DnD.Game
         readonly string _otherTitle;
         PlayerSlot _partner;
 
-        class Cell { public Inventory Inv; public int Index; public RectTransform Rt; public Image Icon, Bg; public Text Count; public string EquipSlot; }
+        class Cell { public Inventory Inv; public int Index; public RectTransform Rt; public Image Icon, Bg, Junk; public Text Count; public string EquipSlot; }
 
         readonly List<Cell> _bagCells = new List<Cell>();
         readonly List<Cell> _otherCells = new List<Cell>();
@@ -230,6 +230,9 @@ namespace DnD.Game
             c.Bg = UIKit.Image(rt, Color.white, ArtRegistry.Get("ui_slot"));
             c.Icon = UIKit.Image(UIKit.Fill(rt, "Icon", 2), Color.white);
             c.Count = UIKit.Label(rt, "", 8, UIKit.Ink, TextAnchor.LowerRight);
+            var jb = UIKit.Box(rt, "Junk", new Vector2(0, 1), new Vector2(9, 9), new Vector2(0, 0));
+            c.Junk = UIKit.Image(jb, Color.white, ArtRegistry.Get("ui_junk"));
+            c.Junk.enabled = false;
             if (label != null) { c.Count.fontSize = 6; c.Count.color = UIKit.Dim; c.Count.alignment = TextAnchor.MiddleCenter; } // empty equipment slots show their name
             return c;
         }
@@ -264,6 +267,7 @@ namespace DnD.Game
                     if (id != null) c.Icon.sprite = ArtRegistry.Get(ItemsDb.Get(id)?.Icon ?? "missing");
                     float a = panel == 0 && id != null && !ItemFilters.Matches(ItemsDb.Get(id), _filter) ? 0.3f : 1f;
                     c.Icon.color = new Color(1, 1, 1, a);
+                    c.Junk.enabled = panel == 0 && id != null && Slot.Character.Junk.Contains(id);
                     c.Count.color = new Color(c.Count.color.r, c.Count.color.g, c.Count.color.b, a);
                     if (c.EquipSlot == null) c.Count.text = count > 1 ? count.ToString() : "";
                     else c.Count.text = id == null ? SlotShort(c.EquipSlot) : "";
@@ -519,6 +523,11 @@ namespace DnD.Game
                 opts.Add((mine ? $"Send to {_tabs[_tab].Label}" : "Take", () => { _panel = mine ? 0 : 1; _cursor = index; QuickTransfer(); }));
             else if (mine)
                 opts.Add((index < Inventory.HotbarSize ? "Move to backpack" : "Move to hotbar", () => { _panel = 0; _cursor = index; QuickTransfer(); }));
+            if (mine && !def.QuestItem && def.PriceCp > 0)
+            {
+                bool junk = Slot.Character.Junk.Contains(def.Id);
+                opts.Add((junk ? "Unmark junk" : "Mark as junk (sell it all at any shop)", () => { Slot.Character.MarkJunk(def.Id, !junk); Redraw(); }));
+            }
             if (st.Count > 1) opts.Add(("Split stack (pick up half)", () => { _held = inv.PickUpHalf(index); Redraw(); }));
             opts.Add(("Cancel", null));
             Hud.Push(new ChoiceScreen(def.Name + (st.Count > 1 ? $" ×{st.Count}" : ""), def.Description, opts));

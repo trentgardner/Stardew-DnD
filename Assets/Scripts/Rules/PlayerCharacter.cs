@@ -40,6 +40,15 @@ namespace DnD.Rules
         public WeaponDef OffSetWeapon;
         /// <summary>The shield belongs to the main set: it's on your back while the off-set is out.</summary>
         public bool ShieldStowed;
+        /// <summary>Item ids this player marked as junk ("sell all junk" at any shop). Quest items never.</summary>
+        public readonly HashSet<string> Junk = new HashSet<string>();
+        public bool MarkJunk(string itemId, bool on)
+        {
+            var def = Content.ItemsDb.Get(itemId);
+            if (def == null || def.QuestItem) return false;
+            if (on) Junk.Add(itemId); else Junk.Remove(itemId);
+            return true;
+        }
         public ArmorDef Armor;
         public bool Shield;
         public Inventory Bag = new Inventory();

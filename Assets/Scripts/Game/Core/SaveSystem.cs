@@ -28,6 +28,7 @@ namespace DnD.Game
         public List<int> BagCounts = new List<int>();
         public List<KV> Resources = new List<KV>();
         public string MainHand, Armor, OffSet;
+        public List<string> Junk = new List<string>();
         public bool ShieldStowed;
         // where they are
         public string Zone;
@@ -235,6 +236,7 @@ namespace DnD.Game
             d.Expertise.AddRange(pc.Expertise.Select(s => s.ToString()));
             d.Mastered.AddRange(pc.MasteredWeapons);
             d.Feats.AddRange(pc.Feats);
+            d.Junk.AddRange(pc.Junk);
             d.BonusPrepared.AddRange(pc.BonusAlwaysPrepared);
             d.Invocations.AddRange(pc.Invocations); d.Metamagic.AddRange(pc.Metamagic);
             d.PrimalOrder = pc.PrimalOrder; d.LandType = pc.LandType; d.HunterPrey = pc.HunterPrey; d.WildShape = pc.WildShape?.Id;
@@ -263,6 +265,7 @@ namespace DnD.Game
             Array.Copy(d.BgBonus, pc.BackgroundBonus, 6);
             if (d.Asi != null && d.Asi.Length == 6) Array.Copy(d.Asi, pc.AsiBonus, 6); // older saves have none
             if (d.Feats != null) pc.Feats.AddRange(d.Feats);
+            if (d.Junk != null) foreach (var j in d.Junk) pc.Junk.Add(j);
             if (d.BonusPrepared != null) pc.BonusAlwaysPrepared.AddRange(d.BonusPrepared);
             if (d.Invocations != null) pc.Invocations.AddRange(d.Invocations);
             if (d.Metamagic != null) pc.Metamagic.AddRange(d.Metamagic);

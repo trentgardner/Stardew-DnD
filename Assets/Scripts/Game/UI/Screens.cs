@@ -113,6 +113,39 @@ namespace DnD.Game
         public static string Owner(string shop) => shop == "general" ? "Brannoc" : shop == "temple" ? "Mother Elowen" : shop == "forge" ? "Garrick" : shop == "kobold" ? "Tik" : "Pip";
 
         /// <summary>What a shop pays for an item: half price, except Tik, who pays full price for anything shiny.</summary>
+        /// <summary>Sells every backpack stack marked as junk (never equipped gear or quest items). Returns how many items and how much.</summary>
+        public static (int items, int copper) SellAllJunk(PlayerSlot p, string shop)
+        {
+            var pc = p.Character;
+            int items = 0, copper = 0;
+            for (int i = 0; i < pc.Bag.Size; i++)
+            {
+                var st = pc.Bag.Slots[i];
+                if (st == null || !pc.Junk.Contains(st.ItemId)) continue;
+                var d = ItemsDb.Get(st.ItemId);
+                if (d == null || d.QuestItem || d.PriceCp <= 0) continue;
+                items += st.Count;
+                copper += SellPrice(shop, d) * st.Count;
+                pc.Bag.Slots[i] = null;
+            }
+            pc.Copper += copper;
+            return (items, copper);
+        }
+
+        /// <summary>How many junk items a "sell all" would sell here, and for how much.</summary>
+        public static (int items, int copper) JunkValue(PlayerSlot p, string shop)
+        {
+            var pc = p.Character;
+            int items = 0, copper = 0;
+            foreach (var st in pc.Bag.Slots)
+            {
+                if (st == null || !pc.Junk.Contains(st.ItemId)) continue;
+                var d = ItemsDb.Get(st.ItemId);
+                if (d == null || d.QuestItem || d.PriceCp <= 0) continue;
+                items += st.Count; copper += SellPrice(shop, d) * st.Count;
+            }
+            return (items, copper);
+        }
         public static int SellPrice(string shop, ItemDef d) => shop == "kobold" && d.Kind == ItemKind.Treasure ? d.PriceCp : d.PriceCp / 2;
 
         /// <summary>Base price in copper with difficulty scaling for Embers of Return.</summary>
@@ -183,6 +216,18 @@ namespace DnD.Game
             }
             else
             {
+                var (junkItems, junkCp) = ShopDb.JunkValue(Slot, _shop);
+                if (junkItems > 0)
+                {
+                    _ids.Add(null);
+                    _menu.Add($"<b>Sell all junk</b> ({junkItems} item{(junkItems == 1 ? "" : "s")})  —  {Currency.Format(junkCp)}", () =>
+                    {
+                        var (n, cp) = ShopDb.SellAllJunk(Slot, _shop);
+                        Sfx.Play("coin");
+                        Hud.Toast($"Sold {n} junk item{(n == 1 ? "" : "s")} for {Currency.Format(cp)}.", UIKit.Gold);
+                        Rebuild();
+                    });
+                }
                 foreach (var st in pc.Bag.Slots)
                 {
                     if (st == null || _ids.Contains(st.ItemId)) continue;
@@ -202,6 +247,7 @@ namespace DnD.Game
         void ShowInfo()
         {
             if (_menu.Index < 0 || _menu.Index >= _ids.Count) { _info.text = ""; return; }
+            if (_ids[_menu.Index] == null) { _info.text = "Sells everything you've marked as junk (right-click an item in your inventory → Mark as junk). Equipped gear and quest items are never sold."; return; }
             var d = ItemsDb.Get(_ids[_menu.Index]);
             string extra = "";
             if (d is WeaponDef w) extra = $"\n{w.Category} · {w.Damage} {w.DamageType.ToString().ToLower()}\n{w.PropertyText()}\nMastery: {w.Mastery}";
