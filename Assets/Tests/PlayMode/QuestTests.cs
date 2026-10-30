@@ -661,8 +661,13 @@ namespace DnD.Tests
             g.Quests.Set("haunted_mill", 2); g.Quests.Set("pips_barrel", 2);
             g.World.SetFlag("maddie_lost"); g.World.Lock("lost_child_deadline", 600);
             g.Clock.Minutes = 18 * 60 + 30; // evening: Thimble is out, the mill wails soon
-            foreach (var (zone, at) in new[] { ("town", new Vector2Int(20, 43)), ("town", new Vector2Int(25, 19)), ("forest", new Vector2Int(40, 18)), ("ford", new Vector2Int(30, 15)) })
+            var stops = new[] { ("town", new Vector2Int(20, 43)), ("town", new Vector2Int(25, 19)), ("forest", new Vector2Int(40, 18)), ("ford", new Vector2Int(30, 15)),
+                ("crater", WorldDb.Zones["crater"].DefaultSpawn), ("warrens", new Vector2Int(20, 23)), ("egg_shrine", new Vector2Int(12, 12)), ("watchtower", new Vector2Int(15, 20)),
+                ("town", new Vector2Int(24, 17)) };
+            foreach (var (zone, at) in stops)
             {
+                if (zone == "town" && at == new Vector2Int(24, 17)) { g.Clock.Day = 10; g.Clock.Minutes = 14 * 60 - 1; g.Clock.Advance(1); } // festival day, mid-afternoon
+
                 g.Warp(p, zone, at, false);
                 Time.timeScale = 4;
                 for (int i = 0; i < 2000; i++) yield return null;

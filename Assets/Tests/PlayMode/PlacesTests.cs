@@ -50,6 +50,7 @@ namespace DnD.Tests
             d.Quests.RemoveAll(kv => kv.K == "fallen_star");
             d.Quests.Add(new KV("fallen_star", oldStage));
             d.QuestsPaid.Remove("fallen_star");
+            d.Flags.RemoveAll(f => f == "snik_friend" || f == "elder_blessing"); // a genuinely old save never had these
             if (paid) d.QuestsPaid.Add("fallen_star");
             File.WriteAllText(path, JsonUtility.ToJson(d, true));
             return path;
@@ -81,6 +82,24 @@ namespace DnD.Tests
             g.Quests.Set("fallen_star", FallenStar.Done, p);
             Assert.AreEqual(xp, p.Character.XP, "a finished main quest never pays twice");
             Assert.AreEqual(cp, p.Character.Copper);
+        }
+
+        /// <summary>An old save that had already found the egg (old stage 2) mustn't be stopped by the warrens' new gate and warband on the way back down.</summary>
+        [UnityTest]
+        public IEnumerator OldSaveAtTheEggIsWavedThroughTheWarrens()
+        {
+            var g = GameRoot.I;
+            g.DebugStart(Still(14), "fighter", "human");
+            yield return Frames(2);
+            g.LoadGame(OldSave(g, 2, false));
+            yield return Frames(2);
+            Assert.AreEqual(FallenStar.Egg, g.Quests.Stage("fallen_star"));
+            Assert.IsTrue(g.World.Flag("snik_friend"), "the kobolds already know you");
+            Assert.IsTrue(g.World.Flag("elder_blessing"), "Krag lets you pass");
+            g.LoadGame(OldSave(g, 1, false));
+            yield return Frames(2);
+            Assert.AreEqual(FallenStar.Warrens, g.Quests.Stage("fallen_star"));
+            Assert.IsFalse(g.World.Flag("snik_friend"), "someone who hadn't reached the egg yet takes the warrens as they come");
         }
 
         [UnityTest]

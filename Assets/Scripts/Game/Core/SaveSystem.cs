@@ -158,6 +158,9 @@ namespace DnD.Game
                 // v2 put the crater, the trail and the warrens in front of the old mine stages: 1→3, 2→4, 3→5, 4→6
                 var fs = d.Quests.Find(kv => kv.K == "fallen_star");
                 if (fs != null && fs.V > 0) fs.V += 2;
+                // They'd already found the egg, which now sits below the warrens: the kobolds know them, so the gate and Krag wave them through.
+                if (fs != null && fs.V == 4)
+                    foreach (var f in new[] { "snik_friend", "elder_blessing" }) if (!d.Flags.Contains(f)) d.Flags.Add(f);
                 d.Version = 2;
             }
         }

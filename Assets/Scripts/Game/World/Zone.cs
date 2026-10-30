@@ -174,9 +174,24 @@ namespace DnD.Game
         /// <summary>Invisible blocker under props (trees, tables...).</summary>
         void Solid(Vector2Int m) { _solid.SetTile(Cell(m), GetTile("tile_none", true)); Blocked[m.x, m.y] = true; }
 
+        /// <summary>Under a prop outdoors, match the ground around it: scorched earth in the crater, flagstones in a ruin.</summary>
+        string PropGround(Vector2Int m, string floor)
+        {
+            if (Def.Indoors || Def.Dark) return floor;
+            bool flag = false;
+            foreach (var d in new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right })
+            {
+                char n = CharAt(m + d);
+                if (n == 'd') return "tile_scorched";
+                if (n == ':') flag = true;
+            }
+            return flag ? "tile_cobbles" : floor;
+        }
+
         void BuildCell(Vector2Int m, char c)
         {
             string floor = FloorFor(m);
+            if ("qceiHuxrZJQI/@%Ag".IndexOf(c) >= 0) floor = PropGround(m, floor);
             _base.SetTile(Cell(m), GetTile(floor, false));
             switch (c)
             {

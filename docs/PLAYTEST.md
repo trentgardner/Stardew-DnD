@@ -37,6 +37,34 @@
 **Co-op:** your fiance presses **START** on a second controller at any time. The screen splits and she makes a
 character. You can go anywhere independently; if one of you starts a fight, the other can walk over and join it.
 
+## New in Phase 5 (new places)
+- **The Fallen Star is a real journey now.** Captain Vale sends you to **Starfall Crater** (Whisperwood's north trail,
+  top edge of the forest). Study the empty hollow, then either follow the little clawed tracks or stake out the market
+  stalls after dark to catch the thief in the act. It leads down the old mine into the **Kobold Warrens**: a whole
+  village with a gate, a stream, Tik's Shiny Stall (he pays full price for trinkets) and Elder Ssark. The egg now waits
+  one level deeper, in the **Shrine of the Great Egg**.
+- **Three ways through the warrens**: make friends (Snik vouches for you if you caught him kindly; the Elder blesses you
+  for a shiny, good words or Snik's say-so), sneak (a crack beside the gate, a crawlway around Krag's warband), or fight.
+- **The Old Watchtower** (north edge of Miller's Ford, east of the bridge): a Zelda-style puzzle ruin. Levers, a pressure-plate
+  room (push the block, or have a friend or a waiting companion stand on the second plate) and a light-and-mirrors stair.
+  Gates stay open once solved. The last watchman at the top asks for the watchword.
+- **The Harvest Festival** on **Day 10** in the square, 9 am to 10 pm: apple bobbing, archery, the great pie contest and the
+  bard stage. Missed it? It comes back every 7 days until you've been. Tip: sleep at home to skip ahead to Day 10.
+
+### Phase 5 checklist
+| Try this | Where | What should happen |
+|---|---|---|
+| The crater | Whisperwood, walk off the top edge on the north trail | Perrin the scholar, fire beetles, the hollow (Investigation), the tracks (Survival), 3 secrets |
+| The stakeout | Market stalls on the square, after 8 pm, once you've studied the hollow | Catch Snik with Pip's ladle: talk, joke, grab, or scare him |
+| Warrens, friendly | Down the mine stairs (where the egg used to be) | With Snik befriended the gate waves you through; Elder Ssark blesses you; Krag steps aside |
+| Warrens, sneaky | Same | Acrobatics through the crack beside the gate; Athletics through the crawlway around Krag |
+| Warrens, by force | Same | Gate guards and Krag's warband are normal fights (Krag is tough at level 1-2) |
+| Skip everything | Walk straight down the mine | The quest jumps to the right step; the egg still works |
+| Watchtower solo | Ford, north edge east of the bridge | Levers (read the plaque with History), push the block onto a plate and stand on the other, flip both mirrors |
+| Watchtower co-op | Same | One player (or a companion told to wait) holds the second plate |
+| The watchman | Top of the tower | Read the inscription first, then recite it: no fight needed |
+| The festival | Square, Day 10 from 9 am | Play three games for the quest; each game once per player per festival |
+
 ## New in Phase 4 (quests and town)
 - **Thistledown grew south**: the **South Lane** has Garrick's forge (weapons and armor), Captain Vale's watch house,
   Lark's cottage, a little green, and two beekeepers glaring at each other across a footbridge.
