@@ -238,5 +238,46 @@ namespace DnD.Tests
             p.Character.MainHand = (WeaponDef)ItemsDb.Get("longsword");
             StringAssert.Contains("(equipped)", ItemCompare.Describe(p.Character, ItemsDb.Get("longsword")));
         }
+            // ============================================================ Task 4: one-click moves
+
+        [UnityTest]
+        public IEnumerator SendToCompanionFromOptions()
+        {
+            var g = GameRoot.I;
+            var input = new ScriptInput();
+            PlayerSlot p = null;
+            yield return Ready(g, input, x => p = x, "rations");
+            var pc = CharacterFactory.Create(CharacterFactory.DefaultChoices("fighter", "dwarf", "Tova"));
+            g.SpawnCompanion(p, pc, "hums");
+            int theirs = pc.CountOf("rations");
+            var inv = new InventoryScreen(null, null);
+            p.Hud.Push(inv);
+            inv.OpenOptionsFor(0);
+            var menu = (ChoiceScreen)p.Hud.Top;
+            Assert.IsTrue(menu.Choose("Send to Tova"), "each companion is a one-click destination");
+            yield return Frames(2);
+            Assert.AreEqual(theirs + 2, pc.CountOf("rations"));
+            Assert.AreEqual(0, p.Character.CountOf("rations"));
+        }
+
+        [UnityTest]
+        public IEnumerator SendToFullBagKeepsTheRest()
+        {
+            var g = GameRoot.I;
+            var input = new ScriptInput();
+            PlayerSlot p = null;
+            yield return Ready(g, input, x => p = x, "rations");
+            p.Character.Bag.Slots[0] = new ItemStack("rations", 5);
+            var pc = CharacterFactory.Create(CharacterFactory.DefaultChoices("fighter", "dwarf", "Tova"));
+            for (int i = 0; i < pc.Bag.Size; i++) pc.Bag.Slots[i] = new ItemStack("dagger", 1);
+            g.SpawnCompanion(p, pc, "hums");
+            var inv = new InventoryScreen(null, null);
+            p.Hud.Push(inv);
+            inv.OpenOptionsFor(0);
+            ((ChoiceScreen)p.Hud.Top).Choose("Send to Tova");
+            yield return Frames(2);
+            Assert.AreEqual(5, p.Character.CountOf("rations"), "nothing is lost when their bag is full");
+            Assert.IsTrue(p.Hud.ToastTexts.Any(t => t.Contains("full")), "and you're told why");
+        }
     }
 }

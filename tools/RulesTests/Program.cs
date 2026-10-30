@@ -49,6 +49,7 @@ namespace RulesTests
             DragonTests();
             BalanceTests();
             WeaponSetTests();
+            HotbarMoveTests();
 
             Console.WriteLine($"\n{_passed} passed, {_failed} failed");
             return _failed == 0 ? 0 : 1;

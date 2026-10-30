@@ -50,6 +50,18 @@ namespace DnD.Game
             if (moved > 0) _partner.Hud.Toast($"{Slot.Character.Name} gave you {moved}× {name}", UIKit.Gold);
         }
 
+        /// <summary>Moves a whole backpack stack into someone else's bag; whatever doesn't fit stays with you (and you're told).</summary>
+        public void SendTo(int bagIndex, Inventory target, string name)
+        {
+            var st = Bag.Slots[bagIndex];
+            if (st == null || target == null) return;
+            int total = st.Count;
+            int moved = Bag.QuickTransfer(bagIndex, target);
+            if (moved < total) Hud.Toast($"{name}'s bag is full ({total - moved} didn't fit).", UIKit.Bad);
+            else Hud.Toast($"Gave {name} {moved}× {ItemsDb.Get(st.ItemId)?.Name}.", UIKit.UtilityBlue);
+            Sfx.Play("ui");
+        }
+
         /// <summary>Hands coins to your trade partner (coins weigh nothing).</summary>
         public void GiveGold(int copper)
         {
@@ -396,6 +408,13 @@ namespace DnD.Game
                         }
                 }
             }
+            if (mine)
+                foreach (var comp in g.CompanionsOf(Slot))
+                    if (comp.Character != null && comp.Character.Bag != OtherInv)
+                    {
+                        var who = comp.Character;
+                        opts.Add(($"Send to {who.Name}", () => { SendTo(index, who.Bag, who.Name); Redraw(); }));
+                    }
             if (OtherInv != null)
                 opts.Add((mine ? $"Send to {(_partner != null ? _partner.Character.Name : _otherTitle)}" : "Take", () => { _panel = mine ? 0 : 1; _cursor = index; QuickTransfer(); }));
             else if (mine)
@@ -424,11 +443,9 @@ namespace DnD.Game
             if (target == null)
             {
                 // No second panel: move between hotbar and backpack.
-                var st = Bag.Slots[c.Index];
-                if (st == null) return;
-                int start = c.Index < Inventory.HotbarSize ? Inventory.HotbarSize : 0;
-                int end = c.Index < Inventory.HotbarSize ? Bag.Size : Inventory.HotbarSize;
-                for (int i = start; i < end; i++) if (Bag.Slots[i] == null) { Bag.Move(c.Index, i); break; }
+                if (Bag.Slots[c.Index] == null) return;
+                int to = c.Index < Inventory.HotbarSize ? Bag.ToBackpack(c.Index) : Bag.ToHotbar(c.Index);
+                if (to < 0) Hud.Toast(c.Index < Inventory.HotbarSize ? "Your backpack is full." : "Your hotbar is full.", UIKit.Bad);
             }
             else if (_partner != null && c.Inv == Bag) SendToPartner(c.Index);
             else c.Inv.QuickTransfer(c.Index, target);

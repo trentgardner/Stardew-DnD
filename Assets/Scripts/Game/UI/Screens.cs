@@ -43,6 +43,17 @@ namespace DnD.Game
 
         public ChoiceScreen(string title, string text, List<(string, Action)> options, bool cancellable = true)
         { _title = title; _text = text; _opts = options; _cancellable = cancellable; }
+
+        /// <summary>The option labels, in order.</summary>
+        public IEnumerable<string> Labels { get { foreach (var (label, _) in _opts) yield return label; } }
+
+        /// <summary>Picks the first option starting with this text, as if clicked (the controller wheel and tests use it).</summary>
+        public bool Choose(string prefix)
+        {
+            foreach (var (label, act) in _opts)
+                if (label.StartsWith(prefix)) { Close(); act?.Invoke(); return true; }
+            return false;
+        }
         public override bool ShowCloseButton => _cancellable;
 
         public override void Build()

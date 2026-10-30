@@ -46,3 +46,24 @@ namespace RulesTests
         }
     }
 }
+
+namespace RulesTests
+{
+    public static partial class Program
+    {
+        /// <summary>One-click moves between the hotbar (slots 0–11) and the backpack.</summary>
+        static void HotbarMoveTests()
+        {
+            var inv = new Inventory();
+            inv.Slots[0] = new ItemStack("torch", 1);
+            inv.Slots[20] = new ItemStack("rations", 2);
+            Eq(inv.ToHotbar(20), 1, "to hotbar: the first free hotbar slot");
+            Check(inv.Slots[1]?.ItemId == "rations" && inv.Slots[20] == null, "to hotbar: moved, not copied");
+            Eq(inv.ToBackpack(1), Inventory.HotbarSize, "to backpack: the first free backpack slot");
+            Check(inv.Slots[Inventory.HotbarSize]?.ItemId == "rations", "to backpack: there it is");
+            for (int i = 0; i < Inventory.HotbarSize; i++) inv.Slots[i] = new ItemStack("torch", 1);
+            Eq(inv.ToHotbar(Inventory.HotbarSize), -1, "to hotbar when it's full: nothing moves");
+            Check(inv.Slots[Inventory.HotbarSize]?.ItemId == "rations", "to hotbar when it's full: still in the backpack");
+        }
+    }
+}
