@@ -340,5 +340,49 @@ namespace DnD.Tests
             Assert.AreEqual(r2 + 3, p2.Character.CountOf("rations"));
             Assert.AreEqual(t1 + 4, p1.Character.CountOf("torch"));
         }
+            // ============================================================ Task 6: filter tabs
+
+        [UnityTest]
+        public IEnumerator FilterGearDimsPotions()
+        {
+            var g = GameRoot.I;
+            var input = new ScriptInput();
+            PlayerSlot p = null;
+            yield return Ready(g, input, x => p = x, "potion_healing", "longsword");
+            var inv = new InventoryScreen(null, null);
+            p.Hud.Push(inv);
+            yield return null;
+            inv.Filter = ItemFilter.Gear;
+            yield return null;
+            Assert.Less(inv.BagCellAlpha(0), 0.5f, "a potion isn't gear: dimmed");
+            Assert.AreEqual(1f, inv.BagCellAlpha(1), 0.01f, "the sword stays bright");
+            Assert.AreEqual("potion_healing", p.Character.Bag.Slots[0].ItemId, "filtering never moves anything");
+            inv.Filter = ItemFilter.All;
+            yield return null;
+            Assert.AreEqual(1f, inv.BagCellAlpha(0), 0.01f);
+        }
+
+        [Test]
+        public void FiltersCoverEveryItem()
+        {
+            var filters = new[] { ItemFilter.Gear, ItemFilter.Use, ItemFilter.Treasure, ItemFilter.Quest };
+            foreach (var d in ItemsDb.All.Values)
+                Assert.AreEqual(1, filters.Count(f => ItemFilters.Matches(d, f)), $"{d.Id} belongs to exactly one tab");
+            Assert.IsTrue(ItemFilters.Matches(ItemsDb.Get("dragon_treat"), ItemFilter.Use), "treats are things you use");
+        }
+
+        [Test]
+        public void SortNeverTouchesTheHotbar()
+        {
+            var inv = new Inventory();
+            inv.Slots[0] = new ItemStack("torch", 1);
+            inv.Slots[3] = new ItemStack("potion_healing", 1);
+            inv.Slots[30] = new ItemStack("rations", 1);
+            inv.Slots[14] = new ItemStack("dagger", 1);
+            inv.Sort();
+            Assert.AreEqual("torch", inv.Slots[0].ItemId);
+            Assert.AreEqual("potion_healing", inv.Slots[3].ItemId);
+            Assert.IsNull(inv.Slots[1]);
+        }
     }
 }

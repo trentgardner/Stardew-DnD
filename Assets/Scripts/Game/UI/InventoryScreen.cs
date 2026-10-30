@@ -15,8 +15,34 @@ namespace DnD.Game
     ///            View sort · LB/RB switch panel · B close
     /// Closing while holding a stack puts it back.
     /// </summary>
+    public enum ItemFilter { All, Gear, Use, Treasure, Quest }
+
+    /// <summary>The backpack's filter tabs. Every item is in exactly one of Gear / Use / Treasure / Quest.</summary>
+    public static class ItemFilters
+    {
+        public static readonly string[] Labels = { "All", "Gear", "Use", "Treasure", "Quest" };
+
+        public static bool Matches(ItemDef d, ItemFilter f)
+        {
+            if (d == null || f == ItemFilter.All) return true;
+            if (d.QuestItem) return f == ItemFilter.Quest;
+            switch (f)
+            {
+                case ItemFilter.Use: return d.Kind == ItemKind.Consumable;
+                case ItemFilter.Treasure: return d.Kind == ItemKind.Treasure;
+                case ItemFilter.Gear: return d.Kind == ItemKind.Weapon || d.Kind == ItemKind.Armor || d.Kind == ItemKind.Shield || d.Kind == ItemKind.Gear || d.Kind == ItemKind.Wondrous;
+                default: return false;
+            }
+        }
+    }
+
     public class InventoryScreen : GameScreen
     {
+        ItemFilter _filter;
+        /// <summary>Dims backpack items that don't match (nothing moves, so the hotbar and your muscle memory stay put).</summary>
+        public ItemFilter Filter { get => _filter; set { _filter = value; if (Root != null) Rebuild(); } }
+        public float BagCellAlpha(int i) => _bagCells[i].Icon.color.a;
+        readonly List<RectTransform> _filterRts = new List<RectTransform>();
         readonly Inventory _otherInv;
         readonly string _otherTitle;
         PlayerSlot _partner;
@@ -102,7 +128,18 @@ namespace DnD.Game
                 y -= otherRows * 24 + 6;
             }
             var bagTitle = UIKit.Rect(Root, "BagTitle", new Vector2(0, 1), new Vector2(1, 1), new Vector2(10, y - 16), new Vector2(-10, y));
-            UIKit.Label(bagTitle, "Backpack (top row = hotbar)", 11, UIKit.Ink, TextAnchor.MiddleLeft).fontStyle = FontStyle.Bold;
+            UIKit.Label(bagTitle, "Backpack", 11, UIKit.Ink, TextAnchor.MiddleLeft).fontStyle = FontStyle.Bold;
+            // Filter tabs (click; L3 on a controller cycles them).
+            float fx = 72;
+            for (int i = 0; i < ItemFilters.Labels.Length; i++)
+            {
+                float fw = ItemFilters.Labels[i].Length * 6 + 10;
+                var frt = UIKit.Rect(Root, "Filter" + i, new Vector2(0, 1), new Vector2(0, 1), new Vector2(fx, y - 15), new Vector2(fx + fw, y - 1));
+                UIKit.Image(frt, i == (int)_filter ? new Color(1f, 0.85f, 0.45f) : new Color(0.85f, 0.8f, 0.7f, 0.5f));
+                UIKit.Label(frt, ItemFilters.Labels[i], 8, UIKit.Ink, TextAnchor.MiddleCenter);
+                _filterRts.Add(frt);
+                fx += fw + 3;
+            }
             y -= 18;
             MakeGrid(Bag, _bagCells, y, Bag.Size);
             y -= 3 * 24 + 6;
@@ -173,7 +210,7 @@ namespace DnD.Game
         void Rebuild()
         {
             if (Root) Object.Destroy(Root.gameObject);
-            _bagCells.Clear(); _otherCells.Clear(); _equipCells.Clear(); _tabRts.Clear();
+            _bagCells.Clear(); _otherCells.Clear(); _equipCells.Clear(); _tabRts.Clear(); _filterRts.Clear();
             Build();
         }
 
@@ -225,6 +262,9 @@ namespace DnD.Game
                     else { var st = c.Inv.Slots[c.Index]; id = st?.ItemId; count = st?.Count ?? 0; }
                     c.Icon.enabled = id != null;
                     if (id != null) c.Icon.sprite = ArtRegistry.Get(ItemsDb.Get(id)?.Icon ?? "missing");
+                    float a = panel == 0 && id != null && !ItemFilters.Matches(ItemsDb.Get(id), _filter) ? 0.3f : 1f;
+                    c.Icon.color = new Color(1, 1, 1, a);
+                    c.Count.color = new Color(c.Count.color.r, c.Count.color.g, c.Count.color.b, a);
                     if (c.EquipSlot == null) c.Count.text = count > 1 ? count.ToString() : "";
                     else c.Count.text = id == null ? SlotShort(c.EquipSlot) : "";
                     bool sel = panel == _panel && i == _cursor;
@@ -292,6 +332,11 @@ namespace DnD.Game
                 Close();
                 return;
             }
+            // Filters: click a tab, or L3 on a controller.
+            if (In.UsesMouse && In.MouseLeft)
+                for (int i = 0; i < _filterRts.Count; i++)
+                    if (UIKit.Contains(_filterRts[i], In.MouseScreen, Cam)) { _filter = (ItemFilter)i; Rebuild(); return; }
+            if (!In.UsesMouse && In.SneakToggle) { _filter = (ItemFilter)(((int)_filter + 1) % ItemFilters.Labels.Length); Rebuild(); return; }
             // Switching bags: click a tab (mouse) or LT/RT (controller).
             if (_tabs != null && _tabs.Count > 1)
             {
