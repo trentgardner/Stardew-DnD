@@ -148,7 +148,7 @@ namespace DnD.Game
         public bool Romanceable;
     }
 
-    public static class WorldDb
+    public static partial class WorldDb
     {
         public static readonly Dictionary<string, ZoneDef> Zones = new Dictionary<string, ZoneDef>();
         public static readonly Dictionary<string, NpcDef> Npcs = new Dictionary<string, NpcDef>();
@@ -351,6 +351,7 @@ namespace DnD.Game
             Zones[forest.Id] = forest;
 
             BuildFord();
+            BuildCrater();
 
             var shop = new ZoneDef { Id = "shop", Name = "Ironkettle General Goods", Map = Maps.Shop, Indoors = true, DefaultSpawn = new Vector2Int(6, 7),
                 EnterNarration = "The shop smells of lamp oil and leather. Every shelf is organized with terrifying dwarven precision.", ShopCounter = new Vector2Int(6, 3) };
@@ -605,6 +606,7 @@ namespace DnD.Game
             Npcs[hobb.Id] = hobb;
 
             BuildSouthLaneNpcs();
+            BuildPlacesNpcs();
         }
 
         /// <summary>The South Lane folk (Phase 4). Names are side content pending lore approval.</summary>

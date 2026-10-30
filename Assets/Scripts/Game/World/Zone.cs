@@ -215,6 +215,7 @@ namespace DnD.Game
                 case 'd': Ground(m, "tile_scorched"); break;
                 case 'e': Ground(m, floor); Solid(m); Prop(m, "obj_crystal", true); break;
                 case 'H': Ground(m, floor); Solid(m); Prop(m, "obj_hut"); break;
+                case 'u': Ground(m, floor); Solid(m); Prop(m, "obj_tent"); break;
                 case 'i': Ground(m, floor); Solid(m); Prop(m, "obj_brazier", true); break;
                 // puzzle pieces: the puzzle layer dresses these; a closed gate and a push block are solid
                 case 'Z': case 'J': Ground(m, floor); Solid(m); break;

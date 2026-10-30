@@ -98,6 +98,13 @@ namespace DnD.Rules.Content
                 Description = "Quiet, quick, and fits through gaps no person could.",
                 Attacks = { Melee("Scratch", 4, "1d1", DamageType.Slashing) }, ProficientSkills = { Skill.Perception, Skill.Stealth },
             };
+            All["giant_fire_beetle"] = new MonsterDef
+            {
+                Id = "giant_fire_beetle", Name = "Giant Fire Beetle", SpriteId = "mon_fire_beetle", AC = 13, HitDice = DiceExpr.Parse("1d6+1"),
+                Scores = new[] { 8, 10, 12, 1, 7, 3 }, Darkvision = 30, CR = 0, XP = 10, Speed = 30,
+                Description = "A beetle the size of a dog, with two glands on its back that glow like coals. Drawn to anything that shines.",
+                Attacks = { Melee("Bite", 1, "1d6-1", DamageType.Fire) }, Traits = { "Illumination" },
+            };
             All["frog"] = new MonsterDef
             {
                 Id = "frog", Name = "Frog", SpriteId = "mon_frog", AC = 11, HitDice = DiceExpr.Parse("1d4-1"),

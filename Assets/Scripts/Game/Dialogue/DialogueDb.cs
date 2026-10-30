@@ -15,6 +15,8 @@ namespace DnD.Game
         public static Dialogue Get(string id)
         {
             if (Cache.TryGetValue(id, out var d)) return d;
+            d = PlacesDialogue(id);
+            if (d != null) { Cache[id] = d; return d; }
             switch (id)
             {
                 case "brannoc": d = Brannoc(); break;
@@ -37,6 +39,7 @@ namespace DnD.Game
                 case "companion": d = Companion(); break;
                 default: d = new Dialogue(id, c => "start"); d.Node("start", null, c => "...").Bye(); break;
             }
+            AddPlacesLines(id, d);
             Cache[id] = d;
             return d;
         }

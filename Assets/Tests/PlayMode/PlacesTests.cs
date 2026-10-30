@@ -130,5 +130,72 @@ namespace DnD.Tests
             Assert.IsFalse(z.LineOfSight(new Vector2Int(1, 1), new Vector2Int(4, 1)), "crystal clusters and huts block sight");
             Object.Destroy(z.transform.parent.gameObject);
         }
+        // ============================================================ Task 2: Starfall Crater
+
+        /// <summary>Steps onto a warp tile's destination the way walking onto it would.</summary>
+        static void TakeWarp(GameRoot g, PlayerSlot p, string zone, int x, int y)
+        {
+            var w = WorldDb.Zones[zone].Warps.Find(v => v.At == new Vector2Int(x, y));
+            Assert.IsNotNull(w, $"{zone} has a warp at ({x},{y})");
+            g.Warp(p, w.ToZone, w.ToPos, false);
+        }
+
+        /// <summary>A walkable tile next to `m` that can be reached from `from` (secrets and NPC props are solid).</summary>
+        static bool CanReachBeside(Zone z, Vector2Int from, Vector2Int m)
+        {
+            if (z.IsWalkable(m) && (m == from || z.FindPath(from, m).Count > 0)) return true;
+            foreach (var d in new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right })
+            {
+                var t = m + d;
+                if (z.IsWalkable(t) && (t == from || z.FindPath(from, t, null, 20000).Count > 0)) return true;
+            }
+            return false;
+        }
+
+        static SecretInteractable Spot(string id) => Object.FindObjectsByType<SecretInteractable>().Single(s => s.Def.Id == id);
+
+        [UnityTest]
+        public IEnumerator CraterIsReachableFromWhisperwood()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(4), "ranger", "elf");
+            yield return Frames(2);
+            g.Warp(p, "forest", new Vector2Int(30, 3), false);
+            Assert.IsTrue(g.Zones["forest"].FindPath(new Vector2Int(30, 3), new Vector2Int(30, 1), null, 20000).Count > 0, "the north trail is open");
+            TakeWarp(g, p, "forest", 30, 0);
+            yield return Frames(2);
+            Assert.AreEqual("crater", p.Zone.Def.Id);
+            var z = p.Zone;
+            var start = p.MapPos;
+            foreach (var kv in z.Def.Secrets) Assert.IsTrue(CanReachBeside(z, start, kv.Key), $"secret {kv.Value.Id} at {kv.Key}");
+            var perrin = WorldDb.Current(WorldDb.Npcs["perrin"], 12, 0, g.World);
+            Assert.AreEqual("crater", perrin.Zone);
+            Assert.IsTrue(CanReachBeside(z, start, perrin.Pos), "Perrin's camp");
+            var back = z.Def.Warps.Find(w => w.ToZone == "forest");
+            Assert.IsTrue(z.FindPath(start, back.At, null, 20000).Count > 0 || start == back.At);
+            TakeWarp(g, p, "crater", back.At.x, back.At.y);
+            yield return Frames(2);
+            Assert.AreEqual("forest", p.Zone.Def.Id);
+        }
+
+        [UnityTest]
+        public IEnumerator CraterHollowAndTracksAdvanceTheStar()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(5), "ranger", "elf");
+            yield return Frames(2);
+            g.Warp(p, "crater", WorldDb.Zones["crater"].DefaultSpawn, false);
+            yield return Frames(2);
+            var hollow = Spot("crater_hollow"); var tracks = Spot("crater_tracks");
+            Assert.IsFalse(hollow.Available(p), "no quest, no hollow to study");
+            g.Quests.Start("fallen_star", p);
+            Assert.IsTrue(hollow.Available(p)); Assert.IsFalse(tracks.Available(p));
+            hollow.Resolve(p, CheckOutcome.Success);
+            Assert.AreEqual(FallenStar.Trail, g.Quests.Stage("fallen_star"));
+            Assert.IsFalse(hollow.Available(p)); Assert.IsTrue(tracks.Available(p));
+            tracks.Resolve(p, CheckOutcome.Success);
+            Assert.AreEqual(FallenStar.Warrens, g.Quests.Stage("fallen_star"));
+            Assert.IsFalse(tracks.Available(p));
+        }
     }
 }

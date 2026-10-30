@@ -8,7 +8,7 @@
 //          S dragon statue  O well  m market stall  P ruined pillar  F campfire
 //          Y fairy ring  q hidden spot (searched with a skill check, see ZoneDef.Secrets)
 //          K anvil/forge  N bench  p planter  L washing line
-//          d scorched earth  e glowing crystals  H kobold hut  i brazier  V stairs down
+//          d scorched earth  e glowing crystals  H kobold hut  i brazier  V stairs down  u tent
 //          puzzle pieces (see ZoneDef.Puzzle): Q plate  I lever  J push block  Z gate  / mirror  @ light source  % light crystal
 namespace DnD.Game
 {
@@ -72,9 +72,9 @@ namespace DnD.Game
 
         public static readonly string[] Forest =
         {
-            "TTTTTTTTTTTTTTTTTTTTTTTTT~~TTTTTTTTTTTTTTTTTTT",
-            "TTT.TTTTTTtTTT.TT..TTTTTT~~TTT.TTTTTT....TTTTT",
-            "T.T.T..TT.T.TTT.TTT..TTTT~~TTT.TTTTTTh.T*TT.TT",
+            "TTTTTTTTTTTTTTTTTTTTTTTTT~~TTT,,TTTTTTTTTTTTTT",
+            "TTT.TTTTTTtTTT.TT..TTTTTT~~TTT,,TTTTT....TTTTT",
+            "T.T.T..TT.T.TTT.TTT..TTTT~~TTT,,TTTTTh.T*TT.TT",
             "TT.....~~~...............P:::P:::P.........TTT",
             "T.T..~~~~~~~...ttt..*....:::::::q:rrh..h...TTT",
             "TTT.~~~~~~~~~.ttttt......::::s::::......tr.TTT",
@@ -266,5 +266,39 @@ namespace DnD.Game
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
         };
 
+        /// <summary>Phase 5: where the "star" came down, in the hills north of Whisperwood. South edge = the forest's north trail.</summary>
+        public static readonly string[] Crater =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXX.XX..XX.X.XXXX.XX.XXXXX.XXXXXX",
+            "XXXqXXXXX.X..X.X.............X........qXXXXX",
+            "XXX,,,XXX............................,,XXXXX",
+            "XXX,,,,XX...........r...............,,.....X",
+            "XXXX,,,XX...............r..........,,.....XX",
+            "XXXXXX,,X.........................,.......XX",
+            "XXXXXXX,,............ddd........,,........XX",
+            "XX......,...e...dddddddddddd...,.........XXX",
+            "XX.............dddddddddddeddd...t.......t.X",
+            "XX............ddeeddddddddddddd...........XX",
+            "X............dddddddddddddddqddd...........X",
+            "XXt.....r....dddddddddddddddddddd...r....X.X",
+            "XXX......r..dddddddddddddddddeedd.........XX",
+            "XXX.........ddddddddddqdddddddddd........XXX",
+            "XX...r......ddddddddddddddddddddd........X.X",
+            "X.X.........dddqdddddddddddddddd.....r....XX",
+            "XXX.......e..ddddddddddddddddddd...........X",
+            "XX............dddddddddddddeddd..........XXX",
+            "XX.............dddeedddddddddd............XX",
+            "XX...............ddddddddedd......e.......XX",
+            "XXX......s......,,,,,,,,...................X",
+            "X.....u..,,.,,,,.....,,...............r...XX",
+            "XX...x..F.,,..r......,,....................X",
+            "XX...................,,.......r............X",
+            "X...........t........,,.................t..X",
+            "XX.t...........t.....,,...t....t..........XX",
+            "XX...............t...,,....Xt.......XXX..X.X",
+            "X..XXXX..X.X..XXXXXXX,,XXX.X.XXXXXXX.XX.XXXX",
+            "XXXXXXXXXXXXXXXXXXXXX,,XXXXXXXXXXXXXXXXXXXXX",
+        };
     }
 }
