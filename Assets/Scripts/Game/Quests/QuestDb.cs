@@ -80,6 +80,20 @@ namespace DnD.Game
             });
             Add(new QuestDef
             {
+                Id = "go_between", Title = "Snik Speaks for You", Giver = null,
+                StageText = new[] {
+                    "", "Snik agreed to speak for you in the kobold warrens below the old mine. Meet him at the village gate.",
+                    "Snik talked the gate guards round. Now he needs Elder Ssark's blessing.",
+                    "Complete. The Elder blessed you; the way to the Great Egg is open." },
+                Triggers = {
+                    new QuestTrigger(QuestEvent.GroupResolved, "warrens_gate", 1, 2),
+                    new QuestTrigger(QuestEvent.FlagSet, "elder_blessing", 1, 3),
+                    new QuestTrigger(QuestEvent.FlagSet, "elder_blessing", 2, 3),
+                },
+                Reward = new QuestReward { Xp = 150, Item = "lucky_pebble" },
+            });
+            Add(new QuestDef
+            {
                 Id = "kettle", Title = "Grandmother's Kettle", Giver = "brannoc",
                 StageText = new[] {
                     "", "Brannoc's copper kettle was stolen by something with small scaly feet.",

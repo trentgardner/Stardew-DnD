@@ -13,6 +13,7 @@ namespace DnD.Game
                 case "perrin": return Perrin();
                 case "ssark": return Ssark();
                 case "tik": return Tik();
+                case "snik_caught": return SnikCaught();
                 default: return null;
             }
         }
@@ -24,6 +25,7 @@ namespace DnD.Game
             {
                 case "tobin": CraterLine(d, "Old Tobin", "Seventy years I've lived under that sky and the stars stayed UP. Now look. A hole. In my hills. Who's going to fill it in, eh? Not the Academy, I'll tell you that."); break;
                 case "maddie": CraterLine(d, "Maddie", "I'm looking for star bits! Mum says if I find one I can keep it. Perrin says I'm not allowed to touch anything. Perrin isn't my mum."); break;
+                case "snik": SnikFriend(d); break;
                 case "wick": CraterLine(d, "Wick", "Did you know the crystals tickle? Don't tell the Academy man. He gets a vein in his forehead."); break;
             }
         }
@@ -75,6 +77,70 @@ namespace DnD.Game
             d.Node("sent_write", who, c => "I... haven't decided. Everyone here keeps giving me pie. It's very hard to write a stern report about people who keep giving you pie.").Bye("Keep eating the pie.");
             d.Node("sent_no", who, c => "Reporting? To the Academy! About the crater! Obviously! Why, who else would I- that's a very searching look. Please stop it.").Bye("Just curious.");
             return d;
+        }
+
+        // =================================================================== Snik, caught in the act (the night stakeout)
+
+        /// <summary>Snik agrees to speak for you: the peaceful road through the warrens.</summary>
+        static void SnikBefriended(DCtx c)
+        {
+            c.G.World.SetFlag("ladle_returned");
+            c.G.World.SetFlag("snik_friend");
+            c.G.Quests.Start("go_between", c.P);
+            c.G.Quests.Set("fallen_star", FallenStar.Warrens, c.P);
+        }
+
+        /// <summary>Snik bolts for home. You know where the thief lives now, but he won't vouch for you.</summary>
+        static void SnikFled(DCtx c, bool droppedLadle)
+        {
+            if (droppedLadle) c.G.World.SetFlag("ladle_returned");
+            c.G.Quests.Set("fallen_star", FallenStar.Warrens, c.P);
+        }
+
+        static Dialogue SnikCaught()
+        {
+            var d = new Dialogue("snik_caught", c => "start");
+            const string who = "Snik, Egg-Warden";
+            System.Func<DCtx, AdvantageState> adv = c => c.G.World.Flag("snik_caught_read") ? AdvantageState.Advantage : AdvantageState.Normal;
+            d.Node("start", who, c => "...Snik is not here. This is a different kobold. A much taller one. Who is also leaving.",
+                c => "Halfway up a market stall, frozen in your lantern light: a kobold in a saucepan helmet, clutching Pip's best copper ladle to his chest like a newborn. Behind him, a sack clinks with spoons.")
+                .Say("Put the ladle back and talk to me.", "friend", SnikBefriended)
+                .Roll(Skill.Persuasion, 12, "Nobody's in trouble. Tell me what the shinies are for.", "friend", "flee", onSuccess: SnikBefriended, onFailure: c => SnikFled(c, false), adv: adv)
+                .Roll(Skill.Insight, 11, "(Read him) He's not greedy. He's desperate.", "read_yes", "read_no", social: false, show: c => !c.G.World.Flag("snik_caught_read"))
+                .Roll(Skill.AnimalHandling, 14, "(Hold out a hand, slowly) Who's a good little lizard?", "pet_yes", "flee", onSuccess: SnikBefriended, onFailure: c => SnikFled(c, false), role: "Joke")
+                .Roll(Skill.Intimidation, 12, "Drop it. NOW.", "scared", "flee", onSuccess: c => SnikFled(c, true), onFailure: c => SnikFled(c, false))
+                .Roll(Skill.Athletics, 13, "(Grab him)", "grabbed", "flee", onSuccess: SnikBefriended, onFailure: c => SnikFled(c, false), social: false);
+            d.Node("read_yes", who, c => "...",
+                c => "He's shaking. Not from fear of you. He keeps glancing north, toward the mountains, the way a parent glances at a door they left a child behind. (Advantage on your Persuasion.)",
+                c => c.G.World.SetFlag("snik_caught_read")).Say("Okay.", "start");
+            d.Node("read_no", who, c => "Why is tall-one squinting. Is tall-one going to sneeze. Snik will wait.").Say("...", "start");
+            d.Node("friend", who, c => "The Great Egg needs SHINIES. To keep warm! It fell from the sky and it is far from home and it is COLD, tall-one, and Snik is Egg-Warden and Snik has to keep it warm. The ladle was very shiny. Snik is sorry. A little.",
+                c => "He puts the ladle back on its hook, very gently, and pats it once. \"...Tall-one is not angry? Tall-one could come and SEE. Snik will tell the gate you are friend. Snik will tell the Elder. Under the old mine, past the stairs. Come!\"")
+                .Bye("I'll come. Go home, Snik.");
+            d.Node("pet_yes", who, c => "...Snik is not a good little lizard. Snik is EGG-WARDEN.",
+                c => "But his tail is wagging. He leans into the scratch, just a little, then catches himself and puts the ladle back with tremendous dignity. \"Fine. FINE. You are friend. Come to the warrens. Snik will tell them.\"")
+                .Bye("Go home, Snik.");
+            d.Node("grabbed", who, c => "UNHAND SNIK. Snik is a WARDEN. This is an OUTRAGE.",
+                c => "You've got him by the scruff. He kicks, sulks, kicks again, and finally goes limp and puts the ladle back. \"...Snik will talk. Snik will tell the gate you are friend. But Snik is sulking. Snik wants that known.\"")
+                .Bye("Noted. Go home, Snik.");
+            d.Node("scared", who, c => "EEP!",
+                c => "The ladle clangs to the cobbles. Snik vaults the stall, bounces off a rain barrel, and pelts north toward the old mine, saucepan helmet clanging all the way. You know where the thief lives now.")
+                .Bye("(Return the ladle to Pip's stall)");
+            d.Node("flee", who, c => "SNIK WAS NEVER HERE!",
+                c => "He's off like a shot, ladle and all, scrambling over the rooftops and away north toward the old mine. At least you know where he's going.")
+                .Bye("...Right.");
+            return d;
+        }
+
+        /// <summary>Snik's egg parley gets a new opening for a friend who already earned the Elder's blessing.</summary>
+        static void SnikFriend(Dialogue d)
+        {
+            var inner = d.Start;
+            d.Start = c => c.G.Quests.Done("go_between") ? "friend" : inner(c);
+            d.Node("friend", "Snik, Egg-Warden", c => "FRIEND! Friend is HERE! Kobolds, lower slings, this is the tall-one Snik TOLD you about! Come, come, meet the Great Egg! Say hello! It can hear you!",
+                c => "Snik hops from foot to foot, saucepan rattling. The egg-guards drop their slings and start a song of welcome that is loud, sincere and spectacularly off-key. The egg pulses, warm as a hearth.",
+                c => c.G.PacifyGroup("mine_egg", c.P))
+                .Say("(Approach the egg)", end: true);
         }
 
         // =================================================================== Elder Ssark (the Kobold Warrens)

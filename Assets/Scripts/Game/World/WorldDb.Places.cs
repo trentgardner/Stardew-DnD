@@ -66,6 +66,16 @@ namespace DnD.Game
             z.EnemyGroups.Add(beetles);
             Zones[z.Id] = z;
 
+            // the thief comes back for more after dark: catch Snik in the act at the market stalls
+            Zones["town"].Secrets[new Vector2Int(20, 17)] = new SecretDef
+            {
+                Id = "snik_stakeout", Sprite = "obj_tracks", Prompt = "Keep watch on the market stalls", Skill = Rules.Skill.Perception, DC = 13,
+                QuestId = "fallen_star", QuestStage = FallenStar.Trail, NightOnly = true, Dialogue = "snik_caught",
+                Success = "",
+                Failure = "Hours of nothing. Then a clatter, a squeak, and something small scrambles away over the rooftops before you can turn around. Try again tomorrow night. (Or follow the tracks from the crater.)",
+                AlreadyFound = "The stalls are quiet now.",
+            };
+
             Zones["forest"].Warps.Add(new WarpDef(30, 0, "crater", 21, 28));
             Zones["forest"].Warps.Add(new WarpDef(31, 0, "crater", 22, 28));
         }

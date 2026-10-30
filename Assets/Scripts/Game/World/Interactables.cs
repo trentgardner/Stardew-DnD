@@ -136,7 +136,8 @@ namespace DnD.Game
                 if (Def.IsQuestSpot && Def.AdvanceTo > 0) g.Quests.Set(Def.QuestId, Def.AdvanceTo, p);
                 g.Quests.Notify(QuestEvent.SecretFound, Def.Id, p);
                 if (Def.PassageTo.HasValue) g.MoveWithin(p, Def.PassageTo.Value);
-                p.Hud.Push(new MessageScreen(Def.Prompt, text));
+                if (Def.Dialogue != null) p.Hud.Push(new DialogueScreen(Def.Dialogue, null, null));
+                else p.Hud.Push(new MessageScreen(Def.Prompt, text));
             }
         }
     }

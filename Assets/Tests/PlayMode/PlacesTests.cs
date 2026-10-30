@@ -349,5 +349,86 @@ namespace DnD.Tests
             Assert.IsTrue(g.World.Flag("elder_blessing"));
             Assert.AreEqual(0, p.Character.CountOf("copper_trinket"), "the shiny is hers now");
         }
+
+        // ============================================================ Task 4: Snik the go-between and the stakeout
+
+        [UnityTest]
+        public IEnumerator StakeoutOnlyAtNightOnTheTrail()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(11), "ranger", "elf");
+            yield return Frames(2);
+            var spot = Spot("snik_stakeout");
+            g.Clock.Minutes = 22 * 60;
+            Assert.IsFalse(spot.Available(p), "no main quest yet");
+            g.Quests.Start("fallen_star", p);
+            Assert.IsFalse(spot.Available(p), "the thief only matters once the crater's been read");
+            g.Quests.Set("fallen_star", FallenStar.Trail, p);
+            g.Clock.Minutes = 12 * 60;
+            Assert.IsFalse(spot.Available(p), "nobody steals at noon");
+            g.Clock.Minutes = 22 * 60;
+            Assert.IsTrue(spot.Available(p), "after dark, on the trail stage");
+            g.Quests.Set("fallen_star", FallenStar.Warrens, p);
+            Assert.IsFalse(spot.Available(p));
+        }
+
+        [UnityTest]
+        public IEnumerator BefriendingSnikOpensThePeacefulRoad()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(12), "bard", "human");
+            yield return Frames(2);
+            g.Quests.Start("fallen_star", p);
+            g.Quests.Set("fallen_star", FallenStar.Trail, p);
+            g.Clock.Minutes = 22 * 60;
+            var spot = Spot("snik_stakeout");
+            spot.Resolve(p, CheckOutcome.Success);
+            Assert.IsTrue(p.Hud.Top is DialogueScreen, "catching Snik opens a conversation");
+            p.Hud.CloseAll();
+            Choose(p, "snik_caught", StartNode(p, "snik_caught"), "Put the ladle back");
+            Assert.IsTrue(g.World.Flag("snik_friend"));
+            Assert.IsTrue(g.World.Flag("ladle_returned"), "Pip gets his ladle back");
+            Assert.AreEqual(1, g.Quests.Stage("go_between"));
+            Assert.AreEqual(FallenStar.Warrens, g.Quests.Stage("fallen_star"));
+
+            g.Warp(p, "warrens", WorldDb.Zones["warrens"].DefaultSpawn, false);
+            yield return Frames(2);
+            p.Hud.CloseAll();
+            var guard = Object.FindObjectsByType<EnemyAgent>().First(e => e.Group.Id == "warrens_gate");
+            g.OnEnemyNoticed(guard, p);
+            Assert.AreEqual(2, g.Quests.Stage("go_between"), "Snik talked the gate round");
+
+            int xp = p.Character.XP;
+            string node = StartNode(p, "ssark");
+            Assert.AreEqual("vouched", node);
+            Choose(p, "ssark", node, "(Hold out your hand)");
+            Assert.IsTrue(g.World.Flag("elder_blessing"));
+            Assert.IsTrue(g.Quests.Done("go_between"));
+            Assert.AreEqual(150, p.Character.XP - xp, "the go-between quest pays once");
+            Assert.AreEqual(1, p.Character.CountOf("lucky_pebble"), "Snik's good-luck pebble");
+            g.Quests.Set("go_between", 3, p);
+            Assert.AreEqual(150, p.Character.XP - xp, "and never again");
+
+            g.Warp(p, "egg_shrine", WorldDb.Zones["egg_shrine"].DefaultSpawn, false);
+            yield return Frames(2);
+            var egg = WorldDb.Zones["egg_shrine"].EnemyGroups.Find(x => x.Id == "mine_egg");
+            Assert.AreEqual("friend", StartNode(p, "snik", egg), "Snik greets a friend");
+            Assert.IsTrue(g.World.PacifiedGroups.Contains("mine_egg"));
+            Assert.AreEqual(FallenStar.Egg, g.Quests.Stage("fallen_star"));
+        }
+
+        [UnityTest]
+        public IEnumerator ScaringSnikStillAdvances()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(13), "barbarian", "human");
+            yield return Frames(2);
+            g.Quests.Start("fallen_star", p);
+            g.Quests.Set("fallen_star", FallenStar.Trail, p);
+            Choose(p, "snik_caught", StartNode(p, "snik_caught"), "Drop it");
+            Assert.AreEqual(FallenStar.Warrens, g.Quests.Stage("fallen_star"), "the fleeing thief leads you to the mine");
+            Assert.AreEqual(0, g.Quests.Stage("go_between"));
+            Assert.IsFalse(g.World.Flag("snik_friend"));
+        }
     }
 }

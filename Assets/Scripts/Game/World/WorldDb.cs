@@ -89,6 +89,8 @@ namespace DnD.Game
         public string PacifiesGroup;
         /// <summary>A sneak route: success moves the player (and their companions) to this tile in the same zone. Once found, no roll again.</summary>
         public Vector2Int? PassageTo;
+        /// <summary>Success opens this conversation instead of the result message (e.g. catching a thief in the act).</summary>
+        public string Dialogue;
     }
 
     /// <summary>The sign hanging beside a building's door: the prompt names the building, reading it gives the text.</summary>
