@@ -10,7 +10,7 @@ namespace DnD.Game
     public static class Blight
     {
         public const int MaxStage = 3;
-        static readonly Color Ash = new Color(0x9a / 255f, 0x95 / 255f, 0x8f / 255f, 1f);
+        static readonly Color Ash = new Color(0.47f, 0.46f, 0.47f, 1f);
         static readonly Dictionary<LightSource, float> BaseRadius = new Dictionary<LightSource, float>();
 
         static WorldState W => GameRoot.I.World;
@@ -26,7 +26,22 @@ namespace DnD.Game
         }
 
         /// <summary>The ash overlay's opacity in a zone right now.</summary>
-        public static float OverlayAlpha(Zone z) => 0.12f * W.BlightStage * Weight(z.Def);
+        public static float OverlayAlpha(Zone z) => 0.25f * W.BlightStage * Weight(z.Def);
+
+        static Sprite _white;
+        /// <summary>A plain white square (the overlay is tinted ash grey).</summary>
+        static Sprite White
+        {
+            get
+            {
+                if (_white != null) return _white;
+                var t = new Texture2D(4, 4) { filterMode = FilterMode.Point };
+                var px = new Color[16]; for (int i = 0; i < 16; i++) px[i] = Color.white;
+                t.SetPixels(px); t.Apply();
+                _white = Sprite.Create(t, new Rect(0, 0, 4, 4), new Vector2(0.5f, 0.5f), 4);
+                return _white;
+            }
+        }
 
         public static void SetStage(int stage)
         {
@@ -61,9 +76,9 @@ namespace DnD.Game
                     go.transform.position = new Vector3(b.center.x, b.center.y, 0);
                     go.transform.localScale = new Vector3(b.size.x, b.size.y, 1);
                     var sr = go.AddComponent<SpriteRenderer>();
-                    sr.sprite = ArtRegistry.Get("tile_highlight");
+                    sr.sprite = White;
                     sr.drawMode = SpriteDrawMode.Simple;
-                    sr.sortingOrder = -950; // over the ground, under the props and people
+                    sr.sortingOrder = 29000; // a haze over the whole place (ash in the air), under the HUD
                     overlay = go.transform;
                     // Drifting ash at stage 2 and up.
                     var ps = go.AddComponent<ParticleSystem>();
@@ -78,7 +93,9 @@ namespace DnD.Game
                     shape.shapeType = ParticleSystemShapeType.Box;
                     var em = ps.emission;
                     em.rateOverTime = 0;
-                    go.GetComponent<ParticleSystemRenderer>().sortingOrder = 30000;
+                    var pr = go.GetComponent<ParticleSystemRenderer>();
+                    pr.sortingOrder = 30000;
+                    pr.material = new Material(Shader.Find("Sprites/Default"));
                 }
                 overlay.gameObject.SetActive(true);
                 var r = overlay.GetComponent<SpriteRenderer>();

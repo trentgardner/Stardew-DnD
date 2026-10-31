@@ -15,6 +15,9 @@ namespace DnD.Game
 
         public ActEndScreen(PlayerSlot p) { }
 
+        /// <summary>The options offered (tests).</summary>
+        public System.Collections.Generic.IEnumerable<string> RowTexts => _menu.Entries.Select(e => e.Text);
+
         public override void Build()
         {
             var g = GameRoot.I;

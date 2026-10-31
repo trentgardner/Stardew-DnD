@@ -216,5 +216,105 @@ namespace DnD.Tests
             Assert.IsTrue(dmg.Terms.Any(t => t.Label == "kindle") && dmg.ExtraType == DamageType.Fire, "the next hit blazes with fire");
             Assert.IsFalse(pc.HasEffect("kindled"), "once");
         }
+
+        [UnityTest]
+        public IEnumerator IntoActTwoGoldenPath()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(20), "fighter", "human");
+            yield return Frames(2);
+            // Act I, told: the egg hatched, Vale said thank you.
+            g.Quests.Set("fallen_star", FallenStar.Done, p, 0f);
+            g.World.EggHatched = true;
+            g.NameDragon(p, "Ember");
+            g.World.SetFlag("act1_ended");
+            p.Hud.CloseAll();
+            var end = new ActEndScreen(p);
+            p.Hud.Push(end);
+            yield return Frames(2);
+            Assert.IsTrue(end.RowTexts.Any(t => t.StartsWith("Begin Act II")), "the end-of-act card offers Act II");
+            int day = g.Clock.Day;
+            g.BeginActTwo(p);
+            p.Hud.CloseAll();
+            yield return Frames(2);
+            Assert.AreEqual(DragonStage.Wyrmling, g.Dragon.Stage, "Ember is a teenager");
+            Assert.AreEqual(day + 28, g.Clock.Day);
+            // Level 4 -> 5 through the screen with real choices.
+            p.Character.XP = PlayerCharacter.XpThresholds[5];
+            while (p.Character.Level < 5)
+            {
+                var screen = new LevelUpScreen();
+                p.Hud.Push(screen);
+                yield return Frames(2);
+                screen.PickHpAverage();
+                int guard = 0;
+                while (screen.CurrentChoice != null && guard++ < 20) { var c = screen.CurrentChoice; foreach (var id in c.Options.Take(c.Count).ToList()) screen.Toggle(id); screen.Next(); }
+                screen.Confirm();
+                yield return Frames(2);
+                p.Hud.CloseAll();
+            }
+            Assert.AreEqual(5, p.Character.Level);
+            Assert.AreEqual(2, p.Character.AttacksPerAction, "Extra Attack");
+            LoreDb.Find("ashen_queen", p);
+            Blight.SetStage(1);
+            Factions.Adjust("crown", 20, p);
+            DragonDb.Shift("wick", 2);
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(3);
+            Assert.AreEqual(2, g.World.Act);
+            Assert.AreEqual(PlayerCharacter.ActTwoLevelCap, PlayerCharacter.LevelCap);
+            Assert.AreEqual(DragonStage.Wyrmling, g.Dragon.Stage, "still a teenager after loading");
+            Assert.AreEqual("Ember", g.World.DragonName);
+            Assert.AreEqual(5, g.Players[0].Character.Level);
+            Assert.IsTrue(g.World.LoreFound.Contains("ashen_queen"));
+            Assert.AreEqual(1, g.World.BlightStage);
+            Assert.AreEqual(20, Factions.Standing("crown"));
+            Assert.AreEqual(DragonFeeling.Fond, DragonDb.Opinion("wick", g.World));
+            Assert.AreEqual(GameRoot.TeenDragonScale, g.DragonAgent.Actor.transform.localScale.x, 0.01f, "and still big");
+        }
+
+        [UnityTest]
+        public IEnumerator CaptureIntoActTwo()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(21), "paladin", "human");
+            yield return Frames(2);
+            g.ApplyActTwoStart(p);
+            p.Hud.CloseAll();
+            g.Clock.Minutes = 11 * 60;
+            g.Warp(p, "town", new Vector2Int(25, 19), false);
+            yield return Frames(30);
+            g.DragonAgent.Actor.PlaceAt(p.Zone, p.Avatar.MapPos + Vector2Int.right);
+            yield return Frames(10);
+            Shot("act2_teen_dragon");
+            Blight.SetStage(2);
+            yield return Frames(60);
+            Shot("act2_blight2_town");
+            LoreDb.Find("ashen_queen", p); LoreDb.Find("missing_pages", p);
+            var j = new JournalScreen();
+            p.Hud.Push(j);
+            yield return Frames(5);
+            j.ShowLore(true);
+            yield return Frames(5);
+            Shot("act2_journal_lore");
+        }
+
+        static void Shot(string name)
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "embers_screenshots");
+            Directory.CreateDirectory(dir);
+            var rt = new RenderTexture(1280, 720, 24);
+            var cams = Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
+            System.Array.Sort(cams, (a, b) => a.depth.CompareTo(b.depth));
+            foreach (var c in cams) { if (!c.isActiveAndEnabled) continue; var old = c.targetTexture; c.targetTexture = rt; c.Render(); c.targetTexture = old; }
+            RenderTexture.active = rt;
+            var tex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
+            tex.Apply();
+            RenderTexture.active = null;
+            File.WriteAllBytes(Path.Combine(dir, name + ".png"), tex.EncodeToPNG());
+            Object.Destroy(rt);
+        }
     }
 }
