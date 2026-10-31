@@ -126,7 +126,9 @@ Side characters added while building Act I (approved by the user; still easy to 
   - **The hatchling**: named by the players (default *Cinder*).
   - **Buoy**, Thistledown's neighbourhood dog, a black-and-white Australian Shepherd (a real dog's name: a dedication; keep him in every act).
 
-## Act II, first pieces (pending your approval)
+## Act II, first pieces (approved 2026-10-31)
+Act I keeps only two light, ominous notes in chests (a miner's scrawl about lamps that won't stay lit; a watchman's log about smoke over the Wyrmback). Everything below appears in Act II.
+
 - **The Wyrmwatch**: the dragon hunters, one of the four forces (working name). Their belief: *"Every village we've lost to an ember-eyed beast had someone who said 'it's only small'."*
 - **The legend texts** (journal → Lore), told the way the world tells it:
   - *The Ashen Queen*: the temple mural and hymn (the Great Ones lay down on her, and the mountains were made).

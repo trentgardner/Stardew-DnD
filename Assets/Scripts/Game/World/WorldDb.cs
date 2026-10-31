@@ -57,6 +57,7 @@ namespace DnD.Game
         public List<KeyValuePair<string, int>> Items = new List<KeyValuePair<string, int>>();
         public int Copper;
         public bool IsStorage;   // the player's home chest (persistent storage, not loot)
+        public string Lore;      // a note inside (LoreDb id): read when the chest is opened
     }
 
     /// <summary>
@@ -444,7 +445,7 @@ namespace DnD.Game
             c1.Items.Add(new KeyValuePair<string, int>("oathbound_signet", 1));
             c1.Items.Add(new KeyValuePair<string, int>("potion_healing", 1));
             mine.Chests.Add(c1);
-            var c2 = new ChestDef { Id = "mine_east_chest", Pos = new Vector2Int(37, 11), Copper = 800 };
+            var c2 = new ChestDef { Id = "mine_east_chest", Lore = "miners_scrawl", Pos = new Vector2Int(37, 11), Copper = 800 };
             c2.Items.Add(new KeyValuePair<string, int>("potion_healing", 2));
             c2.Items.Add(new KeyValuePair<string, int>("copper_trinket", 3));
             c2.Items.Add(new KeyValuePair<string, int>("torch", 2));

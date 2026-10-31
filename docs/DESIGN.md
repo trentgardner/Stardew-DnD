@@ -206,7 +206,9 @@ Eldritch Blast fires two beams at 5 (2024) instead of one bigger one.
   The prompt goes to whoever triggers it; a co-op partner gets a narration line.
 - **Blight** (World/Blight.cs): stages 0–3, set by the story and eased one step by the volcano. Per-place weight: wild 0.6, Thistledown 0.5, the warrens 0.3 (the egg-song holds it back), interiors 0.2.
   An ash haze over the whole zone (alpha 0.25 × stage × weight), drifting ash from stage 2, lights at half radius from stage 1 (cold hearths and forges), and NPC lines change.
-- **Lore** (Quests/LoreDb.cs, World/WorldDb.Lore.cs): readable spots that add journal entries (Lore page, by category: The Legend, Records, The Pact, Places), 25 XP each, once for the party.
+- **Lore** (Quests/LoreDb.cs, World/WorldDb.Lore.cs): each entry has a MinAct (default 2). **Act I stays light** (user, 2026-10-31): no legend, no Academy texts, no dragon-weakness lore before Act II;
+  only two ominous chest notes (A Miner's Scrawl in the mine's east chest, A Watchman's Lamp Log in the watchtower chest). Legend spots are hidden until their act.
+  Readable spots add journal entries (Lore page, by category: The Legend, Records, The Pact, Places), 25 XP each, once for the party.
   The legend is told the way the world tells it. **The secret** (who the Queen really is, and who is behind the legend) is guarded by a test that scans the code and lore text for give-away words.
 
 ## Buoy (dedication)

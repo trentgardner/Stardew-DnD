@@ -50,8 +50,9 @@ Act II's places and quests aren't built yet. This preview is the doorway, plus t
   it trusts Elowen, Lark, Maddie and Ssark, eyes Dunstan, Wick and Mister Thimble warily, and distrusts Perrin.
   Watch for its emotes and barks near people. Bring it within 4 tiles while you talk to someone:
   trust gives Advantage on Persuasion/Deception/Performance, distrust gives Advantage on Insight. The roll says why.
-- **The legend (journal → LB/RB → Lore)**: four pieces to find in Act I places: the temple mural, the carving on the
-  watchtower's back wall, the rhyme in Lark's cottage, and a damp ledger at Miller's Ford. 25 XP each.
+- **The legend (journal → LB/RB → Lore)**: four pieces that appear in familiar places once Act II begins: the temple mural,
+  the carving on the watchtower's back wall, the rhyme in Lark's cottage, and a damp ledger at Miller's Ford. 25 XP each.
+  Act I stays light: its only lore is two short, slightly ominous notes in chests (the mine and the old watchtower).
 - **Built but not reachable yet** (Act II's story switches them on in later phases): standing with the four forces
   (the Crown, the Starfall Academy, the Fae Courts, the Wyrmwatch) and the forced choice between them, and the
   **blight** (ash greys the land, hearths burn low, drifting ash).

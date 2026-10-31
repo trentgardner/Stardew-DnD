@@ -7,6 +7,8 @@ namespace DnD.Game
     public class LoreDef
     {
         public string Id, Title, Category, Text;
+        /// <summary>The first act it can be found in. Act I stays light (the user): only a couple of ominous notes in chests.</summary>
+        public int MinAct = 2;
     }
 
     /// <summary>
@@ -20,11 +22,17 @@ namespace DnD.Game
 
         public static readonly Dictionary<string, LoreDef> All = new Dictionary<string, LoreDef>();
 
-        static void Add(string id, string title, string category, string text) =>
-            All[id] = new LoreDef { Id = id, Title = title, Category = category, Text = text };
+        static void Add(string id, string title, string category, string text, int minAct = 2) =>
+            All[id] = new LoreDef { Id = id, Title = title, Category = category, Text = text, MinAct = minAct };
 
         static LoreDb()
         {
+            // Act I: two small, ominous notes in chests. Nothing essential, nothing about the legend.
+            Add("miners_scrawl", "A Miner's Scrawl", Records,
+                "A scrap of paper wedged under the lid, in a cramped hand: \"Third night running the lamps won't stay lit on the lower level. Plenty of oil. The flame just shrinks and gives up, like something breathed on it. My partner says the mountain's hungry. I say my partner drinks. Moving my pick upstairs all the same.\"", minAct: 1);
+            Add("lamp_log", "A Watchman's Lamp Log", Records,
+                "The last page of a watchman's log, the rest long gone to damp: \"Night twelve. Smoke over the Wyrmback again, though nobody lives up there. The wind came down smelling of a cold hearth. Lit an extra lamp. Felt foolish. Lit another.\"", minAct: 1);
+
             Add("ashen_queen", "The Ashen Queen", Legend,
                 "The temple mural shows a dragon of grey fire, wings spread over burning fields. Beneath it the priests painted the old hymn: \"When the Ashen Queen rose, the hearths of the world went cold, for she drank every flame. Then the Great Ones lay down upon her, and the mountains were made, and the fire came home to the hearths.\" In the last panel the Dawnmother's sun rises behind the Wyrmback, as if nothing could ever wake what sleeps there.");
             Add("sleeping_mountains", "The Sleeping Mountains", Places,

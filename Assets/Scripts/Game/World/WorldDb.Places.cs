@@ -49,7 +49,7 @@ namespace DnD.Game
                 Failure = "The letters are old, and moss has crept into them. You make out 'light' and 'watch' and lose the rest. Fresh eyes tomorrow.",
                 AlreadyFound = "\"" + FirstIdeal + "\"",
             };
-            var chest = new ChestDef { Id = "tower_chest", Pos = new Vector2Int(24, 3) };
+            var chest = new ChestDef { Id = "tower_chest", Lore = "lamp_log", Pos = new Vector2Int(24, 3) };
             chest.Items.Add(new KeyValuePair<string, int>("watchwarden_cloak", 1));
             chest.Items.Add(new KeyValuePair<string, int>("potion_healing", 2));
             z.Chests.Add(chest);

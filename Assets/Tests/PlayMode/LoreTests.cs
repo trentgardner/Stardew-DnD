@@ -72,6 +72,7 @@ namespace DnD.Tests
             var g = GameRoot.I;
             var p = g.DebugStart(Still(3), "wizard", "human");
             yield return Frames(2);
+            g.World.Act = 2;
             g.Warp(p, "temple", new Vector2Int(2, 2), false);
             yield return Frames(3);
             var spot = Object.FindObjectsByType<LoreSpot>(FindObjectsSortMode.None).FirstOrDefault(s => s.Def.Id == "ashen_queen");
@@ -85,6 +86,54 @@ namespace DnD.Tests
             Assert.IsTrue(g.World.LoreFound.Contains("ashen_queen"), "found lore is saved");
             foreach (var id in new[] { "sleeping_mountains", "skipping_rhyme", "missing_pages" })
                 Assert.IsTrue(Object.FindObjectsByType<LoreSpot>(FindObjectsInactive.Include, FindObjectsSortMode.None).Any(s => s.Def.Id == id), $"{id} is placed somewhere");
+        }
+
+        static readonly string[] LegendSpots = { "ashen_queen", "sleeping_mountains", "skipping_rhyme", "missing_pages" };
+
+        [UnityTest]
+        public IEnumerator ActOneHidesTheLegendUntilActTwo()
+        {
+            // The user: Act I is light. The legend and the clues wait for Act II.
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(4), "wizard", "human");
+            yield return Frames(2);
+            Assert.AreEqual(1, g.World.Act);
+            var spots = Object.FindObjectsByType<LoreSpot>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(s => LegendSpots.Contains(s.Def.Id)).ToList();
+            Assert.AreEqual(4, spots.Count);
+            yield return Frames(1);
+            foreach (var s in spots)
+            {
+                Assert.IsFalse(s.Available(p), $"{s.Def.Id} can't be read in Act I");
+                Assert.IsFalse(s.GetComponent<SpriteRenderer>().enabled, $"{s.Def.Id} isn't even visible in Act I");
+            }
+            g.BeginActTwo(p);
+            yield return Frames(2);
+            foreach (var s in spots)
+            {
+                Assert.IsTrue(s.Available(p), $"{s.Def.Id} appears in Act II");
+                Assert.IsTrue(s.GetComponent<SpriteRenderer>().enabled);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator ActOneHasOnlyAFewLightChestNotes()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(5), "wizard", "human");
+            yield return Frames(2);
+            var actOne = LoreDb.All.Values.Where(l => l.MinAct <= 1).ToList();
+            Assert.That(actOne.Count, Is.InRange(1, 2), "one or two ominous notes in Act I, no more");
+            foreach (var l in actOne)
+            {
+                string t = (l.Title + " " + l.Text).ToLowerInvariant();
+                foreach (var heavy in new[] { "queen", "ashen", "academy", "scholar", "crown", "weak", "pact", "legend" })
+                    Assert.IsFalse(t.Contains(heavy), $"Act I note '{l.Title}' stays light (mentions '{heavy}')");
+                var chest = Object.FindObjectsByType<ChestInteractable>(FindObjectsInactive.Include, FindObjectsSortMode.None).FirstOrDefault(c => c.Def != null && c.Def.Lore == l.Id);
+                Assert.IsNotNull(chest, $"'{l.Title}' is found in a chest");
+                chest.Interact(p);
+                Assert.IsTrue(g.World.LoreFound.Contains(l.Id), $"opening the chest records '{l.Title}'");
+                p.Hud.CloseAll();
+            }
         }
 
         /// <summary>A banned word at the start of a word ("child" catches "children"; "mother" doesn't catch "Dawnmother").</summary>
