@@ -457,5 +457,86 @@ namespace DnD.Tests
             inv.OpenOptionsFor(0);
             Assert.IsTrue(((ChoiceScreen)p.Hud.Top).Labels.Any(l => l.StartsWith("Unmark junk")));
         }
+            // ============================================================ Task 8: controller item wheel
+
+        static IEnumerator Seconds(float s) { float t = Time.realtimeSinceStartup; while (Time.realtimeSinceStartup - t < s) yield return null; }
+
+        /// <summary>A player on a (virtual) controller with the inventory open on backpack slot 20 holding rations.</summary>
+        static IEnumerator PadInventory(GameRoot g, System.Action<PlayerSlot, VirtualPad, InventoryScreen> got)
+        {
+            var pad = new VirtualPad();
+            var p = g.DebugStart(new GamepadInput(pad.Pad), "fighter", "human");
+            g.Warp(p, "town", WorldDb.Zones["town"].DefaultSpawn, false);
+            yield return Frames(3);
+            p.Hud.CloseAll();
+            for (int i = 0; i < p.Character.Bag.Size; i++) p.Character.Bag.Slots[i] = null;
+            p.Character.Bag.Slots[20] = new ItemStack("rations", 2);
+            var inv = new InventoryScreen(null, null);
+            p.Hud.Push(inv);
+            yield return Frames(2);
+            inv.CursorTo(0, 20);
+            got(p, pad, inv);
+        }
+
+        [UnityTest]
+        public IEnumerator HoldAOpensTheWheel()
+        {
+            var g = GameRoot.I;
+            PlayerSlot p = null; VirtualPad pad = null; InventoryScreen inv = null;
+            yield return PadInventory(g, (a, b, c) => { p = a; pad = b; inv = c; });
+            try
+            {
+                pad.Press(UnityEngine.InputSystem.LowLevel.GamepadButton.South);
+                yield return Seconds(0.5f);
+                Assert.IsTrue(p.Hud.Top is RadialMenu, "holding A on an item opens its wheel");
+                pad.Release(UnityEngine.InputSystem.LowLevel.GamepadButton.South);
+                yield return Frames(2);
+                Assert.IsTrue(p.Hud.Top is RadialMenu, "letting go without pointing keeps it open");
+                yield return pad.Tap(UnityEngine.InputSystem.LowLevel.GamepadButton.East);
+                Assert.IsFalse(p.Hud.Top is RadialMenu, "B closes it");
+            }
+            finally { pad.Dispose(); }
+        }
+
+        [UnityTest]
+        public IEnumerator StickPicksAndReleaseConfirms()
+        {
+            var g = GameRoot.I;
+            PlayerSlot p = null; VirtualPad pad = null; InventoryScreen inv = null;
+            yield return PadInventory(g, (a, b, c) => { p = a; pad = b; inv = c; });
+            try
+            {
+                pad.Press(UnityEngine.InputSystem.LowLevel.GamepadButton.South);
+                yield return Seconds(0.5f);
+                var wheel = (RadialMenu)p.Hud.Top;
+                CollectionAssert.AreEqual(new[] { "Use", "Move to hotbar", "Mark as junk (sell it all at any shop)", "Split stack (pick up half)" }, wheel.Labels.ToArray(), "the same options as right-click (two rations: split too)");
+                pad.Hold(Vector2.right);
+                yield return Frames(3);
+                Assert.AreEqual("Move to hotbar", wheel.Highlighted, "the stick points at an option");
+                pad.Release(UnityEngine.InputSystem.LowLevel.GamepadButton.South);
+                pad.Hold(Vector2.zero);
+                yield return Frames(3);
+                Assert.IsFalse(p.Hud.Top is RadialMenu);
+                Assert.AreEqual("rations", p.Character.Bag.Slots[0]?.ItemId, "released on Move to hotbar: it's on the hotbar");
+            }
+            finally { pad.Dispose(); }
+        }
+
+        [UnityTest]
+        public IEnumerator TapAStillPicksUp()
+        {
+            var g = GameRoot.I;
+            PlayerSlot p = null; VirtualPad pad = null; InventoryScreen inv = null;
+            yield return PadInventory(g, (a, b, c) => { p = a; pad = b; inv = c; });
+            try
+            {
+                yield return pad.Tap(UnityEngine.InputSystem.LowLevel.GamepadButton.South);
+                yield return Frames(2);
+                Assert.IsFalse(p.Hud.Top is RadialMenu, "a quick tap isn't a hold");
+                Assert.IsTrue(inv.Holding, "a tap picks the stack up, as before");
+                Assert.IsNull(p.Character.Bag.Slots[20]);
+            }
+            finally { pad.Dispose(); }
+        }
     }
 }

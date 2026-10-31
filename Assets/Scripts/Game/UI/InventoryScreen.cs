@@ -42,6 +42,10 @@ namespace DnD.Game
         /// <summary>Dims backpack items that don't match (nothing moves, so the hotbar and your muscle memory stay put).</summary>
         public ItemFilter Filter { get => _filter; set { _filter = value; if (Root != null) Rebuild(); } }
         public float BagCellAlpha(int i) => _bagCells[i].Icon.color.a;
+        public bool Holding => _held != null;
+        float _aDownAt = -1;
+        /// <summary>Moves the cursor (panel 0 backpack, 1 the other bag, 2 equipment).</summary>
+        public void CursorTo(int panel, int cell) { _panel = panel; _cursor = cell; Redraw(); }
         readonly List<RectTransform> _filterRts = new List<RectTransform>();
         readonly Inventory _otherInv;
         readonly string _otherTitle;
@@ -424,7 +428,19 @@ namespace DnD.Game
                 Redraw();
             }
 
-            bool confirm = clicked || (!In.UsesMouse && In.Confirm) || (In.UsesMouse && In.Confirm);
+            // Controller: A acts when released (a tap); held 0.35 s on an item it opens the item wheel instead.
+            bool padTap = false;
+            if (!In.UsesMouse)
+            {
+                if (In.Confirm) _aDownAt = Time.unscaledTime;
+                if (_aDownAt >= 0)
+                {
+                    if (!In.ConfirmHeld) { _aDownAt = -1; padTap = true; }
+                    else if (Time.unscaledTime - _aDownAt >= 0.35f && _held == null && Current != null && Current.EquipSlot == null && Current.Inv.Slots[Current.Index] != null)
+                    { _aDownAt = -1; OpenWheel(); return; }
+                }
+            }
+            bool confirm = clicked || padTap || (In.UsesMouse && In.Confirm);
             bool alt = rightClicked || (!In.UsesMouse && In.AltAction) || (In.UsesMouse && In.AltAction && !rightClicked);
 
             if (confirm && In.QuickModifier) QuickTransfer();
@@ -475,10 +491,31 @@ namespace DnD.Game
             var c = Current;
             if (c == null) return;
             if (c.EquipSlot != null) { if (EquippedId(c.EquipSlot) != null) { Slot.Character.Unequip(c.EquipSlot); Redraw(); } return; }
+            var opts = OptionsFor(c);
+            if (opts == null) return;
             var st = c.Inv.Slots[c.Index];
-            if (st == null) return;
             var def = ItemsDb.Get(st.ItemId);
-            if (def == null) return;
+            opts.Add(("Cancel", null));
+            Hud.Push(new ChoiceScreen(def.Name + (st.Count > 1 ? $" ×{st.Count}" : ""), def.Description, opts));
+        }
+
+        /// <summary>Hold A on a controller: the same options as the right-click menu, on a wheel.</summary>
+        void OpenWheel()
+        {
+            var c = Current;
+            if (c == null || c.EquipSlot != null) return;
+            var opts = OptionsFor(c);
+            if (opts == null || opts.Count == 0) return;
+            Hud.Push(new RadialMenu(opts));
+        }
+
+        /// <summary>Everything you can do with the item in a cell (shared by the right-click menu and the controller wheel).</summary>
+        List<(string, System.Action)> OptionsFor(Cell c)
+        {
+            var st = c.Inv.Slots[c.Index];
+            if (st == null) return null;
+            var def = ItemsDb.Get(st.ItemId);
+            if (def == null) return null;
             var g = GameRoot.I;
             int index = c.Index;
             var inv = c.Inv;
@@ -529,8 +566,7 @@ namespace DnD.Game
                 opts.Add((junk ? "Unmark junk" : "Mark as junk (sell it all at any shop)", () => { Slot.Character.MarkJunk(def.Id, !junk); Redraw(); }));
             }
             if (st.Count > 1) opts.Add(("Split stack (pick up half)", () => { _held = inv.PickUpHalf(index); Redraw(); }));
-            opts.Add(("Cancel", null));
-            Hud.Push(new ChoiceScreen(def.Name + (st.Count > 1 ? $" ×{st.Count}" : ""), def.Description, opts));
+            return opts;
         }
 
         void SecondaryAction()

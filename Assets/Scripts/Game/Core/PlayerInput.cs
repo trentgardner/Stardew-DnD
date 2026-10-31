@@ -32,6 +32,8 @@ namespace DnD.Game
         public virtual bool HotbarUse => AltAction;
         /// <summary>World and combat: swap weapon sets (KB: Z; pad: hold X).</summary>
         public virtual bool SwapWeapons => false;
+        /// <summary>A / Confirm is being held down (pad only: hold A for the item wheel).</summary>
+        public virtual bool ConfirmHeld => false;
         public abstract bool QuickModifier { get; } // shift (quick-transfer)
         public abstract bool SneakToggle { get; }
         public abstract bool Highlight { get; }
@@ -209,6 +211,7 @@ namespace DnD.Game
         public override bool UseItem => IsConnected && Pad.buttonNorth.wasPressedThisFrame;
         public override bool Sort => IsConnected && Pad.selectButton.wasPressedThisFrame;
         public override bool HotbarUse { get { TrackWest(); return _westUse; } }
+        public override bool ConfirmHeld => IsConnected && Pad.buttonSouth.isPressed;
         public override bool SwapWeapons { get { TrackWest(); return _westSwap; } }
 
         // X (west): a tap uses the hotbar item when released; holding it 0.4 s swaps weapons instead.
@@ -323,6 +326,7 @@ namespace DnD.Game
         public override bool Give => Any(p => p.Give);
         public override bool HotbarUse => Any(p => p.HotbarUse);
         public override bool SwapWeapons => Any(p => p.SwapWeapons);
+        public override bool ConfirmHeld => Any(p => p.ConfirmHeld);
         public override int HotbarPressed { get { Refresh(); return _kb.HotbarPressed; } }
 
         public override Vector2 Cursor
