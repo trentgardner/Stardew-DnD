@@ -24,10 +24,14 @@
 | Spellbook | K | RT |
 | Journal (quests, friendships) | J | LT |
 | Pause / save / settings | Esc | Menu |
-| Use hotbar item | 1-0 | LB/RB select, X use |
+| Hotbar: select | **Q / R** or mouse wheel (the selected slot glows and its name shows) | LB / RB |
+| Hotbar: use | **X** (selected), **1–0** (any slot at once), or **click** the slot (right-click: its options) | tap X |
+| **Swap weapons** (main ⇄ off-set; shield goes on your back with the main set) | **Z** | **hold X** |
 | Sneak (then walk up to an unaware enemy and interact to **ambush**) | Ctrl | L3 |
-| Inventory: options for an item (use, equip, **give a potion to an ally**, split...) | right-click | X |
-| Inventory: move items | drag, or click to pick up / click to drop | A |
+| Inventory: options for an item (use, equip, off-set, **send to a companion**, junk, split...) | right-click | X, or **hold A** for the item wheel |
+| Inventory: switch bags (chest, each companion, your partner) | click the tabs | LT / RT |
+| Inventory: filter (All, Gear, Use, Treasure, Quest) | click the small tabs | L3 |
+| Inventory: move items | drag, click to pick up / click to drop, or **Shift+click** to send it across (or to/from the hotbar) | A (tap), R3+A to send |
 | **Combat**: move/attack | click a tile / click an enemy | stick moves cursor, A |
 | **Combat**: choose action | 1-9 or click the bar at the bottom (Spells / Actions open a small list; right-click closes it) | LB / RB |
 | **Combat**: end turn | Space | X |
@@ -36,6 +40,16 @@
 
 **Co-op:** your fiance presses **START** on a second controller at any time. The screen splits and she makes a
 character. You can go anywhere independently; if one of you starts a fight, the other can walk over and join it.
+
+## New: the inventory upgrade (after your first playtest)
+- **You can always see what's selected**: the selected hotbar slot is raised with a gold frame and its name pops up above the bar. Q/R or the wheel moves it, X uses it, and clicking a slot uses it.
+- **Weapon sets**: equip a second weapon as your off-set (right-click → "Equip as off-set weapon", or the "Wpn 2" slot), then **Z** swaps (hold X on a controller). In a fight it's free once per turn. A shield rides with your main weapon.
+- **Compare before you equip**: hovering gear shows the difference from what you're using, green for better, red for worse (in shops too).
+- **No more dragging everything**: Shift+click sends an item across (or to/from the hotbar), and right-click has **Send to <companion>** for each companion.
+- **Party bags side by side**: your companions' bags (and your partner's, when they stand next to you) are tabs beside yours.
+- **Filters**: All / Gear / Use / Treasure / Quest dim what you're not looking for; nothing moves.
+- **Junk**: right-click → Mark as junk (a coin-pouch badge), then **Sell all junk** at the top of any shop's sell list.
+- **Controller**: hold A on an item for a wheel with the same options.
 
 ## New in Phase 7 (Act I, start to finish)
 - **The end of Act I**: after Captain Vale's thanks you get an "End of Act I: Home" card: your days in Thistledown, quests done, your dragon's bond, a glimpse of Act II. Then you keep playing in Thistledown.

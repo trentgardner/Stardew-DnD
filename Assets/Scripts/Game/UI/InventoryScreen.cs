@@ -165,7 +165,7 @@ namespace DnD.Game
             var foot = UIKit.Rect(Root, "Footer", new Vector2(0, 0), new Vector2(1, 0), new Vector2(8, 4), new Vector2(-8, 20));
             _footer = UIKit.Label(foot, "", 8, UIKit.Dim, TextAnchor.MiddleCenter);
             _footer.text = In.UsesMouse
-                ? "Drag/click: move · <b>Right-click: options</b> · Double-click: use/equip · Shift+click: send · T: sort" + (_partner != null ? " · G: gold" : "")
+                ? "Drag: move · <b>Right-click: options</b> · Double-click: use · Shift+click: send · T: sort" + (_partner != null ? " · G: gold" : "")
                 : "A: move · <b>X: options</b> · Y: use/equip · R3+A: send · View: sort · LB/RB: panel · B: close";
 
             var held = UIKit.Box(Root, "Held", new Vector2(0, 1), new Vector2(18, 18), Vector2.zero);

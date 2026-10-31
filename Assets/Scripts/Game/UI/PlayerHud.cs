@@ -87,16 +87,18 @@ namespace DnD.Game
             {
                 _hotbarIndex = value;
                 var st = Slot?.Character?.Bag.Slots[value];
-                if (_hotLabel == null) return;
-                if (st == null) { _hotLabel.gameObject.SetActive(false); return; }
+                if (_hotLabelBox == null) return;
+                if (st == null) { _hotLabelBox.gameObject.SetActive(false); return; }
                 _hotLabel.text = ItemsDb.Get(st.ItemId)?.Name ?? "";
-                _hotLabel.gameObject.SetActive(true);
+                _hotLabelBox.gameObject.SetActive(true);
+                _hotLabelBox.SetAsLastSibling(); // over the interact prompt and the narrator for its two seconds
                 _hotLabelUntil = Time.unscaledTime + 2f;
             }
         }
         readonly List<RectTransform> _hotSlots = new List<RectTransform>();
         readonly List<Outline> _hotOutlines = new List<Outline>();
         Text _hotLabel, _hotHint;
+        RectTransform _hotLabelBox;
         float _hotLabelUntil;
         float _narratorTimer, _flashTimer;
         readonly List<string> _logLines = new List<string>();
@@ -180,10 +182,10 @@ namespace DnD.Game
             }
 
             // The selected item's name (fades), and a key reminder beside the bar.
-            var hl = UIKit.Box(Root, "HotLabel", new Vector2(0.5f, 0), new Vector2(220, 14), new Vector2(0, 37));
-            _hotLabel = UIKit.Label(hl, "", 9, UIKit.Parchment, TextAnchor.MiddleCenter);
-            _hotLabel.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.85f);
-            _hotLabel.gameObject.SetActive(false);
+            _hotLabelBox = UIKit.Box(Root, "HotLabel", new Vector2(0.5f, 0), new Vector2(150, 15), new Vector2(0, 37));
+            UIKit.Image(_hotLabelBox, new Color(0.08f, 0.06f, 0.05f, 0.85f));
+            _hotLabel = UIKit.Label(_hotLabelBox, "", 9, UIKit.Parchment, TextAnchor.MiddleCenter);
+            _hotLabelBox.gameObject.SetActive(false);
             var hh = UIKit.Box(Root, "HotHint", new Vector2(0.5f, 0), new Vector2(110, 26), new Vector2(12 * 11 + 4 + 60, 6));
             _hotHint = UIKit.Label(hh, "", 7, new Color(1, 1, 1, 0.75f), TextAnchor.MiddleLeft);
             _hotHint.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.8f);
@@ -350,7 +352,7 @@ namespace DnD.Game
                 _hotSlots[i].localScale = Vector3.one * (sel ? 1.15f : 1f);
                 if (sel) _hotSlots[i].SetAsLastSibling();
             }
-            if (_hotLabel.gameObject.activeSelf && Time.unscaledTime > _hotLabelUntil) _hotLabel.gameObject.SetActive(false);
+            if (_hotLabelBox.gameObject.activeSelf && Time.unscaledTime > _hotLabelUntil) _hotLabelBox.gameObject.SetActive(false);
             _hotHint.text = Slot.Input.UsesMouse ? "Q/R or wheel: select\nX or click: use · 1–0: quick-use" : "LB/RB: select\nX: use";
 
             var zone = Slot.Zone;
@@ -474,7 +476,7 @@ namespace DnD.Game
 
         public void HotbarScroll(int dir) => HotbarIndex = (HotbarIndex + dir + Inventory.HotbarSize) % Inventory.HotbarSize;
         /// <summary>The selected item's name, shown above the hotbar for 2 s after the selection changes ("" once it fades).</summary>
-        public string HotbarLabel => _hotLabel != null && _hotLabel.gameObject.activeSelf ? _hotLabel.text : "";
+        public string HotbarLabel => _hotLabelBox != null && _hotLabelBox.gameObject.activeSelf ? _hotLabel.text : "";
         public Vector2 HotbarSlotScreenPos(int i) => RectTransformUtility.WorldToScreenPoint(Slot.Cam, _hotSlots[i].TransformPoint(_hotSlots[i].rect.center));
         /// <summary>The hotbar slot under a screen point, or -1.</summary>
         public int HotbarSlotAt(Vector2 screen)

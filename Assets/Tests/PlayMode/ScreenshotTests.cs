@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using DnD.Game;
 using DnD.Rules;
+using DnD.Rules.Content;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -154,6 +155,37 @@ namespace DnD.Tests
             for (int i = 0; i < 300 && !(p.Hud.Top is ActEndScreen); i++) yield return null;
             yield return Settle(5);
             Capture("p7_01_act_end");
+        }
+
+        /// <summary>The inventory upgrade: the hotbar label, compare info, a companion tab, the junk badge.</summary>
+        [UnityTest]
+        public IEnumerator CaptureInventoryUpgrade()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new ScriptInput(), "fighter", "human");
+            yield return Settle();
+            g.Warp(p, "town", WorldDb.Zones["town"].DefaultSpawn, false);
+            yield return Settle(20);
+            p.Hud.CloseAll();
+            var pc = p.Character;
+            pc.Bag.Slots[0] = new ItemStack("potion_healing", 2);
+            pc.Bag.Slots[1] = new ItemStack("torch", 3);
+            pc.Bag.Slots[20] = new ItemStack("greatsword", 1);
+            pc.Bag.Slots[21] = new ItemStack("copper_trinket", 4);
+            pc.MarkJunk("copper_trinket", true);
+            pc.MainHand = (WeaponDef)ItemsDb.Get("longsword");
+            pc.OffSetWeapon = (WeaponDef)ItemsDb.Get("longbow");
+            var comp = CharacterFactory.Create(CharacterFactory.DefaultChoices("cleric", "dwarf", "Tova"));
+            g.SpawnCompanion(p, comp, "hums");
+            p.Hud.HotbarIndex = 1;
+            yield return Settle(5);
+            Capture("inv_01_hotbar_selected");
+            var inv = new InventoryScreen(null, null);
+            p.Hud.Push(inv);
+            yield return Settle(3);
+            inv.CursorTo(0, 20);
+            yield return Settle(3);
+            Capture("inv_02_compare_and_party_tab");
         }
 
         [UnityTest]
