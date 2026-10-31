@@ -471,6 +471,10 @@ namespace DnD.Game
         bool _prepareMode;
         List<SpellDef> _shown = new List<SpellDef>();
 
+        /// <summary>Tests: switch between casting and preparing, and read the rows.</summary>
+        public void SetPrepareMode(bool on) { _prepareMode = on; Rebuild(); }
+        public IEnumerable<string> RowTexts => _menu.Entries.Select(e => e.Text);
+
         public override void Build()
         {
             Window(new Vector2(420, 270), null);
@@ -496,7 +500,7 @@ namespace DnD.Game
                 _info.text = pc.Class.Id == "fighter" ? $"Second Wind: {pc.ResourceLeft("second_wind")}/{pc.ResourceMax("second_wind")}\nAction Surge: {pc.ResourceLeft("action_surge")}/{pc.ResourceMax("action_surge")}" : "";
                 return;
             }
-            int maxLevel = pc.Level >= 3 ? 2 : 1;
+            int maxLevel = pc.MaxSpellLevelAt(pc.Level);
             if (_prepareMode)
             {
                 var always = pc.Class.Subclass != null ? pc.Class.Subclass.AlwaysPreparedAt(pc.Level) : new List<string>();

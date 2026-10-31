@@ -288,7 +288,7 @@ namespace DnD.Game
         {
             PurgeScaredDragon();
             bool playersUp = PlayersUp;
-            bool enemiesUp = Units.Any(u => u.C.Team == Team.Enemies && u.Active);
+            bool enemiesUp = Units.Any(u => u.C.Team == Team.Enemies && (u.Active || (u.C.IsBanished && !u.C.IsDead))); // banished foes are only away
             if (playersUp && enemiesUp) return false;
             Finish(playersUp);
             return true;
@@ -352,6 +352,7 @@ namespace DnD.Game
                 if (u.Owner != null) u.Owner.Combat = null;
                 // Out of combat, effects with round durations simply end.
                 u.C.Effects.RemoveAll(e => e.RoundsLeft > 0 && e.Id != "aid" && e.Id != "mage_armor");
+                u.C.ConcentratingOn = null; // the fight's spells end with it
             }
         }
 

@@ -44,6 +44,7 @@ namespace RulesTests
             HolyMartialTests10();
             NatureCasterTests10();
             ArcaneTests10();
+            ReviewFixTests();
             RogueTests();
             BarbarianTests();
             MonkTests();

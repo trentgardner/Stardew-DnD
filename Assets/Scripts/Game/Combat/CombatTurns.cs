@@ -160,7 +160,7 @@ namespace DnD.Game
         {
             PurgeScaredDragon();
             bool playersUp = PlayersUp;
-            bool enemiesUp = Units.Any(x => x.C.Team == Team.Enemies && x.Active);
+            bool enemiesUp = Units.Any(x => x.C.Team == Team.Enemies && (x.Active || (x.C.IsBanished && !x.C.IsDead)));
             return !playersUp || !enemiesUp;
         }
 
@@ -900,6 +900,12 @@ namespace DnD.Game
 
         // ================================================================== spells
 
+        /// <summary>Spell attack rolls made in this fight (tests: Eldritch Blast beams).</summary>
+        public int SpellAttackRolls;
+
+        /// <summary>Tests: let the AI take this unit's turn right now.</summary>
+        public IEnumerator DebugAiTurn(Unit u) => AiTurn(u);
+
         /// <summary>Tests: cast a spell as this unit right now (pays the slot as usual).</summary>
         public IEnumerator DebugCast(Unit me, string spellId, Vector2Int tile) => CastSpell(me, (PlayerCharacter)me.C, SpellsDb.Get(spellId), tile);
 
@@ -909,6 +915,7 @@ namespace DnD.Game
         IEnumerator CastSpell(Unit me, PlayerCharacter pc, SpellDef s, Vector2Int tile, int freeAtSlot = 0)
         {
             var turn = me.Cb.Turn;
+            bool recast = freeAtSlot > 0; // Call Lightning calling again: the spell (and its concentration) is already going
             if (freeAtSlot == 0 && DivineInterventionCovers(pc, s))
             {
                 pc.RemoveEffect("divine_ready");
@@ -922,7 +929,7 @@ namespace DnD.Game
             else turn.ActionUsed = true;
             if (!s.IsCantrip) turn.CastLeveledSpellThisTurn = true;
             var log = new List<string>();
-            if (freeAtSlot == 0)
+            if (!recast)
             {
                 if (s.Concentration && pc.ConcentratingOn != null) EndConcentration(pc);
                 SpellResolver.StartConcentration(pc, s, log);
@@ -971,7 +978,7 @@ namespace DnD.Game
                     // Evoker 6: Sculpt Spells: friends in the blast are left untouched.
                     var sculpted = SpellResolver.Sculpted(pc, s, targets.Select(o => o.C));
                     if (sculpted.Count > 0) { targets.RemoveAll(o => sculpted.Contains(o.C)); Log($"{pc.Name} sculpts the spell around {string.Join(", ", sculpted.Select(c => c.Name))}."); }
-                    if (s.Id == "call_lightning" && freeAtSlot == 0) { var storm = EffectLibrary.Create("call_lightning", pc); storm.Power = Math.Max(slot, s.Level); pc.AddEffect(storm); }
+                    if (s.Id == "call_lightning" && !recast) { var storm = EffectLibrary.Create("call_lightning", pc); storm.Power = Math.Max(slot, s.Level); pc.AddEffect(storm); }
                     if (s.ZoneLineTiles > 0)
                     {
                         // Wall of Fire: the wall appears, everyone caught in it saves now, then it keeps burning.
@@ -1108,6 +1115,7 @@ namespace DnD.Game
             var ctx = Context(me, target);
             var res = AttackResolver.RollAttack(pc, target.C, atk, ctx);
             if (res.OutOfRange) yield break;
+            SpellAttackRolls++;
             Ticker($"{s.Name} → {target.Name}: {res.Roll.Breakdown()} → {(res.Critical ? "CRITICAL HIT!" : res.Hit ? "HIT" : "MISS")}");
             yield return new WaitForSeconds(0.45f);
             if (res.Hit)
@@ -1691,7 +1699,13 @@ namespace DnD.Game
                 }
                 if (u.Active && Zone.DistanceFt(u.Pos, target.Pos) <= ranged.RangeLong && Zone.LineOfSight(u.Pos, target.Pos))
                 {
-                    if (ranged.IsSpell) yield return SpellAttack(u, (PlayerCharacter)u.C, target, ranged.Spell, 0);
+                    if (ranged.IsSpell)
+                        for (int beam = 0; beam < SpellResolver.Projectiles((PlayerCharacter)u.C, ranged.Spell) && u.Active; beam++)
+                        {
+                            if (!target.Active) target = Units.Where(o => o.Active && Hostile(u, o) && Zone.DistanceFt(u.Pos, o.Pos) <= ranged.RangeLong).OrderBy(o => o.C.HP).FirstOrDefault();
+                            if (target == null) break;
+                            yield return SpellAttack(u, (PlayerCharacter)u.C, target, ranged.Spell, 0);
+                        }
                     else if (u.C is PlayerCharacter) yield return CompanionAttacks(u, target, ranged);
                     else yield return AiAttack(u, target, ranged);
                     yield break;

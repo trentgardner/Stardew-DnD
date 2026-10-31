@@ -108,7 +108,7 @@ namespace DnD.Rules
 
         public override bool IsPlayerCharacter => true;
         public override int ProficiencyBonus => 2 + (Level - 1) / 4;
-        protected override int BaseSpeed => WildShape != null ? WildShape.Speed : IsOverloaded ? 5 : (Species != null ? Species.Speed : 30) + (UnarmoredMovement ? (Level >= 10 ? 20 : Level >= 6 ? 15 : 10) : 0) + (FastMovement ? 10 : 0);
+        protected override int BaseSpeed => WildShape != null ? Math.Max(WildShape.Speed, WildShape.FlySpeed) : IsOverloaded ? 5 : (Species != null ? Species.Speed : 30) + (UnarmoredMovement ? (Level >= 10 ? 20 : Level >= 6 ? 15 : 10) : 0) + (FastMovement ? 10 : 0);
         bool FastMovement => Class != null && (Class.Id == "barbarian" && Level >= 5 || Class.Id == "ranger" && Level >= 6) && (Armor == null || Armor.Category != ArmorCategory.Heavy);
 
         // ---------------------------------------------------------------- monk
@@ -678,6 +678,7 @@ namespace DnD.Rules
             DeathSuccesses = DeathFailures = 0;
             Stable = false;
             Effects.RemoveAll(e => e.Id != "aid");
+            ConcentratingOn = null;
             if (ate && Exhaustion > 0) Exhaustion--;
             else if (!ate) { Exhaustion = Math.Min(6, Exhaustion + 1); log?.Add($"{Name} went to bed hungry (+1 Exhaustion)."); }
             if (Species != null && Species.HeroicInspirationOnRest) HeroicInspiration = true;
