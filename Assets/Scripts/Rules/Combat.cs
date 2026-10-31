@@ -315,11 +315,14 @@ namespace DnD.Rules
             };
         }
 
+        /// <summary>How many separate attacks a spell makes (Eldritch Blast: one beam per cantrip tier, 2 at level 5).</summary>
+        public static int Projectiles(PlayerCharacter caster, SpellDef s) => s.Id == "eldritch_blast" ? caster.CantripDiceMultiplier : s.Projectiles;
+
         /// <summary>The dice a spell rolls at the given slot level (cantrip scaling, upcasting).</summary>
         public static DiceExpr EffectDice(PlayerCharacter caster, SpellDef s, int slotLevel)
         {
             var d = s.Dice;
-            if (s.IsCantrip) d = new DiceExpr(d.Count * caster.CantripDiceMultiplier, d.Sides, d.Bonus);
+            if (s.IsCantrip && s.Id != "eldritch_blast") d = new DiceExpr(d.Count * caster.CantripDiceMultiplier, d.Sides, d.Bonus); // Eldritch Blast adds beams instead
             else if (slotLevel > s.Level && s.UpcastDice > 0) d = d.WithExtraDice(s.UpcastDice * (slotLevel - s.Level));
             return d;
         }

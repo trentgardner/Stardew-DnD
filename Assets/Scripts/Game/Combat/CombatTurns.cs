@@ -936,7 +936,7 @@ namespace DnD.Game
             switch (s.Kind)
             {
                 case SpellKind.Attack:
-                    for (int i = 0; i < s.Projectiles; i++)
+                    for (int i = 0; i < SpellResolver.Projectiles(pc, s); i++)
                     {
                         if (target == null || !target.Active) target = Units.FirstOrDefault(o => o.Active && Hostile(me, o) && Zone.DistanceFt(me.Pos, o.Pos) <= s.RangeFt);
                         if (target == null) break;

@@ -28,17 +28,21 @@ namespace RulesTests
             foreach (var id in pc.Cantrips)
             {
                 var s = SpellsDb.Get(id);
-                if (s != null && s.Kind == SpellKind.Attack) options.Add(SpellResolver.AsAttack(pc, s));
+                if (s == null || s.Kind != SpellKind.Attack) continue;
+                var atk = SpellResolver.AsAttack(pc, s);
+                atk.Damage = SpellResolver.EffectDice(pc, s, 0);
+                options.Add(atk);
             }
             int sneakAvg = (int)Math.Round(AttackResolver.SneakAttackDiceFor(pc) * 3.5);
-            double best = options.Max(a => ExpectedDamage(a, ac, sneakAvg));
+            // Extra Attack: weapon attacks happen AttacksPerAction times (Sneak Attack only once).
+            double best = options.Max(a => ExpectedDamage(a, ac, sneakAvg) + (a.IsSpell ? (SpellResolver.Projectiles(pc, a.Spell) - 1) * ExpectedDamage(a, ac) : (pc.AttacksPerAction - 1) * ExpectedDamage(a, ac)));
             // Saving-throw cantrips (Sacred Flame...): average damage × the chance a typical foe (+1 save) fails.
             foreach (var id in pc.Cantrips)
             {
                 var s = SpellsDb.Get(id);
                 if (s == null || s.Kind != SpellKind.Save || s.Dice.IsNone) continue;
                 double fail = Math.Clamp((pc.SpellSaveDC - 2) / 20.0, 0.05, 0.95);
-                best = Math.Max(best, fail * s.Dice.Average);
+                best = Math.Max(best, fail * SpellResolver.EffectDice(pc, s, 0).Average);
             }
             // Monks: Martial Arts gives a bonus-action unarmed strike every turn.
             if (pc.HasFeature("Martial Arts")) best += ExpectedDamage(pc.UnarmedStrike(), ac);
@@ -73,6 +77,23 @@ namespace RulesTests
                     Check(kv.Value >= floor * best.Value, $"balance L{level}: {kv.Key} {kv.Value:0.0} is under {floor:0.##} of {best.Key} {best.Value:0.0}");
                 }
             }
+
+            // Act II: levels 5-10 against AC 15 (the trolls and elementals of the new places).
+            PlayerCharacter.LevelCap = PlayerCharacter.ActTwoLevelCap;
+            for (int level = 5; level <= 10; level++)
+            {
+                var dpr = AllClasses.ToDictionary(c => c, c => DamagePerRound(AtLevel(c, level), 15));
+                var best = dpr.OrderByDescending(kv => kv.Value).First();
+                Console.WriteLine($"L{level} at-will DPR vs AC 15: " + string.Join(", ", dpr.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key} {kv.Value:0.0}")));
+                foreach (var kv in dpr)
+                {
+                    // From 5 on, martials get Extra Attack and full casters get 3rd-5th level spells: casters' at-will floor drops to a fifth
+                    // (a Lore bard's Vicious Mockery is RAW the weakest cantrip; their slots carry them).
+                    double floor = FullCasters.Contains(kv.Key) ? 0.2 : 0.5;
+                    Check(kv.Value >= floor * best.Value, $"balance L{level}: {kv.Key} {kv.Value:0.0} is under {floor:0.##} of {best.Key} {best.Value:0.0}");
+                }
+            }
+            PlayerCharacter.LevelCap = PlayerCharacter.ActOneLevelCap;
 
             // Krag (the warrens' war-boss) is beatable by a level-3 pair: the median pair drops him in 6 rounds or fewer.
             var krag = MonstersDb.Get("kobold_warboss");
