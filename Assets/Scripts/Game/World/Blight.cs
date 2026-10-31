@@ -89,6 +89,8 @@ namespace DnD.Game
                     main.startLifetime = 6f;
                     main.maxParticles = 120;
                     main.simulationSpace = ParticleSystemSimulationSpace.World;
+                    // The overlay is scaled to the zone's size: let that stretch the emitter box, not each fleck.
+                    main.scalingMode = ParticleSystemScalingMode.Shape;
                     var shape = ps.shape;
                     shape.shapeType = ParticleSystemShapeType.Box;
                     var em = ps.emission;

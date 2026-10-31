@@ -75,6 +75,31 @@ namespace DnD.Tests
         }
 
         [UnityTest]
+        public IEnumerator AshFlecksStaySmallAcrossTheZone()
+        {
+            // Regression: the ash ParticleSystem sat on the zone-sized overlay with Local scaling, so each 0.08 fleck was drawn
+            // ~4 tiles wide (a stray grey square in the screenshot).
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(6), "fighter", "human");
+            yield return Frames(2);
+            Blight.SetStage(2);
+            yield return Frames(30);
+            var ps = p.Zone.transform.Find("BlightOverlay").GetComponentInChildren<ParticleSystem>();
+            var main = ps.main;
+            float scale = main.scalingMode == ParticleSystemScalingMode.Shape ? 1f
+                : main.scalingMode == ParticleSystemScalingMode.Local ? ps.transform.localScale.x : ps.transform.lossyScale.x;
+            float drawn = main.startSize.constant * scale;
+            Assert.Less(drawn, 0.5f, $"an ash fleck is drawn {drawn:0.00} world units wide");
+            ps.Emit(100);
+            var parts = new ParticleSystem.Particle[ps.particleCount];
+            int n = ps.GetParticles(parts);
+            float minX = float.MaxValue, maxX = float.MinValue;
+            for (int i = 0; i < n; i++) { minX = Mathf.Min(minX, parts[i].position.x); maxX = Mathf.Max(maxX, parts[i].position.x); }
+            var b = p.Zone.WorldBounds;
+            Assert.Greater(maxX - minX, b.size.x * 0.5f, "the flecks still drift across the whole place, not one corner");
+        }
+
+        [UnityTest]
         public IEnumerator EaseLowersTheStageAndIsSaved()
         {
             var g = GameRoot.I;
