@@ -16,7 +16,7 @@ namespace DnD.Game
     [Serializable]
     public class PcData
     {
-        public string Name, Species, Class, Background, SpriteId, FightingStyle, DivineOrder;
+        public string Name, Species, Class, Background, SpriteId, FightingStyle, FightingStyle2, DivineOrder;
         public int Level, XP, Copper, HP, MaxHP, TempHP, Exhaustion, HitDiceSpent, DeathS, DeathF, HeldInsp;
         public bool Dead, Stable, Shield, Heroic, LuckyUsed;
         public int[] BaseScores, BgBonus, SlotsUsed, Asi;
@@ -224,7 +224,7 @@ namespace DnD.Game
             var d = new PcData
             {
                 Name = pc.Name, Species = pc.Species.Id, Class = pc.Class.Id, Background = pc.Background.Id, SpriteId = pc.SpriteId,
-                FightingStyle = pc.FightingStyle, DivineOrder = pc.DivineOrder, Level = pc.Level, XP = pc.XP, Copper = pc.Copper,
+                FightingStyle = pc.FightingStyle, FightingStyle2 = pc.FightingStyle2, DivineOrder = pc.DivineOrder, Level = pc.Level, XP = pc.XP, Copper = pc.Copper,
                 HP = pc.HP, MaxHP = pc.MaxHP, TempHP = pc.TempHP, Exhaustion = pc.Exhaustion, HitDiceSpent = pc.HitDiceSpent,
                 DeathS = pc.DeathSuccesses, DeathF = pc.DeathFailures, HeldInsp = pc.HeldInspirationDie, Dead = pc.IsDead, Stable = pc.Stable,
                 Shield = pc.Shield, Heroic = pc.HeroicInspiration, LuckyUsed = pc.LuckyRerollUsed,
@@ -252,7 +252,7 @@ namespace DnD.Game
             var pc = new PlayerCharacter
             {
                 Name = d.Name, Species = CharacterDb.Species[d.Species], Class = CharacterDb.Classes[d.Class], Background = CharacterDb.Backgrounds[d.Background],
-                SpriteId = d.SpriteId, FightingStyle = d.FightingStyle, DivineOrder = d.DivineOrder, Level = d.Level, XP = d.XP, Copper = d.Copper,
+                SpriteId = d.SpriteId, FightingStyle = d.FightingStyle, FightingStyle2 = d.FightingStyle2, DivineOrder = d.DivineOrder, Level = d.Level, XP = d.XP, Copper = d.Copper,
                 MaxHP = d.MaxHP, HP = d.HP, TempHP = d.TempHP, Exhaustion = d.Exhaustion, HitDiceSpent = d.HitDiceSpent,
                 DeathSuccesses = d.DeathS, DeathFailures = d.DeathF, HeldInspirationDie = d.HeldInsp, Stable = d.Stable,
                 Shield = d.Shield, HeroicInspiration = d.Heroic, LuckyRerollUsed = d.LuckyUsed,

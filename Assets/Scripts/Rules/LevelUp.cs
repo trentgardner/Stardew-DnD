@@ -29,7 +29,31 @@ namespace DnD.Rules
     {
         static readonly Skill[] ScholarSkills = { Skill.Arcana, Skill.History, Skill.Investigation, Skill.Medicine, Skill.Nature, Skill.Religion };
 
-        int MaxSpellLevelAt(int level) => Class.Caster == CasterType.Full || Class.Caster == CasterType.Pact ? (level >= 3 ? 2 : 1) : Class.Caster == CasterType.Half ? (level >= 5 ? 2 : 1) : 0;
+        /// <summary>The highest spell level the class can cast at a class level (SRD 5.2 tables).</summary>
+        public int MaxSpellLevelAt(int level)
+        {
+            switch (Class.Caster)
+            {
+                case CasterType.Full: return Math.Min(9, (level + 1) / 2);
+                case CasterType.Half: return Math.Min(5, (level + 3) / 4);
+                case CasterType.Pact:
+                    for (int l = 5; l >= 1; l--) if (SpellSlots.For(CasterType.Pact, level, l) > 0) return l;
+                    return 1;
+                default: return 0;
+            }
+        }
+
+        /// <summary>Ability Score Improvement levels: 4, 8, 12, 16, 19 for everyone; the Fighter adds 6 and 14, the Rogue 10.</summary>
+        public bool AsiLevel(int level)
+        {
+            if (level == 4 || level == 8 || level == 12 || level == 16 || level == 19) return true;
+            if (Class.Id == "fighter" && (level == 6 || level == 14)) return true;
+            if (Class.Id == "rogue" && level == 10) return true;
+            return false;
+        }
+
+        static readonly string[] MagicalSecretsLists = { "bard", "cleric", "druid", "wizard" };
+        static readonly string[] FighterStyles = { "archery", "defense", "dueling", "great_weapon" };
 
         static readonly Dictionary<string, string[]> FightingStyles = new Dictionary<string, string[]>
         {
@@ -44,7 +68,7 @@ namespace DnD.Rules
             var list = new List<LevelUpChoice>();
 
             // Skills
-            if (Class.Id == "bard" && next == 2)
+            if ((Class.Id == "bard" && (next == 2 || next == 9)) || (Class.Id == "rogue" && next == 6) || (Class.Id == "ranger" && next == 9))
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.Expertise, Count = 2, Title = "Expertise: double your proficiency in two skills",
                     Options = SkillProficiencies.Where(s => !Expertise.Contains(s)).Select(s => s.ToString()).OrderBy(s => s).ToList() });
             if (Class.Id == "wizard" && next == 2)
@@ -68,8 +92,10 @@ namespace DnD.Rules
             if (newInvocations > 0)
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.Invocation, Count = newInvocations, Title = $"Eldritch Invocations: learn {newInvocations}",
                     Options = InvocationOptions.Where(o => !Invocations.Contains(o)).ToList() });
-            if (Class.Id == "sorcerer" && next == 2)
-                list.Add(new LevelUpChoice { Kind = ChoiceKind.Metamagic, Count = 2, Title = "Metamagic: two ways to twist your spells", Options = MetamagicOptions.ToList() });
+            if (Class.Id == "sorcerer" && (next == 2 || next == 10))
+                list.Add(new LevelUpChoice { Kind = ChoiceKind.Metamagic, Count = 2, Title = "Metamagic: two ways to twist your spells", Options = MetamagicOptions.Where(o => !Metamagic.Contains(o)).ToList() });
+            if (Class.Id == "fighter" && next == 7 && Class.Subclass?.Id == "champion")
+                list.Add(new LevelUpChoice { Kind = ChoiceKind.FightingStyle, Count = 1, Title = "Additional Fighting Style", Options = FighterStyles.Where(o => o != FightingStyle).ToList() });
             if (Class.Id == "barbarian" && next == 3)
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.BonusSkill, Count = 1, Title = "Primal Knowledge: one more Barbarian skill",
                     Options = Class.SkillOptions.Where(s => !SkillProficiencies.Contains(s)).Select(s => s.ToString()).ToList() });
@@ -90,9 +116,11 @@ namespace DnD.Rules
                 if (newSpells > 0)
                 {
                     var known = wizard ? (ICollection<string>)Spellbook : PreparedSpells;
+                    bool secrets = Class.Id == "bard" && next >= 10;
+                    var pool = secrets ? MagicalSecretsLists.SelectMany(c => SpellsDb.ForClass(c, maxLevel)).Distinct() : SpellsDb.ForClass(Class.Id, maxLevel);
                     list.Add(new LevelUpChoice { Kind = ChoiceKind.Spell, Count = newSpells,
-                        Title = wizard ? "Copy 2 new spells into your spellbook" : $"Prepare {newSpells} more spell{(newSpells > 1 ? "s" : "")}",
-                        Options = SpellsDb.ForClass(Class.Id, maxLevel).Where(s => s.Level > 0 && !known.Contains(s.Id)).OrderByDescending(s => s.Level).Select(s => s.Id).ToList() });
+                        Title = wizard ? "Copy 2 new spells into your spellbook" : secrets ? $"Magical Secrets: prepare {newSpells} more from the Bard, Cleric, Druid or Wizard lists" : $"Prepare {newSpells} more spell{(newSpells > 1 ? "s" : "")}",
+                        Options = pool.Where(s => s.Level > 0 && !known.Contains(s.Id)).OrderByDescending(s => s.Level).Select(s => s.Id).ToList() });
                 }
                 if (wizard && next == 3 && Class.Subclass?.Id == "evoker")
                     list.Add(new LevelUpChoice { Kind = ChoiceKind.Spell, Count = 2, Title = "Evocation Savant: two free Evocation spells",
@@ -100,7 +128,7 @@ namespace DnD.Rules
             }
 
             // Ability Score Improvement or a feat (SRD 5.2 general feats) at 4.
-            if (next == 4)
+            if (AsiLevel(next))
             {
                 var opts = new List<string>();
                 var abilities = (Ability[])Enum.GetValues(typeof(Ability));
@@ -208,7 +236,7 @@ namespace DnD.Rules
                         log?.Add($"Circle of the Land: {DescribeOption(id)}");
                         break;
                     case ChoiceKind.FightingStyle:
-                        FightingStyle = id;
+                        if (FightingStyle == null) FightingStyle = id; else FightingStyle2 = id;
                         log?.Add($"Fighting Style: {DescribeOption(id)}");
                         break;
                     case ChoiceKind.Feat:

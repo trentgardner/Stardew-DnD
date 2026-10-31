@@ -13,7 +13,7 @@ namespace DnD.Rules
 
         public static readonly string[] InvocationOptions = { "agonizing_blast", "armor_of_shadows", "repelling_blast", "pact_of_the_blade", "eldritch_mind", "ember_sight" };
 
-        public int InvocationsKnownAt(int level) => Class.Id != "warlock" ? 0 : level >= 5 ? 5 : level >= 2 ? 3 : 1;
+        public int InvocationsKnownAt(int level) => Class.Id != "warlock" ? 0 : level >= 18 ? 10 : level >= 15 ? 9 : level >= 12 ? 8 : level >= 9 ? 7 : level >= 7 ? 6 : level >= 5 ? 5 : level >= 2 ? 3 : 1;
 
         /// <summary>Ember Patron (SRD Fiend): when you drop a hostile creature to 0 HP, gain temp HP = CHA + warlock level.</summary>
         public void OnReducedHostileToZero(List<string> log)

@@ -32,6 +32,9 @@ namespace DnD.Rules
         public readonly HashSet<Skill> Expertise = new HashSet<Skill>();
 
         public string FightingStyle;      // Fighter: "defense", "dueling", "great_weapon", "archery"
+        /// <summary>Champion 7: Additional Fighting Style.</summary>
+        public string FightingStyle2;
+        public bool HasFightingStyle(string id) => id != null && (FightingStyle == id || FightingStyle2 == id);
         public string DivineOrder;        // Cleric: "protector", "thaumaturge"
         public readonly List<string> MasteredWeapons = new List<string>();
 
@@ -161,9 +164,11 @@ namespace DnD.Rules
         // ---------------------------------------------------------------- leveling
 
         public static readonly int[] XpThresholds = { 0, 0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000 };
-        public const int PlaytestLevelCap = 4;
+        public const int ActOneLevelCap = 4, ActTwoLevelCap = 10;
+        /// <summary>The highest level the current act allows (4 in Act I, 10 in Act II). Set by the game when the act changes.</summary>
+        public static int LevelCap = ActOneLevelCap;
 
-        public bool CanLevelUp => Level < PlaytestLevelCap && Level + 1 < XpThresholds.Length && XP >= XpThresholds[Level + 1];
+        public bool CanLevelUp => Level < LevelCap && Level + 1 < XpThresholds.Length && XP >= XpThresholds[Level + 1];
 
         public int AverageHitDie => Class.HitDie / 2 + 1;
 
@@ -214,7 +219,7 @@ namespace DnD.Rules
                     int dexPart = Armor.MaxDex < 0 ? dex : Math.Min(dex, Armor.MaxDex);
                     if (Armor.Category == ArmorCategory.Heavy) dexPart = 0;
                     ac = Armor.BaseAC + dexPart;
-                    if (FightingStyle == "defense") ac += 1;
+                    if (HasFightingStyle("defense")) ac += 1;
                 }
                 else if (HasEffect("mage_armor")) ac = 13 + dex;
                 else if (Class.Id == "barbarian") ac = 10 + dex + Mod(Ability.CON); // Unarmored Defense
@@ -374,7 +379,7 @@ namespace DnD.Rules
             if (Invocations.Contains("pact_of_the_blade") && !w.IsRanged && Mod(Ability.CHA) > Mod(ab)) ab = Ability.CHA;
             int mod = Mod(ab);
             int toHit = mod + (IsProficientWith(w) ? ProficiencyBonus : 0) + w.MagicBonus;
-            if (w.IsRanged && FightingStyle == "archery") toHit += 2;
+            if (w.IsRanged && HasFightingStyle("archery")) toHit += 2;
             if (HasEffect("sacred_weapon")) toHit += Math.Max(1, Mod(Ability.CHA));
 
             var dmg = w.Damage;
@@ -386,7 +391,7 @@ namespace DnD.Rules
             int dmgMod = mod + w.MagicBonus;
             if (Raging && ab == Ability.STR && !w.IsRanged) dmgMod += RageDamage;
             bool oneHandedMelee = !w.IsRanged && !w.Has(WeaponProperty.TwoHanded) && !twoHanding;
-            if (FightingStyle == "dueling" && oneHandedMelee) dmgMod += 2;
+            if (HasFightingStyle("dueling") && oneHandedMelee) dmgMod += 2;
 
             var opt = new AttackOption
             {
@@ -405,7 +410,7 @@ namespace DnD.Rules
                 CritOn = HasFeature("Improved Critical") ? 19 : 20,
                 ExtraDamage = w.ExtraDamage,
                 ExtraDamageType = w.ExtraDamageType,
-                MinDieValue = FightingStyle == "great_weapon" && (w.Has(WeaponProperty.TwoHanded) || twoHanding) && !w.IsRanged ? 3 : 0,
+                MinDieValue = HasFightingStyle("great_weapon") && (w.Has(WeaponProperty.TwoHanded) || twoHanding) && !w.IsRanged ? 3 : 0,
             };
             return opt;
         }
@@ -433,7 +438,8 @@ namespace DnD.Rules
             return list;
         }
 
-        public int AttacksPerAction => Class.Id == "fighter" && Level >= 5 ? 2 : 1;
+        static readonly string[] ExtraAttackClasses = { "fighter", "barbarian", "monk", "paladin", "ranger" };
+        public int AttacksPerAction => Class.Id == "fighter" && Level >= 11 ? 3 : Level >= 5 && Array.IndexOf(ExtraAttackClasses, Class.Id) >= 0 ? 2 : 1;
 
         // ---------------------------------------------------------------- death saves
 

@@ -37,6 +37,7 @@ namespace RulesTests
             EncounterTests();
             ContentTests();
             LevelUpTests();
+            LevelTenTests();
             RogueTests();
             BarbarianTests();
             MonkTests();

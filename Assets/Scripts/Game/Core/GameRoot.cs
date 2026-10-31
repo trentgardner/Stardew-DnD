@@ -118,7 +118,7 @@ namespace DnD.Game
         }
 
         /// <summary>Skips the title and creation screens (used by automated tests and quick dev testing).</summary>
-        public PlayerSlot DebugStart(PlayerInput device, string classId, string speciesId, Difficulty diff = Difficulty.Normal)
+        public PlayerSlot DebugStart(PlayerInput device, string classId, string speciesId, Difficulty diff = Difficulty.Normal, int level = 1)
         {
             if (!InGame)
             {
@@ -132,6 +132,12 @@ namespace DnD.Game
             }
             var slot = AddPlayer(device);
             var pc = CharacterFactory.Create(CharacterFactory.DefaultChoices(classId, speciesId, $"{speciesId} {classId}"));
+            if (level > PlayerCharacter.LevelCap) PlayerCharacter.LevelCap = PlayerCharacter.ActTwoLevelCap; // tests: preview Act II levels
+            while (pc.Level < level)
+            {
+                pc.XP = Math.Max(pc.XP, PlayerCharacter.XpThresholds[pc.Level + 1]);
+                pc.LevelUp(pc.AutoPlan(), null);
+            }
             SpawnPlayer(slot, pc, null);
             return slot;
         }
@@ -188,6 +194,7 @@ namespace DnD.Game
         void ResetWorld()
         {
             InGame = false;
+            PlayerCharacter.LevelCap = PlayerCharacter.ActOneLevelCap; // Act II sets it again when it starts
             // Close menus first, while characters still exist (screens may tidy up the inventory on close).
             foreach (var p in Players) p.Hud?.CloseAll();
             foreach (var c in Combats) c.Finished = true;
