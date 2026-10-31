@@ -39,6 +39,7 @@ namespace RulesTests
             LevelUpTests();
             LevelTenTests();
             SpellTests5();
+            MonsterTests();
             RogueTests();
             BarbarianTests();
             MonkTests();

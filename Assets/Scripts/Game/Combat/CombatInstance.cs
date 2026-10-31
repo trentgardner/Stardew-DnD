@@ -148,6 +148,13 @@ namespace DnD.Game
                 ZonesNewTurn();
                 SyncBanished();
                 if (cur.C is Dragonling && cur.Active) RechargeBreath(cur, null);
+                if (cur.C is Monster mon && cur.Active)
+                {
+                    var mlog = new List<string>();
+                    mon.RollRecharges(mlog);
+                    if (mon.StartTurnRegen(mlog) > 0) cur.A.Popup("Regenerates", UIKit.HealGreen);
+                    mlog.ForEach(Log);
+                }
                 RefreshTracker();
 
                 if (cur.C.IsDead) { /* skip */ }

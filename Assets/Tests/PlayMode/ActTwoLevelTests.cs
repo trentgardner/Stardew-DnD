@@ -85,5 +85,26 @@ namespace DnD.Tests
             c.DrawZones();
             Assert.AreEqual(0, c.Zones.Count, "losing concentration puts the wall out");
         }
+
+        [UnityTest]
+        public IEnumerator TrollMultiattackAndHoundBreathFightToTheEnd()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new FuzzInput(7) { ConfirmChance = 0.35f, EndTurnChance = 0.01f }, "fighter", "human", level: 7);
+            yield return Frames(2);
+            g.Warp(p, "forest", new Vector2Int(20, 20), false);
+            yield return Frames(3);
+            p.Hud.CloseAll();
+            var id = g.DebugSpawnGroup(p, "troll", "cinder_hound");
+            g.StartGroupCombat(id, p);
+            Assert.AreEqual(1, g.Combats.Count);
+            var c = g.Combats.Single();
+            Assert.IsTrue(c.Units.Any(u => u.C is Monster m && m.Def.Id == "troll"), "the troll joins the fight");
+            Time.timeScale = 6;
+            float start = Time.realtimeSinceStartup;
+            while (g.AnyInCombat && Time.realtimeSinceStartup - start < 150f) yield return null;
+            Time.timeScale = 1;
+            Assert.IsFalse(g.AnyInCombat, "the fight finishes (won or lost)");
+        }
     }
 }

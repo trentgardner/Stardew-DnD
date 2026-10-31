@@ -572,6 +572,32 @@ namespace DnD.Game
 
         // ================================================================== enemies & combat
 
+        int _debugGroups;
+
+        /// <summary>Tests and balance checks: drops a one-off group of any monsters a few tiles from a player. Returns its group id (fight it with StartGroupCombat).</summary>
+        public string DebugSpawnGroup(PlayerSlot p, params string[] monsterIds)
+        {
+            var g = new EnemyGroupDef { Id = "debug_" + (++_debugGroups), Style = EncounterStyle.None, Unique = true, Label = "the monsters" };
+            var z = p.Zone;
+            var list = new List<EnemyAgent>();
+            int i = 0;
+            foreach (var id in monsterIds)
+            {
+                Vector2Int pos = p.MapPos;
+                for (int r = 4; r < 12; r++)
+                {
+                    var c = p.MapPos + new Vector2Int(r, (i % 3) - 1 + i / 3);
+                    if (z.IsWalkable(c)) { pos = c; break; }
+                }
+                var m = new EnemySpawn(id, pos.x, pos.y);
+                g.Members.Add(m);
+                list.Add(EnemyAgent.Create(z, g, m));
+                i++;
+            }
+            _groups[g.Id] = list;
+            return g.Id;
+        }
+
         void SpawnGroupIfNeeded(Zone z, EnemyGroupDef g)
         {
             bool resolved = World.DefeatedGroups.Contains(g.Id) || World.PacifiedGroups.Contains(g.Id);

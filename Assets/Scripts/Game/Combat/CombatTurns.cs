@@ -1492,6 +1492,13 @@ namespace DnD.Game
                 yield break;
             }
 
+            if (monster != null && monster.Def.Abilities.Count > 0)
+            {
+                bool used = false;
+                yield return TryMonsterAbility(u, monster, foes, b => used = b);
+                if (used) yield break;
+            }
+
             // Choose attack style.
             var attacks = u.C.GetAttacks();
             AttackOption ranged = attacks.FirstOrDefault(a => a.Ranged);
@@ -1545,7 +1552,65 @@ namespace DnD.Game
             {
                 if (u.C is PlayerCharacter) yield return AttackAction(u, target, melee);
                 else if (GoodBreath(u, target.Pos)) yield return EmberBreath(u, target.Pos);
+                else if (monster != null) yield return MonsterAttackRoutine(u, monster, target);
                 else yield return AiAttack(u, target, melee);
+            }
+        }
+
+        /// <summary>Multiattack: each attack in the routine, switching to another adjacent foe if the first falls.</summary>
+        IEnumerator MonsterAttackRoutine(Unit u, Monster m, Unit target)
+        {
+            foreach (var atk in m.AttackRoutine())
+            {
+                if (!Monster.KeepsAttacking(m)) yield break;
+                if (target == null || !target.Active || Zone.DistanceFt(u.Pos, target.Pos) > atk.MaxRangeFt)
+                    target = Units.Where(o => o.Active && Hostile(u, o) && Zone.DistanceFt(u.Pos, o.Pos) <= atk.MaxRangeFt).OrderBy(o => o.C.HP).FirstOrDefault();
+                if (target == null) yield break;
+                yield return AiAttack(u, target, atk);
+            }
+        }
+
+        /// <summary>A charged area ability (breath, spray) if it would catch at least two foes, or one when it's the only foe left.</summary>
+        IEnumerator TryMonsterAbility(Unit u, Monster m, List<Unit> foes, Action<bool> used)
+        {
+            used(false);
+            foreach (var ab in m.Def.Abilities)
+            {
+                if (!m.IsCharged(ab)) continue;
+                int tiles = Math.Max(1, ab.AreaFt / 5);
+                Vector2Int best = default; int bestHits = 0;
+                foreach (var f in foes)
+                {
+                    if (Zone.DistanceFt(u.Pos, f.Pos) > ab.AreaFt) continue;
+                    var area = AreaTiles(u, new CombatAction { AreaTiles = tiles, AreaFromSelf = true, AreaLine = ab.Shape == TargetShape.Line, RangeFt = ab.AreaFt }, f.Pos);
+                    int hits = foes.Count(o => area.Contains(o.Pos));
+                    if (hits > bestHits) { bestHits = hits; best = f.Pos; }
+                }
+                if (bestHits < Math.Min(2, foes.Count)) continue;
+                m.Spend(ab);
+                u.Cb.Turn.ActionUsed = true;
+                u.A.Face(Zone.ToWorld(best));
+                Log($"{u.Name} uses {ab.Name}!");
+                Sfx.Play("spell");
+                var zoneTiles = AreaTiles(u, new CombatAction { AreaTiles = tiles, AreaFromSelf = true, AreaLine = ab.Shape == TargetShape.Line, RangeFt = ab.AreaFt }, best);
+                var dmg = Dice.RollDamage(ab.Dice);
+                Ticker($"{u.Name}: {ab.Name}: {dmg.Breakdown()} · {ab.SaveAbility} save DC {ab.SaveDC}");
+                yield return new WaitForSeconds(0.5f);
+                foreach (var t in Units.Where(o => o != u && o.Active && zoneTiles.Contains(o.Pos)).ToList())
+                {
+                    var save = Checks.RollSave(t.C, ab.SaveAbility, AdvantageState.Normal);
+                    bool ok = Checks.ResolveSave(save, ab.SaveDC);
+                    Ticker($"{t.Name} {ab.SaveAbility} save: {save.Breakdown()} vs DC {ab.SaveDC} → {(ok ? "SAVED" : "FAILED")}");
+                    var lines = new List<string>();
+                    int lost = t.C.TakeDamage(ok ? dmg.Total / 2 : dmg.Total, ab.DamageType, false, lines);
+                    lines.ForEach(Log);
+                    t.A.Popup("-" + lost, UIKit.DamageRed);
+                    if (lost > 0) AttackResolver.RaiseConcentrationCheck(t.C, lost);
+                    OnDamaged(t);
+                    yield return new WaitForSeconds(0.3f);
+                }
+                used(true);
+                yield break;
             }
         }
 
