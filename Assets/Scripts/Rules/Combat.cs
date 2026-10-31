@@ -160,6 +160,16 @@ namespace DnD.Rules
                     roll.Dice.AddRange(Dice.RollDamage(new DiceExpr(sneak, 6), r.Critical).Dice);
                     roll.Terms.Add(new RollTerm("sneak attack", 0));
                 }
+                // The teenage dragon's Kindle: the next weapon hit blazes (+Nd6 fire).
+                var kindled = pc.Effects.Find(e => e.Id == "kindled");
+                if (kindled != null && atk.Weapon != null)
+                {
+                    pc.Effects.Remove(kindled);
+                    var fire = Dice.RollDamage(new DiceExpr(Math.Max(1, kindled.Power), 6), r.Critical);
+                    if (roll.Extra == null) { roll.Extra = fire; roll.ExtraType = DamageType.Fire; }
+                    else roll.Dice.AddRange(fire.Dice);
+                    roll.Terms.Add(new RollTerm("kindle", 0));
+                }
                 // Barbarian 9: Brutal Strike: +1d10 when the attack it was declared for hits.
                 if (r.BrutalStrike > 0)
                 {

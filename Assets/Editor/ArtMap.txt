@@ -1224,6 +1224,8 @@ end
 paint ui_junk junkbag k=4a3015 y=c9a227
 
 # ================================================================ Act II Phase 1: test monsters
+tint  mon_dragonling_teen_0 mon_dragonling_0 350 1.15 0.85
+tint  mon_dragonling_teen_1 mon_dragonling_1 350 1.15 0.85
 tint  mon_dire_wolf_0 mon_wolf_0 0 0.6 0.6
 tint  mon_dire_wolf_1 mon_wolf_1 0 0.6 0.6
 still mon_ogre           "Actor/Monster/Cyclope/SpriteSheet.png"

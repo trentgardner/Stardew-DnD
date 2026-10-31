@@ -128,7 +128,7 @@ namespace DnD.Rules
         }
 
         /// <summary>The attacks one Attack action makes (Multiattack), in order.</summary>
-        public List<AttackOption> AttackRoutine()
+        public virtual List<AttackOption> AttackRoutine()
         {
             var all = GetAttacks();
             var list = new List<AttackOption>();

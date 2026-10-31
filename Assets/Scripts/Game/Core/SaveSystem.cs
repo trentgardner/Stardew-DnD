@@ -74,8 +74,8 @@ namespace DnD.Game
         public bool DragonScared, DragonSniffUsed;
         public List<string> LitBraziers = new List<string>();
         public int RecruitWeek, RecruitSeed;
-        public int FestivalDoneDay;
         public int Act, ActTwoDay, DragonStage;
+        public int FestivalDoneDay; // keep last: older tests edit saves line by line
     }
 
     public class SaveInfo

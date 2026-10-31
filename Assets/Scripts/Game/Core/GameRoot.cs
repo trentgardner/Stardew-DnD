@@ -974,6 +974,7 @@ namespace DnD.Game
             d.Actor.Creature = Dragon;
             d.Actor.name = World.DragonName;
             Companions.Add(d);
+            DragonGrew();
         }
 
         /// <summary>The dragon is in some fight right now (it only ever joins one).</summary>

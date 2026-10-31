@@ -1,5 +1,6 @@
 using System.Linq;
 using DnD.Rules;
+using UnityEngine;
 
 namespace DnD.Game
 {
@@ -85,7 +86,15 @@ namespace DnD.Game
             if (DragonAgent != null) DragonAgent.Actor.name = World.DragonName;
         }
 
-        /// <summary>The dragon's body catches up with its new stage (Task 3 sets the look).</summary>
-        partial void DragonGrew();
+        public const float TeenDragonScale = 1.4f;
+
+        /// <summary>The dragon's body catches up with its stage: a teenager is bigger and a deeper red.</summary>
+        void DragonGrew()
+        {
+            var a = DragonAgent;
+            if (a == null || Dragon == null || !Dragon.IsTeen) return;
+            a.Actor.transform.localScale = Vector3.one * TeenDragonScale;
+            if (ArtRegistry.IsReal("mon_dragonling_teen_0")) { a.Actor.Look = "mon_dragonling_teen"; a.Actor.RefreshSprite(); }
+        }
     }
 }

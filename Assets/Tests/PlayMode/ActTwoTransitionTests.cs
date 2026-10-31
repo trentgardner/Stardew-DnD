@@ -151,5 +151,70 @@ namespace DnD.Tests
             Assert.GreaterOrEqual(p2.Character.XP, PlayerCharacter.XpThresholds[5], "a partner joining Act II starts with level-5 XP");
             Assert.GreaterOrEqual(p2.Character.CountOf("potion_healing"), 2, "and the same kit");
         }
+
+        static IEnumerator TeenInAFight(GameRoot g, PlayerSlot p)
+        {
+            g.ApplyActTwoStart(p);
+            p.Hud.CloseAll();
+            yield return Frames(2);
+            g.Warp(p, "forest", new Vector2Int(34, 8), false);
+            yield return Frames(3);
+            p.Hud.CloseAll();
+            g.StartGroupCombat("forest_wolves", p);
+        }
+
+        [UnityTest]
+        public IEnumerator TeenDragonIsBigger()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(10), "fighter", "human");
+            yield return Frames(2);
+            g.ApplyActTwoStart(p);
+            yield return Frames(2);
+            Assert.AreEqual(GameRoot.TeenDragonScale, g.DragonAgent.Actor.transform.localScale.x, 0.01f, "a teenager is bigger");
+        }
+
+        [UnityTest]
+        public IEnumerator ShieldWingRaisesAnAllysAc()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(11), "fighter", "human", level: 5);
+            yield return Frames(2);
+            yield return TeenInAFight(g, p);
+            var c = g.Combats.Single();
+            var du = c.Units.First(u => u.C is Dragonling);
+            var hero = c.Units.First(u => u.Owner == p);
+            if (du.Cb == null) du.Cb = new Combatant(du.C);
+            var spot = hero.Pos + Vector2Int.right; if (!hero.A.Zone.IsWalkable(spot) || c.Occupied(spot)) spot = hero.Pos + Vector2Int.left;
+            du.A.PlaceAt(du.A.Zone, spot);
+            int ac = hero.C.ArmorClass;
+            var wing = c.DragonActions(du).First(a => a.Name == "Shield Wing");
+            var run = wing.Run(du, hero.Pos); while (run.MoveNext()) { }
+            Assert.AreEqual(ac + 2, hero.C.ArmorClass, "Shield Wing: +2 AC");
+        }
+
+        [UnityTest]
+        public IEnumerator KindleAddsFireToTheNextHit()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(12), "fighter", "human", level: 5);
+            yield return Frames(2);
+            yield return TeenInAFight(g, p);
+            var c = g.Combats.Single();
+            var du = c.Units.First(u => u.C is Dragonling);
+            var hero = c.Units.First(u => u.Owner == p);
+            if (du.Cb == null) du.Cb = new Combatant(du.C);
+            var kindle = c.DragonActions(du).First(a => a.Name == "Kindle");
+            var run = kindle.Run(du, hero.Pos); while (run.MoveNext()) { }
+            Assert.IsTrue(hero.C.HasEffect("kindled"));
+            var pc = (PlayerCharacter)hero.C;
+            var wolf = new Monster(MonstersDb.Get("wolf"));
+            AttackRollResult res = null;
+            for (int i = 0; i < 200 && res == null; i++) { var r = AttackResolver.RollAttack(pc, wolf, pc.GetAttacks()[0], new AttackContext()); if (r.Hit) res = r; }
+            res.Turn = new TurnState();
+            var dmg = AttackResolver.RollDamage(res);
+            Assert.IsTrue(dmg.Terms.Any(t => t.Label == "kindle") && dmg.ExtraType == DamageType.Fire, "the next hit blazes with fire");
+            Assert.IsFalse(pc.HasEffect("kindled"), "once");
+        }
     }
 }

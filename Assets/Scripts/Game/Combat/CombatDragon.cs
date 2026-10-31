@@ -18,11 +18,22 @@ namespace DnD.Game
             var bite = d.GetAttacks()[0];
             var list = new List<CombatAction>();
             list.Add(new CombatAction { Name = "Move", Cost = ActionCost.Free, Target = Targeting.Tile });
-            list.Add(Need(new CombatAction { Name = $"Attack ({bite.Name})", Cost = ActionCost.Action, Target = Targeting.Enemy, RangeFt = bite.ReachFt,
-                Tooltip = bite.Summary(), Run = (me, tile) => AttackAction(me, UnitAt(tile), bite) }, t, null));
+            if (d.IsTeen)
+                list.Add(Need(new CombatAction { Name = "Attack (Bite + Claw)", Cost = ActionCost.Action, Target = Targeting.Enemy, RangeFt = 5,
+                    Tooltip = string.Join(" · ", d.AttackRoutine().Select(a => a.Summary())), Run = (me, tile) => MonsterAttackRoutine(me, d, UnitAt(tile)) }, t, null));
+            else
+                list.Add(Need(new CombatAction { Name = $"Attack ({bite.Name})", Cost = ActionCost.Action, Target = Targeting.Enemy, RangeFt = bite.ReachFt,
+                    Tooltip = bite.Summary(), Run = (me, tile) => AttackAction(me, UnitAt(tile), bite) }, t, null));
+            if (d.IsTeen)
+            {
+                list.Add(Need(new CombatAction { Name = "Shield Wing", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.Ally, RangeFt = 5,
+                    Tooltip = $"{d.Name} spreads a wing over a friend: +2 AC until {d.Name}'s next turn.", Run = (me, tile) => ShieldWing(me, UnitAt(tile)) }, t, null));
+                list.Add(Need(new CombatAction { Name = "Kindle", Group = ActionGroup.Abilities, Cost = ActionCost.Action, Target = Targeting.Ally, RangeFt = 5,
+                    Tooltip = $"{d.Name} breathes softly on a friend's weapon: their next weapon hit deals +{d.KindleDice}d6 fire.", Run = (me, tile) => Kindle(me, UnitAt(tile)) }, t, null));
+            }
             var breath = new CombatAction { Name = "Ember Breath", Group = ActionGroup.Abilities, Cost = ActionCost.Action, Target = Targeting.Tile,
-                AreaTiles = d.BreathConeTiles, AreaFromSelf = true, RangeFt = 5,
-                Tooltip = $"A puff of fire in a 5-ft cone: {d.BreathDamage} fire, DEX save DC {d.BreathDC} for half. Recharges on a 5–6 at the start of {d.Name}'s turn.",
+                AreaTiles = d.BreathConeTiles, AreaFromSelf = true, RangeFt = d.BreathConeTiles * 5,
+                Tooltip = $"Fire in a {d.BreathConeTiles * 5}-ft cone: {d.BreathDamage} fire, DEX save DC {d.BreathDC} for half. Recharges on a 5–6 at the start of {d.Name}'s turn.",
                 Why = d.BreathReady ? null : "Recharging (5–6 on a d6 each turn).",
                 Run = (me, tile) => EmberBreath(me, tile) };
             list.Add(Need(breath, t, null, d.BreathReady));
@@ -37,7 +48,7 @@ namespace DnD.Game
         List<Unit> BreathTargets(Unit me, Vector2Int tile)
         {
             var d = (Dragonling)me.C;
-            var area = AreaTiles(me, new CombatAction { AreaTiles = d.BreathConeTiles, AreaFromSelf = true, RangeFt = 5 }, tile);
+            var area = AreaTiles(me, new CombatAction { AreaTiles = d.BreathConeTiles, AreaFromSelf = true, RangeFt = d.BreathConeTiles * 5 }, tile);
             return Units.Where(o => o != me && !o.C.IsDead && o.Active && area.Contains(o.Pos)).ToList();
         }
 
@@ -82,9 +93,29 @@ namespace DnD.Game
         /// <summary>The AI breathes when its target is in the cone and no friend is.</summary>
         bool GoodBreath(Unit me, Vector2Int tile)
         {
-            if (!(me.C is Dragonling d) || !d.BreathReady || Zone.DistanceFt(me.Pos, tile) > 5) return false;
+            if (!(me.C is Dragonling d) || !d.BreathReady || Zone.DistanceFt(me.Pos, tile) > d.BreathConeTiles * 5) return false;
             var hit = BreathTargets(me, tile);
             return hit.Any(o => Hostile(me, o)) && !hit.Any(o => !Hostile(me, o));
+        }
+
+        /// <summary>Shield Wing: +2 AC for a friend until the dragon's next turn.</summary>
+        IEnumerator ShieldWing(Unit me, Unit ally)
+        {
+            if (ally == null) yield break;
+            me.Cb.Turn.BonusActionUsed = true;
+            ally.C.AddEffect(new ActiveEffect { Id = "shield_wing", Name = "Shield Wing", Source = me.C, RoundsLeft = 1, AcBonus = 2 });
+            ally.A.Popup("Shield Wing", UIKit.UtilityBlue);
+            Log($"{me.Name} spreads a wing over {ally.Name} (+2 AC).");
+        }
+
+        /// <summary>Kindle: a friend's next weapon hit blazes with the dragon's fire.</summary>
+        IEnumerator Kindle(Unit me, Unit ally)
+        {
+            if (ally == null || !(me.C is Dragonling d)) yield break;
+            me.Cb.Turn.ActionUsed = true;
+            ally.C.AddEffect(new ActiveEffect { Id = "kindled", Name = "Kindled", Source = me.C, RoundsLeft = 2, Power = d.KindleDice });
+            ally.A.Popup("Kindled!", UIKit.Gold);
+            Log($"{me.Name} breathes on {ally.Name}'s weapon. It glows like a coal.");
         }
 
         /// <summary>At 0 HP the hatchling isn't slain: it bolts for safety and sits out fights until the party rests.</summary>
