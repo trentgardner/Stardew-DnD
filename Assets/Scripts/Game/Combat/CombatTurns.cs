@@ -1674,6 +1674,12 @@ namespace DnD.Game
                 if (ward != null) target = foes.OrderBy(f => Zone.DistanceFt(f.Pos, ward.Pos) * 2 + Zone.DistanceFt(u.Pos, f.Pos)).First();
             }
             if (u.C is PlayerCharacter bpc && !u.IsHuman && !turn.BonusActionUsed) yield return AiBonusAction(u, bpc, target);
+            if (u.C is PlayerCharacter lpc && lpc.IsCaster && lpc.CanCastSpells && !u.IsHuman && !turn.ActionUsed)
+            {
+                bool cast = false;
+                yield return AiCastLeveled(u, lpc, foes, b => cast = b);
+                if (cast) yield break;
+            }
             if (prefersRange)
             {
                 int dist = Zone.DistanceFt(u.Pos, target.Pos);
@@ -1783,6 +1789,56 @@ namespace DnD.Game
             }
         }
 
+        /// <summary>
+        /// A companion caster's levelled spells (Act II): mass heals when friends are hurting, a concentration buff
+        /// (Spirit Guardians, Haste) when free, and the area spell that catches the most enemies and no friends.
+        /// </summary>
+        IEnumerator AiCastLeveled(Unit u, PlayerCharacter pc, List<Unit> foes, Action<bool> cast)
+        {
+            cast(false);
+            var known = pc.Cantrips.Concat(pc.PreparedSpells).Concat(pc.BonusAlwaysPrepared).Distinct().Select(SpellsDb.Get)
+                .Where(s => s != null && !s.IsCantrip && (s.CastTime == CastTime.Action || (s.Kind == SpellKind.Heal && s.CastTime == CastTime.BonusAction && !u.Cb.Turn.BonusActionUsed))
+                    && pc.LowestAvailableSlot(s.Level) > 0).ToList();
+            if (known.Count == 0 || u.Cb.Turn.CastLeveledSpellThisTurn) yield break;
+            var friends = Units.Where(o => !Hostile(u, o) && !o.C.IsDead).ToList();
+
+            // 1. Two or more friends below half: a mass heal on the most hurt one.
+            var hurt = friends.Where(o => o.C.HP < o.C.EffectiveMaxHP / 2).ToList();
+            var massHeal = known.Where(s => s.Kind == SpellKind.Heal && s.MaxTargets > 1).OrderByDescending(s => s.Level).FirstOrDefault();
+            if (massHeal != null && hurt.Count >= 2)
+            {
+                var centre = hurt.OrderBy(o => o.C.HP).First();
+                if (Zone.DistanceFt(u.Pos, centre.Pos) <= massHeal.RangeFt) { yield return CastSpell(u, pc, massHeal, centre.Pos); cast(massHeal.CastTime == CastTime.Action); yield break; }
+            }
+            // 2. Free concentration: Spirit Guardians when enemies are close, Haste on the front line.
+            if (pc.ConcentratingOn == null)
+            {
+                var sg = known.FirstOrDefault(s => s.Id == "spirit_guardians");
+                if (sg != null && foes.Count(f => Zone.DistanceFt(u.Pos, f.Pos) <= 15) >= 1) { yield return CastSpell(u, pc, sg, u.Pos); cast(true); yield break; }
+                var haste = known.FirstOrDefault(s => s.Id == "haste");
+                var front = friends.Where(o => o.Active && o != u && Zone.DistanceFt(u.Pos, o.Pos) <= haste?.RangeFt && foes.Any(f => Zone.DistanceFt(o.Pos, f.Pos) <= 5)).FirstOrDefault();
+                if (haste != null && front != null && !front.C.HasEffect("haste")) { yield return CastSpell(u, pc, haste, front.Pos); cast(true); yield break; }
+            }
+            // 3. The best area damage spell: most enemies, no friends (Sculpt Spells forgives a few).
+            Vector2Int best = default; SpellDef bestSpell = null; int bestScore = 1;
+            foreach (var s in known.Where(s => s.Kind == SpellKind.Save && s.Shape != TargetShape.Single && !s.Dice.IsNone && s.ZoneLineTiles == 0 && (!s.Concentration || pc.ConcentratingOn == null)))
+            {
+                foreach (var f in foes)
+                {
+                    var probe = new CombatAction { AreaTiles = Math.Max(1, s.AreaFt / 5), AreaFromSelf = s.RangeFt == 0, AreaLine = s.Shape == TargetShape.Line, RangeFt = s.RangeFt == 0 ? s.AreaFt : s.RangeFt };
+                    if (!probe.AreaFromSelf && Zone.DistanceFt(u.Pos, f.Pos) > s.RangeFt) continue;
+                    var area = AreaTiles(u, probe, f.Pos);
+                    int enemies = foes.Count(o => area.Contains(o.Pos));
+                    int allies = friends.Count(o => o != u && area.Contains(o.Pos)) - SpellResolver.Sculpted(pc, s, friends.Where(o => area.Contains(o.Pos)).Select(o => o.C)).Count;
+                    if (area.Contains(u.Pos) && !probe.AreaFromSelf) allies++;
+                    if (allies > 0) continue;
+                    int score = enemies * 10 + s.Level;
+                    if (enemies >= 2 && score > bestScore) { bestScore = score; best = f.Pos; bestSpell = s; }
+                }
+            }
+            if (bestSpell != null) { yield return CastSpell(u, pc, bestSpell, best); cast(true); }
+        }
+
         /// <summary>Companion bonus action before moving: heal up, rage, or mark the target.</summary>
         IEnumerator AiBonusAction(Unit u, PlayerCharacter pc, Unit target)
         {
@@ -1794,6 +1850,10 @@ namespace DnD.Game
                 if (hurt != null) { yield return LayOnHands(u, pc, hurt); yield break; }
             }
             if (pc.ResourceLeft("rage") > 0 && !pc.Raging && Zone.DistanceFt(u.Pos, target.Pos) <= pc.Speed + 5) { yield return Rage(u, pc); yield break; }
+            if (pc.ResourceLeft("wholeness") > 0 && pc.HP < pc.EffectiveMaxHP / 2) { u.Cb.Turn.BonusActionUsed = true; var wl = new List<string>(); pc.WholenessOfBody(wl); wl.ForEach(Log); yield break; }
+            var smite = new[] { "banishing_smite", "staggering_smite", "blinding_smite" }.Select(SpellsDb.Get)
+                .FirstOrDefault(s => s != null && pc.KnowsSpell(s.Id) && pc.LowestAvailableSlot(s.Level) > 0 && !pc.HasEffect(s.EffectId));
+            if (smite != null && Zone.DistanceFt(u.Pos, target.Pos) <= pc.Speed + 5 && pc.CanCastSpells) { yield return CastSpell(u, pc, smite, u.Pos); yield break; }
             if (pc.ConcentratingOn == null && Zone.DistanceFt(u.Pos, target.Pos) <= 90 && Zone.LineOfSight(u.Pos, target.Pos))
             {
                 foreach (var id in new[] { "hunters_mark", "hex" })

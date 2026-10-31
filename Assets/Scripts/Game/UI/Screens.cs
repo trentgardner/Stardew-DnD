@@ -332,7 +332,7 @@ namespace DnD.Game
             if (pc.Class.Id == "wizard" && pc.SpendResource("arcane_recovery"))
             {
                 int budget = (pc.Level + 1) / 2;
-                for (int l = 2; l >= 1; l--) while (budget >= l && pc.SlotsUsed[l] > 0) { pc.SlotsUsed[l]--; budget -= l; }
+                for (int l = Math.Min(5, budget); l >= 1; l--) while (budget >= l && pc.SlotsUsed[l] > 0) { pc.SlotsUsed[l]--; budget -= l; }
                 Hud.Toast("Arcane Recovery: you regain spell slots.", UIKit.UtilityBlue);
             }
             Hud.Narrate("You rest for an hour, bandaging wounds and catching your breath.", false);
@@ -372,16 +372,18 @@ namespace DnD.Game
 
     public class CharacterSheetScreen : GameScreen
     {
-        Text _left, _right;
+        Text _left, _skills, _feats;
         MenuList _menu;
 
         public override void Build()
         {
             Window(new Vector2(480, 300), null);
-            var l = UIKit.Rect(Root, "Left", new Vector2(0, 0), new Vector2(0.5f, 1), new Vector2(12, 40), new Vector2(-4, -8));
+            var l = UIKit.Rect(Root, "SheetLeft", new Vector2(0, 0), new Vector2(0.5f, 1), new Vector2(12, 40), new Vector2(-4, -8));
             _left = UIKit.Label(l, "", 9, UIKit.Ink);
             var r = UIKit.Rect(Root, "Right", new Vector2(0.5f, 0), new Vector2(1, 1), new Vector2(4, 40), new Vector2(-12, -8));
-            _right = UIKit.Label(r, "", 9, UIKit.Ink);
+            // Skills in two columns on top, features (a wrapped paragraph) underneath: a level 10 sheet has a lot to say.
+            _skills = UIKit.Label(UIKit.Rect(r, "SheetSkills", new Vector2(0, 0.5f), new Vector2(1, 1), Vector2.zero, Vector2.zero), "", 9, UIKit.Ink);
+            _feats = UIKit.Label(UIKit.Rect(r, "SheetFeats", new Vector2(0, 0), new Vector2(1, 0.5f), Vector2.zero, Vector2.zero), "", 9, UIKit.Ink);
             var m = UIKit.Rect(Root, "Menu", new Vector2(0, 0), new Vector2(1, 0), new Vector2(8, 4), new Vector2(-8, 38));
             _menu = new MenuList(m) { RowHeight = 16, FontSize = 10 };
             Rebuild();
@@ -393,33 +395,35 @@ namespace DnD.Game
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"<size=14><b>{pc.Name}</b></size>");
             sb.AppendLine($"Level {pc.Level} {pc.Species.Name} {pc.Class.Name}{(pc.Level >= 3 && pc.Class.Subclass != null ? $" ({pc.Class.Subclass.Name})" : "")}");
-            sb.AppendLine($"{pc.Background.Name} · XP {pc.XP}/{(pc.Level < PlayerCharacter.XpThresholds.Length - 1 ? PlayerCharacter.XpThresholds[pc.Level + 1] : 0)}");
+            sb.AppendLine($"{pc.Background.Name} · {pc.CarriedWeight:0.#}/{pc.CarryCapacity} lb · XP {pc.XP}{(pc.Level < PlayerCharacter.XpThresholds.Length - 1 ? "/" + PlayerCharacter.XpThresholds[pc.Level + 1] : " (max)")}");
             sb.AppendLine($"HP {pc.HP}/{pc.EffectiveMaxHP} · AC {pc.ArmorClass} · Speed {pc.Speed} ft · Init {AbilityUtil.Fmt(pc.InitiativeBonus)}");
             sb.AppendLine($"Proficiency +{pc.ProficiencyBonus} · Passive Perception {pc.PassivePerception}");
             if (pc.IsCaster) sb.AppendLine($"Spell DC {pc.SpellSaveDC} · Spell attack {AbilityUtil.Fmt(pc.SpellAttackBonus)}");
-            sb.AppendLine($"Carrying {pc.CarriedWeight:0.#}/{pc.CarryCapacity} lb");
             sb.AppendLine();
             foreach (var a in AbilityUtil.All)
             {
                 bool save = Array.IndexOf(pc.Class.SavingThrows, a) >= 0;
                 sb.AppendLine($"<b>{a}</b> {pc.Score(a),2} ({AbilityUtil.Fmt(pc.Mod(a))})   save {AbilityUtil.Fmt(pc.SaveBonus(a))}{(save ? " ●" : "")}");
             }
-            sb.AppendLine();
             sb.AppendLine("<b>Weapon</b>: " + pc.GetAttacks()[0].Summary());
             _left.text = sb.ToString();
 
-            var sk = new System.Text.StringBuilder("<b>Skills</b>  (● proficient, ◆ expertise)\n");
-            foreach (var s in SkillUtil.All)
-            {
-                string mark = pc.Expertise.Contains(s) ? "◆" : pc.IsProficient(s) ? "●" : "  ";
-                sk.AppendLine($"{mark} {SkillUtil.Name(s)} {AbilityUtil.Fmt(pc.SkillBonus(s))}");
-            }
-            sk.AppendLine("\n<b>Features</b>");
-            foreach (var f in pc.Class.Features) if (f.Level <= pc.Level) sk.AppendLine($"· {f.Name}");
-            if (pc.Level >= 3 && pc.Class.Subclass != null) foreach (var f in pc.Class.Subclass.Features) sk.AppendLine($"· {f.Name}");
-            foreach (var t in pc.Species.Traits) sk.AppendLine($"· {t.Split(':')[0]}");
-            sk.AppendLine($"· {pc.Background.OriginFeat}");
-            _right.text = sk.ToString();
+            // Skills as two wrapped paragraphs (what you're trained in first), so they fit a half-width split-screen window.
+            string Sk(Skill s) => $"{(pc.Expertise.Contains(s) ? "◆" : pc.IsProficient(s) ? "●" : "")}{SkillUtil.Name(s)} {AbilityUtil.Fmt(pc.SkillBonus(s))}";
+            var trained = SkillUtil.All.Where(pc.IsProficient).ToList();
+            _skills.text = "<b>Skills</b>\n" +string.Join(" · ", trained.Select(Sk))
+                + "\n<size=8>" + string.Join(" · ", SkillUtil.All.Where(s => !pc.IsProficient(s)).Select(Sk)) + "</size>";
+            var sk = new System.Text.StringBuilder();
+            // Features as one wrapped paragraph (a level 10 character has ~20 of them), repeats counted once.
+            var feats = new List<string>();
+            foreach (var f in pc.Class.Features) if (f.Level <= pc.Level) feats.Add(f.Name);
+            if (pc.Level >= 3 && pc.Class.Subclass != null) foreach (var f in pc.Class.Subclass.Features) if (f.Level <= pc.Level) feats.Add(f.Name);
+            foreach (var t in pc.Species.Traits) feats.Add(t.Split(':')[0]);
+            feats.Add(pc.Background.OriginFeat);
+            var named = feats.GroupBy(n => n).Select(gr => gr.Count() > 1 ? $"{gr.Key} ×{gr.Count()}" : gr.Key);
+            sk.AppendLine("<b>Features</b>");
+            sk.Append("<size=8>").Append(string.Join(" · ", named)).Append("</size>");
+            _feats.text = sk.ToString();
 
             _menu.Clear();
             if (pc.CanLevelUp) _menu.Add($"★ LEVEL UP to {pc.Level + 1}!", StartLevelUp);
@@ -518,7 +522,7 @@ namespace DnD.Game
             }
             else
             {
-                _menu.Add($"Slots: L1 {pc.SlotsLeft(1)}/{pc.SlotsMax(1)}{(pc.SlotsMax(2) > 0 ? $" · L2 {pc.SlotsLeft(2)}/{pc.SlotsMax(2)}" : "")}", null, false);
+                _menu.Add("Slots: " + string.Join(" · ", Enumerable.Range(1, 9).Where(l => pc.SlotsMax(l) > 0).Select(l => $"L{l} {pc.SlotsLeft(l)}/{pc.SlotsMax(l)}")), null, false);
                 _shown.Add(null);
                 foreach (var id in pc.Cantrips.Concat(pc.PreparedSpells).Distinct())
                 {

@@ -214,5 +214,94 @@ namespace DnD.Tests
             Assert.Less(wolf.C.HP, 300, "the wolf is caught in the fireball");
             Assert.AreEqual(300, hero.C.HP, "the fighter next to it is sculpted out");
         }
+
+        [UnityTest]
+        public IEnumerator LevelUpScreenOffersMagicalSecretsAndScrolls()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(10), "bard", "human", level: 9);
+            p.Character.XP = PlayerCharacter.XpThresholds[10];
+            yield return Frames(2);
+            var screen = new LevelUpScreen();
+            p.Hud.Push(screen);
+            yield return Frames(2);
+            screen.PickHpAverage();
+            int guard = 0;
+            bool sawSecrets = false;
+            while (screen.CurrentChoice != null && guard++ < 10)
+            {
+                var c = screen.CurrentChoice;
+                if (c.Kind == ChoiceKind.Spell)
+                {
+                    sawSecrets = true;
+                    Assert.Greater(screen.RowCount, screen.VisibleRows, "a long list: it scrolls");
+                    Assert.IsTrue(screen.RowTexts.First().StartsWith("Next"), "Next is on top of a long list");
+                    Assert.IsTrue(screen.RowTexts.Any(t => t.StartsWith("— Level")), "spells are grouped by level");
+                    var other = c.Options.First(id => !SpellsDb.Get(id).Classes.Contains("bard"));
+                    screen.Toggle(other);
+                    foreach (var id in c.Options.Where(o => o != other).Take(c.Count - 1)) screen.Toggle(id);
+                }
+                else foreach (var id in c.Options.Take(c.Count).ToList()) screen.Toggle(id);
+                screen.Next();
+            }
+            Assert.IsTrue(sawSecrets, "bard 10 picks Magical Secrets spells");
+            screen.Confirm();
+            yield return Frames(2);
+            Assert.AreEqual(10, p.Character.Level);
+            Assert.IsTrue(p.Character.PreparedSpells.Any(id => !SpellsDb.Get(id).Classes.Contains("bard")), "a spell from another list is now prepared");
+        }
+
+        [UnityTest]
+        public IEnumerator CharacterSheetFitsAtLevelTenInSplitScreen()
+        {
+            var g = GameRoot.I;
+            var p1 = g.DebugStart(Still(11), "paladin", "human", level: 10);
+            var p2 = g.DebugStart(Still(12), "wizard", "elf", level: 10);
+            yield return Frames(10);
+            foreach (var p in new[] { p1, p2 })
+            {
+                var sheet = new CharacterSheetScreen();
+                p.Hud.Push(sheet);
+            }
+            yield return Frames(10);
+            foreach (var label in Object.FindObjectsByType<UnityEngine.UI.Text>(FindObjectsSortMode.None).Where(t => t.transform.parent != null && t.transform.parent.name.StartsWith("Sheet")))
+            {
+                var rt = (RectTransform)label.transform;
+                Assert.LessOrEqual(label.preferredHeight, rt.rect.height + 2f, $"the sheet's {label.transform.parent.name} column fits ({label.preferredHeight:0} > {rt.rect.height:0}): {label.text.Substring(0, System.Math.Min(40, label.text.Length))}");
+            }
+            Assert.Greater(Object.FindObjectsByType<UnityEngine.UI.Text>(FindObjectsSortMode.None).Count(t => t.transform.parent != null && t.transform.parent.name.StartsWith("Sheet")), 3, "found the sheet columns");
+            Shot("act2_sheet_l10");
+        }
+
+        [UnityTest]
+        public IEnumerator CompanionsLevelToTenAutomatically()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(13), "fighter", "human", level: 5);
+            var pc = CharacterFactory.Create(CharacterFactory.DefaultChoices("cleric", "dwarf", "Bram"));
+            var comp = g.SpawnCompanion(p, pc, "hums");
+            yield return Frames(2);
+            g.GiveXP(p, 70000, "test");
+            Assert.AreEqual(10, pc.Level, "the companion follows to the cap");
+            Assert.IsTrue(pc.PreparedSpells.Contains("mass_cure_wounds"), "with its domain spells");
+            Assert.Greater(pc.SlotsMax(5), 0, "and 5th-level slots");
+        }
+
+        static void Shot(string name)
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "embers_screenshots");
+            Directory.CreateDirectory(dir);
+            var rt = new RenderTexture(1280, 720, 24);
+            var cams = Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
+            System.Array.Sort(cams, (a, b) => a.depth.CompareTo(b.depth));
+            foreach (var c in cams) { if (!c.isActiveAndEnabled) continue; var old = c.targetTexture; c.targetTexture = rt; c.Render(); c.targetTexture = old; }
+            RenderTexture.active = rt;
+            var tex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
+            tex.Apply();
+            RenderTexture.active = null;
+            File.WriteAllBytes(Path.Combine(dir, name + ".png"), tex.EncodeToPNG());
+            Object.Destroy(rt);
+        }
     }
 }
