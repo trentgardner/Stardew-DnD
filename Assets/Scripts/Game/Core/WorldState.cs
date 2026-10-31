@@ -47,6 +47,9 @@ namespace DnD.Game
         public readonly Dictionary<string, int> Standing = new Dictionary<string, int>();
         /// <summary>The force the party chose to stand with (null until the choice).</summary>
         public string CommittedFaction;
+        /// <summary>0 (none) to 3: how far the blight has spread. BlightEased: the volcano was calmed.</summary>
+        public int BlightStage;
+        public bool BlightEased;
         /// <summary>The day the party finished the Harvest Festival quest (0 = not yet): the festival stops coming back after that.</summary>
         public int FestivalDoneDay;
         public string DragonName = "Cinder";

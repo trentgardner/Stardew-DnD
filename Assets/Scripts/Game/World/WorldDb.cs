@@ -107,6 +107,8 @@ namespace DnD.Game
         public bool Dark;
         public bool Indoors;
         public bool SafeForLongRest;
+        /// <summary>How much the blight shows here (0-1); -1 = the default for the kind of place (see Blight.Weight).</summary>
+        public float BlightWeight = -1;
         public string EnterNarration;
         /// <summary>Music track id; defaults to "music_{Id}" (see Assets/Editor/ArtMap.txt audio lines).</summary>
         public string Music;

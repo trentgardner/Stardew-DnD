@@ -211,7 +211,9 @@ namespace DnD.Game
         {
             var d = new Dialogue("pip", c => "start");
             const string who = "Pip Thistlewhit";
-            d.Node("start", who, c => "Welcome to the Sleeping Drake! Stew's hot, ale's cold, gossip's free. What'll it be?",
+            d.Node("start", who, c => c.Blight >= 1
+                    ? "Welcome to the Sleeping Drake. Stew's hot, which is more than Old Tobin can say: his hearth went cold last night and wouldn't light again. Folk are jumpy."
+                    : "Welcome to the Sleeping Drake! Stew's hot, ale's cold, gossip's free. What'll it be?",
                 c => "A gnome standing on a crate behind the bar, sleeves rolled up, polishing a tankard that is already clean.")
                 .Say("I'd like a room for the night. (5 sp, long rest)", doIt: c => c.G.RentRoom(c.P), end: true)
                 .Say("A bowl of stew, please. (2 sp)", "stew", show: c => c.PC.Copper >= 20, doIt: c => { c.PC.Copper -= 20; })

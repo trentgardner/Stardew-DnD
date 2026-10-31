@@ -13,7 +13,9 @@ namespace DnD.Game
             var d = new Dialogue("garrick", c => "start");
             const string who = "Garrick Ashforge";
             d.Node("start", who,
-                c => c.Npc != null && c.Npc.Actor.Zone.Def.Id == "forge"
+                c => c.Blight >= 1
+                    ? "Forge won't stay lit. Third time this morning. I've banked it, fed it, sworn at it. Iron doesn't care about omens, but I'm starting to."
+                    : c.Npc != null && c.Npc.Actor.Zone.Def.Id == "forge"
                     ? "Welcome to the Ashforge! If it's iron, I can make it. If it's not iron, I can probably still hit it with a hammer until it is."
                     : "Mind the sparks! Shop's inside if you're buying. If you're just watching, you can pump the bellows.",
                 c => "A broad, soot-streaked man with forearms like hams and a laugh you can hear across the green.")

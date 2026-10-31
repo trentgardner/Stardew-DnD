@@ -24,6 +24,8 @@ namespace DnD.Game
         public bool Bg(string bgId) => PC.Background.Id == bgId;
         public bool Species(string id) => PC.Species.Id == id;
         public int Hearts => G.World.Hearts(NpcId);
+        /// <summary>How far the blight has spread (0-3), for dialogue that changes as things get worse.</summary>
+        public int Blight => G.World.BlightStage;
     }
 
     public class DOption

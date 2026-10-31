@@ -77,6 +77,8 @@ namespace DnD.Game
         public int Act, ActTwoDay, DragonStage;
         public List<KV> DragonOpinion = new List<KV>(), Standing = new List<KV>();
         public string CommittedFaction;
+        public int BlightStage;
+        public bool BlightEased;
         public int FestivalDoneDay; // keep last: older tests edit saves line by line
     }
 
@@ -229,6 +231,7 @@ namespace DnD.Game
             foreach (var kv in w.DragonOpinionShift) d.DragonOpinion.Add(new KV(kv.Key, kv.Value));
             foreach (var kv in w.Standing) d.Standing.Add(new KV(kv.Key, kv.Value));
             d.CommittedFaction = w.CommittedFaction;
+            d.BlightStage = w.BlightStage; d.BlightEased = w.BlightEased;
             return d;
         }
 
@@ -324,6 +327,7 @@ namespace DnD.Game
             if (d.DragonOpinion != null) foreach (var kv in d.DragonOpinion) w.DragonOpinionShift[kv.K] = kv.V;
             if (d.Standing != null) foreach (var kv in d.Standing) w.Standing[kv.K] = kv.V;
             w.CommittedFaction = string.IsNullOrEmpty(d.CommittedFaction) ? null : d.CommittedFaction;
+            w.BlightStage = d.BlightStage; w.BlightEased = d.BlightEased;
         }
     }
 }
