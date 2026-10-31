@@ -20,6 +20,19 @@ namespace DnD.Game
         public bool Done(string id) => QuestDb.Get(id) is QuestDef q && Stage(id) >= q.Last;
         public bool Active(string id) => QuestDb.Get(id) is QuestDef q && Stage(id) > 0 && Stage(id) < q.Last;
 
+        /// <summary>False when the party stood with another force: that force's quests are closed for good.</summary>
+        public bool CanStart(string id)
+        {
+            var q = QuestDb.Get(id);
+            var w = GameRoot.I?.World;
+            if (q == null || q.Faction == null || w == null || w.CommittedFaction == null) return true;
+            return q.Faction == w.CommittedFaction;
+        }
+
+        /// <summary>"Closed: you stood with …" for the journal, or null if the quest is open.</summary>
+        public string ClosedBy(string id) =>
+            CanStart(id) ? null : $"Closed: you stood with {FactionDb.NameOf(GameRoot.I.World.CommittedFaction)}";
+
         public void Start(string id, PlayerSlot by = null)
         {
             if (Stage(id) > 0) return;
@@ -32,7 +45,7 @@ namespace DnD.Game
         /// <summary>rewardScale shrinks XP and coin (e.g. 1/3 when the watch found the lost child instead of you).</summary>
         public void Set(string id, int stage, PlayerSlot by, float rewardScale)
         {
-            if (Stage(id) >= stage) return;
+            if (Stage(id) >= stage || !CanStart(id)) return;
             int before = Stage(id);
             Stages[id] = stage;
             var q = QuestDb.Get(id);

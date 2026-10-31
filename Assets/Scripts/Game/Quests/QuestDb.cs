@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Generic;
 
 namespace DnD.Game
@@ -44,6 +45,9 @@ namespace DnD.Game
         public QuestReward Reward;
         /// <summary>XP for reaching a stage (milestones on a long quest), paid once to every ready player.</summary>
         public Dictionary<int, int> StageXp = new Dictionary<int, int>();
+        /// <summary>Act II: which of the four forces this quest belongs to (null = nobody's), and whether it's that force's major quest (the point of no return).</summary>
+        public string Faction;
+        public bool Major;
         public int Last => StageText.Length - 1;
     }
 
@@ -58,6 +62,21 @@ namespace DnD.Game
         public static QuestDef Get(string id) => id != null && All.TryGetValue(id, out var q) ? q : null;
 
         static QuestDef Add(QuestDef q) { All[q.Id] = q; return q; }
+
+        /// <summary>Tests only: a scouting and a major quest for each of the four forces. Never shipped in the real list.</summary>
+        public static void RegisterTestQuests()
+        {
+            foreach (var f in FactionDb.All.Keys)
+            {
+                Add(new QuestDef { Id = "test_scout_" + f, Title = "Test scouting: " + f, Faction = f, StageText = new[] { "", "Scouting.", "Done." } });
+                Add(new QuestDef { Id = "test_major_" + f, Title = "Test major: " + f, Faction = f, Major = true, StageText = new[] { "", "Committed.", "Done." } });
+            }
+        }
+
+        public static void RemoveTestQuests()
+        {
+            foreach (var id in All.Keys.Where(k => k.StartsWith("test_scout_") || k.StartsWith("test_major_")).ToList()) All.Remove(id);
+        }
 
         static QuestDb()
         {
