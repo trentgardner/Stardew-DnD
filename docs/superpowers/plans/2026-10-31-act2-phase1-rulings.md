@@ -1,0 +1,50 @@
+# Act II Phase 1: rulings made while building (for the user to skim)
+
+- Task 1: Ruling: added SpellTablesToTen + FightingStyle2 (Champion 7) + DebugStart(level) + ResetWorld resets the cap — needed for the SRD tables and save compat — cost if wrong: small. Ruling: Magical Secrets follows 2024 (bard L10+ prepared-spell picks come from Bard/Cleric/Druid/Wizard lists), not 'two extra spells' as the plan said — the 2024 rule — cost: none.
+- Task 2: Ruling: raise_dead left out — the temple, Revivify and Ember of Return already cover revival, and there's no out-of-combat casting UI for it — cost: one spell less for clerics/bards/paladins.
+- Task 2: Ruling: Slow skips the −2 DEX-save part; Fly is +30 ft Speed only (no flying-over-hazards rule) — the grid has no height — cost: small.
+- Task 2: Ruling: mass heals roll once for all targets — one visible roll instead of six — cost: less variance.
+- Task 2: Ruling: Banishment held for the full minute = the creature is defeated (it 'doesn't return'; it counts as down for XP) — cost: rare in practice.
+- Task 2: Ruling: 2024 smites and Lightning Arrow use the existing 'ready on your next hit' model (cast as a bonus action before the hit), not cast after hitting — consistent with Divine Smite in the game — cost: slight RAW difference.
+- Task 2: Ruling: added sleet_storm (druid) and conjure_barrage (ranger) and gave Aid / Lesser Restoration to paladin and ranger (SRD lists) so every class has 2+ spells per level — cost: none.
+- Task 3: Ruling: the owlbear keeps ONE Rend (not SRD Multiattack): it's the Act I Haunted Mill mother, balanced and tested for a level 3 party; doubling her damage would break the Act I balance pass — cost: a little less SRD-faithful. The test is TrollMakesThreeAttacks instead of OwlbearMakesTwoAttacks.
+- Task 3: Ruling: stat lines use the SRD 5.1 blocks where I wasn't sure of the 5.2 numbers (troll regen 10, bite+2 claws) — cost: small numeric drift.
+- Task 3: Ruling: added GameRoot.DebugSpawnGroup (spawns any monsters next to a player) for tests and the Task 9 fights — cost: none (debug-only).
+- Task 4: Ruling: Extra Attack was in the rules (fighter 5) but never wired into combat; added AttacksLeftInAction flow (Attack button becomes "Attack 2/2", free; companions use every attack). ExtraAttackSurvivesRetargetAfterKill checks the action-bar state after the first swing rather than driving the dice UI; the full fuzz fights in Task 9 exercise the swings — cost: the human swing path is covered by fuzz only.
+- Task 4: Ruling: Uncanny Dodge and Berserker Retaliation fire automatically (no prompt) when they apply — fewer popups mid-fight — cost: a player can't save the reaction for later.
+- Task 4: Ruling: Brutal Strike / Cunning Strike / Tactical Master are chosen with free buttons BEFORE the attack (in the Abilities pop-up), not in a picker after it hits — same pattern as Divine Smite — cost: slight RAW difference (Cunning Strike is chosen before you know it's a Sneak Attack; unused it expires at end of turn).
+- Task 4: Ruling: Thief 9 Supreme Sneak is text-only (Stealth advantage outside combat isn't modelled) — cost: no mechanical effect yet.
+- Task 4: Ruling: monk Unarmored Movement now scales +15 at 6 / +20 at 10 here (Task 5 feature, trivial to do with Fast Movement) — cost: none.
+- Task 5: Ruling: Devotion oath spells: the plan listed L3/L4 spells at 5 and 9, which a paladin can't cast yet (max spell level 2 at 5, 3 at 9). Used Aid + Lesser Restoration at 5 and Beacon of Hope + Revivify at 9 (stand-ins for Zone of Truth / Dispel Magic, which the game doesn't have) — cost: small.
+- Task 5: Ruling: added SubclassDef.LaterSpells / AlwaysPreparedAt(level) for subclass spells at 5/7/9 — Task 6 (Life, Land) uses it too — cost: none.
+- Task 5: Ruling: Auras.Source is a GameRoot-level IAuraSource that finds whichever fight the creature is in (co-op can have two fights at once); outside a fight only your own aura counts — cost: none.
+- Task 5: Ruling: Stunning Strike for humans is readied with a free button before the hit (same pattern as smites); companion monks use it automatically on a hit while they have 2+ Focus — cost: humans can't decide after seeing the hit.
+- Task 5: Ruling: Faithful Steed, Empowered Strikes and Acrobatic Movement are text-only (no mounts, no force-damage choice, no water-running tiles) — cost: no mechanics yet.
+- Task 6: Ruling: Cleric 7 Blessed Strikes = Potent Spellcasting (+WIS to cantrips) rather than Divine Strike — simpler, and fits the Life cleric's caster role — cost: no weapon-damage option.
+- Task 6: Ruling: Circle of the Land later spells use curated stand-ins (Arid fireball/wall of fire/cone of cold; Polar sleet storm/ice storm/cone of cold; Temperate lightning bolt/greater invisibility/hold monster) — the SRD ones (blight, wall of stone, tree stride...) aren't in the game — cost: off-list spells for druids.
+- Task 6: Ruling: flying (Giant Owl form, the Fly spell) crosses water tiles on the combat grid only; exploration movement still uses the physics colliders (flying over rivers in the overworld is for Act III's grown dragon) — cost: an owl-shaped druid can't fly over the overworld river.
+- Task 6: Ruling: Divine Intervention is a free 'ready' button that makes the next cleric spell (≤5th) slot-free this turn, instead of a separate list of spells — cost: none.
+- Task 6: Ruling: Countercharm is passive (allies within 30 ft get Advantage on charm/fear saves), not a reaction reroll — cost: slightly stronger, no prompt.
+- Task 6: Ruling: Wild Resurgence's reverse half (Wild Shape → 1st-level slot) is left out — cost: small.
+- Task 7: Ruling: new invocations are Thirsting Blade (real), Misty Visions and Beast Speech (flavour, so a level 9 warlock has enough to pick from); Eldritch Smite/Lifedrinker left out — cost: fewer blade-pact options.
+- Task 7: Ruling: Ember Resilience (Fiendish Resilience) is fixed to fire resistance instead of re-chosen after each rest — no rest-time picker UI, and it fits the ember patron — cost: less flexible.
+- Task 7: Ruling: Ember's Own Luck triggers automatically on a failed save when +1d10 could still make it (folded into Checks.Rescue with Indomitable); not on ability checks — cost: no manual control.
+- Task 7: Ruling: Memorize Spell is text-only (prepared-spell swapping UI on a short rest isn't built) — cost: no mechanic yet.
+- Task 7: Ruling: Sculpt Spells automatically spares allies in the area (closest first, up to 1 + spell level); the caster themself is not spared (RAW: 'other creatures') — cost: none.
+- Task 7: Ruling: added CombatInstance.DebugCast (test hook) — cost: none.
+- Task 8: Ruling: the character sheet's right column was already taller than its panel at level 4 in split screen; skills are now two wrapped paragraphs (trained first, the rest small) and features one wrapped paragraph with repeats counted (ASI ×2) — cost: skills aren't a neat one-per-line table any more.
+- Task 8: Ruling: long level-up lists (12+ options) put Next/Back on top and group spells under "— Level N spells —" headers — cost: none.
+- Task 8: Ruling: companion casters now use levelled spells: a mass heal when 2+ friends are under half HP, Spirit Guardians / Haste when concentration is free, and otherwise the area spell that hits the most enemies (2+) and no friends (Sculpt Spells counted); paladins ready the strongest smite they have a slot for — cost: companions may burn slots faster.
+- Task 8: Ruling: fixed along the way: Arcane Recovery recovered only 1st/2nd-level slots (now up to 5th), the spell list only showed L1/L2 slots, and the sheet's XP read "64000/0" at the cap (now "(max)") — cost: none.
+- Task 9: Ruling: one fuzz seed per class per level (36 fights, about 15 min), not 3 seeds (108 fights, about 45 min); the fuzz player clicks at random, so the hero often goes down; the test checks that every fight ends without errors, which all 36 do — cost: less coverage of rare paths.
+- Task 9: Ruling: the Act II at-will balance floor for full casters is a fifth of the leader (it was a quarter in Act I). The Lore bard's Vicious Mockery is RAW the weakest cantrip and its 3rd-5th level slots carry it — cost: the test is less strict for casters.
+- Task 9: Ruling: fixed Eldritch Blast to fire extra beams at 5 (2024) instead of extra dice on one beam; the balance helper now scales cantrips like the game does — cost: none.
+- Final: Ruling: declined-to-judge "Act II cap on load + companions catching up when the cap rises" — belongs to Phase 2 (the act transition and save migration); written into the Phase 2 plan — cost if missed: an Act II save loads at cap 4.
+
+## Deferred minors
+- a brawl at level 5+ loses the second punch (brawl allow-list) — not reachable in Act I
+- Action Surge between swings wastes the leftover Extra Attack
+- Wall of Fire's targeting preview draws a square (the cast is a line)
+- the Quickened copy of a spell doesn't carry AreaLine (Lightning Bolt preview shows a cone)
+- Scorching Ray / Aid / Spiritual Weapon don't upcast
+- some rules tests reset LevelCap without try/finally
