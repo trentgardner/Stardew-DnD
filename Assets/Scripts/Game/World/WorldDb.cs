@@ -109,6 +109,8 @@ namespace DnD.Game
         public bool SafeForLongRest;
         /// <summary>How much the blight shows here (0-1); -1 = the default for the kind of place (see Blight.Weight).</summary>
         public float BlightWeight = -1;
+        /// <summary>Murals, carvings and records with lore for the journal (Act II).</summary>
+        public List<LoreSpotDef> Lore = new List<LoreSpotDef>();
         public string EnterNarration;
         /// <summary>Music track id; defaults to "music_{Id}" (see Assets/Editor/ArtMap.txt audio lines).</summary>
         public string Music;
@@ -452,6 +454,8 @@ namespace DnD.Game
             BuildWarrens();
 
             BuildNpcs();
+
+            PlaceLore();
         }
 
         /// <summary>Miller's Ford, east of town: a broken bridge, a "toll" crew at the ford, a mill, a boar meadow.</summary>

@@ -50,6 +50,8 @@ namespace DnD.Game
         /// <summary>0 (none) to 3: how far the blight has spread. BlightEased: the volcano was calmed.</summary>
         public int BlightStage;
         public bool BlightEased;
+        /// <summary>Lore entries found (journal, Lore page).</summary>
+        public readonly HashSet<string> LoreFound = new HashSet<string>();
         /// <summary>The day the party finished the Harvest Festival quest (0 = not yet): the festival stops coming back after that.</summary>
         public int FestivalDoneDay;
         public string DragonName = "Cinder";

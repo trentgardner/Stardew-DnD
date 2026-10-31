@@ -604,9 +604,47 @@ namespace DnD.Game
         /// <summary>What the journal shows (tests).</summary>
         public string Text { get; private set; } = "";
 
+        bool _lore;
+        Text _label;
+
         public override void Build()
         {
             Window(new Vector2(420, 270), "Journal");
+            var rt = UIKit.Rect(Root, "Text", Vector2.zero, Vector2.one, new Vector2(14, 22), new Vector2(-14, -28));
+            _label = UIKit.Label(rt, "", 10, UIKit.Ink);
+            // Many quests at once: shrink the text to fit the window rather than clip it.
+            _label.verticalOverflow = VerticalWrapMode.Truncate;
+            _label.resizeTextForBestFit = true; _label.resizeTextMinSize = 6; _label.resizeTextMaxSize = 10;
+            var f = UIKit.Rect(Root, "Foot", new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 4), new Vector2(0, 20));
+            UIKit.Label(f, In.UsesMouse ? "Q/R: Quests | Lore · Esc: close" : "LB/RB: Quests | Lore · B: close", 9, UIKit.Dim, TextAnchor.MiddleCenter);
+            Refresh();
+        }
+
+        /// <summary>Switch between the quests page and the lore page (tests, and Q/R or LB/RB).</summary>
+        public void ShowLore(bool on) { _lore = on; Refresh(); }
+
+        void Refresh()
+        {
+            Text = _lore ? LorePage() : QuestPage();
+            _label.text = Text;
+        }
+
+        static string LorePage()
+        {
+            var g = GameRoot.I;
+            var found = LoreDb.All.Values.Where(l => g.World.LoreFound.Contains(l.Id)).ToList();
+            if (found.Count == 0) return "<b>Lore</b>\nNothing yet. Old murals, carvings and records remember things people have forgotten.";
+            var sb = new System.Text.StringBuilder("<b>Lore</b>\n");
+            foreach (var group in found.GroupBy(l => l.Category))
+            {
+                sb.AppendLine($"<i>{group.Key}</i>");
+                foreach (var l in group) sb.AppendLine($"<b>{l.Title}</b>: {l.Text}\n");
+            }
+            return sb.ToString().TrimEnd();
+        }
+
+        string QuestPage()
+        {
             var g = GameRoot.I;
             var sb = new System.Text.StringBuilder("<b>Quests</b>\n");
             bool any = false;
@@ -643,15 +681,14 @@ namespace DnD.Game
                 }
             }
             if (g.World.EggHatched) sb.AppendLine("\n" + DragonPet.JournalLine());
-            Text = sb.ToString().TrimEnd();
-            var rt = UIKit.Rect(Root, "Text", Vector2.zero, Vector2.one, new Vector2(14, 22), new Vector2(-14, -28));
-            var label = UIKit.Label(rt, Text, 10, UIKit.Ink);
-            // Many quests at once: shrink the text to fit the window rather than clip it.
-            label.verticalOverflow = VerticalWrapMode.Truncate;
-            label.resizeTextForBestFit = true; label.resizeTextMinSize = 6; label.resizeTextMaxSize = 10;
+            return sb.ToString().TrimEnd();
         }
 
-        public override void Tick() { if (In.Cancel || In.Journal || In.Confirm) Close(); }
+        public override void Tick()
+        {
+            if (In.NextTab || In.PrevTab) { ShowLore(!_lore); return; }
+            if (In.Cancel || In.Journal || In.Confirm) Close();
+        }
     }
 
     // ======================================================================== pause / saves / settings
