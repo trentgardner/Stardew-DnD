@@ -104,6 +104,17 @@ namespace DnD.Rules
         public string Description;
         public List<FeatureDef> Features = new List<FeatureDef>();
         public List<string> AlwaysPreparedSpells = new List<string>();
+        /// <summary>More always-prepared spells by class level (domain/oath/circle spells at 5, 7, 9).</summary>
+        public Dictionary<int, List<string>> LaterSpells = new Dictionary<int, List<string>>();
+
+        /// <summary>Every always-prepared subclass spell a character of this class level has.</summary>
+        public List<string> AlwaysPreparedAt(int level)
+        {
+            var list = new List<string>();
+            if (level >= 3) list.AddRange(AlwaysPreparedSpells);
+            foreach (var kv in LaterSpells) if (level >= kv.Key) foreach (var s in kv.Value) if (!list.Contains(s)) list.Add(s);
+            return list;
+        }
     }
 
     public class FeatureDef

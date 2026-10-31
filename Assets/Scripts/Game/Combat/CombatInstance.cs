@@ -57,6 +57,8 @@ namespace DnD.Game
         readonly List<GameObject> _gridTiles = new List<GameObject>();
         readonly List<string> _log = new List<string>();
         bool _surprise, _enemiesSurprised;
+        /// <summary>True while an Opportunity Attack is being resolved (Escape the Horde).</summary>
+        bool _opportunity;
 
         public CombatInstance(GameRoot g, Zone zone, string groupId) { G = g; Zone = zone; GroupId = groupId; }
 
@@ -266,6 +268,7 @@ namespace DnD.Game
                 AllyAdjacentToTarget = Units.Any(o => o != attacker && o.Active && o.C.Team == attacker.C.Team && Zone.DistanceFt(o.Pos, target.Pos) <= 5),
                 EnemyAdjacentToAttacker = Units.Any(o => o.Active && Hostile(o, attacker) && Zone.DistanceFt(o.Pos, attacker.Pos) <= 5),
                 AttackerInSunlight = !Zone.Def.Indoors && !Zone.Def.Dark && !G.Clock.IsNight,
+                Opportunity = _opportunity,
             };
         }
 

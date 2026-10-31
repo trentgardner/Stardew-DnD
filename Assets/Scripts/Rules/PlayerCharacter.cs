@@ -109,7 +109,7 @@ namespace DnD.Rules
         public override bool IsPlayerCharacter => true;
         public override int ProficiencyBonus => 2 + (Level - 1) / 4;
         protected override int BaseSpeed => WildShape != null ? WildShape.Speed : IsOverloaded ? 5 : (Species != null ? Species.Speed : 30) + (UnarmoredMovement ? (Level >= 10 ? 20 : Level >= 6 ? 15 : 10) : 0) + (FastMovement ? 10 : 0);
-        bool FastMovement => Class != null && Class.Id == "barbarian" && Level >= 5 && (Armor == null || Armor.Category != ArmorCategory.Heavy);
+        bool FastMovement => Class != null && (Class.Id == "barbarian" && Level >= 5 || Class.Id == "ranger" && Level >= 6) && (Armor == null || Armor.Category != ArmorCategory.Heavy);
 
         // ---------------------------------------------------------------- monk
 
@@ -158,7 +158,7 @@ namespace DnD.Rules
             MaxHP = Class.HitDie + Mod(Ability.CON) + (Species?.BonusHpPerLevel ?? 0);
             HP = MaxHP;
             if (Species != null && Species.HeroicInspirationOnRest) HeroicInspiration = true;
-            foreach (var s in Class.Subclass != null && Level >= 3 ? Class.Subclass.AlwaysPreparedSpells : new List<string>())
+            foreach (var s in Class.Subclass != null ? Class.Subclass.AlwaysPreparedAt(Level) : new List<string>())
                 if (!PreparedSpells.Contains(s)) PreparedSpells.Add(s);
         }
 
@@ -191,9 +191,8 @@ namespace DnD.Rules
             if (Class.Subclass != null)
             {
                 foreach (var f in Class.Subclass.Features) if (f.Level == Level) log?.Add($"New feature ({Class.Subclass.Name}): {f.Name}");
-                if (Level == 3)
-                    foreach (var s in Class.Subclass.AlwaysPreparedSpells)
-                        if (!PreparedSpells.Contains(s)) PreparedSpells.Add(s);
+                foreach (var s in Class.Subclass.AlwaysPreparedAt(Level))
+                    if (!PreparedSpells.Contains(s)) PreparedSpells.Add(s);
             }
             return gain;
         }
@@ -261,6 +260,55 @@ namespace DnD.Rules
         public override bool ConditionImmune(Condition c) =>
             (Raging && HasFeature("Mindless Rage") && (c == Condition.Charmed || c == Condition.Frightened));
 
+        // ---------------------------------------------------------------- monk, paladin, ranger 5-10
+
+        /// <summary>Ranger 7 (Hunter): "escape_the_horde" or "multiattack_defense".</summary>
+        public string HunterDefense;
+        /// <summary>Multiattack Defense: the creature that hit you this turn (its other attacks have Disadvantage). Combat only.</summary>
+        public Creature MultiattackDefenseAgainst;
+
+        public int FlurryStrikes => HasFeature("Heightened Focus") ? 3 : 2;
+        public int AbjureFoesTargets => Math.Max(1, Mod(Ability.CHA));
+        public int KiSaveDC => 8 + ProficiencyBonus + Mod(Ability.WIS);
+
+        /// <summary>Monk 5: Stunning Strike on a hit: 1 Focus, once per turn. CON save or Stunned until your next turn; on a success its Speed is halved and the next attack against it has Advantage.</summary>
+        public bool TryStunningStrike(Creature target, TurnState turn, List<string> log)
+        {
+            if (!HasFeature("Stunning Strike") || turn == null || turn.StunningStrikeUsed || target.IsDead || !SpendResource("focus")) return false;
+            turn.StunningStrikeUsed = true;
+            var save = Checks.RollSave(target, Ability.CON, AdvantageState.Normal);
+            if (!Checks.ResolveSave(save, KiSaveDC))
+            {
+                target.AddEffect(new ActiveEffect { Id = "stunned_strike", Name = "Stunned", Source = this, RoundsLeft = 1, Condition = Condition.Stunned });
+                log?.Add($"Stunning Strike! {target.Name} is Stunned ({save.Total} vs DC {KiSaveDC}).");
+            }
+            else
+            {
+                target.AddEffect(new ActiveEffect { Id = "stun_glance", Name = "Reeling", Source = this, RoundsLeft = 1, SpeedHalved = true, GrantsAdvantageToAttackers = true, ConsumedWhenAttacked = true });
+                log?.Add($"{target.Name} resists the stun but reels ({save.Total} vs DC {KiSaveDC}).");
+            }
+            return true;
+        }
+
+        /// <summary>Open Hand 6: Wholeness of Body: heal a Martial Arts die + WIS. Returns HP healed (0 if no uses).</summary>
+        public int WholenessOfBody(List<string> log)
+        {
+            if (!SpendResource("wholeness")) return 0;
+            int h = Heal(Math.Max(1, Dice.Roll(MartialArtsDie) + Mod(Ability.WIS)));
+            log?.Add($"{Name} centres themself: +{h} HP (Wholeness of Body).");
+            return h;
+        }
+
+        /// <summary>Ranger 10: Tireless: temp HP 1d8 + WIS. Returns the temp HP (0 if no uses).</summary>
+        public int Tireless(List<string> log)
+        {
+            if (!SpendResource("tireless")) return 0;
+            int t = Math.Max(1, Dice.Roll(8) + Mod(Ability.WIS));
+            TempHP = Math.Max(TempHP, t);
+            log?.Add($"{Name} pushes through (Tireless: {t} temporary HP).");
+            return t;
+        }
+
         /// <summary>Fighter 9: Tactical Master: swap a weapon's mastery for Push, Sap or Slow on an attack.</summary>
         public List<WeaponMastery> TacticalMasteries() =>
             HasFeature("Tactical Master") ? new List<WeaponMastery> { WeaponMastery.Push, WeaponMastery.Sap, WeaponMastery.Slow } : new List<WeaponMastery>();
@@ -317,6 +365,8 @@ namespace DnD.Rules
             {
                 case "second_wind": return Class.Id == "fighter" ? (Level >= 10 ? 4 : Level >= 4 ? 3 : 2) : 0;
                 case "action_surge": return Class.Id == "fighter" && Level >= 2 ? 1 : 0;
+                case "wholeness": return HasFeature("Wholeness of Body") ? Math.Max(1, Mod(Ability.WIS)) : 0;
+                case "tireless": return HasFeature("Tireless") ? Math.Max(1, Mod(Ability.WIS)) : 0;
                 case "indomitable": return Class.Id == "fighter" && Level >= 9 ? (Level >= 17 ? 3 : Level >= 13 ? 2 : 1) : 0;
                 case "channel_divinity": return Class.Id == "cleric" && Level >= 2 ? (Level >= 6 ? 3 : 2) : Class.Id == "paladin" && Level >= 3 ? (Level >= 11 ? 3 : 2) : 0;
                 case "focus": return Class.Id == "monk" && Level >= 2 ? Level : 0;
@@ -586,6 +636,7 @@ namespace DnD.Rules
             RegainResource("focus", 99);
             RegainResource("wild_shape", 1);
             if (Class.Caster == CasterType.Pact) SlotsUsed = new int[10]; // Pact Magic: slots back on a Short Rest
+            if (HasFeature("Tireless") && Exhaustion > 0) { Exhaustion--; log?.Add($"{Name} shakes off some weariness (Tireless)."); }
             log?.Add($"{Name} finishes a short rest.");
         }
 

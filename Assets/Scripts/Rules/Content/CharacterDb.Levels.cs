@@ -39,6 +39,36 @@ namespace DnD.Rules.Content
             F("rogue", 7, "Evasion", "DEX-save area effects: no damage on a success, half on a failure.");
             F("rogue", 7, "Reliable Talent", "On a skill you're proficient in, a d20 roll of 9 or lower counts as 10.");
             Asi("rogue", 8, 10);
+            // ---------------- Monk (Open Hand)
+            F("monk", 5, "Extra Attack", "Attack twice whenever you take the Attack action.");
+            F("monk", 5, "Stunning Strike", "Once per turn when you hit with a monk weapon or unarmed strike, spend 1 Focus: CON save or Stunned until your next turn (on a success: half Speed, and the next attack against it has Advantage). Martial Arts die becomes d8.");
+            F("monk", 6, "Empowered Strikes", "Your unarmed strikes can deal force damage.");
+            S("monk", 6, "Wholeness of Body", "Bonus Action: heal a Martial Arts die + WIS. WIS-modifier uses per Long Rest.");
+            F("monk", 7, "Evasion", "DEX-save area effects: no damage on a success, half on a failure.");
+            Asi("monk", 8);
+            F("monk", 9, "Acrobatic Movement", "You run along walls and across water during your move.");
+            F("monk", 10, "Heightened Focus", "Flurry of Blows makes three strikes.");
+            F("monk", 10, "Self-Restoration", "At the end of each of your turns, end one Charmed, Frightened or Poisoned condition on yourself.");
+
+            // ---------------- Paladin (Devotion)
+            F("paladin", 5, "Extra Attack", "Attack twice whenever you take the Attack action.");
+            F("paladin", 5, "Faithful Steed", "Find Steed is always prepared (a loyal mount answers your call outside combat).");
+            F("paladin", 6, "Aura of Protection", "You and allies within 10 ft add your CHA modifier (min +1) to saving throws while you're conscious.");
+            S("paladin", 7, "Aura of Devotion", "You and allies within 10 ft can't be Charmed while you're conscious.");
+            Asi("paladin", 8);
+            F("paladin", 9, "Abjure Foes", "Channel Divinity (action): up to your CHA modifier creatures within 60 ft make a WIS save or are Frightened for a minute (it ends if they take damage).");
+            F("paladin", 10, "Aura of Courage", "You and allies within 10 ft can't be Frightened while you're conscious.");
+            Classes["paladin"].Subclass.LaterSpells[5] = new System.Collections.Generic.List<string> { "aid", "lesser_restoration" };
+            Classes["paladin"].Subclass.LaterSpells[9] = new System.Collections.Generic.List<string> { "beacon_of_hope", "revivify" };
+
+            // ---------------- Ranger (Hunter)
+            F("ranger", 5, "Extra Attack", "Attack twice whenever you take the Attack action.");
+            F("ranger", 6, "Roving", "+10 ft Speed while you aren't wearing Heavy armor.");
+            S("ranger", 7, "Defensive Tactics", "Escape the Horde (Opportunity Attacks against you have Disadvantage) or Multiattack Defense (after a creature hits you, its other attacks that turn have Disadvantage).");
+            Asi("ranger", 8);
+            F("ranger", 9, "Expertise", "Two more skills get Expertise.");
+            F("ranger", 10, "Tireless", "Action: gain 1d8 + WIS temporary HP (WIS-modifier uses per Long Rest). A Short Rest removes a level of Exhaustion.");
+
             S("rogue", 9, "Supreme Sneak", "You have Advantage on Stealth checks if you move no more than half your Speed on your turn.");
         }
     }

@@ -83,6 +83,8 @@ namespace DnD.Rules
             if (c.AdvantageOnSave(a, vs)) adv = Dice.Combine(true, adv == AdvantageState.Disadvantage);
             var terms = new List<RollTerm> { new RollTerm(a + " save", c.SaveBonus(a)) };
             if (c.D20Penalty != 0) terms.Add(new RollTerm("exhaustion", c.D20Penalty));
+            int aura = Auras.ProtectionBonus(c);
+            if (aura > 0) terms.Add(new RollTerm("aura of protection", aura));
             var r = Dice.RollD20(adv, terms);
             foreach (var e in c.Effects) if (e.SaveDie > 0) Dice.AddBonusDie(r, e.SaveDie);
             return r;

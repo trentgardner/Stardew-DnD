@@ -495,7 +495,7 @@ namespace DnD.Game
             int maxLevel = pc.Level >= 3 ? 2 : 1;
             if (_prepareMode)
             {
-                var always = pc.Level >= 3 && pc.Class.Subclass != null ? pc.Class.Subclass.AlwaysPreparedSpells : new List<string>();
+                var always = pc.Class.Subclass != null ? pc.Class.Subclass.AlwaysPreparedAt(pc.Level) : new List<string>();
                 int count = pc.PreparedSpells.Count(x => !always.Contains(x));
                 int max = pc.Class.PreparedSpells[pc.Level];
                 IEnumerable<SpellDef> pool = pc.Class.Id == "wizard" ? pc.Spellbook.Select(SpellsDb.Get).Where(s => s != null) : SpellsDb.ForClass(pc.Class.Id, maxLevel);

@@ -15,6 +15,8 @@ namespace DnD.Rules
         /// <summary>A visible, conscious enemy is within 5 ft of the attacker (ranged attacks get Disadvantage).</summary>
         public bool EnemyAdjacentToAttacker;
         public bool AttackerInSunlight;
+        /// <summary>An Opportunity Attack (Escape the Horde gives these Disadvantage).</summary>
+        public bool Opportunity;
     }
 
     public class AttackRollResult
@@ -80,6 +82,11 @@ namespace DnD.Rules
             bool strMelee = !atk.Ranged && !atk.IsSpell && attacker is PlayerCharacter apc && (atk.Weapon == null || !atk.Weapon.Has(WeaponProperty.Finesse) || apc.Mod(Ability.STR) >= apc.Mod(Ability.DEX));
             if (strMelee && attacker.HasEffect("reckless") && !attacker.HasEffect("brutal_ready")) adv.Add("reckless");
             if (target.HasEffect("reckless")) adv.Add("target is reckless");
+            if (target is PlayerCharacter hunter)
+            {
+                if (hunter.HunterDefense == "escape_the_horde" && ctx.Opportunity) dis.Add("escape the horde");
+                if (hunter.HunterDefense == "multiattack_defense" && hunter.MultiattackDefenseAgainst == attacker) dis.Add("multiattack defense");
+            }
 
             if (atk.Ranged || (atk.IsSpell && atk.RangeNormal > 5))
             {
@@ -216,6 +223,7 @@ namespace DnD.Rules
         {
             var log = new List<string>();
             var t = r.Target;
+            if (t is PlayerCharacter hunter && hunter.HunterDefense == "multiattack_defense") hunter.MultiattackDefenseAgainst = r.Attacker;
             int dealt = t.TakeDamage(dmg.Total, r.Attack.DamageType, r.Critical, log);
             log.Insert(0, $"{t.Name} takes {dealt} {r.Attack.DamageType.ToString().ToLower()} damage.");
             if (dmg.Extra != null && !t.IsDead)
@@ -404,6 +412,7 @@ namespace DnD.Rules
         public bool Dashed, Disengaged;
         public bool CastLeveledSpellThisTurn;
         public bool CleaveUsed;
+        public bool StunningStrikeUsed;
         public bool HasteActionUsed;
         public bool SneakAttackUsed, FrenzyUsed, ColossusUsed, HordeBreakerUsed;
         /// <summary>Sorcerer Quickened Spell: the next action spell this turn costs the Bonus Action instead.</summary>
@@ -419,7 +428,7 @@ namespace DnD.Rules
             AttacksLeftInAction = 0;
             Dashed = Disengaged = false;
             CastLeveledSpellThisTurn = false;
-            CleaveUsed = HasteActionUsed = false;
+            CleaveUsed = HasteActionUsed = StunningStrikeUsed = false;
             SneakAttackUsed = FrenzyUsed = ColossusUsed = HordeBreakerUsed = QuickenNextSpell = false;
             ObjectInteractionUsed = false;
             // Slow, Staggering Smite: no reactions while it lasts.
@@ -483,6 +492,8 @@ namespace DnD.Rules
         {
             var c = Current;
             c.Turn.Reset(c.Creature);
+            foreach (var cb in Order)
+                if (cb.Creature is PlayerCharacter h && h.MultiattackDefenseAgainst == c.Creature) h.MultiattackDefenseAgainst = null;
             // Durations tick at the start of the source's turn.
             foreach (var cb in Order)
             {
@@ -506,6 +517,12 @@ namespace DnD.Rules
         public void EndTurn(List<string> log)
         {
             var c = Current.Creature;
+            // Monk 10: Self-Restoration ends one of Charmed, Frightened or Poisoned.
+            if (c is PlayerCharacter monk && monk.HasFeature("Self-Restoration") && !monk.IsDown)
+            {
+                var e = c.Effects.Find(x => x.Condition == Condition.Charmed || x.Condition == Condition.Frightened || x.Condition == Condition.Poisoned);
+                if (e != null) { c.Effects.Remove(e); log?.Add($"{c.Name} shakes off {e.Name} (Self-Restoration)."); }
+            }
             for (int i = c.Effects.Count - 1; i >= 0; i--)
             {
                 var e = c.Effects[i];

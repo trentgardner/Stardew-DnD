@@ -64,8 +64,28 @@ namespace DnD.Game
             go.AddComponent<GameRoot>();
         }
 
+        /// <summary>Paladin auras need positions: inside a fight, whoever stands on the grid within N feet.</summary>
+        sealed class FightAuras : IAuraSource
+        {
+            readonly GameRoot _g;
+            public FightAuras(GameRoot g) { _g = g; }
+            public IEnumerable<Creature> Within(Creature c, int feet)
+            {
+                yield return c;
+                foreach (var fight in _g.Combats)
+                {
+                    if (fight.Finished) continue;
+                    var me = fight.Units.FirstOrDefault(u => u.C == c);
+                    if (me == null) continue;
+                    foreach (var u in fight.Units) if (u != me && DnD.Game.Zone.DistanceFt(u.Pos, me.Pos) <= feet) yield return u.C;
+                    yield break;
+                }
+            }
+        }
+
         void Awake()
         {
+            Auras.Source = new FightAuras(this);
             I = this;
             Application.targetFrameRate = 60;
             QualitySettings.vSyncCount = 1;

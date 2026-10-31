@@ -5,7 +5,7 @@ using DnD.Rules.Content;
 
 namespace DnD.Rules
 {
-    public enum ChoiceKind { Expertise, BonusSkill, Cantrip, Spell, Feat, FightingStyle, HunterPrey, LandType, Invocation, Metamagic }
+    public enum ChoiceKind { Expertise, BonusSkill, Cantrip, Spell, Feat, FightingStyle, HunterPrey, LandType, Invocation, Metamagic, HunterDefense, DraconicElement }
 
     /// <summary>One decision the next level asks for, e.g. "pick 2 spells from these".</summary>
     public class LevelUpChoice
@@ -86,6 +86,8 @@ namespace DnD.Rules
                     Options = SkillProficiencies.Where(s => !Expertise.Contains(s)).Select(s => s.ToString()).OrderBy(s => s).ToList() });
             if (Class.Id == "ranger" && next == 3)
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.HunterPrey, Count = 1, Title = "Hunter's Prey", Options = new List<string> { "colossus_slayer", "horde_breaker" } });
+            if (Class.Id == "ranger" && next == 7)
+                list.Add(new LevelUpChoice { Kind = ChoiceKind.HunterDefense, Count = 1, Title = "Defensive Tactics", Options = new List<string> { "escape_the_horde", "multiattack_defense" } });
             if (Class.Id == "druid" && next == 3)
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.LandType, Count = 1, Title = "Circle of the Land: which land calls to you?", Options = CircleSpells.Keys.ToList() });
             int newInvocations = InvocationsKnownAt(next) - Invocations.Count;
@@ -160,6 +162,8 @@ namespace DnD.Rules
                 case "dueling": return "Dueling (+2 damage, one-handed melee)";
                 case "great_weapon": return "Great Weapon Fighting (reroll 1s and 2s)";
                 case "archery": return "Archery (+2 to hit with ranged weapons)";
+                case "escape_the_horde": return "Escape the Horde (Opportunity Attacks against you have Disadvantage)";
+                case "multiattack_defense": return "Multiattack Defense (after a creature hits you, its other attacks that turn have Disadvantage)";
                 case "colossus_slayer": return "Colossus Slayer (+1d8 once per turn vs a wounded foe)";
                 case "horde_breaker": return "Horde Breaker (an extra attack vs a second adjacent foe)";
                 case "arid": return "Arid land (Burning Hands, Fire Bolt)";
@@ -226,6 +230,10 @@ namespace DnD.Rules
                         if (!Metamagic.Contains(id)) Metamagic.Add(id);
                         log?.Add($"Metamagic: {DescribeOption(id)}");
                         break;
+                    case ChoiceKind.HunterDefense:
+                        HunterDefense = id;
+                        log?.Add($"Defensive Tactics: {DescribeOption(id)}");
+                        break;
                     case ChoiceKind.HunterPrey:
                         HunterPrey = id;
                         log?.Add($"Hunter's Prey: {DescribeOption(id)}");
@@ -264,7 +272,7 @@ namespace DnD.Rules
         {
             get
             {
-                var always = Class.Subclass != null && Level >= 3 ? Class.Subclass.AlwaysPreparedSpells : new List<string>();
+                var always = Class.Subclass != null ? Class.Subclass.AlwaysPreparedAt(Level) : new List<string>();
                 return PreparedSpells.Count(s => !always.Contains(s) && !Class.AlwaysPrepared.ContainsKey(s));
             }
         }

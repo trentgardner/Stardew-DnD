@@ -135,5 +135,22 @@ namespace DnD.Tests
             Assert.AreEqual(Targeting.Enemy, second.Target, "it picks its own target (a different wolf)");
             Assert.IsTrue(c.ActionsFor(p).First(a => a.Name.StartsWith("Attack (")).Name.EndsWith("2/2"), "the plain Attack button becomes 'Attack 2/2' (clicking an enemy uses it)");
         }
+
+        [UnityTest]
+        public IEnumerator PaladinAuraUsesPositionsInAFight()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(6), "paladin", "human", level: 6);
+            yield return Frames(2);
+            g.Warp(p, "forest", new Vector2Int(34, 8), false);
+            yield return Frames(3);
+            p.Hud.CloseAll();
+            g.StartGroupCombat("forest_wolves", p);
+            var pal = (PlayerCharacter)p.Character;
+            int bonus = System.Math.Max(1, pal.Mod(Ability.CHA));
+            Assert.AreEqual(bonus, Auras.ProtectionBonus(pal), "the paladin's own saves get the aura");
+            var wolf = g.Combats.Single().Units.First(u => u.C.Team == Team.Enemies);
+            Assert.AreEqual(0, Auras.ProtectionBonus(wolf.C), "enemies never do, however close");
+        }
     }
 }

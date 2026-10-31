@@ -309,13 +309,29 @@ namespace DnD.Game
             {
                 bool fp = pc.ResourceLeft("focus") > 0;
                 list.Add(Need(new CombatAction { Name = $"Flurry of Blows (1 Focus, {pc.ResourceLeft("focus")} left)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.Enemy, RangeFt = 5,
-                    Tooltip = "Two unarmed strikes as a Bonus Action." + (pc.HasFeature("Open Hand Technique") ? " Open Hand: each hit can knock the target Prone (DEX save)." : ""),
-                    Run = (me, tile) => { pc.SpendResource("focus"); return UnarmedBonus(me, pc, UnitAt(tile), 2); } }, t, pc, fp));
+                    Tooltip = $"{(pc.FlurryStrikes == 3 ? "Three" : "Two")} unarmed strikes as a Bonus Action." + (pc.HasFeature("Open Hand Technique") ? " Open Hand: each hit can knock the target Prone (DEX save)." : ""),
+                    Run = (me, tile) => { pc.SpendResource("focus"); return UnarmedBonus(me, pc, UnitAt(tile), pc.FlurryStrikes); } }, t, pc, fp));
+                if (pc.HasFeature("Stunning Strike") && !t.StunningStrikeUsed && !pc.HasEffect("stun_ready"))
+                    list.Add(new CombatAction { Name = "Stunning Strike (next hit, 1 Focus)", Group = ActionGroup.Abilities, Cost = ActionCost.Free, Target = Targeting.None, Enabled = fp, Why = "No Focus left.",
+                        Tooltip = $"Your next monk-weapon or unarmed hit this turn: CON save (DC {pc.KiSaveDC}) or Stunned until your next turn.",
+                        Run = (me, tile) => { pc.AddEffect(new ActiveEffect { Id = "stun_ready", Name = "Stunning Strike ready", Source = pc, RoundsLeft = 1 }); me.A.Popup("Focus...", UIKit.UtilityBlue); return Nothing(); } });
                 list.Add(Need(new CombatAction { Name = "Patient Defense (1 Focus)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
                     Tooltip = "Disengage and Dodge as a Bonus Action.", Run = (me, tile) => PatientDefense(me, pc) }, t, pc, fp));
                 list.Add(Need(new CombatAction { Name = "Step of the Wind (1 Focus)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
                     Tooltip = "Dash and Disengage as a Bonus Action.", Run = (me, tile) => StepOfTheWind(me, pc) }, t, pc, fp));
             }
+            if (pc.ResourceMax("wholeness") > 0)
+                list.Add(Need(new CombatAction { Name = $"Wholeness of Body ({pc.ResourceLeft("wholeness")})", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
+                    Tooltip = $"Heal 1d{pc.MartialArtsDie} + WIS.", Run = (me, tile) => { me.Cb.Turn.BonusActionUsed = true; var l = new List<string>(); int h = pc.WholenessOfBody(l); me.A.Popup("+" + h, UIKit.HealGreen); l.ForEach(Log); return Nothing(); } },
+                    t, pc, pc.ResourceLeft("wholeness") > 0));
+            if (pc.ResourceMax("tireless") > 0)
+                list.Add(Need(new CombatAction { Name = $"Tireless ({pc.ResourceLeft("tireless")})", Group = ActionGroup.Abilities, Cost = ActionCost.Action, Target = Targeting.None,
+                    Tooltip = "Gain 1d8 + WIS temporary HP.", Run = (me, tile) => { me.Cb.Turn.ActionUsed = true; var l = new List<string>(); int th = pc.Tireless(l); me.A.Popup("+" + th + " temp", UIKit.HealGreen); l.ForEach(Log); return Nothing(); } },
+                    t, pc, pc.ResourceLeft("tireless") > 0));
+            if (pc.HasFeature("Abjure Foes") && pc.ResourceMax("channel_divinity") > 0)
+                list.Add(Need(new CombatAction { Name = $"Abjure Foes ({pc.ResourceLeft("channel_divinity")})", Group = ActionGroup.Abilities, Cost = ActionCost.Action, Target = Targeting.None,
+                    Tooltip = $"Channel Divinity: up to {pc.AbjureFoesTargets} enemies within 60 ft make a WIS save (DC {pc.SpellSaveDC}) or are Frightened (it ends if they take damage).",
+                    Run = (me, tile) => AbjureFoes(me, pc) }, t, pc, pc.ResourceLeft("channel_divinity") > 0));
             // Paladin
             if (pc.ResourceMax("lay_on_hands") > 0)
                 list.Add(Need(new CombatAction { Name = $"Lay on Hands ({pc.ResourceLeft("lay_on_hands")} HP)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.Ally, RangeFt = 5,
@@ -700,8 +716,10 @@ namespace DnD.Game
                             foe.Cb.Turn.ReactionUsed = true;
                             Log($"{foe.Name} makes an opportunity attack!");
                             var melee = foe.C.GetAttacks().First(a => !a.Ranged);
+                            _opportunity = true;
                             if (foe.IsHuman) yield return AttackAction(foe, u, melee, consumeAction: false);
                             else yield return AiAttack(foe, u, melee);
+                            _opportunity = false;
                             if (!u.Active) yield break;
                         }
                     }
@@ -768,6 +786,18 @@ namespace DnD.Game
                 }
                 ApplyHitResults(me, target, res, dmg);
                 if (target.Active && (res.BrutalStrike > 0 || res.CunningStrike > 0)) StrikeRiders(me, target, res);
+                if (target.Active && me.C is PlayerCharacter monk && monk.HasFeature("Stunning Strike") && !atk.Ranged && (atk.Weapon == null || monk.IsMonkWeapon(atk.Weapon)))
+                {
+                    var stunReady = monk.Effects.FirstOrDefault(e => e.Id == "stun_ready");
+                    bool auto = !me.IsHuman && monk.ResourceLeft("focus") >= 2 && !target.C.Has(Condition.Stunned);
+                    if (stunReady != null || auto)
+                    {
+                        if (stunReady != null) monk.Effects.Remove(stunReady);
+                        var sl = new List<string>();
+                        if (monk.TryStunningStrike(target.C, turn, sl)) target.A.Popup(target.C.Has(Condition.Stunned) ? "STUNNED" : "Reeling", UIKit.Gold);
+                        sl.ForEach(Log);
+                    }
+                }
                 if (me.C is PlayerCharacter smiter && !atk.Ranged && !atk.IsSpell && target.Active)
                 {
                     var spellSmite = smiter.Effects.FirstOrDefault(e => e.Id == "blinding_smite_ready" || e.Id == "staggering_smite_ready" || e.Id == "banishing_smite_ready");
@@ -1182,7 +1212,7 @@ namespace DnD.Game
                 int hpBefore = target.C.HP;
                 yield return AttackAction(me, target, pc.UnarmedStrike(), consumeAction: false);
                 // Open Hand Technique: a Flurry hit can knock the target down.
-                if (strikes == 2 && pc.HasFeature("Open Hand Technique") && target.Active && target.C.HP < hpBefore && !target.C.Has(Condition.Prone))
+                if (strikes >= 2 && pc.HasFeature("Open Hand Technique") && target.Active && target.C.HP < hpBefore && !target.C.Has(Condition.Prone))
                 {
                     int dc = 8 + pc.ProficiencyBonus + pc.Mod(Ability.WIS);
                     var save = Checks.RollSave(target.C, Ability.DEX, AdvantageState.Normal);
@@ -1311,6 +1341,22 @@ namespace DnD.Game
             me.A.Popup("Reckless!", UIKit.Gold);
             Log($"{pc.Name} attacks recklessly. (Advantage on Strength attacks; enemies get Advantage too.)");
             yield break;
+        }
+
+        IEnumerator AbjureFoes(Unit me, PlayerCharacter pc)
+        {
+            pc.SpendResource("channel_divinity");
+            me.Cb.Turn.ActionUsed = true;
+            me.A.Popup("Abjure Foes!", UIKit.Gold);
+            Log($"{pc.Name} raises a holy symbol: \"Begone!\"");
+            foreach (var t in Units.Where(o => o.Active && Hostile(me, o) && Zone.DistanceFt(me.Pos, o.Pos) <= 60).OrderBy(o => Zone.DistanceFt(me.Pos, o.Pos)).Take(pc.AbjureFoesTargets).ToList())
+            {
+                var save = Checks.RollSave(t.C, Ability.WIS, AdvantageState.Normal);
+                bool ok = Checks.ResolveSave(save, pc.SpellSaveDC);
+                Ticker($"{t.Name} WIS save: {save.Breakdown()} vs DC {pc.SpellSaveDC} → {(ok ? "SAVED" : "FAILED")}");
+                if (!ok) { t.C.AddEffect(new ActiveEffect { Id = "abjured", Name = "Frightened", Source = pc, RoundsLeft = 10, Condition = Condition.Frightened, EndsOnDamage = true, RepeatSave = Ability.WIS, RepeatSaveDC = pc.SpellSaveDC }); t.A.Popup("Frightened", UIKit.UtilityBlue); }
+                yield return new WaitForSeconds(0.35f);
+            }
         }
 
         IEnumerator Hide(Unit me, PlayerCharacter pc)

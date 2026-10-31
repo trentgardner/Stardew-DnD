@@ -41,6 +41,7 @@ namespace RulesTests
             SpellTests5();
             MonsterTests();
             MartialTests10();
+            HolyMartialTests10();
             RogueTests();
             BarbarianTests();
             MonkTests();

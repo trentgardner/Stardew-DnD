@@ -125,7 +125,7 @@ namespace DnD.Rules
 
         public void AddEffect(ActiveEffect e)
         {
-            if (e.Condition.HasValue && ConditionImmune(e.Condition.Value)) return;
+            if (e.Condition.HasValue && (ConditionImmune(e.Condition.Value) || Auras.Immune(this, e.Condition.Value))) return;
             // Effects with the same id from the same source don't stack; refresh instead.
             Effects.RemoveAll(x => x.Id == e.Id && x.Source == e.Source);
             Effects.Add(e);
