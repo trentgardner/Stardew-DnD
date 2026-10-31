@@ -123,9 +123,10 @@ namespace DnD.Game
             _title = TitleScreen.Create(this);
         }
 
-        public void StartNewGame(PlayerInput device, Difficulty diff)
+        public void StartNewGame(PlayerInput device, Difficulty diff, bool actTwo = false)
         {
             ResetWorld();
+            _startActTwo = actTwo;
             Settings.Difficulty = diff;
             PlaythroughId = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             int n = SaveSystem.List().Select(s => s.PlaythroughId).Distinct().Count() + 1;
@@ -159,6 +160,7 @@ namespace DnD.Game
                 pc.LevelUp(pc.AutoPlan(), null);
             }
             SpawnPlayer(slot, pc, null);
+            if (World.Act >= 2 && Players.Count > 1) GiveActTwoKit(slot); // a partner joining an Act II game
             return slot;
         }
 
@@ -325,7 +327,9 @@ namespace DnD.Game
             slot.Hud.Push(new CharacterCreationScreen(pc =>
             {
                 SpawnPlayer(slot, pc, null);
-                if (Players.Count == 1)
+                if (Players.Count == 1 && _startActTwo) { _startActTwo = false; ApplyActTwoStart(slot); }
+                else if (World.Act >= 2) { GiveActTwoKit(slot); slot.Hud.Narrate($"{pc.Name} joins the adventure!"); }
+                else if (Players.Count == 1)
                     slot.Hud.Push(new MessageScreen("The Fallen Star",
                         "Last night, a star fell over Thistledown. It streaked green-gold across the sky and vanished into the Wyrmback Mountains, and for a moment the whole valley hummed, like a plucked string.\n\nThis morning, the chickens are missing.",
                         () => slot.Hud.Narrate("You wake in your cottage. Somewhere outside, Captain Vale is shouting about chickens. (Tip: talk to people with E / A. Your journal is J / LT.)")));

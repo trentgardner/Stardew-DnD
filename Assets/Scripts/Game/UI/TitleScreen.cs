@@ -61,7 +61,7 @@ namespace DnD.Game
             _menu.Clear();
             void Opt(DnD.Game.Difficulty d, string text)
             {
-                _menu.Add(text, () => { Destroy(gameObject); _g.StartNewGame(_input, d); });
+                _menu.Add(text, () => ShowStart(d));
             }
             Opt(DnD.Game.Difficulty.Story, "Story: forgiving. Cheap revives; resting brings back the fallen.");
             Opt(DnD.Game.Difficulty.Normal, "Normal: the intended experience.");
@@ -70,6 +70,16 @@ namespace DnD.Game
             _menu.Add("Back", Main);
             _menu.Index = 1;
             _menu.Build();
+        }
+
+        void ShowStart(DnD.Game.Difficulty d)
+        {
+            _menu.Clear();
+            _menu.Add("Act I: Home (level 1, the whole story)", () => { Destroy(gameObject); _g.StartNewGame(_input, d); });
+            _menu.Add("Act II (level 5, preview: the dragon has hatched)", () => { Destroy(gameObject); _g.StartNewGame(_input, d, actTwo: true); });
+            _menu.Add("Back", ShowDifficulty);
+            _menu.Build();
+            _info.text = "Act II is still being built: starting there skips Thistledown's first summer and hands you a teenage dragon.";
         }
 
         void Load()

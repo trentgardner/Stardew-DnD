@@ -44,6 +44,47 @@ namespace DnD.Game
             SaveSystem.Save(true);
         }
 
+        bool _startActTwo;
+
+        /// <summary>
+        /// A new game that starts at Act II (level 5 preview): Act I's story counts as told, the dragon has hatched
+        /// and is a teenager, and the player levels 1→5 through the level-up screen with real choices.
+        /// </summary>
+        public void ApplyActTwoStart(PlayerSlot p)
+        {
+            World.Act = 2;
+            Clock.Day = 29; Clock.Minutes = 8 * 60;
+            World.ActTwoDay = Clock.Day;
+            Quests.Set("fallen_star", FallenStar.Done, p, 0f);
+            foreach (var f in new[] { "snik_friend", "elder_blessing", "act1_ended", "act1_card:0", "act1_card:1" }) World.SetFlag(f);
+            World.EggHatched = true;
+            World.DragonStage = (int)DragonStage.Wyrmling;
+            if (Dragon == null) SpawnDragon(p);
+            ApplyActCap();
+            GiveActTwoKit(p);
+            DragonGrew();
+            p.Hud.Push(new NameEntryScreen(n => RenameDragon(n)));
+        }
+
+        /// <summary>Anyone starting (or joining) at Act II: level-5 XP and a few supplies.</summary>
+        void GiveActTwoKit(PlayerSlot p)
+        {
+            var pc = p.Character;
+            if (pc == null) return;
+            pc.XP = System.Math.Max(pc.XP, PlayerCharacter.XpThresholds[5]);
+            pc.Copper += 15000;
+            pc.AddItem("potion_healing", 2);
+            pc.AddItem("potion_greater_healing", 1);
+            p.Hud.Toast("★ Level up available! Open your character sheet (C / View).", UIKit.D20Gold);
+        }
+
+        void RenameDragon(string name)
+        {
+            World.DragonName = string.IsNullOrWhiteSpace(name) ? "Cinder" : name.Trim();
+            if (Dragon != null) Dragon.Name = World.DragonName;
+            if (DragonAgent != null) DragonAgent.Actor.name = World.DragonName;
+        }
+
         /// <summary>The dragon's body catches up with its new stage (Task 3 sets the look).</summary>
         partial void DragonGrew();
     }

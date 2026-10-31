@@ -117,5 +117,39 @@ namespace DnD.Tests
             Assert.AreEqual(1, g.World.Act, "a save from before Act II is Act I");
             Assert.AreEqual(PlayerCharacter.ActOneLevelCap, PlayerCharacter.LevelCap);
         }
+
+        [UnityTest]
+        public IEnumerator StartAtActTwoHasAWorkingWorld()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(7), "ranger", "elf");
+            yield return Frames(2);
+            g.ApplyActTwoStart(p);
+            p.Hud.CloseAll();
+            yield return Frames(3);
+            Assert.AreEqual(2, g.World.Act);
+            Assert.IsTrue(g.Quests.Done("fallen_star"), "the Act I story counts as told");
+            Assert.IsTrue(g.World.EggHatched);
+            Assert.IsNotNull(g.Dragon, "there's a dragon");
+            Assert.AreEqual(DragonStage.Wyrmling, g.Dragon.Stage, "a teenage one");
+            Assert.IsTrue(p.Character.CanLevelUp, "level up to 5 with real choices");
+            Assert.GreaterOrEqual(p.Character.CountOf("potion_healing"), 2, "a starter kit");
+            g.Warp(p, "temple", new Vector2Int(5, 5), false);
+            yield return Frames(3);
+            Assert.AreEqual("temple", g.DragonAgent.Actor.Zone.Def.Id, "waking at the temple, the dragon is there too");
+        }
+
+        [UnityTest]
+        public IEnumerator SecondPlayerJoinsAtLevelFive()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(8), "fighter", "human");
+            yield return Frames(2);
+            g.ApplyActTwoStart(p);
+            var p2 = g.DebugStart(Still(9), "wizard", "gnome");
+            yield return Frames(2);
+            Assert.GreaterOrEqual(p2.Character.XP, PlayerCharacter.XpThresholds[5], "a partner joining Act II starts with level-5 XP");
+            Assert.GreaterOrEqual(p2.Character.CountOf("potion_healing"), 2, "and the same kit");
+        }
     }
 }
