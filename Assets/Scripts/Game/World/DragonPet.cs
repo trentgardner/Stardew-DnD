@@ -42,7 +42,9 @@ namespace DnD.Game
         {
             var d = G.Dragon;
             string hp = d != null ? $" · HP {d.HP}/{d.MaxHP}" : "";
-            return $"{Name} the dragonling{hp}{(G.World.DragonScared ? " (hiding, scared: rest to calm them)" : "")} · Bond {Hearts}";
+            string kind = d != null && d.IsTeen ? "the young dragon" : "the dragonling";
+            string trust = d != null && d.IsTeen ? DragonDb.TrustSummary(Name, G.World) : "";
+            return $"{Name} {kind}{hp}{(G.World.DragonScared ? " (hiding, scared: rest to calm them)" : "")} · Bond {Hearts}" + (trust.Length > 0 ? "\n" + trust : "");
         }
 
         // ================================================================== the menu
@@ -146,6 +148,7 @@ namespace DnD.Game
         {
             p.Hud.Narrate(string.Format(PetLines[UnityEngine.Random.Range(0, PetLines.Length)], Name), false);
             Emote("heart");
+            G.World.SetFlag("dragon_petted:" + G.Clock.Day);
             string key = "dragon_pet:" + p.Index;
             if (G.World.IsLocked(key)) return;
             G.World.Lock(key, 60);
@@ -248,9 +251,63 @@ namespace DnD.Game
             _emoteUntil = Time.time + 1.5f;
         }
 
+        readonly HashSet<string> _noticed = new HashSet<string>();
+        float _nextLook;
+
+        /// <summary>
+        /// The teenager notices someone: an emote and a line for the party, once per person per day. True if it reacted.
+        /// (Only once it's a teenager: the hatchling likes everybody.)
+        /// </summary>
+        public bool NoticeNpc(string npcId)
+        {
+            if (G.Dragon == null || !G.Dragon.IsTeen) return false;
+            var f = DragonDb.Opinion(npcId, G.World);
+            string bark = DragonDb.Bark(npcId, Name);
+            if (f == DragonFeeling.Neutral || bark == null) return false;
+            if (!_noticed.Add(npcId + ":" + G.Clock.Day)) return false;
+            Emote(DragonDb.EmoteFor(f));
+            foreach (var p in G.Players.Where(x => x.IsReady && x.Zone == _agent.Actor.Zone)) p.Hud.Toast(bark, f > 0 ? UIKit.Gold : UIKit.UtilityBlue);
+            return true;
+        }
+
+        int _lastMoodHour = -1;
+
+        /// <summary>
+        /// A teenager's mood, every few in-game hours: it sulks if nobody has petted it today. Returns the line shown (null if
+        /// nothing to say). Tests call it directly.
+        /// </summary>
+        public string MoodTick()
+        {
+            if (G.Dragon == null || !G.Dragon.IsTeen || G.DragonFighting) return null;
+            if (G.World.Flag("dragon_petted:" + G.Clock.Day)) return null;
+            string line = $"{Name} sulks, tail curled around its feet, pointedly not looking at anyone. (Nobody has petted it today.)";
+            foreach (var p in G.Players.Where(x => x.IsReady && x.Zone == _agent.Actor.Zone)) p.Hud.Toast(line, UIKit.Dim);
+            return line;
+        }
+
+        /// <summary>After a fight won together the teenager struts a little.</summary>
+        public void ShowOff()
+        {
+            if (G.Dragon == null || !G.Dragon.IsTeen) return;
+            Emote("spark");
+            foreach (var p in G.Players.Where(x => x.IsReady && x.Zone == _agent.Actor.Zone))
+                p.Hud.Toast($"{Name} struts in a circle, wings half-open, absolutely certain it won that fight by itself.", UIKit.Gold);
+        }
+
+        void LookAround()
+        {
+            int hour = G.Clock.Day * 24 + G.Clock.Hour;
+            if (hour - _lastMoodHour >= 4 && G.Clock.Hour >= 12) { _lastMoodHour = hour; MoodTick(); }
+            if (G.Dragon == null || !G.Dragon.IsTeen || G.DragonFighting) return;
+            foreach (var n in G.Npcs)
+                if (n != null && n.Actor.Zone == _agent.Actor.Zone && n.Actor.gameObject.activeInHierarchy && Vector2.Distance(n.Actor.transform.position, transform.position) <= 3f)
+                    NoticeNpc(n.Def.Id);
+        }
+
         void Update()
         {
             if (_emote != null && _emote.enabled && Time.time > _emoteUntil) _emote.enabled = false;
+            if (Time.time >= _nextLook) { _nextLook = Time.time + 0.5f; LookAround(); }
             // Naps: nobody has moved for 20 seconds and it's by its leader.
             bool anyMoving = G.Players.Any(x => x.IsReady && x.Avatar.Moving);
             var leader = _agent.Leader;

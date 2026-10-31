@@ -1088,7 +1088,9 @@ end
 paint item_festival_ribbon p5_ribbon k=0d2a5a b=1e88e5 w=fdd835
 
 # ================================================================ the dragon as a pet (Phase 6): emote bubbles, treats, a stick for fetch
-icon fx_emote_heart     "Ui/Emote/emote26.png"
+icon fx_emote_heart     "Ui/Emote/emote27.png"
+icon fx_emote_wary      "Ui/Emote/emote23.png"
+icon fx_emote_distrust  "Ui/Emote/emote4.png"
 icon fx_emote_happy     "Ui/Emote/emote9.png"
 icon fx_emote_sleep     "Ui/Emote/emote28.png"
 icon fx_emote_spark     "Ui/Emote/emote22.png"

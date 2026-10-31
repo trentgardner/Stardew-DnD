@@ -41,6 +41,8 @@ namespace DnD.Game
         public int ActTwoDay;
         /// <summary>The dragon's growth stage (DragonStage as int): Hatchling in Act I, Wyrmling ("teenager") in Act II.</summary>
         public int DragonStage;
+        /// <summary>How far events have moved the dragon's opinion of someone from its starting feeling (DragonDb).</summary>
+        public readonly Dictionary<string, int> DragonOpinionShift = new Dictionary<string, int>();
         /// <summary>The day the party finished the Harvest Festival quest (0 = not yet): the festival stops coming back after that.</summary>
         public int FestivalDoneDay;
         public string DragonName = "Cinder";

@@ -214,8 +214,14 @@ namespace DnD.Game
             if (o.Social) dc -= Mathf.Min(3, GameRoot.I.World.Hearts(_ctx.NpcId));
             var adv = o.Advantage != null ? o.Advantage(_ctx) : AdvantageState.Normal;
             if (o.Social && _ctx.Npc != null && GameRoot.I.World.CharmedBy(_ctx.NpcId, Slot.Index)) adv = Dice.Combine(true, adv == AdvantageState.Disadvantage);
+            // The teenage dragon's read on people: trust softens them, distrust sharpens your Insight.
+            var da = GameRoot.I.DragonAgent;
+            bool dragonNear = GameRoot.I.Dragon != null && GameRoot.I.Dragon.IsTeen && da != null && da.Actor.Zone == Slot.Zone && Vector2.Distance(da.Actor.transform.position, Slot.Avatar.transform.position) <= 4f;
+            bool dragonHelps = DragonDb.CheckAdvantage(_ctx.NpcId, skill, dragonNear) == AdvantageState.Advantage;
+            if (dragonHelps) adv = Dice.Combine(true, adv == AdvantageState.Disadvantage);
             string sub = $"{SkillUtil.Name(skill)} ({SkillUtil.AbilityOf(skill)}) {AbilityUtil.Fmt(pc.SkillBonus(skill))}" +
                          (adv == AdvantageState.Advantage ? " · Advantage" : adv == AdvantageState.Disadvantage ? " · Disadvantage" : "") +
+                         (dragonHelps ? $" ({GameRoot.I.World.DragonName} " + (DragonDb.Opinion(_ctx.NpcId, GameRoot.I.World) > 0 ? "trusts them)" : "doesn't trust them)") : "") +
                          " · DC hidden";
             _rolling = true;
             Hud.Dice.RollD20($"{SkillUtil.Name(skill)} Check", sub, () => Checks.RollSkill(pc, skill, adv), dc, true, r =>

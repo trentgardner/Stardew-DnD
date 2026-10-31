@@ -75,6 +75,7 @@ namespace DnD.Game
         public List<string> LitBraziers = new List<string>();
         public int RecruitWeek, RecruitSeed;
         public int Act, ActTwoDay, DragonStage;
+        public List<KV> DragonOpinion = new List<KV>();
         public int FestivalDoneDay; // keep last: older tests edit saves line by line
     }
 
@@ -224,6 +225,7 @@ namespace DnD.Game
             d.RecruitWeek = w.RecruitWeek; d.RecruitSeed = w.RecruitSeed;
             d.FestivalDoneDay = w.FestivalDoneDay;
             d.Act = w.Act; d.ActTwoDay = w.ActTwoDay; d.DragonStage = w.DragonStage;
+            foreach (var kv in w.DragonOpinionShift) d.DragonOpinion.Add(new KV(kv.Key, kv.Value));
             return d;
         }
 
@@ -316,6 +318,7 @@ namespace DnD.Game
             w.RecruitWeek = d.RecruitWeek; w.RecruitSeed = d.RecruitSeed;
             w.FestivalDoneDay = d.FestivalDoneDay;
             w.Act = Math.Max(1, d.Act); w.ActTwoDay = d.ActTwoDay; w.DragonStage = d.DragonStage;
+            if (d.DragonOpinion != null) foreach (var kv in d.DragonOpinion) w.DragonOpinionShift[kv.K] = kv.V;
         }
     }
 }

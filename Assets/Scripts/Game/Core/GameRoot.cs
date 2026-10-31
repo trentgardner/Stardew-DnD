@@ -39,6 +39,7 @@ namespace DnD.Game
 
         Transform _worldRoot;
         readonly List<NpcAgent> _npcs = new List<NpcAgent>();
+        public IEnumerable<NpcAgent> Npcs => _npcs;
         readonly List<RecruitAgent> _recruitAgents = new List<RecruitAgent>();
         readonly Dictionary<string, List<EnemyAgent>> _groups = new Dictionary<string, List<EnemyAgent>>();
         readonly List<PcData> _pendingPlayers = new List<PcData>();
@@ -796,7 +797,7 @@ namespace DnD.Game
         public void OnCombatFinished(CombatInstance c, bool victory)
         {
             Combats.Remove(c);
-            if (victory && c.Units.Any(u => u.C is Dragonling)) DragonPet.AddBond(c.Humans.FirstOrDefault(), 1, "a fight won together");
+            if (victory && c.Units.Any(u => u.C is Dragonling)) { DragonPet.AddBond(c.Humans.FirstOrDefault(), 1, "a fight won together"); DragonAgent?.GetComponent<DragonPet>()?.ShowOff(); }
             DragonBackOut();
             if (c.Brawl) { EndBrawl(c, victory); return; }
             foreach (var u in c.Units.Where(u => u.C is PlayerCharacter pc && pc.IsDead)) _deathTime[u.C.Uid] = NowAbs;
