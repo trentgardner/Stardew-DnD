@@ -147,19 +147,101 @@ namespace DnD.Rules.Content
             Add(new SpellDef { Id = "spiritual_weapon", Name = "Spiritual Weapon", Level = 2, School = "Evocation", CastTime = CastTime.BonusAction, RangeFt = 60, Kind = SpellKind.Attack, Dice = DiceExpr.Parse("1d8"), AddSpellMod = true, DamageType = DamageType.Force, Concentration = true, EffectId = "spiritual_weapon",
                 Description = "Bonus Action: a floating spectral weapon makes a melee spell attack for 1d8 + modifier force. Concentration." }, C);
             Add(new SpellDef { Id = "aid", Name = "Aid", Level = 2, School = "Abjuration", RangeFt = 30, MaxTargets = 3, Kind = SpellKind.Buff, EffectId = "aid",
-                Description = "Up to 3 allies gain +5 max HP and current HP for 8 hours." }, C, B);
+                Description = "Up to 3 allies gain +5 max HP and current HP for 8 hours." }, C, B, P, R);
             Add(new SpellDef { Id = "prayer_of_healing", Name = "Prayer of Healing", Level = 2, School = "Abjuration", CastTime = CastTime.TenMinutes, RangeFt = 30, MaxTargets = 5, Kind = SpellKind.Heal, Dice = DiceExpr.Parse("2d8"), AddSpellMod = true,
                 Description = "Out of combat: up to 5 allies regain 2d8 + modifier HP and get the benefit of a Short Rest." }, C);
             Add(new SpellDef { Id = "lesser_restoration", Name = "Lesser Restoration", Level = 2, School = "Abjuration", RangeFt = 5, Kind = SpellKind.Utility, EffectId = "cleanse",
-                Description = "End one condition: Blinded, Deafened, Paralyzed or Poisoned." }, C, B, D);
+                Description = "End one condition: Blinded, Deafened, Paralyzed or Poisoned." }, C, B, D, P, R);
             Add(new SpellDef { Id = "suggestion", Name = "Suggestion", Level = 2, School = "Enchantment", RangeFt = 30, Kind = SpellKind.Utility, Concentration = true,
                 Description = "Suggest a reasonable course of action. In conversation: a guaranteed success on one reasonable request (WIS save negates)." }, W, B, S, K);
             Add(new SpellDef { Id = "invisibility", Name = "Invisibility", Level = 2, School = "Illusion", RangeFt = 5, Kind = SpellKind.Utility, Concentration = true,
                 Description = "A creature becomes Invisible until it attacks or casts a spell." }, W, B, S, K);
 
-            // Not castable by the playtest classes; used by the scroll.
+            // ---------------- Level 3 (Act II; a curated list: see docs/DESIGN.md)
             Add(new SpellDef { Id = "revivify", Name = "Revivify", Level = 3, School = "Necromancy", RangeFt = 5, Kind = SpellKind.Utility,
-                Description = "Return a creature that died within the last minute to life with 1 HP." }, C);
+                Description = "Return a creature that died within the last minute to life with 1 HP." }, C, P);
+            Add(new SpellDef { Id = "fireball", Name = "Fireball", Level = 3, School = "Evocation", RangeFt = 150, Kind = SpellKind.Save, Shape = TargetShape.Sphere, AreaFt = 20,
+                SaveAbility = Ability.DEX, HalfOnSave = true, Dice = DiceExpr.Parse("8d6"), DamageType = DamageType.Fire, UpcastDice = 1,
+                Description = "A bead of fire blossoms into a 20-ft-radius explosion. DEX save: 8d6 fire, half on a success. Careful: it doesn't care whose side you're on." }, W, S);
+            Add(new SpellDef { Id = "lightning_bolt", Name = "Lightning Bolt", Level = 3, School = "Evocation", RangeFt = 0, Kind = SpellKind.Save, Shape = TargetShape.Line, AreaFt = 100,
+                SaveAbility = Ability.DEX, HalfOnSave = true, Dice = DiceExpr.Parse("8d6"), DamageType = DamageType.Lightning, UpcastDice = 1,
+                Description = "A 100-ft line of lightning from your hand. DEX save: 8d6 lightning, half on a success." }, W, S);
+            Add(new SpellDef { Id = "spirit_guardians", Name = "Spirit Guardians", Level = 3, School = "Conjuration", RangeFt = 0, Kind = SpellKind.Buff, Concentration = true,
+                SaveAbility = Ability.WIS, HalfOnSave = true, Dice = DiceExpr.Parse("3d8"), DamageType = DamageType.Radiant, UpcastDice = 1, ZoneRadiusTiles = 3,
+                Description = "Protective spirits circle you in a 15-ft aura. Enemies that enter it or end their turn there: WIS save, 3d8 radiant (half on a success), and their Speed is halved inside." }, C);
+            Add(new SpellDef { Id = "mass_healing_word", Name = "Mass Healing Word", Level = 3, School = "Abjuration", CastTime = CastTime.BonusAction, RangeFt = 60, MaxTargets = 6, AreaFt = 60,
+                Kind = SpellKind.Heal, Dice = DiceExpr.Parse("2d4"), AddSpellMod = true, UpcastDice = 1,
+                Description = "Bonus Action: up to 6 allies you can see within 60 ft regain 2d4 + your modifier HP." }, C, B);
+            Add(new SpellDef { Id = "beacon_of_hope", Name = "Beacon of Hope", Level = 3, School = "Abjuration", RangeFt = 30, MaxTargets = 6, Kind = SpellKind.Buff, Concentration = true, EffectId = "beacon_of_hope",
+                Description = "Up to 6 allies within 30 ft: Advantage on WIS saves and death saves, and any healing they receive is maximized." }, C);
+            Add(new SpellDef { Id = "haste", Name = "Haste", Level = 3, School = "Transmutation", RangeFt = 30, Kind = SpellKind.Buff, Concentration = true, EffectId = "haste",
+                Description = "One ally: +2 AC, double Speed, Advantage on DEX saves, and an extra attack each turn. When it ends they're lethargic for a turn." }, W, S);
+            Add(new SpellDef { Id = "slow", Name = "Slow", Level = 3, School = "Transmutation", RangeFt = 120, Kind = SpellKind.Save, Shape = TargetShape.Cube, AreaFt = 20, MaxTargets = 6, OnlyEnemies = true,
+                SaveAbility = Ability.WIS, Concentration = true, EffectId = "slowed_spell",
+                Description = "Up to 6 enemies in a 40-ft cube: WIS save or −2 AC, half Speed and no reactions. They repeat the save each turn." }, W, S);
+            Add(new SpellDef { Id = "hypnotic_pattern", Name = "Hypnotic Pattern", Level = 3, School = "Illusion", RangeFt = 120, Kind = SpellKind.Save, Shape = TargetShape.Cube, AreaFt = 15,
+                SaveAbility = Ability.WIS, Concentration = true, EffectId = "hypnotized",
+                Description = "A twisting pattern of colours in a 30-ft cube. WIS save or entranced (Incapacitated) until it takes damage. Friends aren't immune." }, W, S, B, K);
+            Add(new SpellDef { Id = "call_lightning", Name = "Call Lightning", Level = 3, School = "Conjuration", RangeFt = 120, Kind = SpellKind.Save, Shape = TargetShape.Cylinder, AreaFt = 5,
+                SaveAbility = Ability.DEX, HalfOnSave = true, Dice = DiceExpr.Parse("3d10"), DamageType = DamageType.Lightning, UpcastDice = 1, Concentration = true,
+                Description = "A storm cloud gathers. Call a bolt on a 5-ft radius: DEX save, 3d10 lightning (half on a success). Each later turn you can call another with your action, no slot needed." }, D);
+            Add(new SpellDef { Id = "sleet_storm", Name = "Sleet Storm", Level = 3, School = "Conjuration", RangeFt = 150, Kind = SpellKind.Save, Shape = TargetShape.Cylinder, AreaFt = 20,
+                SaveAbility = Ability.DEX, EffectId = "prone",
+                Description = "Freezing rain and sleet in a 20-ft radius. DEX save or fall Prone." }, D, W, S);
+            Add(new SpellDef { Id = "fly", Name = "Fly", Level = 3, School = "Transmutation", RangeFt = 5, Kind = SpellKind.Buff, Concentration = true, EffectId = "flying",
+                Description = "Touch an ally: they fly (Speed +30 ft) for 10 minutes." }, W, S, K);
+            Add(new SpellDef { Id = "blinding_smite", Name = "Blinding Smite", Level = 3, School = "Evocation", CastTime = CastTime.BonusAction, RangeFt = 0, Kind = SpellKind.Buff, EffectId = "blinding_smite_ready",
+                Description = "Your next melee weapon hit deals +3d8 radiant and Blinds the target (CON save at the end of each of its turns)." }, P);
+            Add(new SpellDef { Id = "lightning_arrow", Name = "Lightning Arrow", Level = 3, School = "Transmutation", CastTime = CastTime.BonusAction, RangeFt = 0, Kind = SpellKind.Buff, EffectId = "lightning_arrow_ready",
+                Description = "Your next ranged weapon attack becomes lightning: 4d8 on a hit (half on a miss), and 2d8 to everyone within 10 ft of the target (DEX save for half)." }, R);
+            Add(new SpellDef { Id = "conjure_barrage", Name = "Conjure Barrage", Level = 3, School = "Conjuration", RangeFt = 0, Kind = SpellKind.Save, Shape = TargetShape.Cone, AreaFt = 60,
+                SaveAbility = Ability.DEX, HalfOnSave = true, Dice = DiceExpr.Parse("5d8"), DamageType = DamageType.Force, UpcastDice = 1,
+                Description = "Throw a weapon and it becomes a hail of copies: a 60-ft cone, DEX save, 5d8 force (half on a success)." }, R);
+
+            // ---------------- Level 4
+            Add(new SpellDef { Id = "greater_invisibility", Name = "Greater Invisibility", Level = 4, School = "Illusion", RangeFt = 5, Kind = SpellKind.Buff, Concentration = true, EffectId = "greater_invisibility",
+                Description = "Touch an ally: Invisible for a minute, even while attacking or casting." }, W, S, B);
+            Add(new SpellDef { Id = "ice_storm", Name = "Ice Storm", Level = 4, School = "Evocation", RangeFt = 300, Kind = SpellKind.Save, Shape = TargetShape.Cylinder, AreaFt = 20,
+                SaveAbility = Ability.DEX, HalfOnSave = true, Dice = DiceExpr.Parse("2d10"), DamageType = DamageType.Bludgeoning, UpcastDice = 1,
+                SecondDice = DiceExpr.Parse("4d6"), SecondDamageType = DamageType.Cold,
+                Description = "Hailstones pound a 20-ft radius. DEX save: 2d10 bludgeoning + 4d6 cold, half on a success." }, W, S, D);
+            Add(new SpellDef { Id = "wall_of_fire", Name = "Wall of Fire", Level = 4, School = "Evocation", RangeFt = 120, Kind = SpellKind.Save, Shape = TargetShape.Line, AreaFt = 60,
+                SaveAbility = Ability.DEX, HalfOnSave = true, Dice = DiceExpr.Parse("5d8"), DamageType = DamageType.Fire, UpcastDice = 1, Concentration = true, ZoneLineTiles = 12,
+                Description = "A 60-ft wall of flame across the battlefield. Anyone caught in it (or who ends a turn in it, or walks through it) makes a DEX save: 5d8 fire, half on a success." }, W, S, D);
+            Add(new SpellDef { Id = "banishment", Name = "Banishment", Level = 4, School = "Abjuration", RangeFt = 30, Kind = SpellKind.Save, SaveAbility = Ability.CHA, Concentration = true, EffectId = "banished",
+                Description = "CHA save or the target vanishes to a harmless elsewhere while you concentrate. Hold it for the full minute and it doesn't come back." }, W, S, C, K, P);
+            Add(new SpellDef { Id = "death_ward", Name = "Death Ward", Level = 4, School = "Abjuration", RangeFt = 5, Kind = SpellKind.Buff, EffectId = "death_ward",
+                Description = "Touch an ally: the first time they would drop to 0 HP in the next 8 hours, they drop to 1 instead." }, C, P);
+            Add(new SpellDef { Id = "staggering_smite", Name = "Staggering Smite", Level = 4, School = "Enchantment", CastTime = CastTime.BonusAction, RangeFt = 0, Kind = SpellKind.Buff, EffectId = "staggering_smite_ready",
+                Description = "Your next melee weapon hit deals +4d6 psychic; on a failed WIS save the target can't take reactions and has Disadvantage on its next attack." }, P);
+            Add(new SpellDef { Id = "dimension_door", Name = "Dimension Door", Level = 4, School = "Conjuration", RangeFt = 500, Kind = SpellKind.Utility,
+                Description = "Step through space to any spot you can see, taking one adjacent ally with you." }, W, S, B, K);
+            Add(new SpellDef { Id = "guardian_of_faith", Name = "Guardian of Faith", Level = 4, School = "Conjuration", RangeFt = 30, Kind = SpellKind.Utility,
+                SaveAbility = Ability.DEX, HalfOnSave = true, Dice = new DiceExpr(0, 0, 20), DamageType = DamageType.Radiant, ZoneRadiusTiles = 2,
+                Description = "A spectral guardian holds a spot for 8 hours. Enemies that enter within 10 ft of it or end their turn there: DEX save, 20 radiant (half on a success). It fades after dealing 60." }, C);
+
+            // ---------------- Level 5
+            Add(new SpellDef { Id = "cone_of_cold", Name = "Cone of Cold", Level = 5, School = "Evocation", RangeFt = 0, Kind = SpellKind.Save, Shape = TargetShape.Cone, AreaFt = 60,
+                SaveAbility = Ability.CON, HalfOnSave = true, Dice = DiceExpr.Parse("8d8"), DamageType = DamageType.Cold, UpcastDice = 1,
+                Description = "A blast of cold air in a 60-ft cone. CON save: 8d8 cold, half on a success." }, W, S);
+            Add(new SpellDef { Id = "mass_cure_wounds", Name = "Mass Cure Wounds", Level = 5, School = "Abjuration", RangeFt = 60, MaxTargets = 6, AreaFt = 30,
+                Kind = SpellKind.Heal, Dice = DiceExpr.Parse("5d8"), AddSpellMod = true, UpcastDice = 1,
+                Description = "A wave of healing: up to 6 allies within 30 ft of a point regain 5d8 + your modifier HP." }, C, B, D);
+            Add(new SpellDef { Id = "hold_monster", Name = "Hold Monster", Level = 5, School = "Enchantment", RangeFt = 90, Kind = SpellKind.Save, SaveAbility = Ability.WIS, Concentration = true, EffectId = "hold_person",
+                Description = "WIS save or any creature is Paralyzed. It repeats the save at the end of each of its turns." }, W, S, B, K);
+            Add(new SpellDef { Id = "flame_strike", Name = "Flame Strike", Level = 5, School = "Evocation", RangeFt = 60, Kind = SpellKind.Save, Shape = TargetShape.Cylinder, AreaFt = 10,
+                SaveAbility = Ability.DEX, HalfOnSave = true, Dice = DiceExpr.Parse("5d6"), DamageType = DamageType.Fire, UpcastDice = 1,
+                SecondDice = DiceExpr.Parse("5d6"), SecondDamageType = DamageType.Radiant,
+                Description = "A column of divine fire, 10-ft radius. DEX save: 5d6 fire + 5d6 radiant, half on a success." }, C);
+            Add(new SpellDef { Id = "greater_restoration", Name = "Greater Restoration", Level = 5, School = "Abjuration", RangeFt = 5, Kind = SpellKind.Buff, EffectId = "cleanse_greater",
+                Description = "Touch an ally: end Charmed, Frightened, Paralyzed or Petrified on them, and remove a level of Exhaustion." }, C, B, D, P, R);
+            Add(new SpellDef { Id = "banishing_smite", Name = "Banishing Smite", Level = 5, School = "Conjuration", CastTime = CastTime.BonusAction, RangeFt = 0, Kind = SpellKind.Buff, EffectId = "banishing_smite_ready",
+                Description = "Your next melee weapon hit deals +5d10 force; if that leaves the target at 50 HP or fewer, it's banished while you concentrate." }, P);
+            Add(new SpellDef { Id = "swift_quiver", Name = "Swift Quiver", Level = 5, School = "Transmutation", CastTime = CastTime.BonusAction, RangeFt = 0, Kind = SpellKind.Buff, Concentration = true, EffectId = "swift_quiver",
+                Description = "Your quiver never runs dry: each turn, a Bonus Action for two attacks with your ranged weapon." }, R);
+            Add(new SpellDef { Id = "synaptic_static", Name = "Synaptic Static", Level = 5, School = "Enchantment", RangeFt = 120, Kind = SpellKind.Save, Shape = TargetShape.Sphere, AreaFt = 20,
+                SaveAbility = Ability.INT, HalfOnSave = true, Dice = DiceExpr.Parse("8d6"), DamageType = DamageType.Psychic, EffectId = "synaptic",
+                Description = "A burst of psychic noise, 20-ft radius. INT save: 8d6 psychic (half on a success); those who fail are muddled (−1d6 to attacks, INT save each turn to clear)." }, W, B, S, K);
         }
 
         public static SpellDef Get(string id) => All.TryGetValue(id, out var s) ? s : null;

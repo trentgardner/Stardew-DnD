@@ -23,7 +23,7 @@ namespace DnD.Rules
         Utility
     }
 
-    public enum TargetShape { Single, Self, Sphere, Cone, Cube, Line }
+    public enum TargetShape { Single, Self, Sphere, Cone, Cube, Line, Cylinder }
 
     public class SpellDef
     {
@@ -50,6 +50,14 @@ namespace DnD.Rules
         public int UpcastDice;
         /// <summary>Effect key applied on hit / failed save / to buff targets (see EffectLibrary).</summary>
         public string EffectId;
+        /// <summary>A second damage type rolled alongside (Flame Strike's radiant, Ice Storm's cold). Never upcast.</summary>
+        public DiceExpr SecondDice;
+        public DamageType SecondDamageType;
+        /// <summary>Area spells that only touch hostile creatures (Slow, Mass heals pick allies).</summary>
+        public bool OnlyEnemies;
+        /// <summary>Lingering zones (Spirit Guardians, Guardian of Faith): radius in tiles; Wall of Fire uses ZoneLineTiles.</summary>
+        public int ZoneRadiusTiles;
+        public int ZoneLineTiles;
         public bool Ritual;
         public string Description;
         public List<string> Classes = new List<string>();
@@ -96,6 +104,17 @@ namespace DnD.Rules
         public string Description;
         public List<FeatureDef> Features = new List<FeatureDef>();
         public List<string> AlwaysPreparedSpells = new List<string>();
+        /// <summary>More always-prepared spells by class level (domain/oath/circle spells at 5, 7, 9).</summary>
+        public Dictionary<int, List<string>> LaterSpells = new Dictionary<int, List<string>>();
+
+        /// <summary>Every always-prepared subclass spell a character of this class level has.</summary>
+        public List<string> AlwaysPreparedAt(int level)
+        {
+            var list = new List<string>();
+            if (level >= 3) list.AddRange(AlwaysPreparedSpells);
+            foreach (var kv in LaterSpells) if (level >= kv.Key) foreach (var s in kv.Value) if (!list.Contains(s)) list.Add(s);
+            return list;
+        }
     }
 
     public class FeatureDef

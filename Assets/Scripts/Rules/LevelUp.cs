@@ -5,7 +5,7 @@ using DnD.Rules.Content;
 
 namespace DnD.Rules
 {
-    public enum ChoiceKind { Expertise, BonusSkill, Cantrip, Spell, Feat, FightingStyle, HunterPrey, LandType, Invocation, Metamagic }
+    public enum ChoiceKind { Expertise, BonusSkill, Cantrip, Spell, Feat, FightingStyle, HunterPrey, LandType, Invocation, Metamagic, HunterDefense, DraconicElement, BonusSpell }
 
     /// <summary>One decision the next level asks for, e.g. "pick 2 spells from these".</summary>
     public class LevelUpChoice
@@ -29,7 +29,31 @@ namespace DnD.Rules
     {
         static readonly Skill[] ScholarSkills = { Skill.Arcana, Skill.History, Skill.Investigation, Skill.Medicine, Skill.Nature, Skill.Religion };
 
-        int MaxSpellLevelAt(int level) => Class.Caster == CasterType.Full || Class.Caster == CasterType.Pact ? (level >= 3 ? 2 : 1) : Class.Caster == CasterType.Half ? (level >= 5 ? 2 : 1) : 0;
+        /// <summary>The highest spell level the class can cast at a class level (SRD 5.2 tables).</summary>
+        public int MaxSpellLevelAt(int level)
+        {
+            switch (Class.Caster)
+            {
+                case CasterType.Full: return Math.Min(9, (level + 1) / 2);
+                case CasterType.Half: return Math.Min(5, (level + 3) / 4);
+                case CasterType.Pact:
+                    for (int l = 5; l >= 1; l--) if (SpellSlots.For(CasterType.Pact, level, l) > 0) return l;
+                    return 1;
+                default: return 0;
+            }
+        }
+
+        /// <summary>Ability Score Improvement levels: 4, 8, 12, 16, 19 for everyone; the Fighter adds 6 and 14, the Rogue 10.</summary>
+        public bool AsiLevel(int level)
+        {
+            if (level == 4 || level == 8 || level == 12 || level == 16 || level == 19) return true;
+            if (Class.Id == "fighter" && (level == 6 || level == 14)) return true;
+            if (Class.Id == "rogue" && level == 10) return true;
+            return false;
+        }
+
+        static readonly string[] MagicalSecretsLists = { "bard", "cleric", "druid", "wizard" };
+        static readonly string[] FighterStyles = { "archery", "defense", "dueling", "great_weapon" };
 
         static readonly Dictionary<string, string[]> FightingStyles = new Dictionary<string, string[]>
         {
@@ -44,7 +68,7 @@ namespace DnD.Rules
             var list = new List<LevelUpChoice>();
 
             // Skills
-            if (Class.Id == "bard" && next == 2)
+            if ((Class.Id == "bard" && (next == 2 || next == 9)) || (Class.Id == "rogue" && next == 6) || (Class.Id == "ranger" && next == 9))
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.Expertise, Count = 2, Title = "Expertise: double your proficiency in two skills",
                     Options = SkillProficiencies.Where(s => !Expertise.Contains(s)).Select(s => s.ToString()).OrderBy(s => s).ToList() });
             if (Class.Id == "wizard" && next == 2)
@@ -62,14 +86,23 @@ namespace DnD.Rules
                     Options = SkillProficiencies.Where(s => !Expertise.Contains(s)).Select(s => s.ToString()).OrderBy(s => s).ToList() });
             if (Class.Id == "ranger" && next == 3)
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.HunterPrey, Count = 1, Title = "Hunter's Prey", Options = new List<string> { "colossus_slayer", "horde_breaker" } });
+            if (Class.Id == "bard" && next == 6 && Class.Subclass?.Id == "lore")
+                list.Add(new LevelUpChoice { Kind = ChoiceKind.BonusSpell, Count = 2, Title = "Magical Discoveries: two spells from the Cleric, Druid or Wizard lists (always prepared)",
+                    Options = new[] { "cleric", "druid", "wizard" }.SelectMany(c => SpellsDb.ForClass(c, MaxSpellLevelAt(next))).Where(s => !KnowsSpell(s.Id) && !s.Classes.Contains("bard")).Select(s => s.Id).Distinct().ToList() });
+            if (Class.Id == "ranger" && next == 7)
+                list.Add(new LevelUpChoice { Kind = ChoiceKind.HunterDefense, Count = 1, Title = "Defensive Tactics", Options = new List<string> { "escape_the_horde", "multiattack_defense" } });
             if (Class.Id == "druid" && next == 3)
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.LandType, Count = 1, Title = "Circle of the Land: which land calls to you?", Options = CircleSpells.Keys.ToList() });
             int newInvocations = InvocationsKnownAt(next) - Invocations.Count;
             if (newInvocations > 0)
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.Invocation, Count = newInvocations, Title = $"Eldritch Invocations: learn {newInvocations}",
-                    Options = InvocationOptions.Where(o => !Invocations.Contains(o)).ToList() });
-            if (Class.Id == "sorcerer" && next == 2)
-                list.Add(new LevelUpChoice { Kind = ChoiceKind.Metamagic, Count = 2, Title = "Metamagic: two ways to twist your spells", Options = MetamagicOptions.ToList() });
+                    Options = InvocationOptions.Where(o => !Invocations.Contains(o) && CanLearnInvocation(o, next)).ToList() });
+            if (Class.Id == "sorcerer" && next == 6 && Class.Subclass?.Id == "draconic")
+                list.Add(new LevelUpChoice { Kind = ChoiceKind.DraconicElement, Count = 1, Title = "Elemental Affinity: your draconic element", Options = DraconicElements.ToList() });
+            if (Class.Id == "sorcerer" && (next == 2 || next == 10))
+                list.Add(new LevelUpChoice { Kind = ChoiceKind.Metamagic, Count = 2, Title = "Metamagic: two ways to twist your spells", Options = MetamagicOptions.Where(o => !Metamagic.Contains(o)).ToList() });
+            if (Class.Id == "fighter" && next == 7 && Class.Subclass?.Id == "champion")
+                list.Add(new LevelUpChoice { Kind = ChoiceKind.FightingStyle, Count = 1, Title = "Additional Fighting Style", Options = FighterStyles.Where(o => o != FightingStyle).ToList() });
             if (Class.Id == "barbarian" && next == 3)
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.BonusSkill, Count = 1, Title = "Primal Knowledge: one more Barbarian skill",
                     Options = Class.SkillOptions.Where(s => !SkillProficiencies.Contains(s)).Select(s => s.ToString()).ToList() });
@@ -90,9 +123,11 @@ namespace DnD.Rules
                 if (newSpells > 0)
                 {
                     var known = wizard ? (ICollection<string>)Spellbook : PreparedSpells;
+                    bool secrets = Class.Id == "bard" && next >= 10;
+                    var pool = secrets ? MagicalSecretsLists.SelectMany(c => SpellsDb.ForClass(c, maxLevel)).Distinct() : SpellsDb.ForClass(Class.Id, maxLevel);
                     list.Add(new LevelUpChoice { Kind = ChoiceKind.Spell, Count = newSpells,
-                        Title = wizard ? "Copy 2 new spells into your spellbook" : $"Prepare {newSpells} more spell{(newSpells > 1 ? "s" : "")}",
-                        Options = SpellsDb.ForClass(Class.Id, maxLevel).Where(s => s.Level > 0 && !known.Contains(s.Id)).OrderByDescending(s => s.Level).Select(s => s.Id).ToList() });
+                        Title = wizard ? "Copy 2 new spells into your spellbook" : secrets ? $"Magical Secrets: prepare {newSpells} more from the Bard, Cleric, Druid or Wizard lists" : $"Prepare {newSpells} more spell{(newSpells > 1 ? "s" : "")}",
+                        Options = pool.Where(s => s.Level > 0 && !known.Contains(s.Id)).OrderByDescending(s => s.Level).Select(s => s.Id).ToList() });
                 }
                 if (wizard && next == 3 && Class.Subclass?.Id == "evoker")
                     list.Add(new LevelUpChoice { Kind = ChoiceKind.Spell, Count = 2, Title = "Evocation Savant: two free Evocation spells",
@@ -100,7 +135,7 @@ namespace DnD.Rules
             }
 
             // Ability Score Improvement or a feat (SRD 5.2 general feats) at 4.
-            if (next == 4)
+            if (AsiLevel(next))
             {
                 var opts = new List<string>();
                 var abilities = (Ability[])Enum.GetValues(typeof(Ability));
@@ -132,6 +167,12 @@ namespace DnD.Rules
                 case "dueling": return "Dueling (+2 damage, one-handed melee)";
                 case "great_weapon": return "Great Weapon Fighting (reroll 1s and 2s)";
                 case "archery": return "Archery (+2 to hit with ranged weapons)";
+                case "thirsting_blade": return "Thirsting Blade (Extra Attack with your pact weapon)";
+                case "misty_visions": return "Misty Visions (cast Silent Image at will)";
+                case "beast_speech": return "Beast Speech (speak with animals at will)";
+                case "fire": case "cold": case "lightning": case "acid": case "poison": return char.ToUpper(id[0]) + id.Substring(1) + " (resistance, and +CHA to your spells of this type)";
+                case "escape_the_horde": return "Escape the Horde (Opportunity Attacks against you have Disadvantage)";
+                case "multiattack_defense": return "Multiattack Defense (after a creature hits you, its other attacks that turn have Disadvantage)";
                 case "colossus_slayer": return "Colossus Slayer (+1d8 once per turn vs a wounded foe)";
                 case "horde_breaker": return "Horde Breaker (an extra attack vs a second adjacent foe)";
                 case "arid": return "Arid land (Burning Hands, Fire Bolt)";
@@ -198,6 +239,18 @@ namespace DnD.Rules
                         if (!Metamagic.Contains(id)) Metamagic.Add(id);
                         log?.Add($"Metamagic: {DescribeOption(id)}");
                         break;
+                    case ChoiceKind.DraconicElement:
+                        DraconicElement = id;
+                        log?.Add($"Elemental Affinity: {id}");
+                        break;
+                    case ChoiceKind.BonusSpell:
+                        if (!BonusAlwaysPrepared.Contains(id)) BonusAlwaysPrepared.Add(id);
+                        log?.Add($"Magical Discovery: {DescribeOption(id)}");
+                        break;
+                    case ChoiceKind.HunterDefense:
+                        HunterDefense = id;
+                        log?.Add($"Defensive Tactics: {DescribeOption(id)}");
+                        break;
                     case ChoiceKind.HunterPrey:
                         HunterPrey = id;
                         log?.Add($"Hunter's Prey: {DescribeOption(id)}");
@@ -208,7 +261,7 @@ namespace DnD.Rules
                         log?.Add($"Circle of the Land: {DescribeOption(id)}");
                         break;
                     case ChoiceKind.FightingStyle:
-                        FightingStyle = id;
+                        if (FightingStyle == null) FightingStyle = id; else FightingStyle2 = id;
                         log?.Add($"Fighting Style: {DescribeOption(id)}");
                         break;
                     case ChoiceKind.Feat:
@@ -236,7 +289,7 @@ namespace DnD.Rules
         {
             get
             {
-                var always = Class.Subclass != null && Level >= 3 ? Class.Subclass.AlwaysPreparedSpells : new List<string>();
+                var always = Class.Subclass != null ? Class.Subclass.AlwaysPreparedAt(Level) : new List<string>();
                 return PreparedSpells.Count(s => !always.Contains(s) && !Class.AlwaysPrepared.ContainsKey(s));
             }
         }

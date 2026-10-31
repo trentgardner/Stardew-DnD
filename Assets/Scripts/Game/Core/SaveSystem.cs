@@ -16,12 +16,12 @@ namespace DnD.Game
     [Serializable]
     public class PcData
     {
-        public string Name, Species, Class, Background, SpriteId, FightingStyle, DivineOrder;
+        public string Name, Species, Class, Background, SpriteId, FightingStyle, FightingStyle2, DivineOrder;
         public int Level, XP, Copper, HP, MaxHP, TempHP, Exhaustion, HitDiceSpent, DeathS, DeathF, HeldInsp;
         public bool Dead, Stable, Shield, Heroic, LuckyUsed;
         public int[] BaseScores, BgBonus, SlotsUsed, Asi;
         public List<string> Feats = new List<string>(), BonusPrepared = new List<string>(), Invocations = new List<string>(), Metamagic = new List<string>();
-        public string PrimalOrder, LandType, HunterPrey, WildShape;
+        public string PrimalOrder, LandType, HunterPrey, WildShape, HunterDefense, DraconicElement;
         public List<string> Skills = new List<string>(), Expertise = new List<string>(), Mastered = new List<string>(), Worn = new List<string>();
         public List<string> Cantrips = new List<string>(), Prepared = new List<string>(), Spellbook = new List<string>();
         public List<string> BagIds = new List<string>();
@@ -224,7 +224,7 @@ namespace DnD.Game
             var d = new PcData
             {
                 Name = pc.Name, Species = pc.Species.Id, Class = pc.Class.Id, Background = pc.Background.Id, SpriteId = pc.SpriteId,
-                FightingStyle = pc.FightingStyle, DivineOrder = pc.DivineOrder, Level = pc.Level, XP = pc.XP, Copper = pc.Copper,
+                FightingStyle = pc.FightingStyle, FightingStyle2 = pc.FightingStyle2, DivineOrder = pc.DivineOrder, Level = pc.Level, XP = pc.XP, Copper = pc.Copper,
                 HP = pc.HP, MaxHP = pc.MaxHP, TempHP = pc.TempHP, Exhaustion = pc.Exhaustion, HitDiceSpent = pc.HitDiceSpent,
                 DeathS = pc.DeathSuccesses, DeathF = pc.DeathFailures, HeldInsp = pc.HeldInspirationDie, Dead = pc.IsDead, Stable = pc.Stable,
                 Shield = pc.Shield, Heroic = pc.HeroicInspiration, LuckyUsed = pc.LuckyRerollUsed,
@@ -239,7 +239,7 @@ namespace DnD.Game
             d.Junk.AddRange(pc.Junk);
             d.BonusPrepared.AddRange(pc.BonusAlwaysPrepared);
             d.Invocations.AddRange(pc.Invocations); d.Metamagic.AddRange(pc.Metamagic);
-            d.PrimalOrder = pc.PrimalOrder; d.LandType = pc.LandType; d.HunterPrey = pc.HunterPrey; d.WildShape = pc.WildShape?.Id;
+            d.PrimalOrder = pc.PrimalOrder; d.LandType = pc.LandType; d.HunterPrey = pc.HunterPrey; d.HunterDefense = pc.HunterDefense; d.DraconicElement = pc.DraconicElement; d.WildShape = pc.WildShape?.Id;
             d.Worn.AddRange(pc.Worn.Select(w => w.Id));
             d.Cantrips.AddRange(pc.Cantrips); d.Prepared.AddRange(pc.PreparedSpells); d.Spellbook.AddRange(pc.Spellbook);
             foreach (var s in pc.Bag.Slots) { d.BagIds.Add(s?.ItemId ?? ""); d.BagCounts.Add(s?.Count ?? 0); }
@@ -252,7 +252,7 @@ namespace DnD.Game
             var pc = new PlayerCharacter
             {
                 Name = d.Name, Species = CharacterDb.Species[d.Species], Class = CharacterDb.Classes[d.Class], Background = CharacterDb.Backgrounds[d.Background],
-                SpriteId = d.SpriteId, FightingStyle = d.FightingStyle, DivineOrder = d.DivineOrder, Level = d.Level, XP = d.XP, Copper = d.Copper,
+                SpriteId = d.SpriteId, FightingStyle = d.FightingStyle, FightingStyle2 = d.FightingStyle2, DivineOrder = d.DivineOrder, Level = d.Level, XP = d.XP, Copper = d.Copper,
                 MaxHP = d.MaxHP, HP = d.HP, TempHP = d.TempHP, Exhaustion = d.Exhaustion, HitDiceSpent = d.HitDiceSpent,
                 DeathSuccesses = d.DeathS, DeathFailures = d.DeathF, HeldInspirationDie = d.HeldInsp, Stable = d.Stable,
                 Shield = d.Shield, HeroicInspiration = d.Heroic, LuckyRerollUsed = d.LuckyUsed,
@@ -269,7 +269,7 @@ namespace DnD.Game
             if (d.BonusPrepared != null) pc.BonusAlwaysPrepared.AddRange(d.BonusPrepared);
             if (d.Invocations != null) pc.Invocations.AddRange(d.Invocations);
             if (d.Metamagic != null) pc.Metamagic.AddRange(d.Metamagic);
-            pc.PrimalOrder = d.PrimalOrder; pc.LandType = d.LandType; pc.HunterPrey = d.HunterPrey;
+            pc.PrimalOrder = d.PrimalOrder; pc.LandType = d.LandType; pc.HunterPrey = d.HunterPrey; pc.HunterDefense = d.HunterDefense; pc.DraconicElement = d.DraconicElement;
             if (!string.IsNullOrEmpty(d.WildShape)) pc.WildShape = MonstersDb.Get(d.WildShape);
             if (d.SlotsUsed != null && d.SlotsUsed.Length == 10) pc.SlotsUsed = (int[])d.SlotsUsed.Clone();
             foreach (var s in d.Skills) if (Enum.TryParse<Skill>(s, out var sk)) pc.SkillProficiencies.Add(sk);

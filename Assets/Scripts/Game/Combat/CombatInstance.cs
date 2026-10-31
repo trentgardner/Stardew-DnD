@@ -36,7 +36,7 @@ namespace DnD.Game
         }
         public bool IsHuman => Ctrl != null;
         public string Name => C.Name;
-        public bool Active => !C.IsDead && !C.IsDown;
+        public bool Active => !C.IsDead && !C.IsDown && !C.IsBanished;
     }
 
     /// <summary>
@@ -57,6 +57,8 @@ namespace DnD.Game
         readonly List<GameObject> _gridTiles = new List<GameObject>();
         readonly List<string> _log = new List<string>();
         bool _surprise, _enemiesSurprised;
+        /// <summary>True while an Opportunity Attack is being resolved (Escape the Horde).</summary>
+        bool _opportunity;
 
         public CombatInstance(GameRoot g, Zone zone, string groupId) { G = g; Zone = zone; GroupId = groupId; }
 
@@ -145,7 +147,17 @@ namespace DnD.Game
                 var log = new List<string>();
                 Enc.StartTurn(log);
                 foreach (var l in log) Log(l);
+                ZonesNewTurn();
+                SyncBanished();
                 if (cur.C is Dragonling && cur.Active) RechargeBreath(cur, null);
+                if (cur.C is PlayerCharacter hero && cur.Active) { var hlog = new List<string>(); hero.StartOfTurnInCombat(hlog); hlog.ForEach(Log); }
+                if (cur.C is Monster mon && cur.Active)
+                {
+                    var mlog = new List<string>();
+                    mon.RollRecharges(mlog);
+                    if (mon.StartTurnRegen(mlog) > 0) cur.A.Popup("Regenerates", UIKit.HealGreen);
+                    mlog.ForEach(Log);
+                }
                 RefreshTracker();
 
                 if (cur.C.IsDead) { /* skip */ }
@@ -157,6 +169,8 @@ namespace DnD.Game
                 else if (cur.IsHuman) yield return PlayerTurn(cur);
                 else yield return AiTurn(cur);
 
+                if (CheckEnd()) break;
+                TriggerZones(cur); // ending a turn inside Spirit Guardians, a Wall of Fire...
                 if (CheckEnd()) break;
                 var endLog = new List<string>();
                 Enc.EndTurn(endLog);
@@ -244,8 +258,8 @@ namespace DnD.Game
         {
             int dist = Zone.DistanceFt(attacker.Pos, target.Pos);
             bool dark = Zone.Def.Dark;
-            bool attackerSees = !dark || attacker.C.Darkvision >= dist || LitNear(target.A.transform.position) || LitNear(attacker.A.transform.position);
-            bool targetSees = !dark || target.C.Darkvision >= dist || LitNear(attacker.A.transform.position);
+            bool attackerSees = (!dark || attacker.C.Darkvision >= dist || LitNear(target.A.transform.position) || LitNear(attacker.A.transform.position)) && !target.C.Has(Condition.Invisible);
+            bool targetSees = (!dark || target.C.Darkvision >= dist || LitNear(attacker.A.transform.position)) && !attacker.C.Has(Condition.Invisible);
             return new AttackContext
             {
                 DistanceFt = dist,
@@ -254,6 +268,7 @@ namespace DnD.Game
                 AllyAdjacentToTarget = Units.Any(o => o != attacker && o.Active && o.C.Team == attacker.C.Team && Zone.DistanceFt(o.Pos, target.Pos) <= 5),
                 EnemyAdjacentToAttacker = Units.Any(o => o.Active && Hostile(o, attacker) && Zone.DistanceFt(o.Pos, attacker.Pos) <= 5),
                 AttackerInSunlight = !Zone.Def.Indoors && !Zone.Def.Dark && !G.Clock.IsNight,
+                Opportunity = _opportunity,
             };
         }
 
@@ -273,7 +288,7 @@ namespace DnD.Game
         {
             PurgeScaredDragon();
             bool playersUp = PlayersUp;
-            bool enemiesUp = Units.Any(u => u.C.Team == Team.Enemies && u.Active);
+            bool enemiesUp = Units.Any(u => u.C.Team == Team.Enemies && (u.Active || (u.C.IsBanished && !u.C.IsDead))); // banished foes are only away
             if (playersUp && enemiesUp) return false;
             Finish(playersUp);
             return true;
@@ -286,6 +301,8 @@ namespace DnD.Game
             Finished = true;
             DrawGrid(false);
             ClearHighlights();
+            ClearZoneFx();
+            foreach (var u in Units) { u.C.Effects.RemoveAll(e => e.Banished); SyncBanished(); }
             foreach (var h in Humans) { h.Hud.ShowLog(false); h.Hud.Find<CombatHud>()?.Close(); }
             if (victory)
             {
@@ -314,6 +331,9 @@ namespace DnD.Game
             Finished = true;
             DrawGrid(false);
             ClearHighlights();
+            ClearZoneFx();
+            foreach (var u in Units) u.C.Effects.RemoveAll(e => e.Banished);
+            SyncBanished();
             foreach (var h in Humans) { h.Hud.ShowLog(false); h.Hud.Find<CombatHud>()?.Close(); }
             foreach (var u in Units) if (u.C is PlayerCharacter pc && pc.IsDown && !pc.IsDead) pc.Stable = true; // carried out by friends
             // Enemies you dropped before pulling out still count: they won't be there when you come back.
@@ -332,6 +352,7 @@ namespace DnD.Game
                 if (u.Owner != null) u.Owner.Combat = null;
                 // Out of combat, effects with round durations simply end.
                 u.C.Effects.RemoveAll(e => e.RoundsLeft > 0 && e.Id != "aid" && e.Id != "mage_armor");
+                u.C.ConcentratingOn = null; // the fight's spells end with it
             }
         }
 

@@ -20,7 +20,7 @@ namespace RulesTests
 
         static void LevelUpTests()
         {
-            Eq(PlayerCharacter.PlaytestLevelCap, 4, "level cap is 4");
+            Eq(PlayerCharacter.LevelCap, 4, "level cap is 4 in Act I");
 
             // Level 4 offers an Ability Score Improvement or a feat.
             var f = Make("fighter");

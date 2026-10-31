@@ -1222,3 +1222,15 @@ pattern junkbag
 ................
 end
 paint ui_junk junkbag k=4a3015 y=c9a227
+
+# ================================================================ Act II Phase 1: test monsters
+tint  mon_dire_wolf_0 mon_wolf_0 0 0.6 0.6
+tint  mon_dire_wolf_1 mon_wolf_1 0 0.6 0.6
+still mon_ogre           "Actor/Monster/Cyclope/SpriteSheet.png"
+still mon_troll_src      "Actor/Monster/Cyclope2/SpriteSheet.png"
+tint  mon_troll_0 mon_troll_src_0 70 0.8 0.9
+tint  mon_troll_1 mon_troll_src_1 70 0.8 0.9
+still mon_cinder_hound   "Actor/Monster/Beast/Beast.png"
+still mon_fire_elemental "Actor/Monster/Flam/SpriteSheet.png"
+still mon_salamander     "Actor/Monster/Lizard2/Lizard2.png"
+still mon_ankheg         "Actor/Monster/Larva/Larva.png"

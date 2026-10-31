@@ -62,14 +62,24 @@ namespace DnD.Game
                 var c = CurrentChoice;
                 var picks = Picks(_page - 1);
                 _header.text = $"{c.Title}  ({picks.Count}/{Need(c)} chosen)";
-                foreach (var id in c.Options)
+                // Long lists (Magical Secrets offers dozens of spells): Next/Back go on top, and spells are grouped by level.
+                bool longList = c.Options.Count > 11;
+                if (longList) AddNavigation(c, picks);
+                var spellLevels = c.Options.Select(SpellsDb.Get).Where(s => s != null).Select(s => s.Level).Distinct().Count();
+                bool group = spellLevels > 1 && c.Options.All(id => SpellsDb.Get(id) != null);
+                int lastLevel = -1;
+                foreach (var id in group ? c.Options.OrderByDescending(o => SpellsDb.Get(o).Level).ThenBy(o => SpellsDb.Get(o).Name).ToList() : c.Options)
                 {
+                    if (group && SpellsDb.Get(id).Level != lastLevel)
+                    {
+                        lastLevel = SpellsDb.Get(id).Level;
+                        _menu.Add($"— Level {lastLevel} spells —", null, false);
+                    }
                     string opt = id;
                     bool on = picks.Contains(id);
                     _menu.Add((on ? "✓ " : "   ") + PlayerCharacter.DescribeOption(id), () => { Toggle(opt); }, true, Describe(id));
                 }
-                _menu.Add(picks.Count >= Need(c) ? "Next ▸" : $"Next ▸ (choose {Need(c) - picks.Count} more)", Next, picks.Count >= Need(c));
-                _menu.Add("◂ Back", Back);
+                if (!longList) AddNavigation(c, picks);
             }
             else
             {
@@ -87,6 +97,17 @@ namespace DnD.Game
         }
 
         int Need(LevelUpChoice c) => Math.Min(c.Count, c.Options.Count);
+
+        void AddNavigation(LevelUpChoice c, List<string> picks)
+        {
+            _menu.Add(picks.Count >= Need(c) ? "Next ▸" : $"Next ▸ (choose {Need(c) - picks.Count} more)", Next, picks.Count >= Need(c));
+            _menu.Add("◂ Back", Back);
+        }
+
+        /// <summary>Rows on the current page (tests: long lists must scroll).</summary>
+        public int RowCount => _menu.Entries.Count;
+        public int VisibleRows => _menu.VisibleRows;
+        public IEnumerable<string> RowTexts => _menu.Entries.Select(e => e.Text);
 
         string Describe(string id)
         {

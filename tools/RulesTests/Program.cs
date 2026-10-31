@@ -37,6 +37,14 @@ namespace RulesTests
             EncounterTests();
             ContentTests();
             LevelUpTests();
+            LevelTenTests();
+            SpellTests5();
+            MonsterTests();
+            MartialTests10();
+            HolyMartialTests10();
+            NatureCasterTests10();
+            ArcaneTests10();
+            ReviewFixTests();
             RogueTests();
             BarbarianTests();
             MonkTests();

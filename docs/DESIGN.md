@@ -81,6 +81,36 @@ Agreed between the designer (Trent) and Claude. Change a decision here first, th
 - Companions never take a share. They earn whatever their leader earns and level up on their own.
   (Before this fix, a companion halved your combat XP, which is why the first playtester never reached level 2.)
 - Ordinary monster groups respawn after 3 in-game days, whether they were beaten, befriended or scared off; story encounters don't.
+- **Level cap by act** (Act II Phase 1): Act I stops at level 4 (XP keeps piling up); Act II raises the cap to 10 and you level one step at a time
+  through the level-up screen. ASIs at 4/8 (fighter also 6, rogue also 10); Extra Attack at 5 for barbarian, fighter, monk, paladin and ranger
+  (and a warlock with Thirsting Blade). All 12 classes have their SRD 5.2 features to 10; the ledger in the Act II plan lists every simplification.
+
+## Levels 5-10: curated spells (Act II Phase 1)
+Not every SRD spell fits a 2D grid fight, so each class gets a hand-picked list (at least two per spell level):
+- **3rd**: Fireball, Lightning Bolt (a 100-ft line), Spirit Guardians (an aura that follows the cleric), Mass Healing Word, Beacon of Hope, Haste
+  (lethargy when it ends), Slow, Hypnotic Pattern, Call Lightning (call again each turn, no slot), Sleet Storm, Fly, Blinding Smite,
+  Lightning Arrow, Conjure Barrage, Revivify.
+- **4th**: Greater Invisibility, Ice Storm, Wall of Fire (a burning line that stays), Banishment, Death Ward, Staggering Smite, Dimension Door,
+  Guardian of Faith (a fixed guardian with 60 damage to give).
+- **5th**: Cone of Cold, Mass Cure Wounds, Hold Monster, Flame Strike (fire + radiant), Greater Restoration, Banishing Smite, Swift Quiver,
+  Synaptic Static.
+- **Left out on purpose**: summons (Conjure Animals, Find Steed in combat), Polymorph, Counterspell and Dispel Magic (monsters don't cast yet),
+  Raise Dead (the temple and Embers of Return cover it), Hunger of Hadar (tone).
+- **Stand-ins**: Devotion paladins get Aid + Lesser Restoration at 5 and Beacon of Hope + Revivify at 9; Circle of the Land at 5/7/9 gets Arid
+  Fireball / Wall of Fire / Cone of Cold, Polar Sleet Storm / Ice Storm / Cone of Cold, Temperate Lightning Bolt / Greater Invisibility / Hold Monster.
+- Lingering spells (Spirit Guardians, Wall of Fire, Guardian of Faith) show as tinted tiles and hit once per turn when a creature enters or
+  ends its turn there; they vanish when concentration ends.
+
+## Balance: at-will damage per round, levels 5-10 (vs AC 15)
+From `tools/RulesTests` (best weapon or cantrip, Extra Attack, Sneak Attack, a monk's bonus strike; no spell slots, no rage or smites):
+| Level | Top | Martials | Warlock | Full casters |
+|---|---|---|---|---|
+| 5 | barbarian 14.3 | monk 14.2, ranger 13.2, rogue 12.1, fighter/paladin 11.5 | 10.8 | wizard 7.7, sorcerer 7.2, druid 6.3, cleric 5.9, bard 4.2 |
+| 7 | rogue 14.9 | barbarian 14.3, monk 14.2, fighter 13.8, ranger 13.2, paladin 11.5 | 10.8 | druid 8.9, wizard 7.7, sorcerer 7.2, cleric 5.9, bard 4.2 |
+| 10 | rogue 21.0 | monk 18.5, barbarian 17.9, ranger 16.6, fighter/paladin 14.7 | 13.9 | druid 11.0, wizard 8.8, sorcerer 8.3, cleric 6.8, bard 4.9 |
+Every martial (and the warlock) stays above half the leader; full casters above a fifth (their 3rd-5th level spells carry the rest).
+The Lore bard's Vicious Mockery is RAW the weakest damage cantrip. Fixed while building this: cantrips now scale at 5 in the numbers, and
+Eldritch Blast fires two beams at 5 (2024) instead of one bigger one.
 
 ## Inventory
 - 36-slot Stardew-style bag (top row = hotbar), per-item stack limits, split/merge/swap, quick-transfer,

@@ -32,6 +32,9 @@ namespace DnD.Rules
         public readonly HashSet<Skill> Expertise = new HashSet<Skill>();
 
         public string FightingStyle;      // Fighter: "defense", "dueling", "great_weapon", "archery"
+        /// <summary>Champion 7: Additional Fighting Style.</summary>
+        public string FightingStyle2;
+        public bool HasFightingStyle(string id) => id != null && (FightingStyle == id || FightingStyle2 == id);
         public string DivineOrder;        // Cleric: "protector", "thaumaturge"
         public readonly List<string> MasteredWeapons = new List<string>();
 
@@ -105,7 +108,8 @@ namespace DnD.Rules
 
         public override bool IsPlayerCharacter => true;
         public override int ProficiencyBonus => 2 + (Level - 1) / 4;
-        protected override int BaseSpeed => WildShape != null ? WildShape.Speed : IsOverloaded ? 5 : (Species != null ? Species.Speed : 30) + (UnarmoredMovement ? 10 : 0);
+        protected override int BaseSpeed => WildShape != null ? Math.Max(WildShape.Speed, WildShape.FlySpeed) : IsOverloaded ? 5 : (Species != null ? Species.Speed : 30) + (UnarmoredMovement ? (Level >= 10 ? 20 : Level >= 6 ? 15 : 10) : 0) + (FastMovement ? 10 : 0);
+        bool FastMovement => Class != null && (Class.Id == "barbarian" && Level >= 5 || Class.Id == "ranger" && Level >= 6) && (Armor == null || Armor.Category != ArmorCategory.Heavy);
 
         // ---------------------------------------------------------------- monk
 
@@ -154,16 +158,18 @@ namespace DnD.Rules
             MaxHP = Class.HitDie + Mod(Ability.CON) + (Species?.BonusHpPerLevel ?? 0);
             HP = MaxHP;
             if (Species != null && Species.HeroicInspirationOnRest) HeroicInspiration = true;
-            foreach (var s in Class.Subclass != null && Level >= 3 ? Class.Subclass.AlwaysPreparedSpells : new List<string>())
+            foreach (var s in Class.Subclass != null ? Class.Subclass.AlwaysPreparedAt(Level) : new List<string>())
                 if (!PreparedSpells.Contains(s)) PreparedSpells.Add(s);
         }
 
         // ---------------------------------------------------------------- leveling
 
         public static readonly int[] XpThresholds = { 0, 0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000 };
-        public const int PlaytestLevelCap = 4;
+        public const int ActOneLevelCap = 4, ActTwoLevelCap = 10;
+        /// <summary>The highest level the current act allows (4 in Act I, 10 in Act II). Set by the game when the act changes.</summary>
+        public static int LevelCap = ActOneLevelCap;
 
-        public bool CanLevelUp => Level < PlaytestLevelCap && Level + 1 < XpThresholds.Length && XP >= XpThresholds[Level + 1];
+        public bool CanLevelUp => Level < LevelCap && Level + 1 < XpThresholds.Length && XP >= XpThresholds[Level + 1];
 
         public int AverageHitDie => Class.HitDie / 2 + 1;
 
@@ -185,9 +191,10 @@ namespace DnD.Rules
             if (Class.Subclass != null)
             {
                 foreach (var f in Class.Subclass.Features) if (f.Level == Level) log?.Add($"New feature ({Class.Subclass.Name}): {f.Name}");
-                if (Level == 3)
-                    foreach (var s in Class.Subclass.AlwaysPreparedSpells)
-                        if (!PreparedSpells.Contains(s)) PreparedSpells.Add(s);
+                foreach (var s in Class.Subclass.AlwaysPreparedAt(Level))
+                    if (!PreparedSpells.Contains(s)) PreparedSpells.Add(s);
+                if (LandType != null && CircleSpellsLater.TryGetValue(LandType, out var later) && later.TryGetValue(Level, out var circle))
+                    foreach (var s in circle) if (!BonusAlwaysPrepared.Contains(s)) BonusAlwaysPrepared.Add(s);
             }
             return gain;
         }
@@ -214,7 +221,7 @@ namespace DnD.Rules
                     int dexPart = Armor.MaxDex < 0 ? dex : Math.Min(dex, Armor.MaxDex);
                     if (Armor.Category == ArmorCategory.Heavy) dexPart = 0;
                     ac = Armor.BaseAC + dexPart;
-                    if (FightingStyle == "defense") ac += 1;
+                    if (HasFightingStyle("defense")) ac += 1;
                 }
                 else if (HasEffect("mage_armor")) ac = 13 + dex;
                 else if (Class.Id == "barbarian") ac = 10 + dex + Mod(Ability.CON); // Unarmored Defense
@@ -250,11 +257,95 @@ namespace DnD.Rules
             return b;
         }
 
-        public override bool InitiativeAdvantage => HasFeature("Remarkable Athlete");
+        public override bool InitiativeAdvantage => HasFeature("Remarkable Athlete") || HasFeature("Feral Instinct");
+
+        public override bool ConditionImmune(Condition c) =>
+            (Raging && HasFeature("Mindless Rage") && (c == Condition.Charmed || c == Condition.Frightened))
+            || (c == Condition.Poisoned && HasFeature("Nature's Ward"));
+
+        /// <summary>Bard 5: Font of Inspiration: spend a spell slot to regain a Bardic Inspiration use.</summary>
+        public bool FontOfInspiration(List<string> log)
+        {
+            if (!HasFeature("Font of Inspiration") || ResourceLeft("bardic_inspiration") >= ResourceMax("bardic_inspiration")) return false;
+            int slot = LowestAvailableSlot(1);
+            if (slot <= 0) return false;
+            SlotsUsed[slot]++;
+            RegainResource("bardic_inspiration", 1);
+            log?.Add($"{Name} turns a level {slot} slot into Bardic Inspiration.");
+            return true;
+        }
+
+        /// <summary>Land 10: Nature's Ward: resistance to the damage type of your land.</summary>
+        DamageType? NaturesWardResistance => !HasFeature("Nature's Ward") ? (DamageType?)null
+            : LandType == "arid" ? DamageType.Fire : LandType == "polar" ? DamageType.Cold : LandType == "temperate" ? DamageType.Lightning : DamageType.Poison;
+
+        // ---------------------------------------------------------------- monk, paladin, ranger 5-10
+
+        /// <summary>Ranger 7 (Hunter): "escape_the_horde" or "multiattack_defense".</summary>
+        public string HunterDefense;
+        /// <summary>Multiattack Defense: the creature that hit you this turn (its other attacks have Disadvantage). Combat only.</summary>
+        public Creature MultiattackDefenseAgainst;
+
+        public int FlurryStrikes => HasFeature("Heightened Focus") ? 3 : 2;
+        public int AbjureFoesTargets => Math.Max(1, Mod(Ability.CHA));
+        public int KiSaveDC => 8 + ProficiencyBonus + Mod(Ability.WIS);
+
+        /// <summary>Monk 5: Stunning Strike on a hit: 1 Focus, once per turn. CON save or Stunned until your next turn; on a success its Speed is halved and the next attack against it has Advantage.</summary>
+        public bool TryStunningStrike(Creature target, TurnState turn, List<string> log)
+        {
+            if (!HasFeature("Stunning Strike") || turn == null || turn.StunningStrikeUsed || target.IsDead || !SpendResource("focus")) return false;
+            turn.StunningStrikeUsed = true;
+            var save = Checks.RollSave(target, Ability.CON, AdvantageState.Normal);
+            if (!Checks.ResolveSave(save, KiSaveDC))
+            {
+                target.AddEffect(new ActiveEffect { Id = "stunned_strike", Name = "Stunned", Source = this, RoundsLeft = 1, Condition = Condition.Stunned });
+                log?.Add($"Stunning Strike! {target.Name} is Stunned ({save.Total} vs DC {KiSaveDC}).");
+            }
+            else
+            {
+                target.AddEffect(new ActiveEffect { Id = "stun_glance", Name = "Reeling", Source = this, RoundsLeft = 1, SpeedHalved = true, GrantsAdvantageToAttackers = true, ConsumedWhenAttacked = true });
+                log?.Add($"{target.Name} resists the stun but reels ({save.Total} vs DC {KiSaveDC}).");
+            }
+            return true;
+        }
+
+        /// <summary>Open Hand 6: Wholeness of Body: heal a Martial Arts die + WIS. Returns HP healed (0 if no uses).</summary>
+        public int WholenessOfBody(List<string> log)
+        {
+            if (!SpendResource("wholeness")) return 0;
+            int h = Heal(Math.Max(1, Dice.Roll(MartialArtsDie) + Mod(Ability.WIS)));
+            log?.Add($"{Name} centres themself: +{h} HP (Wholeness of Body).");
+            return h;
+        }
+
+        /// <summary>Ranger 10: Tireless: temp HP 1d8 + WIS. Returns the temp HP (0 if no uses).</summary>
+        public int Tireless(List<string> log)
+        {
+            if (!SpendResource("tireless")) return 0;
+            int t = Math.Max(1, Dice.Roll(8) + Mod(Ability.WIS));
+            TempHP = Math.Max(TempHP, t);
+            log?.Add($"{Name} pushes through (Tireless: {t} temporary HP).");
+            return t;
+        }
+
+        /// <summary>Fighter 9: Tactical Master: swap a weapon's mastery for Push, Sap or Slow on an attack.</summary>
+        public List<WeaponMastery> TacticalMasteries() =>
+            HasFeature("Tactical Master") ? new List<WeaponMastery> { WeaponMastery.Push, WeaponMastery.Sap, WeaponMastery.Slow } : new List<WeaponMastery>();
+
+        /// <summary>Things that happen at the start of each of your turns in combat (Champion 10: Heroic Warrior).</summary>
+        public void StartOfTurnInCombat(List<string> log)
+        {
+            if (HasFeature("Heroic Warrior") && !HeroicInspiration && !IsDown)
+            {
+                HeroicInspiration = true;
+                log?.Add($"{Name} feels heroic: Heroic Inspiration!");
+            }
+        }
         public override int InitiativeBonus => Mod(Ability.DEX) + (Background != null && Background.OriginFeat == "Alert" ? ProficiencyBonus : 0);
 
         public override bool AdvantageOnSave(Ability a, string vs)
         {
+            if (EffectSaveAdvantage(a)) return true;
             if (vs == "concentration" && Invocations.Contains("eldritch_mind")) return true;
             if (a == Ability.STR && Raging) return true;
             if (a == Ability.DEX && HasFeature("Danger Sense") && !Has(Condition.Incapacitated)) return true;
@@ -293,6 +384,13 @@ namespace DnD.Rules
             {
                 case "second_wind": return Class.Id == "fighter" ? (Level >= 10 ? 4 : Level >= 4 ? 3 : 2) : 0;
                 case "action_surge": return Class.Id == "fighter" && Level >= 2 ? 1 : 0;
+                case "sorcerous_restoration": return HasFeature("Sorcerous Restoration") ? 1 : 0;
+                case "embers_luck": return HasFeature("Ember's Own Luck") ? Math.Max(1, Mod(Ability.CHA)) : 0;
+                case "divine_intervention": return HasFeature("Divine Intervention") ? 1 : 0;
+                case "natural_recovery": return HasFeature("Natural Recovery") ? 1 : 0;
+                case "wholeness": return HasFeature("Wholeness of Body") ? Math.Max(1, Mod(Ability.WIS)) : 0;
+                case "tireless": return HasFeature("Tireless") ? Math.Max(1, Mod(Ability.WIS)) : 0;
+                case "indomitable": return Class.Id == "fighter" && Level >= 9 ? (Level >= 17 ? 3 : Level >= 13 ? 2 : 1) : 0;
                 case "channel_divinity": return Class.Id == "cleric" && Level >= 2 ? (Level >= 6 ? 3 : 2) : Class.Id == "paladin" && Level >= 3 ? (Level >= 11 ? 3 : 2) : 0;
                 case "focus": return Class.Id == "monk" && Level >= 2 ? Level : 0;
                 case "uncanny_metabolism": return Class.Id == "monk" && Level >= 2 ? 1 : 0;
@@ -351,6 +449,7 @@ namespace DnD.Rules
         {
             if (Raging || !SpendResource("rage")) return false;
             Effects.Add(EffectLibrary.Create("rage", this));
+            if (HasFeature("Mindless Rage")) Effects.RemoveAll(e => e.Condition == Condition.Charmed || e.Condition == Condition.Frightened);
             log?.Add($"{Name} flies into a RAGE! (+{RageDamage} damage, resists bludgeoning/piercing/slashing)");
             return true;
         }
@@ -358,7 +457,8 @@ namespace DnD.Rules
         public override int TakeDamage(int amount, DamageType type, bool critical, List<string> log)
         {
             // Rage: resistance to bludgeoning, piercing and slashing (added only for this hit).
-            bool rageResist = Raging && (type == DamageType.Bludgeoning || type == DamageType.Piercing || type == DamageType.Slashing) && !Resistances.Contains(type);
+            bool rageResist = ((Raging && (type == DamageType.Bludgeoning || type == DamageType.Piercing || type == DamageType.Slashing)) || NaturesWardResistance == type
+                || AffinityType == type || (HasFeature("Ember Resilience") && type == DamageType.Fire)) && !Resistances.Contains(type);
             if (rageResist) Resistances.Add(type);
             try { return base.TakeDamage(amount, type, critical, log); }
             finally { if (rageResist) Resistances.Remove(type); }
@@ -374,7 +474,7 @@ namespace DnD.Rules
             if (Invocations.Contains("pact_of_the_blade") && !w.IsRanged && Mod(Ability.CHA) > Mod(ab)) ab = Ability.CHA;
             int mod = Mod(ab);
             int toHit = mod + (IsProficientWith(w) ? ProficiencyBonus : 0) + w.MagicBonus;
-            if (w.IsRanged && FightingStyle == "archery") toHit += 2;
+            if (w.IsRanged && HasFightingStyle("archery")) toHit += 2;
             if (HasEffect("sacred_weapon")) toHit += Math.Max(1, Mod(Ability.CHA));
 
             var dmg = w.Damage;
@@ -386,7 +486,7 @@ namespace DnD.Rules
             int dmgMod = mod + w.MagicBonus;
             if (Raging && ab == Ability.STR && !w.IsRanged) dmgMod += RageDamage;
             bool oneHandedMelee = !w.IsRanged && !w.Has(WeaponProperty.TwoHanded) && !twoHanding;
-            if (FightingStyle == "dueling" && oneHandedMelee) dmgMod += 2;
+            if (HasFightingStyle("dueling") && oneHandedMelee) dmgMod += 2;
 
             var opt = new AttackOption
             {
@@ -405,7 +505,7 @@ namespace DnD.Rules
                 CritOn = HasFeature("Improved Critical") ? 19 : 20,
                 ExtraDamage = w.ExtraDamage,
                 ExtraDamageType = w.ExtraDamageType,
-                MinDieValue = FightingStyle == "great_weapon" && (w.Has(WeaponProperty.TwoHanded) || twoHanding) && !w.IsRanged ? 3 : 0,
+                MinDieValue = HasFightingStyle("great_weapon") && (w.Has(WeaponProperty.TwoHanded) || twoHanding) && !w.IsRanged ? 3 : 0,
             };
             return opt;
         }
@@ -433,7 +533,8 @@ namespace DnD.Rules
             return list;
         }
 
-        public int AttacksPerAction => Class.Id == "fighter" && Level >= 5 ? 2 : 1;
+        static readonly string[] ExtraAttackClasses = { "fighter", "barbarian", "monk", "paladin", "ranger" };
+        public int AttacksPerAction => Class.Id == "fighter" && Level >= 11 ? 3 : Level >= 5 && (Array.IndexOf(ExtraAttackClasses, Class.Id) >= 0 || ThirstingBlade) ? 2 : 1;
 
         // ---------------------------------------------------------------- death saves
 
@@ -559,6 +660,10 @@ namespace DnD.Rules
             RegainResource("focus", 99);
             RegainResource("wild_shape", 1);
             if (Class.Caster == CasterType.Pact) SlotsUsed = new int[10]; // Pact Magic: slots back on a Short Rest
+            if (HasFeature("Font of Inspiration")) RegainResource("bardic_inspiration", 99);
+            SorcerousRestoration(log);
+            NaturalRecovery(log);
+            if (HasFeature("Tireless") && Exhaustion > 0) { Exhaustion--; log?.Add($"{Name} shakes off some weariness (Tireless)."); }
             log?.Add($"{Name} finishes a short rest.");
         }
 
@@ -573,6 +678,7 @@ namespace DnD.Rules
             DeathSuccesses = DeathFailures = 0;
             Stable = false;
             Effects.RemoveAll(e => e.Id != "aid");
+            ConcentratingOn = null;
             if (ate && Exhaustion > 0) Exhaustion--;
             else if (!ate) { Exhaustion = Math.Min(6, Exhaustion + 1); log?.Add($"{Name} went to bed hungry (+1 Exhaustion)."); }
             if (Species != null && Species.HeroicInspirationOnRest) HeroicInspiration = true;

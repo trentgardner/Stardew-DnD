@@ -15,6 +15,8 @@ namespace DnD.Rules
         /// <summary>A visible, conscious enemy is within 5 ft of the attacker (ranged attacks get Disadvantage).</summary>
         public bool EnemyAdjacentToAttacker;
         public bool AttackerInSunlight;
+        /// <summary>An Opportunity Attack (Escape the Horde gives these Disadvantage).</summary>
+        public bool Opportunity;
     }
 
     public class AttackRollResult
@@ -27,6 +29,8 @@ namespace DnD.Rules
         public AttackContext Context;
         public TurnState Turn;
         public int TargetAC;
+        /// <summary>Barbarian 9: Brutal Strike declared for this attack (1 = Forceful Blow, 2 = Hamstring Blow); Rogue 5: Cunning Strike (1 = Trip, 2 = Poison, 3 = Withdraw).</summary>
+        public int BrutalStrike, CunningStrike;
         public readonly List<string> AdvantageReasons = new List<string>();
         public readonly List<string> DisadvantageReasons = new List<string>();
 
@@ -76,8 +80,13 @@ namespace DnD.Rules
             }
             if (atk.IsSpell && attacker.HasEffect("innate_sorcery")) adv.Add("innate sorcery");
             bool strMelee = !atk.Ranged && !atk.IsSpell && attacker is PlayerCharacter apc && (atk.Weapon == null || !atk.Weapon.Has(WeaponProperty.Finesse) || apc.Mod(Ability.STR) >= apc.Mod(Ability.DEX));
-            if (strMelee && attacker.HasEffect("reckless")) adv.Add("reckless");
+            if (strMelee && attacker.HasEffect("reckless") && !attacker.HasEffect("brutal_ready")) adv.Add("reckless");
             if (target.HasEffect("reckless")) adv.Add("target is reckless");
+            if (target is PlayerCharacter hunter)
+            {
+                if (hunter.HunterDefense == "escape_the_horde" && ctx.Opportunity) dis.Add("escape the horde");
+                if (hunter.HunterDefense == "multiattack_defense" && hunter.MultiattackDefenseAgainst == attacker) dis.Add("multiattack defense");
+            }
 
             if (atk.Ranged || (atk.IsSpell && atk.RangeNormal > 5))
             {
@@ -108,9 +117,12 @@ namespace DnD.Rules
             if (attacker.D20Penalty != 0) terms.Add(new RollTerm("exhaustion", attacker.D20Penalty));
             res.Roll = Dice.RollD20(adv, terms);
             foreach (var e in attacker.Effects) if (e.AttackDie > 0) Dice.AddBonusDie(res.Roll, e.AttackDie);
+            foreach (var e in attacker.Effects) if (e.AttackPenaltyDie > 0) Dice.AddBonusDie(res.Roll, -e.AttackPenaltyDie);
 
             // Consume one-shot effects.
             attacker.Effects.RemoveAll(e => e.DisadvantageOnNextAttack || e.AdvantageOnNextAttack);
+            var brutal = attacker.Effects.Find(e => e.Id == "brutal_ready");
+            if (brutal != null && !atk.Ranged && !atk.IsSpell) { res.BrutalStrike = Math.Max(1, brutal.Power); attacker.Effects.Remove(brutal); }
             target.Effects.RemoveAll(e => e.ConsumedWhenAttacked && (e.AdvantageForAttacker == null || e.AdvantageForAttacker == attacker));
 
             int nat = res.Roll.Natural;
@@ -143,8 +155,16 @@ namespace DnD.Rules
                 if (sneak > 0 && !r.Turn.SneakAttackUsed && SneakAttackEligible(r))
                 {
                     r.Turn.SneakAttackUsed = true;
+                    var cunning = pc.Effects.Find(e => e.Id == "cunning_ready");
+                    if (cunning != null && pc.HasFeature("Cunning Strike")) { pc.Effects.Remove(cunning); r.CunningStrike = Math.Max(1, cunning.Power); sneak--; }
                     roll.Dice.AddRange(Dice.RollDamage(new DiceExpr(sneak, 6), r.Critical).Dice);
                     roll.Terms.Add(new RollTerm("sneak attack", 0));
+                }
+                // Barbarian 9: Brutal Strike: +1d10 when the attack it was declared for hits.
+                if (r.BrutalStrike > 0)
+                {
+                    roll.Dice.AddRange(Dice.RollDamage(new DiceExpr(1, 10), r.Critical).Dice);
+                    roll.Terms.Add(new RollTerm("brutal strike", 0));
                 }
                 // Hunter's Mark: +1d6 force on weapon hits against the creature you marked.
                 if (atk.Weapon != null && r.Target.Effects.Any(e => e.Id == "hunters_mark" && e.Source == pc))
@@ -178,6 +198,14 @@ namespace DnD.Rules
             return roll;
         }
 
+        /// <summary>Rogue 5: Uncanny Dodge: your reaction halves one attack's damage. Returns the damage to take.</summary>
+        public static int UncannyDodge(PlayerCharacter pc, int damage, TurnState turn)
+        {
+            if (!pc.HasFeature("Uncanny Dodge") || turn == null || turn.ReactionUsed || pc.IsIncapacitated || damage <= 1) return damage;
+            turn.ReactionUsed = true;
+            return damage / 2;
+        }
+
         /// <summary>Number of Sneak Attack d6s for a character (0 if not a rogue).</summary>
         public static int SneakAttackDiceFor(PlayerCharacter pc) => pc.Class.Id == "rogue" ? (pc.Level + 1) / 2 : 0;
 
@@ -195,6 +223,7 @@ namespace DnD.Rules
         {
             var log = new List<string>();
             var t = r.Target;
+            if (t is PlayerCharacter hunter && hunter.HunterDefense == "multiattack_defense") hunter.MultiattackDefenseAgainst = r.Attacker;
             int dealt = t.TakeDamage(dmg.Total, r.Attack.DamageType, r.Critical, log);
             log.Insert(0, $"{t.Name} takes {dealt} {r.Attack.DamageType.ToString().ToLower()} damage.");
             if (dmg.Extra != null && !t.IsDead)
@@ -281,15 +310,19 @@ namespace DnD.Rules
                 Ranged = s.RangeFt > 5,
                 Spell = s,
                 Ability = caster.Class.SpellAbility,
-                DamageMod = s.Id == "eldritch_blast" && caster.Invocations.Contains("agonizing_blast") ? caster.SpellMod : 0,
+                DamageMod = (s.Id == "eldritch_blast" && caster.Invocations.Contains("agonizing_blast") ? caster.SpellMod : 0)
+                    + (s.IsCantrip && (caster.HasFeature("Blessed Strikes") || caster.HasFeature("Elemental Fury")) ? caster.Mod(Ability.WIS) : 0),
             };
         }
+
+        /// <summary>How many separate attacks a spell makes (Eldritch Blast: one beam per cantrip tier, 2 at level 5).</summary>
+        public static int Projectiles(PlayerCharacter caster, SpellDef s) => s.Id == "eldritch_blast" ? caster.CantripDiceMultiplier : s.Projectiles;
 
         /// <summary>The dice a spell rolls at the given slot level (cantrip scaling, upcasting).</summary>
         public static DiceExpr EffectDice(PlayerCharacter caster, SpellDef s, int slotLevel)
         {
             var d = s.Dice;
-            if (s.IsCantrip) d = new DiceExpr(d.Count * caster.CantripDiceMultiplier, d.Sides, d.Bonus);
+            if (s.IsCantrip && s.Id != "eldritch_blast") d = new DiceExpr(d.Count * caster.CantripDiceMultiplier, d.Sides, d.Bonus); // Eldritch Blast adds beams instead
             else if (slotLevel > s.Level && s.UpcastDice > 0) d = d.WithExtraDice(s.UpcastDice * (slotLevel - s.Level));
             return d;
         }
@@ -298,8 +331,13 @@ namespace DnD.Rules
         {
             var terms = new List<RollTerm>();
             if (s.AddSpellMod) terms.Add(new RollTerm(caster.Class.SpellAbility.ToString(), caster.SpellMod));
+            if (s.IsCantrip && s.Kind != SpellKind.Heal && (caster.HasFeature("Blessed Strikes") || caster.HasFeature("Elemental Fury")))
+                terms.Add(new RollTerm("potent spellcasting", caster.Mod(Ability.WIS)));
             if (s.Kind == SpellKind.Heal && caster.HasFeature("Disciple of Life") && s.Level > 0)
                 terms.Add(new RollTerm("Disciple of Life", 2 + Math.Max(slotLevel, s.Level)));
+            var affinity = caster.DraconicElement != null && caster.HasFeature("Elemental Affinity") ? caster.DraconicElement : null;
+            if (affinity != null && s.Kind != SpellKind.Heal && string.Equals(s.DamageType.ToString(), affinity, StringComparison.OrdinalIgnoreCase))
+                terms.Add(new RollTerm("elemental affinity", caster.Mod(Ability.CHA)));
             if (s.Kind != SpellKind.Heal && caster.HasFeature("Empowered Evocation") && s.School == "Evocation")
                 terms.Add(new RollTerm("Empowered Evocation", caster.Mod(Ability.INT)));
             return Dice.RollDamage(EffectDice(caster, s, slotLevel), critical, terms);
@@ -311,20 +349,59 @@ namespace DnD.Rules
             return Checks.RollSave(target, s.SaveAbility, AdvantageState.Normal, vs);
         }
 
-        /// <summary>Applies save-based damage: full on fail, half (or Potent Cantrip half) on success.</summary>
-        public static int ApplySaveDamage(PlayerCharacter caster, Creature target, SpellDef s, DamageRoll dmg, bool saved, List<string> log)
+        /// <summary>Applies save-based damage: full on fail, half (or Potent Cantrip half) on success. `second` is the other damage type, if the spell has one.</summary>
+        public static int ApplySaveDamage(PlayerCharacter caster, Creature target, SpellDef s, DamageRoll dmg, bool saved, List<string> log, DamageRoll second = null)
         {
-            int amount = dmg.Total;
-            if (saved)
-            {
-                bool half = s.HalfOnSave || (s.IsCantrip && caster.HasFeature("Potent Cantrip"));
-                amount = half ? amount / 2 : 0;
-            }
-            if (amount <= 0) { log.Add($"{target.Name} avoids the effect."); return 0; }
-            int dealt = target.TakeDamage(amount, s.DamageType, false, log);
-            log.Insert(0, $"{target.Name} takes {dealt} {s.DamageType.ToString().ToLower()} damage{(saved ? " (saved)" : "")}.");
+            bool half = s.HalfOnSave || (s.IsCantrip && caster.HasFeature("Potent Cantrip"));
+            int Part(int total) => Checks.AreaDamage(target, s.SaveAbility, total, saved, half);
+            int amount = Part(dmg.Total), amount2 = second != null ? Part(second.Total) : 0;
+            if (amount <= 0 && amount2 <= 0) { log.Add($"{target.Name} avoids the effect."); return 0; }
+            int dealt = amount > 0 ? target.TakeDamage(amount, s.DamageType, false, log) : 0;
+            if (amount2 > 0 && !target.IsDead) dealt += target.TakeDamage(amount2, s.SecondDamageType, false, log);
+            string types = s.DamageType.ToString().ToLower() + (second != null ? " and " + s.SecondDamageType.ToString().ToLower() : "");
+            log.Insert(0, $"{target.Name} takes {dealt} {types} damage{(saved ? " (saved)" : "")}.");
             if (dealt > 0) AttackResolver.RaiseConcentrationCheck(target, dealt);
             return dealt;
+        }
+
+        /// <summary>Evoker 6: Sculpt Spells: up to 1 + the spell's level of your allies in an Evocation spell's area are left untouched.</summary>
+        public static List<Creature> Sculpted(PlayerCharacter caster, SpellDef s, IEnumerable<Creature> inArea)
+        {
+            var list = new List<Creature>();
+            if (!caster.HasFeature("Sculpt Spells") || s.School != "Evocation" || s.Level == 0) return list;
+            foreach (var c in inArea)
+                if (c.Team == caster.Team && c != caster && list.Count < 1 + s.Level) list.Add(c);
+            return list;
+        }
+
+        /// <summary>Life 6: Blessed Healer: when you heal someone else with a spell, you regain 2 + the slot level.</summary>
+        public static int BlessedHealerAmount(PlayerCharacter caster, SpellDef s, int slotLevel) =>
+            caster.HasFeature("Blessed Healer") && s.Kind == SpellKind.Heal && s.Level > 0 ? 2 + Math.Max(slotLevel, s.Level) : 0;
+
+        /// <summary>Rolls a spell's second damage type (never upcast), or null if it has none.</summary>
+        public static DamageRoll RollSecond(SpellDef s, bool critical) => s.SecondDice.IsNone ? null : Dice.RollDamage(s.SecondDice, critical);
+
+        /// <summary>The extra dice of the smite spells, by slot level (2024: Blinding 3d8, Staggering 4d6, Banishing 5d10, +1 die per level above).</summary>
+        public static DiceExpr SmiteDice(string spellId, int slotLevel)
+        {
+            switch (spellId)
+            {
+                case "blinding_smite": return new DiceExpr(3 + Math.Max(0, slotLevel - 3), 8);
+                case "staggering_smite": return new DiceExpr(4 + Math.Max(0, slotLevel - 4), 6);
+                case "banishing_smite": return new DiceExpr(5 + Math.Max(0, slotLevel - 5), 10);
+                default: return new DiceExpr(0, 0);
+            }
+        }
+
+        /// <summary>Healing actually received: Beacon of Hope makes the dice count as their maximum.</summary>
+        public static int HealTotal(DamageRoll roll, Creature target)
+        {
+            bool max = false;
+            foreach (var e in target.Effects) max |= e.MaxHealing;
+            if (!max) return roll.Total;
+            int t = roll.Expr.Count * roll.Expr.Sides + roll.Expr.Bonus;
+            foreach (var x in roll.Terms) t += x.Value;
+            return Math.Max(0, t);
         }
 
         /// <summary>Spends the slot (or nothing for cantrips). Returns false if unavailable.</summary>
@@ -358,6 +435,8 @@ namespace DnD.Rules
         public bool Dashed, Disengaged;
         public bool CastLeveledSpellThisTurn;
         public bool CleaveUsed;
+        public bool StunningStrikeUsed, WildResurgenceUsed;
+        public bool HasteActionUsed;
         public bool SneakAttackUsed, FrenzyUsed, ColossusUsed, HordeBreakerUsed;
         /// <summary>Sorcerer Quickened Spell: the next action spell this turn costs the Bonus Action instead.</summary>
         public bool QuickenNextSpell;
@@ -372,9 +451,11 @@ namespace DnD.Rules
             AttacksLeftInAction = 0;
             Dashed = Disengaged = false;
             CastLeveledSpellThisTurn = false;
-            CleaveUsed = false;
+            CleaveUsed = HasteActionUsed = StunningStrikeUsed = WildResurgenceUsed = false;
             SneakAttackUsed = FrenzyUsed = ColossusUsed = HordeBreakerUsed = QuickenNextSpell = false;
             ObjectInteractionUsed = false;
+            // Slow, Staggering Smite: no reactions while it lasts.
+            foreach (var e in c.Effects) if (e.NoReactions) ReactionUsed = true;
         }
     }
 
@@ -434,6 +515,8 @@ namespace DnD.Rules
         {
             var c = Current;
             c.Turn.Reset(c.Creature);
+            foreach (var cb in Order)
+                if (cb.Creature is PlayerCharacter h && h.MultiattackDefenseAgainst == c.Creature) h.MultiattackDefenseAgainst = null;
             // Durations tick at the start of the source's turn.
             foreach (var cb in Order)
             {
@@ -447,6 +530,7 @@ namespace DnD.Rules
                     {
                         fx.RemoveAt(i);
                         log?.Add($"{e.Name} ends on {cb.Creature.Name}.");
+                        EffectEnded(cb.Creature, e, true, log);
                     }
                 }
             }
@@ -456,11 +540,17 @@ namespace DnD.Rules
         public void EndTurn(List<string> log)
         {
             var c = Current.Creature;
+            // Monk 10: Self-Restoration ends one of Charmed, Frightened or Poisoned.
+            if (c is PlayerCharacter monk && monk.HasFeature("Self-Restoration") && !monk.IsDown)
+            {
+                var e = c.Effects.Find(x => x.Condition == Condition.Charmed || x.Condition == Condition.Frightened || x.Condition == Condition.Poisoned);
+                if (e != null) { c.Effects.Remove(e); log?.Add($"{c.Name} shakes off {e.Name} (Self-Restoration)."); }
+            }
             for (int i = c.Effects.Count - 1; i >= 0; i--)
             {
                 var e = c.Effects[i];
                 if (e.RepeatSave == null) continue;
-                var save = Checks.RollSave(c, e.RepeatSave.Value, AdvantageState.Normal);
+                var save = Checks.Rescue(c, e.RepeatSave.Value, e.RepeatSaveDC, Checks.RollSave(c, e.RepeatSave.Value, AdvantageState.Normal), log);
                 if (Checks.ResolveSave(save, e.RepeatSaveDC))
                 {
                     c.Effects.RemoveAt(i);
@@ -497,8 +587,24 @@ namespace DnD.Rules
         public void EndConcentration(Creature caster)
         {
             foreach (var cb in Order)
+            {
+                var ended = cb.Creature.Effects.FindAll(e => e.Concentration && e.Source == caster);
                 cb.Creature.Effects.RemoveAll(e => e.Concentration && e.Source == caster);
+                foreach (var e in ended) EffectEnded(cb.Creature, e, false, null);
+            }
             caster.ConcentratingOn = null;
+        }
+
+        /// <summary>Aftermath of an effect ending. `fullDuration` = it ran out rather than being broken.</summary>
+        public static void EffectEnded(Creature c, ActiveEffect e, bool fullDuration, List<string> log)
+        {
+            if (e.Id == "haste" && !c.IsDead)
+            {
+                c.AddEffect(EffectLibrary.Create("lethargic", c));
+                log?.Add($"A wave of lethargy sweeps over {c.Name}.");
+            }
+            // Banished for the whole minute: a creature from elsewhere doesn't come back (and in this world, nothing banished does).
+            if (e.Banished && fullDuration && e.Power >= 0) c.Vanish(log);
         }
     }
 }

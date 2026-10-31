@@ -64,8 +64,28 @@ namespace DnD.Game
             go.AddComponent<GameRoot>();
         }
 
+        /// <summary>Paladin auras need positions: inside a fight, whoever stands on the grid within N feet.</summary>
+        sealed class FightAuras : IAuraSource
+        {
+            readonly GameRoot _g;
+            public FightAuras(GameRoot g) { _g = g; }
+            public IEnumerable<Creature> Within(Creature c, int feet)
+            {
+                yield return c;
+                foreach (var fight in _g.Combats)
+                {
+                    if (fight.Finished) continue;
+                    var me = fight.Units.FirstOrDefault(u => u.C == c);
+                    if (me == null) continue;
+                    foreach (var u in fight.Units) if (u != me && DnD.Game.Zone.DistanceFt(u.Pos, me.Pos) <= feet) yield return u.C;
+                    yield break;
+                }
+            }
+        }
+
         void Awake()
         {
+            Auras.Source = new FightAuras(this);
             I = this;
             Application.targetFrameRate = 60;
             QualitySettings.vSyncCount = 1;
@@ -118,7 +138,7 @@ namespace DnD.Game
         }
 
         /// <summary>Skips the title and creation screens (used by automated tests and quick dev testing).</summary>
-        public PlayerSlot DebugStart(PlayerInput device, string classId, string speciesId, Difficulty diff = Difficulty.Normal)
+        public PlayerSlot DebugStart(PlayerInput device, string classId, string speciesId, Difficulty diff = Difficulty.Normal, int level = 1)
         {
             if (!InGame)
             {
@@ -132,6 +152,12 @@ namespace DnD.Game
             }
             var slot = AddPlayer(device);
             var pc = CharacterFactory.Create(CharacterFactory.DefaultChoices(classId, speciesId, $"{speciesId} {classId}"));
+            if (level > PlayerCharacter.LevelCap) PlayerCharacter.LevelCap = PlayerCharacter.ActTwoLevelCap; // tests: preview Act II levels
+            while (pc.Level < level)
+            {
+                pc.XP = Math.Max(pc.XP, PlayerCharacter.XpThresholds[pc.Level + 1]);
+                pc.LevelUp(pc.AutoPlan(), null);
+            }
             SpawnPlayer(slot, pc, null);
             return slot;
         }
@@ -188,6 +214,7 @@ namespace DnD.Game
         void ResetWorld()
         {
             InGame = false;
+            PlayerCharacter.LevelCap = PlayerCharacter.ActOneLevelCap; // Act II sets it again when it starts
             // Close menus first, while characters still exist (screens may tidy up the inventory on close).
             foreach (var p in Players) p.Hud?.CloseAll();
             foreach (var c in Combats) c.Finished = true;
@@ -564,6 +591,32 @@ namespace DnD.Game
         }
 
         // ================================================================== enemies & combat
+
+        int _debugGroups;
+
+        /// <summary>Tests and balance checks: drops a one-off group of any monsters a few tiles from a player. Returns its group id (fight it with StartGroupCombat).</summary>
+        public string DebugSpawnGroup(PlayerSlot p, params string[] monsterIds)
+        {
+            var g = new EnemyGroupDef { Id = "debug_" + (++_debugGroups), Style = EncounterStyle.None, Unique = true, Label = "the monsters" };
+            var z = p.Zone;
+            var list = new List<EnemyAgent>();
+            int i = 0;
+            foreach (var id in monsterIds)
+            {
+                Vector2Int pos = p.MapPos;
+                for (int r = 4; r < 12; r++)
+                {
+                    var c = p.MapPos + new Vector2Int(r, (i % 3) - 1 + i / 3);
+                    if (z.IsWalkable(c)) { pos = c; break; }
+                }
+                var m = new EnemySpawn(id, pos.x, pos.y);
+                g.Members.Add(m);
+                list.Add(EnemyAgent.Create(z, g, m));
+                i++;
+            }
+            _groups[g.Id] = list;
+            return g.Id;
+        }
 
         void SpawnGroupIfNeeded(Zone z, EnemyGroupDef g)
         {

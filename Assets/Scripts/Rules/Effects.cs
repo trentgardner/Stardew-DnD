@@ -39,6 +39,17 @@ namespace DnD.Rules
         public Ability? RepeatSave;
         public int RepeatSaveDC;
 
+        public bool SpeedHalved;          // Slow, Spirit Guardians
+        public bool SpeedDoubled;         // Haste
+        public bool NoReactions;          // Slow, Staggering Smite
+        public bool EndsOnDamage;         // Hypnotic Pattern
+        public bool Banished;             // Banishment, Banishing Smite
+        public Ability? AdvantageOnSaveAbility; // Beacon of Hope (WIS), Haste (DEX)
+        public bool MaxHealing;           // Beacon of Hope
+        public int AttackPenaltyDie;      // Synaptic Static: -1d6 to attack rolls
+        /// <summary>Generic number for the effect's owner (e.g. the slot level Call Lightning was cast with).</summary>
+        public int Power;
+
         public ActiveEffect Clone()
         {
             return (ActiveEffect)MemberwiseClone();
@@ -86,6 +97,28 @@ namespace DnD.Rules
                 case "rage": return new ActiveEffect { Id = id, Name = "Raging", Source = source, RoundsLeft = 100 };
                 case "reckless": return new ActiveEffect { Id = id, Name = "Reckless", Source = source, RoundsLeft = 1 };
                 case "steady_aim": return new ActiveEffect { Id = id, Name = "Steady Aim", Source = source, RoundsLeft = 1, AdvantageOnNextAttack = true };
+                case "brutal_ready": return new ActiveEffect { Id = id, Name = "Brutal Strike ready", Source = source, RoundsLeft = 1 };
+                case "cunning_ready": return new ActiveEffect { Id = id, Name = "Cunning Strike ready", Source = source, RoundsLeft = 1 };
+                case "haste": return new ActiveEffect { Id = id, Name = "Hasted", Source = source, RoundsLeft = 10, Concentration = true, AcBonus = 2, SpeedDoubled = true, AdvantageOnSaveAbility = Ability.DEX };
+                case "lethargic": return new ActiveEffect { Id = id, Name = "Lethargic", Source = source, RoundsLeft = 2, Condition = Rules.Condition.Incapacitated };
+                case "slowed_spell": return new ActiveEffect { Id = id, Name = "Slowed", Source = source, RoundsLeft = 10, Concentration = true, AcBonus = -2, SpeedHalved = true, NoReactions = true, RepeatSave = Ability.WIS, RepeatSaveDC = saveDC };
+                case "hypnotized": return new ActiveEffect { Id = id, Name = "Entranced", Source = source, RoundsLeft = 10, Concentration = true, Condition = Rules.Condition.Incapacitated, EndsOnDamage = true };
+                case "banished": return new ActiveEffect { Id = id, Name = "Banished", Source = source, RoundsLeft = 10, Concentration = true, Condition = Rules.Condition.Incapacitated, Banished = true };
+                case "banished_smite": return new ActiveEffect { Id = id, Name = "Banished", Source = source, RoundsLeft = 10, Concentration = true, Condition = Rules.Condition.Incapacitated, Banished = true, Power = -1 };
+                case "death_ward": return new ActiveEffect { Id = id, Name = "Death Ward", Source = source, RoundsLeft = -1 };
+                case "beacon_of_hope": return new ActiveEffect { Id = id, Name = "Beacon of Hope", Source = source, RoundsLeft = 10, Concentration = true, AdvantageOnSaveAbility = Ability.WIS, MaxHealing = true };
+                case "greater_invisibility": return new ActiveEffect { Id = id, Name = "Invisible", Source = source, RoundsLeft = 10, Concentration = true, Condition = Rules.Condition.Invisible };
+                case "flying": return new ActiveEffect { Id = id, Name = "Flying", Source = source, RoundsLeft = 100, Concentration = true, SpeedPenalty = -30 };
+                case "synaptic": return new ActiveEffect { Id = id, Name = "Muddled", Source = source, RoundsLeft = 10, AttackPenaltyDie = 6, RepeatSave = Ability.INT, RepeatSaveDC = saveDC };
+                case "blinded_smite": return new ActiveEffect { Id = id, Name = "Blinded", Source = source, RoundsLeft = 10, Condition = Rules.Condition.Blinded, RepeatSave = Ability.CON, RepeatSaveDC = saveDC };
+                case "staggered": return new ActiveEffect { Id = id, Name = "Staggered", Source = source, RoundsLeft = 2, NoReactions = true, DisadvantageOnNextAttack = true };
+                case "spirit_slowed": return new ActiveEffect { Id = id, Name = "Slowed by spirits", Source = source, RoundsLeft = 1, SpeedHalved = true };
+                case "call_lightning": return new ActiveEffect { Id = id, Name = "Storm overhead", Source = source, RoundsLeft = 100, Concentration = true };
+                case "swift_quiver": return new ActiveEffect { Id = id, Name = "Swift Quiver", Source = source, RoundsLeft = 10, Concentration = true };
+                case "lightning_arrow_ready": return new ActiveEffect { Id = id, Name = "Lightning Arrow ready", Source = source, RoundsLeft = 10 };
+                case "blinding_smite_ready": return new ActiveEffect { Id = id, Name = "Blinding Smite ready", Source = source, RoundsLeft = 10 };
+                case "staggering_smite_ready": return new ActiveEffect { Id = id, Name = "Staggering Smite ready", Source = source, RoundsLeft = 10 };
+                case "banishing_smite_ready": return new ActiveEffect { Id = id, Name = "Banishing Smite ready", Source = source, RoundsLeft = 10 };
                 case "spiritual_weapon": return new ActiveEffect { Id = id, Name = "Spiritual Weapon", Source = source, RoundsLeft = 10, Concentration = true };
                 default: return new ActiveEffect { Id = id, Name = id, Source = source, RoundsLeft = 1 };
             }

@@ -41,6 +41,19 @@
 **Co-op:** your fiance presses **START** on a second controller at any time. The screen splits and she makes a
 character. You can go anywhere independently; if one of you starts a fight, the other can walk over and join it.
 
+## New: levels 5-10 (Act II preview, not reachable in normal play yet)
+Act I still stops at level 4. Act II (when it lands) raises the cap to 10. Everything for levels 5-10 is built and tested underneath:
+- **Every class to 10**: Extra Attack (the Attack button turns into "Attack 2/2"), the SRD features at each level, ASIs at 8 (fighter 6, rogue 10).
+- **New choices in the level-up screen**: Expertise (rogue 6, bard/ranger 9), the Champion's second fighting style (7), Defensive Tactics
+  (ranger 7), Elemental Affinity (sorcerer 6), Magical Discoveries (bard 6), Magical Secrets (bard 10: spells from other lists, grouped by level).
+- **Spells up to 5th level** (see DESIGN.md for the list), including lingering ones you can see on the grid.
+- **Ready-before-you-hit buttons** in the Abilities pop-up: the paladin smites, Brutal Strike, Cunning Strike, Stunning Strike, Tactical Master,
+  Divine Intervention. Uncanny Dodge, Retaliation, Indomitable and Ember's Own Luck happen on their own when they apply.
+- **Tougher monsters** for Act II: ogres, cinder hounds (fire breath), trolls (they regrow unless burned), fire elementals, salamanders, ankhegs.
+  Monsters with several attacks now use them all.
+- **Paladin auras** cover allies within 10 ft on the grid. **Owl-shaped druids** (level 8) fly over water in fights.
+- The **character sheet** got tidier so a level 10 character fits, even in split screen.
+
 ## New: the inventory upgrade (after your first playtest)
 - **You can always see what's selected**: the selected hotbar slot is raised with a gold frame and its name pops up above the bar. Q/R or the wheel moves it, X uses it, and clicking a slot uses it.
 - **Weapon sets**: equip a second weapon as your off-set (right-click → "Equip as off-set weapon", or the "Wpn 2" slot), then **Z** swaps (hold X on a controller). In a fight it's free once per turn. A shield rides with your main weapon.

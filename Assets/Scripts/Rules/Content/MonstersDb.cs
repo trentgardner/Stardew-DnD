@@ -148,7 +148,7 @@ namespace DnD.Rules.Content
             {
                 Id = "owlbear", Name = "Owlbear", SpriteId = "mon_owlbear", AC = 13, HitDice = DiceExpr.Parse("7d10+21"),
                 Scores = new[] { 20, 12, 17, 3, 12, 7 }, Darkvision = 60, CR = 3, XP = 700, Speed = 40,
-                Description = "Half owl, half bear, all mother. (SRD Owlbear. This engine gives it one Rend per turn instead of two.)",
+                Description = "Half owl, half bear, all mother. (SRD Owlbear, one Rend per turn: the Act I mother is tuned for a level 3 party.)",
                 Attacks = { Melee("Rend", 7, "2d8+5", DamageType.Slashing) },
                 ProficientSkills = { Skill.Perception }, Traits = { "Keen sight and smell", "Protective of her cub" },
             };
@@ -160,6 +160,82 @@ namespace DnD.Rules.Content
                 Attacks = { Melee("Gore", 3, "1d6+1", DamageType.Piercing) },
                 Traits = { "Bad temper" },
             };
+            // ---------------- Wild Shape forms at druid 8 (CR 1, flying)
+            All["dire_wolf"] = new MonsterDef
+            {
+                Id = "dire_wolf", Name = "Dire Wolf", SpriteId = "mon_dire_wolf", AC = 14, HitDice = DiceExpr.Parse("5d10+10"),
+                Scores = new[] { 17, 15, 15, 3, 12, 7 }, CR = 1, XP = 200, Speed = 50, PackTactics = true,
+                Description = "A wolf the size of a pony. (SRD Dire Wolf.)",
+                Attacks = { new MonsterAttackDef { Name = "Bite", ToHit = 5, Damage = DiceExpr.Parse("2d6+3"), DamageType = DamageType.Piercing, OnHitEffect = "prone", OnHitSave = Ability.STR, OnHitSaveDC = 13 } },
+                ProficientSkills = { Skill.Perception, Skill.Stealth },
+            };
+            All["giant_owl"] = new MonsterDef
+            {
+                Id = "giant_owl", Name = "Giant Owl", SpriteId = "mon_owlbear_cub", AC = 12, HitDice = DiceExpr.Parse("3d10+3"),
+                Scores = new[] { 13, 15, 12, 8, 13, 10 }, Darkvision = 120, CR = 0.25, XP = 50, Speed = 5, FlySpeed = 60,
+                Description = "A great silent owl. (SRD Giant Owl.)",
+                Attacks = { Melee("Talons", 3, "2d6+1", DamageType.Slashing) },
+                ProficientSkills = { Skill.Perception, Skill.Stealth },
+            };
+
+            // ---------------- Act II test monsters (SRD; stat lines from the SRD stat blocks, names neutral)
+            All["ogre"] = new MonsterDef
+            {
+                Id = "ogre", Name = "Ogre", SpriteId = "mon_ogre", AC = 11, HitDice = DiceExpr.Parse("7d10+21"),
+                Scores = new[] { 19, 8, 16, 5, 7, 7 }, Darkvision = 60, CR = 2, XP = 450, Speed = 40,
+                Description = "Huge, hungry and mostly club. (SRD Ogre.)",
+                Attacks = { Melee("Greatclub", 6, "2d8+4", DamageType.Bludgeoning) },
+                CopperMin = 200, CopperMax = 1500,
+            };
+            All["cinder_hound"] = new MonsterDef
+            {
+                Id = "cinder_hound", Name = "Cinder Hound", SpriteId = "mon_cinder_hound", AC = 15, HitDice = DiceExpr.Parse("7d8+14"),
+                Scores = new[] { 17, 12, 14, 6, 13, 6 }, Darkvision = 60, CR = 3, XP = 700, Speed = 50, PackTactics = true,
+                Description = "A hound with coals for eyes and smoke for breath. (SRD Hell Hound stats.)",
+                Attacks = { Melee("Bite", 5, "1d8+3", DamageType.Piercing) },
+                Immunities = { DamageType.Fire },
+                Abilities = { new MonsterAbilityDef { Name = "Fire Breath", Shape = TargetShape.Cone, AreaFt = 15, Dice = DiceExpr.Parse("6d6"), DamageType = DamageType.Fire, SaveAbility = Ability.DEX, SaveDC = 12, RechargeMin = 5 } },
+                ProficientSkills = { Skill.Perception },
+            };
+            All["troll"] = new MonsterDef
+            {
+                Id = "troll", Name = "Troll", SpriteId = "mon_troll", AC = 15, HitDice = DiceExpr.Parse("8d10+40"),
+                Scores = new[] { 18, 13, 20, 7, 9, 7 }, Darkvision = 60, CR = 5, XP = 1800, Speed = 30, ProficiencyBonus = 3,
+                Description = "Rubbery, ravenous, and it grows back. Bring fire. (SRD Troll.)",
+                Attacks = { Melee("Bite", 7, "1d6+4", DamageType.Piercing), Melee("Claw", 7, "2d6+4", DamageType.Slashing) },
+                Multiattack = { "Bite", "Claw", "Claw" },
+                Regeneration = 10, RegenBlockedBy = { DamageType.Fire, DamageType.Acid },
+                ProficientSkills = { Skill.Perception }, CopperMin = 500, CopperMax = 3000,
+            };
+            All["fire_elemental"] = new MonsterDef
+            {
+                Id = "fire_elemental", Name = "Fire Elemental", SpriteId = "mon_fire_elemental", AC = 13, HitDice = DiceExpr.Parse("12d10+36"),
+                Scores = new[] { 10, 17, 16, 6, 10, 7 }, Darkvision = 60, CR = 5, XP = 1800, Speed = 50, ProficiencyBonus = 3,
+                Description = "A living bonfire in a vaguely person-shaped mood. (SRD Fire Elemental.)",
+                Attacks = { Melee("Touch", 6, "2d6+3", DamageType.Fire) },
+                Multiattack = { "Touch", "Touch" },
+                Immunities = { DamageType.Fire, DamageType.Poison },
+                Resistances = { DamageType.Bludgeoning, DamageType.Piercing, DamageType.Slashing },
+            };
+            All["salamander"] = new MonsterDef
+            {
+                Id = "salamander", Name = "Salamander", SpriteId = "mon_salamander", AC = 15, HitDice = DiceExpr.Parse("12d10+24"),
+                Scores = new[] { 18, 14, 15, 11, 10, 12 }, Darkvision = 60, CR = 5, XP = 1800, Speed = 30, ProficiencyBonus = 3,
+                Description = "A serpent of the deep fires, spear in hand. (SRD Salamander.)",
+                Attacks = { Melee("Fire Spear", 7, "2d6+4", DamageType.Fire), Melee("Constrict", 7, "2d6+4", DamageType.Bludgeoning) },
+                Multiattack = { "Fire Spear", "Constrict" },
+                Immunities = { DamageType.Fire }, Vulnerabilities = { DamageType.Cold },
+                CopperMin = 300, CopperMax = 2000,
+            };
+            All["ankheg"] = new MonsterDef
+            {
+                Id = "ankheg", Name = "Ankheg", SpriteId = "mon_ankheg", AC = 14, HitDice = DiceExpr.Parse("6d10+6"),
+                Scores = new[] { 17, 11, 13, 1, 13, 6 }, Darkvision = 60, CR = 2, XP = 450, Speed = 30,
+                Description = "A burrowing insect the size of a cart, mandibles first. (SRD Ankheg.)",
+                Attacks = { Melee("Bite", 5, "2d6+3", DamageType.Slashing) },
+                Abilities = { new MonsterAbilityDef { Name = "Acid Spray", Shape = TargetShape.Line, AreaFt = 30, Dice = DiceExpr.Parse("3d6"), DamageType = DamageType.Acid, SaveAbility = Ability.DEX, SaveDC = 13, RechargeMin = 6 } },
+            };
+
             // The party's hatchling (see Dragonling): HP comes from the party's level, not from hit dice.
             All["dragonling"] = new MonsterDef
             {

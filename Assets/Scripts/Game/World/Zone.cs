@@ -36,6 +36,8 @@ namespace DnD.Game
         public bool InBounds(Vector2Int m) => m.x >= 0 && m.y >= 0 && m.x < W && m.y < H;
         public bool Contains(Vector3 world) => InBounds(ToMap(world));
         public bool IsWalkable(Vector2Int m) => InBounds(m) && !Blocked[m.x, m.y];
+        /// <summary>Walkable, or water for something that flies.</summary>
+        public bool IsPassable(Vector2Int m, bool flying) => IsWalkable(m) || (flying && InBounds(m) && CharAt(m) == '~');
         public char CharAt(Vector2Int m) => InBounds(m) ? Def.Map[m.y][m.x] : 'X';
 
         public Bounds WorldBounds => new Bounds(new Vector3(Origin.x + W / 2f, Origin.y + H / 2f), new Vector3(W, H, 1));
@@ -309,7 +311,7 @@ namespace DnD.Game
         // ------------------------------------------------------------ queries
 
         /// <summary>Breadth-first path on walkable tiles (4-way + diagonals not cutting corners).</summary>
-        public List<Vector2Int> FindPath(Vector2Int from, Vector2Int to, System.Func<Vector2Int, bool> extraBlocked = null, int maxNodes = 4000)
+        public List<Vector2Int> FindPath(Vector2Int from, Vector2Int to, System.Func<Vector2Int, bool> extraBlocked = null, int maxNodes = 4000, bool flying = false)
         {
             var result = new List<Vector2Int>();
             if (!InBounds(from) || !InBounds(to)) return result;
@@ -326,8 +328,8 @@ namespace DnD.Game
                 foreach (var d in dirs)
                 {
                     var nx = cur + d;
-                    if (prev.ContainsKey(nx) || !IsWalkable(nx)) continue;
-                    if (d.x != 0 && d.y != 0 && (!IsWalkable(new Vector2Int(cur.x + d.x, cur.y)) || !IsWalkable(new Vector2Int(cur.x, cur.y + d.y)))) continue;
+                    if (prev.ContainsKey(nx) || !IsPassable(nx, flying)) continue;
+                    if (d.x != 0 && d.y != 0 && (!IsPassable(new Vector2Int(cur.x + d.x, cur.y), flying) || !IsPassable(new Vector2Int(cur.x, cur.y + d.y), flying))) continue;
                     if (extraBlocked != null && nx != to && extraBlocked(nx)) continue;
                     prev[nx] = cur;
                     q.Enqueue(nx);
