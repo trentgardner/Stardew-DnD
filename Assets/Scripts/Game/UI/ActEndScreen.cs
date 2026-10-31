@@ -38,6 +38,8 @@ namespace DnD.Game
             var list = UIKit.Rect(Root, "List", new Vector2(0, 0), new Vector2(1, 0), new Vector2(8, 6), new Vector2(-8, 26));
             _menu = new MenuList(list) { RowHeight = 18, FontSize = 11 };
             _menu.Add("Keep exploring Thistledown", Close);
+            if (GameRoot.I.World.Act < 2)
+                _menu.Add("Begin Act II (preview: a season passes)", () => { Close(); GameRoot.I.BeginActTwo(Slot); });
             _menu.Build();
             Sfx.Play("levelup");
         }

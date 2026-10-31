@@ -35,6 +35,12 @@ namespace DnD.Game
         public readonly Dictionary<string, int> Charmed = new Dictionary<string, int>(); // "npc:player" → day
         public Inventory Storage = new Inventory(36);
         public bool EggHatched;
+        /// <summary>1 = Act I "Home", 2 = Act II (a season after the hatching).</summary>
+        public int Act = 1;
+        /// <summary>The day Act II began (0 = not yet).</summary>
+        public int ActTwoDay;
+        /// <summary>The dragon's growth stage (DragonStage as int): Hatchling in Act I, Wyrmling ("teenager") in Act II.</summary>
+        public int DragonStage;
         /// <summary>The day the party finished the Harvest Festival quest (0 = not yet): the festival stops coming back after that.</summary>
         public int FestivalDoneDay;
         public string DragonName = "Cinder";

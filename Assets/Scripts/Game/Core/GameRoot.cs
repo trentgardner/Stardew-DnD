@@ -15,7 +15,7 @@ namespace DnD.Game
     /// </summary>
     // Runs before avatars and HUDs, so a controller's Start press is claimed as a join before P1 can read it as Pause.
     [DefaultExecutionOrder(-100)]
-    public class GameRoot : MonoBehaviour
+    public partial class GameRoot : MonoBehaviour
     {
         public static GameRoot I;
 
@@ -190,6 +190,7 @@ namespace DnD.Game
                 comp.TakePoint = c.TakePoint;
             }
             if (World.EggHatched) SpawnDragon(Players.FirstOrDefault(p => p.Index == d.DragonLeader) ?? p1);
+            ApplyActCap();
             p1.Hud.Narrate($"Welcome back. {Clock.Weekday}, day {Clock.Day}." + (_pendingPlayers.Count > 0 ? " Player 2: press Start (or Enter) to rejoin!" : ""));
         }
 
@@ -961,7 +962,7 @@ namespace DnD.Game
 
         void SpawnDragon(PlayerSlot leader)
         {
-            Dragon = new Dragonling(PartyLevel) { Name = World.DragonName };
+            Dragon = new Dragonling(PartyLevel) { Name = World.DragonName, Stage = (DragonStage)World.DragonStage };
             Dragon.HP = Mathf.Clamp(Dragon.MaxHP - World.DragonDamage, 0, Dragon.MaxHP);
             var d = CompanionAgent.Create(leader, "mon_dragonling", false, null);
             d.IsDragon = true;
@@ -1139,7 +1140,7 @@ namespace DnD.Game
         }
 
         /// <summary>Companions level up on their own (average HP, auto choices).</summary>
-        static void AutoLevel(PlayerCharacter pc)
+        internal static void AutoLevel(PlayerCharacter pc)
         {
             while (pc.CanLevelUp) pc.LevelUp(pc.AutoPlan(), new List<string>());
         }
