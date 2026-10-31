@@ -41,6 +41,9 @@ namespace DnD.Game
         readonly bool _cancellable;
         MenuList _menu;
 
+        /// <summary>The prompt's body text.</summary>
+        public string Body => _text;
+
         public ChoiceScreen(string title, string text, List<(string, Action)> options, bool cancellable = true)
         { _title = title; _text = text; _opts = options; _cancellable = cancellable; }
 
@@ -490,6 +493,7 @@ namespace DnD.Game
 
         void Rebuild()
         {
+            if (Closed || Root == null) return; // a healing roll can finish after the spellbook has closed
             var pc = Slot.Character;
             _menu.Clear();
             _shown.Clear();
@@ -598,9 +602,50 @@ namespace DnD.Game
 
     public class JournalScreen : GameScreen
     {
+        /// <summary>What the journal shows (tests).</summary>
+        public string Text { get; private set; } = "";
+
+        bool _lore;
+        Text _label;
+
         public override void Build()
         {
             Window(new Vector2(420, 270), "Journal");
+            var rt = UIKit.Rect(Root, "Text", Vector2.zero, Vector2.one, new Vector2(14, 22), new Vector2(-14, -28));
+            _label = UIKit.Label(rt, "", 10, UIKit.Ink);
+            // Many quests at once: shrink the text to fit the window rather than clip it.
+            _label.verticalOverflow = VerticalWrapMode.Truncate;
+            _label.resizeTextForBestFit = true; _label.resizeTextMinSize = 6; _label.resizeTextMaxSize = 10;
+            var f = UIKit.Rect(Root, "Foot", new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 4), new Vector2(0, 20));
+            UIKit.Label(f, In.UsesMouse ? "Q/R: Quests | Lore · Esc: close" : "LB/RB: Quests | Lore · B: close", 9, UIKit.Dim, TextAnchor.MiddleCenter);
+            Refresh();
+        }
+
+        /// <summary>Switch between the quests page and the lore page (tests, and Q/R or LB/RB).</summary>
+        public void ShowLore(bool on) { _lore = on; Refresh(); }
+
+        void Refresh()
+        {
+            Text = _lore ? LorePage() : QuestPage();
+            _label.text = Text;
+        }
+
+        static string LorePage()
+        {
+            var g = GameRoot.I;
+            var found = LoreDb.All.Values.Where(l => g.World.LoreFound.Contains(l.Id)).ToList();
+            if (found.Count == 0) return "<b>Lore</b>\nNothing yet. Old murals, carvings and records remember things people have forgotten.";
+            var sb = new System.Text.StringBuilder("<b>Lore</b>\n");
+            foreach (var group in found.GroupBy(l => l.Category))
+            {
+                sb.AppendLine($"<i>{group.Key}</i>");
+                foreach (var l in group) sb.AppendLine($"<b>{l.Title}</b>: {l.Text}\n");
+            }
+            return sb.ToString().TrimEnd();
+        }
+
+        string QuestPage()
+        {
             var g = GameRoot.I;
             var sb = new System.Text.StringBuilder("<b>Quests</b>\n");
             bool any = false;
@@ -611,6 +656,8 @@ namespace DnD.Game
                 if (st == 0) continue;
                 any = true;
                 if (g.Quests.Done(q.Id)) { done.Add(q.Title); continue; }
+                var closed = g.Quests.ClosedBy(q.Id);
+                if (closed != null) { sb.AppendLine($"• <color=#8a8a8a><b>{q.Title}</b>: {closed}.</color>"); continue; }
                 string giver = q.Giver != null && WorldDb.Npcs.TryGetValue(q.Giver, out var n) ? $" <i>({n.Name})</i>" : "";
                 sb.AppendLine($"• <b>{q.Title}</b>{giver}: {q.StageText[Mathf.Min(st, q.Last)]}");
             }
@@ -623,15 +670,26 @@ namespace DnD.Game
                 if (!g.World.Friendship.ContainsKey(n.Id)) continue;
                 sb.AppendLine($"{n.Name} — {new string('♥', h)}{new string('♡', Mathf.Max(0, 5 - h))}");
             }
+            var standing = FactionDb.All.Values.Where(f => g.World.Standing.ContainsKey(f.Id) || g.World.CommittedFaction == f.Id).ToList();
+            if (standing.Count > 0)
+            {
+                sb.AppendLine("\n<b>The four forces</b>");
+                foreach (var f in standing)
+                {
+                    int s = Factions.Standing(f.Id);
+                    string mood = s >= 50 ? "trusts you" : s >= 15 ? "thinks well of you" : s > -15 ? "is watching you" : s > -50 ? "is wary of you" : "wants you gone";
+                    sb.AppendLine($"{FactionDb.Title(f.Id)} {mood}{(g.World.CommittedFaction == f.Id ? " · <b>you stand with them</b>" : "")}");
+                }
+            }
             if (g.World.EggHatched) sb.AppendLine("\n" + DragonPet.JournalLine());
-            var rt = UIKit.Rect(Root, "Text", Vector2.zero, Vector2.one, new Vector2(14, 22), new Vector2(-14, -28));
-            var label = UIKit.Label(rt, sb.ToString().TrimEnd(), 10, UIKit.Ink);
-            // Many quests at once: shrink the text to fit the window rather than clip it.
-            label.verticalOverflow = VerticalWrapMode.Truncate;
-            label.resizeTextForBestFit = true; label.resizeTextMinSize = 6; label.resizeTextMaxSize = 10;
+            return sb.ToString().TrimEnd();
         }
 
-        public override void Tick() { if (In.Cancel || In.Journal || In.Confirm) Close(); }
+        public override void Tick()
+        {
+            if (In.NextTab || In.PrevTab) { ShowLore(!_lore); return; }
+            if (In.Cancel || In.Journal || In.Confirm) Close();
+        }
     }
 
     // ======================================================================== pause / saves / settings

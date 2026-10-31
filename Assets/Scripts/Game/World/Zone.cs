@@ -87,6 +87,9 @@ namespace DnD.Game
                 if ("qOY".IndexOf(zone.CharAt(kv.Key)) < 0)
                     zone.Prop(kv.Key, kv.Value.Sprite).AddComponent<SecretInteractable>().Def = kv.Value;
 
+            foreach (var lore in def.Lore)
+                zone.Prop(lore.Pos, lore.Sprite).AddComponent<LoreSpot>().Def = lore;
+
             if (def.Puzzle != null) PuzzleRoom.Build(zone);
             foreach (var (pos, sprite) in def.FestivalProps) zone.Prop(pos, sprite).AddComponent<FestivalDressing>();
             foreach (var (pos, kind) in def.FestivalGames)

@@ -193,6 +193,24 @@ Eldritch Blast fires two beams at 5 (2024) instead of one bigger one.
 - Pet layer (World/DragonPet.cs): menu, pet/fetch (+2/+3 bond once per in-game hour per player), treats (+5), fights won (+1), bond 0–100 shown as 0–5 hearts. Sniff: once per rest, secrets within 8 tiles sparkle and get Advantage. Cold braziers (map 'y') light for good (WorldState.LitBraziers).
 - Saved: name, damage taken (old saves load at full HP), scared, bond, sniff used, lit braziers.
 
+## Into Act II (Act II Phase 2)
+
+- **Acts**: `WorldState.Act` (saved). Act II sets `PlayerCharacter.LevelCap` to 10 (also on load; an Act I game started afterwards is back to 4), and companions with banked XP catch up.
+  `GameRoot.BeginActTwo` = a season passes (+28 days), the dragon grows up, the Act I end card counts as seen. The title screen can start a new game straight in Act II at level 5 (the dragon is named there).
+- **The teenage dragon** (`DragonStage.Wyrmling`): HP 10 + 6 × party level, PB grows with the party, bite 1d6+2 / claw 1d4+2 at +PB+2 (both swings on one Attack).
+  Tuned to about 45–50% of a fighter's damage (a test keeps it between 30% and 60%): useful, never fight-carrying.
+- **Dragon trust** (World/DragonDb.cs): an opinion per NPC (Distrust / Wary / Neutral / Fond / Trust) that the story can shift. Starting opinions: trusts Elowen, Lark, Maddie, Ssark; wary of Dunstan, Wick, Mister Thimble; distrusts Perrin.
+  Shown as emotes, barks and a journal line. Within 4 tiles in a conversation: trust → Advantage on Persuasion/Deception/Performance, distrust → Advantage on Insight (the roll subtitle says why).
+- **The four forces** (Quests/FactionDb.cs): the Crown, the Starfall Academy, the Fae Courts, the Wyrmwatch (working name). Every force is right about something.
+  Standing per force (the journal shows word moods once you have any); 1–2 scouting quests each; then a plain-words prompt offers to commit. Committing closes every other force's quests, in-progress ones included (shown greyed: "Closed: you stood with …").
+  The prompt goes to whoever triggers it; a co-op partner gets a narration line.
+- **Blight** (World/Blight.cs): stages 0–3, set by the story and eased one step by the volcano. Per-place weight: wild 0.6, Thistledown 0.5, the warrens 0.3 (the egg-song holds it back), interiors 0.2.
+  An ash haze over the whole zone (alpha 0.25 × stage × weight), drifting ash from stage 2, lights at half radius from stage 1 (cold hearths and forges), and NPC lines change.
+- **Lore** (Quests/LoreDb.cs, World/WorldDb.Lore.cs): each entry has a MinAct (default 2). **Act I stays light** (user, 2026-10-31): no legend, no Academy texts, no dragon-weakness lore before Act II;
+  only two ominous chest notes (A Miner's Scrawl in the mine's east chest, A Watchman's Lamp Log in the watchtower chest). Legend spots are hidden until their act.
+  Readable spots add journal entries (Lore page, by category: The Legend, Records, The Pact, Places), 25 XP each, once for the party.
+  The legend is told the way the world tells it. **The secret** (who the Queen really is, and who is behind the legend) is guarded by a test that scans the code and lore text for give-away words.
+
 ## Buoy (dedication)
 
 Buoy is Thistledown's neighbourhood dog: a black-and-white Australian Shepherd, a tribute to a real dog. He is NOT a companion and never fights.

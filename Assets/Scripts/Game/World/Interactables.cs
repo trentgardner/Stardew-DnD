@@ -195,7 +195,12 @@ namespace DnD.Game
             var g = GameRoot.I;
             if (Def == null) return;
             if (Def.IsStorage) { p.Hud.Push(new InventoryScreen(g.World.Storage, "Storage Chest")); return; }
-            if (g.World.OpenedChests.Contains(Def.Id)) { p.Hud.Narrate("Empty. Someone, probably you, already cleaned it out.", false); return; }
+            if (g.World.OpenedChests.Contains(Def.Id))
+            {
+                if (ReadNote(p)) return; // opened in an older save, before it held a note
+                p.Hud.Narrate("Empty. Someone, probably you, already cleaned it out.", false);
+                return;
+            }
             g.World.OpenedChests.Add(Def.Id);
             _sr.sprite = ArtRegistry.Get("obj_chest_open");
             Sfx.Play("coin");
@@ -207,6 +212,16 @@ namespace DnD.Game
                 p.Hud.Toast($"+{Currency.Format(Def.Copper)}", UIKit.Gold);
             }
             p.Hud.Push(new InventoryScreen(loot, "Chest"));
+            ReadNote(p);
+        }
+
+        /// <summary>A note in the chest goes into the journal and opens on top of the loot. False if there's none (or it's already found).</summary>
+        bool ReadNote(PlayerSlot p)
+        {
+            var l = LoreDb.Get(Def.Lore);
+            if (l == null || !LoreDb.Find(l.Id, p)) return false;
+            p.Hud.Push(new MessageScreen(l.Title, l.Text));
+            return true;
         }
     }
 

@@ -41,8 +41,31 @@
 **Co-op:** your fiance presses **START** on a second controller at any time. The screen splits and she makes a
 character. You can go anywhere independently; if one of you starts a fight, the other can walk over and join it.
 
-## New: levels 5-10 (Act II preview, not reachable in normal play yet)
-Act I still stops at level 4. Act II (when it lands) raises the cap to 10. Everything for levels 5-10 is built and tested underneath:
+## New: Into Act II (preview)
+**How to get there:** either finish Act I (the hatching) and pick **"Begin Act II (preview: a season passes)"** on the end-of-act card, or pick
+**"Act II (level 5, preview: the dragon has hatched)"** on the title screen's new-game menu (it asks you to name the dragon).
+Act II's places and quests aren't built yet. This preview is the doorway, plus the systems they'll plug into:
+- **A season passes**: about four weeks go by, the level cap rises to **10**, and companions with banked XP catch up.
+- **Your dragon is a teenager**: bigger, with a bite and a claw. It helps in a fight but never carries one. It has **opinions**:
+  it trusts Elowen, Lark, Maddie and Ssark, eyes Dunstan, Wick and Mister Thimble warily, and distrusts Perrin.
+  Watch for its emotes and barks near people. Bring it within 4 tiles while you talk to someone:
+  trust gives Advantage on Persuasion/Deception/Performance, distrust gives Advantage on Insight. The roll says why.
+- **The legend (journal → LB/RB → Lore)**: four pieces that appear in familiar places once Act II begins: the temple mural,
+  the carving on the watchtower's back wall, the rhyme in Lark's cottage, and a damp ledger at Miller's Ford. 25 XP each.
+  Act I stays light: its only lore is two short, slightly ominous notes in chests (the mine and the old watchtower).
+- **Built but not reachable yet** (Act II's story switches them on in later phases): standing with the four forces
+  (the Crown, the Starfall Academy, the Fae Courts, the Wyrmwatch) and the forced choice between them, and the
+  **blight** (ash greys the land, hearths burn low, drifting ash).
+
+### Into Act II checklist
+- [ ] Finish Act I → Begin Act II: does the time skip feel right? Is the teenage dragon the right size and strength?
+- [ ] Start at Act II from the title: name the dragon, level up to 5 on the character sheet.
+- [ ] Find all four lore pieces. Do they make you curious?
+- [ ] Walk the dragon past Perrin, then past Elowen. Can you tell how it feels about each?
+- [ ] Save, quit, load: still Act II, still level-capped at 10?
+
+## New: levels 5-10 (now reachable through Act II above)
+Act I still stops at level 4. Act II raises the cap to 10. Everything for levels 5-10 is built and tested underneath:
 - **Every class to 10**: Extra Attack (the Attack button turns into "Attack 2/2"), the SRD features at each level, ASIs at 8 (fighter 6, rogue 10).
 - **New choices in the level-up screen**: Expertise (rogue 6, bard/ranger 9), the Champion's second fighting style (7), Defensive Tactics
   (ranger 7), Elemental Affinity (sorcerer 6), Magical Discoveries (bard 6), Magical Secrets (bard 10: spells from other lists, grouped by level).

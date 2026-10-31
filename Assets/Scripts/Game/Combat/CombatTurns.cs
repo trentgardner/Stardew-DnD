@@ -1655,6 +1655,12 @@ namespace DnD.Game
                 yield break;
             }
 
+            // The teenage dragon covers a hurt friend with a wing before it bites.
+            if (u.C is Dragonling teen && teen.IsTeen && !turn.BonusActionUsed)
+            {
+                var hurt = Units.FirstOrDefault(o => o != u && o.Active && !Hostile(u, o) && o.C.HP < o.C.EffectiveMaxHP / 2 && Zone.DistanceFt(u.Pos, o.Pos) <= 5);
+                if (hurt != null) yield return ShieldWing(u, hurt);
+            }
             if (monster != null && monster.Def.Abilities.Count > 0)
             {
                 bool used = false;

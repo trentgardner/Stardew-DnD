@@ -126,6 +126,17 @@ Side characters added while building Act I (approved by the user; still easy to 
   - **The hatchling**: named by the players (default *Cinder*).
   - **Buoy**, Thistledown's neighbourhood dog, a black-and-white Australian Shepherd (a real dog's name: a dedication; keep him in every act).
 
+## Act II, first pieces (approved 2026-10-31)
+Act I keeps only two light, ominous notes in chests (a miner's scrawl about lamps that won't stay lit; a watchman's log about smoke over the Wyrmback). Everything below appears in Act II.
+
+- **The Wyrmwatch**: the dragon hunters, one of the four forces (working name). Their belief: *"Every village we've lost to an ember-eyed beast had someone who said 'it's only small'."*
+- **The legend texts** (journal → Lore), told the way the world tells it:
+  - *The Ashen Queen*: the temple mural and hymn (the Great Ones lay down on her, and the mountains were made).
+  - *The Sleeping Mountains*: a carving on the watchtower's back wall, every peak a sleeping dragon.
+  - *A Skipping Rhyme*: the rhyme every skipping-rope in Thistledown knows (Lark hums it).
+  - *Missing Pages*: a parish ledger at Miller's Ford, with the century the legends talk about cut out.
+- The teenage dragon's opinions: it trusts Elowen, Lark, Maddie and Ssark; it's wary of Dunstan, Wick and Mister Thimble; it distrusts Perrin (he's quietly reporting to the Academy).
+
 ## Questions for you
 1. Do you like the **egg → baby dragon companion** hook? (I think your fiance will.)
 2. Names: keep, change or rename anything? (*Sundermere, Thistledown, Ember Pact, Oathbound...*)

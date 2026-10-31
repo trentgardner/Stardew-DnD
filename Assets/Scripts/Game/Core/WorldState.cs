@@ -35,6 +35,23 @@ namespace DnD.Game
         public readonly Dictionary<string, int> Charmed = new Dictionary<string, int>(); // "npc:player" → day
         public Inventory Storage = new Inventory(36);
         public bool EggHatched;
+        /// <summary>1 = Act I "Home", 2 = Act II (a season after the hatching).</summary>
+        public int Act = 1;
+        /// <summary>The day Act II began (0 = not yet).</summary>
+        public int ActTwoDay;
+        /// <summary>The dragon's growth stage (DragonStage as int): Hatchling in Act I, Wyrmling ("teenager") in Act II.</summary>
+        public int DragonStage;
+        /// <summary>How far events have moved the dragon's opinion of someone from its starting feeling (DragonDb).</summary>
+        public readonly Dictionary<string, int> DragonOpinionShift = new Dictionary<string, int>();
+        /// <summary>Standing with each of the four forces (-100..100).</summary>
+        public readonly Dictionary<string, int> Standing = new Dictionary<string, int>();
+        /// <summary>The force the party chose to stand with (null until the choice).</summary>
+        public string CommittedFaction;
+        /// <summary>0 (none) to 3: how far the blight has spread. BlightEased: the volcano was calmed.</summary>
+        public int BlightStage;
+        public bool BlightEased;
+        /// <summary>Lore entries found (journal, Lore page).</summary>
+        public readonly HashSet<string> LoreFound = new HashSet<string>();
         /// <summary>The day the party finished the Harvest Festival quest (0 = not yet): the festival stops coming back after that.</summary>
         public int FestivalDoneDay;
         public string DragonName = "Cinder";

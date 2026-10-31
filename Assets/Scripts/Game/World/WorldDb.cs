@@ -57,6 +57,7 @@ namespace DnD.Game
         public List<KeyValuePair<string, int>> Items = new List<KeyValuePair<string, int>>();
         public int Copper;
         public bool IsStorage;   // the player's home chest (persistent storage, not loot)
+        public string Lore;      // a note inside (LoreDb id): read when the chest is opened
     }
 
     /// <summary>
@@ -107,6 +108,10 @@ namespace DnD.Game
         public bool Dark;
         public bool Indoors;
         public bool SafeForLongRest;
+        /// <summary>How much the blight shows here (0-1); -1 = the default for the kind of place (see Blight.Weight).</summary>
+        public float BlightWeight = -1;
+        /// <summary>Murals, carvings and records with lore for the journal (Act II).</summary>
+        public List<LoreSpotDef> Lore = new List<LoreSpotDef>();
         public string EnterNarration;
         /// <summary>Music track id; defaults to "music_{Id}" (see Assets/Editor/ArtMap.txt audio lines).</summary>
         public string Music;
@@ -440,7 +445,7 @@ namespace DnD.Game
             c1.Items.Add(new KeyValuePair<string, int>("oathbound_signet", 1));
             c1.Items.Add(new KeyValuePair<string, int>("potion_healing", 1));
             mine.Chests.Add(c1);
-            var c2 = new ChestDef { Id = "mine_east_chest", Pos = new Vector2Int(37, 11), Copper = 800 };
+            var c2 = new ChestDef { Id = "mine_east_chest", Lore = "miners_scrawl", Pos = new Vector2Int(37, 11), Copper = 800 };
             c2.Items.Add(new KeyValuePair<string, int>("potion_healing", 2));
             c2.Items.Add(new KeyValuePair<string, int>("copper_trinket", 3));
             c2.Items.Add(new KeyValuePair<string, int>("torch", 2));
@@ -450,6 +455,8 @@ namespace DnD.Game
             BuildWarrens();
 
             BuildNpcs();
+
+            PlaceLore();
         }
 
         /// <summary>Miller's Ford, east of town: a broken bridge, a "toll" crew at the ford, a mill, a boar meadow.</summary>

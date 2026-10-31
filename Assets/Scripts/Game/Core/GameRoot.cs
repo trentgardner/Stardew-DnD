@@ -15,7 +15,7 @@ namespace DnD.Game
     /// </summary>
     // Runs before avatars and HUDs, so a controller's Start press is claimed as a join before P1 can read it as Pause.
     [DefaultExecutionOrder(-100)]
-    public class GameRoot : MonoBehaviour
+    public partial class GameRoot : MonoBehaviour
     {
         public static GameRoot I;
 
@@ -39,6 +39,7 @@ namespace DnD.Game
 
         Transform _worldRoot;
         readonly List<NpcAgent> _npcs = new List<NpcAgent>();
+        public IEnumerable<NpcAgent> Npcs => _npcs;
         readonly List<RecruitAgent> _recruitAgents = new List<RecruitAgent>();
         readonly Dictionary<string, List<EnemyAgent>> _groups = new Dictionary<string, List<EnemyAgent>>();
         readonly List<PcData> _pendingPlayers = new List<PcData>();
@@ -123,9 +124,10 @@ namespace DnD.Game
             _title = TitleScreen.Create(this);
         }
 
-        public void StartNewGame(PlayerInput device, Difficulty diff)
+        public void StartNewGame(PlayerInput device, Difficulty diff, bool actTwo = false)
         {
             ResetWorld();
+            _startActTwo = actTwo;
             Settings.Difficulty = diff;
             PlaythroughId = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             int n = SaveSystem.List().Select(s => s.PlaythroughId).Distinct().Count() + 1;
@@ -159,6 +161,7 @@ namespace DnD.Game
                 pc.LevelUp(pc.AutoPlan(), null);
             }
             SpawnPlayer(slot, pc, null);
+            if (World.Act >= 2 && Players.Count > 1) GiveActTwoKit(slot); // a partner joining an Act II game
             return slot;
         }
 
@@ -190,6 +193,7 @@ namespace DnD.Game
                 comp.TakePoint = c.TakePoint;
             }
             if (World.EggHatched) SpawnDragon(Players.FirstOrDefault(p => p.Index == d.DragonLeader) ?? p1);
+            ApplyActCap();
             p1.Hud.Narrate($"Welcome back. {Clock.Weekday}, day {Clock.Day}." + (_pendingPlayers.Count > 0 ? " Player 2: press Start (or Enter) to rejoin!" : ""));
         }
 
@@ -237,6 +241,7 @@ namespace DnD.Game
             _worldRoot = new GameObject("World").transform;
             int i = 0;
             foreach (var def in WorldDb.Zones.Values) Zones[def.Id] = Zone.Build(def, i++, _worldRoot);
+            Blight.ApplyAll();
             foreach (var npc in WorldDb.Npcs.Values) _npcs.Add(NpcAgent.Create(npc));
             TownDog.Spawn(this); // Buoy, the neighbourhood dog
             foreach (var z in Zones.Values) foreach (var g in z.Def.EnemyGroups) SpawnGroupIfNeeded(z, g);
@@ -324,7 +329,9 @@ namespace DnD.Game
             slot.Hud.Push(new CharacterCreationScreen(pc =>
             {
                 SpawnPlayer(slot, pc, null);
-                if (Players.Count == 1)
+                if (Players.Count == 1 && _startActTwo) { _startActTwo = false; ApplyActTwoStart(slot); }
+                else if (World.Act >= 2) { GiveActTwoKit(slot); slot.Hud.Narrate($"{pc.Name} joins the adventure!"); }
+                else if (Players.Count == 1)
                     slot.Hud.Push(new MessageScreen("The Fallen Star",
                         "Last night, a star fell over Thistledown. It streaked green-gold across the sky and vanished into the Wyrmback Mountains, and for a moment the whole valley hummed, like a plucked string.\n\nThis morning, the chickens are missing.",
                         () => slot.Hud.Narrate("You wake in your cottage. Somewhere outside, Captain Vale is shouting about chickens. (Tip: talk to people with E / A. Your journal is J / LT.)")));
@@ -791,7 +798,7 @@ namespace DnD.Game
         public void OnCombatFinished(CombatInstance c, bool victory)
         {
             Combats.Remove(c);
-            if (victory && c.Units.Any(u => u.C is Dragonling)) DragonPet.AddBond(c.Humans.FirstOrDefault(), 1, "a fight won together");
+            if (victory && c.Units.Any(u => u.C is Dragonling)) { DragonPet.AddBond(c.Humans.FirstOrDefault(), 1, "a fight won together"); DragonAgent?.GetComponent<DragonPet>()?.ShowOff(); }
             DragonBackOut();
             if (c.Brawl) { EndBrawl(c, victory); return; }
             foreach (var u in c.Units.Where(u => u.C is PlayerCharacter pc && pc.IsDead)) _deathTime[u.C.Uid] = NowAbs;
@@ -961,7 +968,7 @@ namespace DnD.Game
 
         void SpawnDragon(PlayerSlot leader)
         {
-            Dragon = new Dragonling(PartyLevel) { Name = World.DragonName };
+            Dragon = new Dragonling(PartyLevel) { Name = World.DragonName, Stage = (DragonStage)World.DragonStage };
             Dragon.HP = Mathf.Clamp(Dragon.MaxHP - World.DragonDamage, 0, Dragon.MaxHP);
             var d = CompanionAgent.Create(leader, "mon_dragonling", false, null);
             d.IsDragon = true;
@@ -969,6 +976,7 @@ namespace DnD.Game
             d.Actor.Creature = Dragon;
             d.Actor.name = World.DragonName;
             Companions.Add(d);
+            DragonGrew();
         }
 
         /// <summary>The dragon is in some fight right now (it only ever joins one).</summary>
@@ -1139,7 +1147,7 @@ namespace DnD.Game
         }
 
         /// <summary>Companions level up on their own (average HP, auto choices).</summary>
-        static void AutoLevel(PlayerCharacter pc)
+        internal static void AutoLevel(PlayerCharacter pc)
         {
             while (pc.CanLevelUp) pc.LevelUp(pc.AutoPlan(), new List<string>());
         }

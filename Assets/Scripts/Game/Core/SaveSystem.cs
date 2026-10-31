@@ -47,7 +47,7 @@ namespace DnD.Game
     [Serializable]
     public class SaveData
     {
-        public int Version = 2;
+        public int Version = 3;
         public string PlaythroughId, PlaythroughName;
         public string SavedAt;
         public bool IsAuto;
@@ -74,7 +74,13 @@ namespace DnD.Game
         public bool DragonScared, DragonSniffUsed;
         public List<string> LitBraziers = new List<string>();
         public int RecruitWeek, RecruitSeed;
-        public int FestivalDoneDay;
+        public int Act, ActTwoDay, DragonStage;
+        public List<KV> DragonOpinion = new List<KV>(), Standing = new List<KV>();
+        public string CommittedFaction;
+        public int BlightStage;
+        public bool BlightEased;
+        public List<string> LoreFound = new List<string>();
+        public int FestivalDoneDay; // keep last: older tests edit saves line by line
     }
 
     public class SaveInfo
@@ -168,6 +174,12 @@ namespace DnD.Game
                     foreach (var f in new[] { "snik_friend", "elder_blessing" }) if (!d.Flags.Contains(f)) d.Flags.Add(f);
                 d.Version = 2;
             }
+            if (d.Version < 3)
+            {
+                // v3: acts. Everything before is Act I with a hatchling.
+                d.Act = 1; d.ActTwoDay = 0; d.DragonStage = 0;
+                d.Version = 3;
+            }
         }
 
         public static void DeletePlaythrough(string id)
@@ -216,6 +228,12 @@ namespace DnD.Game
             d.LitBraziers.AddRange(w.LitBraziers);
             d.RecruitWeek = w.RecruitWeek; d.RecruitSeed = w.RecruitSeed;
             d.FestivalDoneDay = w.FestivalDoneDay;
+            d.Act = w.Act; d.ActTwoDay = w.ActTwoDay; d.DragonStage = w.DragonStage;
+            foreach (var kv in w.DragonOpinionShift) d.DragonOpinion.Add(new KV(kv.Key, kv.Value));
+            foreach (var kv in w.Standing) d.Standing.Add(new KV(kv.Key, kv.Value));
+            d.CommittedFaction = w.CommittedFaction;
+            d.BlightStage = w.BlightStage; d.BlightEased = w.BlightEased;
+            d.LoreFound.AddRange(w.LoreFound);
             return d;
         }
 
@@ -307,6 +325,12 @@ namespace DnD.Game
             if (d.LitBraziers != null) foreach (var b in d.LitBraziers) w.LitBraziers.Add(b);
             w.RecruitWeek = d.RecruitWeek; w.RecruitSeed = d.RecruitSeed;
             w.FestivalDoneDay = d.FestivalDoneDay;
+            w.Act = Math.Max(1, d.Act); w.ActTwoDay = d.ActTwoDay; w.DragonStage = d.DragonStage;
+            if (d.DragonOpinion != null) foreach (var kv in d.DragonOpinion) w.DragonOpinionShift[kv.K] = kv.V;
+            if (d.Standing != null) foreach (var kv in d.Standing) w.Standing[kv.K] = kv.V;
+            w.CommittedFaction = string.IsNullOrEmpty(d.CommittedFaction) ? null : d.CommittedFaction;
+            w.BlightStage = d.BlightStage; w.BlightEased = d.BlightEased;
+            if (d.LoreFound != null) foreach (var l in d.LoreFound) w.LoreFound.Add(l);
         }
     }
 }
