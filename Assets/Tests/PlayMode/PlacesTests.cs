@@ -68,7 +68,7 @@ namespace DnD.Tests
             var d = new SaveData { Version = 1 };
             d.Quests.Add(new KV("fallen_star", 2));
             SaveSystem.Migrate(d);
-            Assert.AreEqual(2, d.Version);
+            Assert.AreEqual(new SaveData().Version, d.Version, "migrations chain on to the current version");
             Assert.AreEqual(FallenStar.Egg, d.Quests.Find(kv => kv.K == "fallen_star").V, "old stage 2 (found the egg) is the new Egg stage");
             SaveSystem.Migrate(d);
             Assert.AreEqual(FallenStar.Egg, d.Quests.Find(kv => kv.K == "fallen_star").V, "migrating twice changes nothing");

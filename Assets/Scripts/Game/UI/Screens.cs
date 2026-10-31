@@ -493,6 +493,7 @@ namespace DnD.Game
 
         void Rebuild()
         {
+            if (Closed || Root == null) return; // a healing roll can finish after the spellbook has closed
             var pc = Slot.Character;
             _menu.Clear();
             _shown.Clear();

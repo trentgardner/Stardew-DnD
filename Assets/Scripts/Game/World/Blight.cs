@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace DnD.Game
@@ -58,6 +59,8 @@ namespace DnD.Game
 
         public static void ApplyAll()
         {
+            // Forget lights from worlds that have been torn down (a load or a new game rebuilds every zone).
+            foreach (var dead in BaseRadius.Keys.Where(l => l == null).ToList()) BaseRadius.Remove(dead);
             foreach (var z in GameRoot.I.Zones.Values) if (z != null) Apply(z);
         }
 
