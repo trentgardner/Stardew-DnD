@@ -208,11 +208,25 @@ namespace DnD.Game
             list.Add(new CombatAction { Name = "Move", Cost = ActionCost.Free, Target = Targeting.Tile });
 
             var weapon = pc.GetAttacks()[0];
-            list.Add(Need(new CombatAction
+            list.Add(WeaponAttackAction(u, pc, weapon, $"Attack ({weapon.Name})", ActionGroup.Main));
+            // Fighter 9: Tactical Master: the same attack with Push, Sap or Slow instead of the weapon's own mastery.
+            foreach (var m in pc.TacticalMasteries())
             {
-                Name = $"Attack ({weapon.Name})", Cost = ActionCost.Action, Target = Targeting.Enemy, RangeFt = weapon.Ranged ? weapon.RangeLong : weapon.ReachFt,
-                Tooltip = weapon.Summary(), Run = (me, tile) => AttackAction(me, UnitAt(tile), weapon),
-            }, t, pc));
+                var swapped = CloneAttack(weapon); swapped.Mastery = m;
+                list.Add(WeaponAttackAction(u, pc, swapped, $"Attack with {m} (Tactical Master)", ActionGroup.Abilities));
+            }
+            // Barbarian 9: Brutal Strike (only when attacking recklessly).
+            if (pc.HasFeature("Brutal Strike") && pc.HasEffect("reckless") && !pc.HasEffect("brutal_ready"))
+                foreach (var (kind, label, tip) in new[] { (1, "Forceful Blow", "pushes the target 15 ft"), (2, "Hamstring Blow", "−15 ft Speed until your next turn") })
+                    list.Add(new CombatAction { Name = $"Brutal Strike: {label}", Group = ActionGroup.Abilities, Cost = ActionCost.Free, Target = Targeting.None,
+                        Tooltip = $"Give up Reckless Advantage on your next Strength attack: if it hits, +1d10 damage and it {tip}.",
+                        Run = (me, tile) => { var e = EffectLibrary.Create("brutal_ready", pc); e.Power = kind; pc.AddEffect(e); me.A.Popup(label + "!", UIKit.DamageRed); return Nothing(); } });
+            // Rogue 5: Cunning Strike riders for the next Sneak Attack.
+            if (pc.HasFeature("Cunning Strike") && !pc.HasEffect("cunning_ready") && !t.SneakAttackUsed)
+                foreach (var (kind, label, tip) in new[] { (1, "Trip", "DEX save or fall Prone"), (2, "Poison", "CON save or Poisoned for a minute"), (3, "Withdraw", "you move half your Speed without provoking") })
+                    list.Add(new CombatAction { Name = $"Cunning Strike: {label}", Group = ActionGroup.Abilities, Cost = ActionCost.Free, Target = Targeting.None,
+                        Tooltip = $"Your next Sneak Attack rolls one die fewer, and {tip}.",
+                        Run = (me, tile) => { var e = EffectLibrary.Create("cunning_ready", pc); e.Power = kind; pc.AddEffect(e); me.A.Popup(label + "?", UIKit.UtilityBlue); return Nothing(); } });
 
             if (pc.IsCaster)
             {
@@ -500,6 +514,31 @@ namespace DnD.Game
             }
         }
 
+        /// <summary>Brutal Strike and Cunning Strike effects after the hit lands.</summary>
+        void StrikeRiders(Unit me, Unit target, AttackRollResult res)
+        {
+            var pc = (PlayerCharacter)me.C;
+            if (res.BrutalStrike == 1) { Push(me, target, 3); Log("Forceful Blow!"); }
+            if (res.BrutalStrike == 2) { target.C.AddEffect(new ActiveEffect { Id = "hamstrung", Name = "Hamstrung", Source = pc, RoundsLeft = 1, SpeedPenalty = 15 }); target.A.Popup("Hamstrung", UIKit.UtilityBlue); }
+            if (res.CunningStrike == 0) return;
+            int dc = 8 + pc.ProficiencyBonus + pc.Mod(Ability.DEX);
+            if (res.CunningStrike == 3)
+            {
+                me.Cb.Turn.MovementLeftFt += pc.Speed / 2;
+                me.Cb.Turn.Disengaged = true;
+                me.A.Popup("Withdraw", UIKit.UtilityBlue);
+                Log($"{pc.Name} slips away (half Speed, no opportunity attacks).");
+                return;
+            }
+            var ab = res.CunningStrike == 1 ? Ability.DEX : Ability.CON;
+            var save = Checks.RollSave(target.C, ab, AdvantageState.Normal, res.CunningStrike == 2 ? "poison" : null);
+            bool ok = Checks.ResolveSave(save, dc);
+            Ticker($"{target.Name} {ab} save vs Cunning Strike: {save.Breakdown()} vs DC {dc} → {(ok ? "SAVED" : "FAILED")}");
+            if (ok) return;
+            if (res.CunningStrike == 1) { target.C.AddEffect(EffectLibrary.Create("prone", pc)); target.A.Popup("Tripped!", UIKit.UtilityBlue); }
+            else { target.C.AddEffect(new ActiveEffect { Id = "poisoned", Name = "Poisoned", Source = pc, RoundsLeft = 10, Condition = Condition.Poisoned, RepeatSave = Ability.CON, RepeatSaveDC = dc }); target.A.Popup("Poisoned", UIKit.UtilityBlue); }
+        }
+
         /// <summary>Lightning Arrow: the shot becomes lightning (4d8, half on a miss) and bursts over everyone within 10 ft.</summary>
         IEnumerator LightningArrow(Unit me, PlayerCharacter pc, Unit target, ActiveEffect ready, bool hit, bool critical)
         {
@@ -681,7 +720,11 @@ namespace DnD.Game
         {
             if (target == null) yield break;
             var turn = me.Cb.Turn;
-            if (consumeAction) turn.ActionUsed = true;
+            if (consumeAction)
+            {
+                turn.ActionUsed = true;
+                turn.AttacksLeftInAction = me.C is PlayerCharacter apc && !atk.IsSpell ? apc.AttacksPerAction - 1 : 0;
+            }
             me.A.Face(target.A.transform.position);
             var ctx = Context(me, target);
             var res = AttackResolver.RollAttack(me.C, target.C, atk, ctx, turn);
@@ -724,6 +767,7 @@ namespace DnD.Game
                     while (!done) yield return null;
                 }
                 ApplyHitResults(me, target, res, dmg);
+                if (target.Active && (res.BrutalStrike > 0 || res.CunningStrike > 0)) StrikeRiders(me, target, res);
                 if (me.C is PlayerCharacter smiter && !atk.Ranged && !atk.IsSpell && target.Active)
                 {
                     var spellSmite = smiter.Effects.FirstOrDefault(e => e.Id == "blinding_smite_ready" || e.Id == "staggering_smite_ready" || e.Id == "banishing_smite_ready");
@@ -1187,6 +1231,30 @@ namespace DnD.Game
             Log($"{pc.Name} lays hands on {target.Name}: +{h} HP ({pc.ResourceLeft("lay_on_hands")} left in the pool).");
         }
 
+
+        static AttackOption CloneAttack(AttackOption a) => new AttackOption
+        {
+            Name = a.Name, ToHit = a.ToHit, Damage = a.Damage, DamageMod = a.DamageMod, DamageType = a.DamageType, ReachFt = a.ReachFt, RangeNormal = a.RangeNormal,
+            RangeLong = a.RangeLong, Ranged = a.Ranged, Mastery = a.Mastery, Weapon = a.Weapon, CritOn = a.CritOn, ExtraDamage = a.ExtraDamage, ExtraDamageType = a.ExtraDamageType,
+            MinDieValue = a.MinDieValue, Ability = a.Ability, Spell = a.Spell,
+        };
+
+        /// <summary>A weapon attack button: the Attack action, or (Extra Attack) one of the attacks it still has left.</summary>
+        CombatAction WeaponAttackAction(Unit u, PlayerCharacter pc, AttackOption atk, string name, ActionGroup group)
+        {
+            var t = u.Cb.Turn;
+            int range = atk.Ranged ? atk.RangeLong : atk.ReachFt;
+            if (t.ActionUsed && t.AttacksLeftInAction > 0)
+            {
+                int max = pc.AttacksPerAction;
+                return new CombatAction { Name = $"{name} {max - t.AttacksLeftInAction + 1}/{max}", Group = group, Cost = ActionCost.Free, Target = Targeting.Enemy, RangeFt = range,
+                    Tooltip = "Extra Attack: this Attack action still has an attack left. " + atk.Summary(),
+                    Run = (me, tile) => { me.Cb.Turn.AttacksLeftInAction--; return AttackAction(me, UnitAt(tile), atk, false); } };
+            }
+            return Need(new CombatAction { Name = name, Group = group, Cost = ActionCost.Action, Target = Targeting.Enemy, RangeFt = range,
+                Tooltip = (pc.AttacksPerAction > 1 ? $"Extra Attack: {pc.AttacksPerAction} attacks. " : "") + atk.Summary(), Run = (me, tile) => AttackAction(me, UnitAt(tile), atk) }, t, pc);
+        }
+
         IEnumerator SwiftQuiver(Unit me, Unit target, AttackOption weapon)
         {
             me.Cb.Turn.BonusActionUsed = true;
@@ -1231,6 +1299,7 @@ namespace DnD.Game
             {
                 me.A.Popup("RAGE!", UIKit.DamageRed);
                 Sfx.Play("combat_start");
+                if (pc.HasFeature("Instinctive Pounce")) { me.Cb.Turn.MovementLeftFt += pc.Speed / 2; log.Add("Instinctive Pounce: +half your Speed this turn."); }
             }
             foreach (var l in log) Log(l);
             yield break;
@@ -1280,6 +1349,7 @@ namespace DnD.Game
             int h = pc.Heal(roll.Total);
             me.A.Popup("+" + h, UIKit.HealGreen);
             Log($"{pc.Name} catches a second wind (+{h} HP).");
+            if (pc.HasFeature("Tactical Shift")) { me.Cb.Turn.MovementLeftFt += pc.Speed / 2; me.Cb.Turn.Disengaged = true; Log("Tactical Shift: half your Speed, no opportunity attacks."); }
         }
 
         IEnumerator ActionSurge(Unit me, PlayerCharacter pc)
@@ -1531,6 +1601,7 @@ namespace DnD.Game
                 if (u.Active && Zone.DistanceFt(u.Pos, target.Pos) <= ranged.RangeLong && Zone.LineOfSight(u.Pos, target.Pos))
                 {
                     if (ranged.IsSpell) yield return SpellAttack(u, (PlayerCharacter)u.C, target, ranged.Spell, 0);
+                    else if (u.C is PlayerCharacter) yield return CompanionAttacks(u, target, ranged);
                     else yield return AiAttack(u, target, ranged);
                     yield break;
                 }
@@ -1550,10 +1621,23 @@ namespace DnD.Game
             }
             if (u.Active && target.Active && Zone.DistanceFt(u.Pos, target.Pos) <= melee.ReachFt)
             {
-                if (u.C is PlayerCharacter) yield return AttackAction(u, target, melee);
+                if (u.C is PlayerCharacter) yield return CompanionAttacks(u, target, melee);
                 else if (GoodBreath(u, target.Pos)) yield return EmberBreath(u, target.Pos);
                 else if (monster != null) yield return MonsterAttackRoutine(u, monster, target);
                 else yield return AiAttack(u, target, melee);
+            }
+        }
+
+        /// <summary>A companion's Attack action, using every attack Extra Attack gives (switching targets if one falls).</summary>
+        IEnumerator CompanionAttacks(Unit u, Unit target, AttackOption atk)
+        {
+            yield return AttackAction(u, target, atk);
+            while (u.Active && u.Cb.Turn.AttacksLeftInAction > 0)
+            {
+                u.Cb.Turn.AttacksLeftInAction--;
+                if (!target.Active) target = Units.Where(o => o.Active && Hostile(u, o) && Zone.DistanceFt(u.Pos, o.Pos) <= atk.MaxRangeFt).OrderBy(o => o.C.HP).FirstOrDefault();
+                if (target == null) yield break;
+                yield return AttackAction(u, target, atk, false);
             }
         }
 
@@ -1598,11 +1682,11 @@ namespace DnD.Game
                 yield return new WaitForSeconds(0.5f);
                 foreach (var t in Units.Where(o => o != u && o.Active && zoneTiles.Contains(o.Pos)).ToList())
                 {
-                    var save = Checks.RollSave(t.C, ab.SaveAbility, AdvantageState.Normal);
+                    var lines = new List<string>();
+                    var save = Checks.TryIndomitable(t.C, ab.SaveAbility, ab.SaveDC, Checks.RollSave(t.C, ab.SaveAbility, AdvantageState.Normal), lines);
                     bool ok = Checks.ResolveSave(save, ab.SaveDC);
                     Ticker($"{t.Name} {ab.SaveAbility} save: {save.Breakdown()} vs DC {ab.SaveDC} → {(ok ? "SAVED" : "FAILED")}");
-                    var lines = new List<string>();
-                    int lost = t.C.TakeDamage(ok ? dmg.Total / 2 : dmg.Total, ab.DamageType, false, lines);
+                    int lost = t.C.TakeDamage(Checks.AreaDamage(t.C, ab.SaveAbility, dmg.Total, ok, true), ab.DamageType, false, lines);
                     lines.ForEach(Log);
                     t.A.Popup("-" + lost, UIKit.DamageRed);
                     if (lost > 0) AttackResolver.RaiseConcentrationCheck(t.C, lost);
@@ -1703,8 +1787,22 @@ namespace DnD.Game
                     target.A.Popup("Deflect!", UIKit.UtilityBlue);
                     Log($"{monk.Name} deflects the blow (-{cut} damage).");
                 }
+                // Rogue 5: Uncanny Dodge (reaction) halves the hit.
+                if (target.C is PlayerCharacter dodger && dodger.HasFeature("Uncanny Dodge") && ctx.TargetCanSeeAttacker)
+                {
+                    int full = dmg.Total, halved = AttackResolver.UncannyDodge(dodger, full, target.Cb.Turn);
+                    if (halved < full) { dmg.Terms.Add(new RollTerm("uncanny dodge", -(full - halved))); target.A.Popup("Dodge!", UIKit.UtilityBlue); Log($"{dodger.Name} rolls with the blow (Uncanny Dodge: half damage)."); }
+                }
                 ApplyHitResults(me, target, res, dmg);
                 yield return new WaitForSeconds(0.35f);
+                // Berserker 10: Retaliation: hit back at whoever just hurt you from 5 ft.
+                if (target.C is PlayerCharacter brute && brute.HasFeature("Retaliation") && target.Active && me.Active && !target.Cb.Turn.ReactionUsed && Zone.DistanceFt(target.Pos, me.Pos) <= 5)
+                {
+                    target.Cb.Turn.ReactionUsed = true;
+                    Log($"{brute.Name} retaliates!");
+                    var melee = brute.GetAttacks().FirstOrDefault(a => !a.Ranged);
+                    if (melee != null) yield return AttackAction(target, me, melee, false);
+                }
             }
             else
             {

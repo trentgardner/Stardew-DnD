@@ -108,7 +108,8 @@ namespace DnD.Rules
 
         public override bool IsPlayerCharacter => true;
         public override int ProficiencyBonus => 2 + (Level - 1) / 4;
-        protected override int BaseSpeed => WildShape != null ? WildShape.Speed : IsOverloaded ? 5 : (Species != null ? Species.Speed : 30) + (UnarmoredMovement ? 10 : 0);
+        protected override int BaseSpeed => WildShape != null ? WildShape.Speed : IsOverloaded ? 5 : (Species != null ? Species.Speed : 30) + (UnarmoredMovement ? (Level >= 10 ? 20 : Level >= 6 ? 15 : 10) : 0) + (FastMovement ? 10 : 0);
+        bool FastMovement => Class != null && Class.Id == "barbarian" && Level >= 5 && (Armor == null || Armor.Category != ArmorCategory.Heavy);
 
         // ---------------------------------------------------------------- monk
 
@@ -255,7 +256,24 @@ namespace DnD.Rules
             return b;
         }
 
-        public override bool InitiativeAdvantage => HasFeature("Remarkable Athlete");
+        public override bool InitiativeAdvantage => HasFeature("Remarkable Athlete") || HasFeature("Feral Instinct");
+
+        public override bool ConditionImmune(Condition c) =>
+            (Raging && HasFeature("Mindless Rage") && (c == Condition.Charmed || c == Condition.Frightened));
+
+        /// <summary>Fighter 9: Tactical Master: swap a weapon's mastery for Push, Sap or Slow on an attack.</summary>
+        public List<WeaponMastery> TacticalMasteries() =>
+            HasFeature("Tactical Master") ? new List<WeaponMastery> { WeaponMastery.Push, WeaponMastery.Sap, WeaponMastery.Slow } : new List<WeaponMastery>();
+
+        /// <summary>Things that happen at the start of each of your turns in combat (Champion 10: Heroic Warrior).</summary>
+        public void StartOfTurnInCombat(List<string> log)
+        {
+            if (HasFeature("Heroic Warrior") && !HeroicInspiration && !IsDown)
+            {
+                HeroicInspiration = true;
+                log?.Add($"{Name} feels heroic: Heroic Inspiration!");
+            }
+        }
         public override int InitiativeBonus => Mod(Ability.DEX) + (Background != null && Background.OriginFeat == "Alert" ? ProficiencyBonus : 0);
 
         public override bool AdvantageOnSave(Ability a, string vs)
@@ -299,6 +317,7 @@ namespace DnD.Rules
             {
                 case "second_wind": return Class.Id == "fighter" ? (Level >= 10 ? 4 : Level >= 4 ? 3 : 2) : 0;
                 case "action_surge": return Class.Id == "fighter" && Level >= 2 ? 1 : 0;
+                case "indomitable": return Class.Id == "fighter" && Level >= 9 ? (Level >= 17 ? 3 : Level >= 13 ? 2 : 1) : 0;
                 case "channel_divinity": return Class.Id == "cleric" && Level >= 2 ? (Level >= 6 ? 3 : 2) : Class.Id == "paladin" && Level >= 3 ? (Level >= 11 ? 3 : 2) : 0;
                 case "focus": return Class.Id == "monk" && Level >= 2 ? Level : 0;
                 case "uncanny_metabolism": return Class.Id == "monk" && Level >= 2 ? 1 : 0;
@@ -357,6 +376,7 @@ namespace DnD.Rules
         {
             if (Raging || !SpendResource("rage")) return false;
             Effects.Add(EffectLibrary.Create("rage", this));
+            if (HasFeature("Mindless Rage")) Effects.RemoveAll(e => e.Condition == Condition.Charmed || e.Condition == Condition.Frightened);
             log?.Add($"{Name} flies into a RAGE! (+{RageDamage} damage, resists bludgeoning/piercing/slashing)");
             return true;
         }

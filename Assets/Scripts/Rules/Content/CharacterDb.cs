@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace DnD.Rules.Content
 {
     /// <summary>Species, backgrounds and classes (SRD 5.2, plus a custom Half-Elf in 2024 style).</summary>
-    public static class CharacterDb
+    public static partial class CharacterDb
     {
         public static readonly Dictionary<string, SpeciesDef> Species = new Dictionary<string, SpeciesDef>();
         public static readonly Dictionary<string, BackgroundDef> Backgrounds = new Dictionary<string, BackgroundDef>();
@@ -447,6 +447,7 @@ namespace DnD.Rules.Content
                 AlwaysPreparedSpells = { "burning_hands", "command", "scorching_ray", "suggestion" },
             };
             Classes["warlock"] = warlock;
+            AddLevelFiveToTen();
         }
 
         /// <summary>Standard weapon mastery picks for a new Fighter (player can change them).</summary>

@@ -56,11 +56,11 @@ namespace DnD.Rules
             z.HitThisTurn.Add(victim);
             var s = z.Spell;
             if (s.Id == "spirit_guardians") victim.AddEffect(EffectLibrary.Create("spirit_slowed", z.Owner));
-            var save = Checks.RollSave(victim, s.SaveAbility, AdvantageState.Normal);
+            var save = Checks.TryIndomitable(victim, s.SaveAbility, z.Owner.SpellSaveDC, Checks.RollSave(victim, s.SaveAbility, AdvantageState.Normal), log);
             bool saved = Checks.ResolveSave(save, z.Owner.SpellSaveDC);
             log?.Add($"{victim.Name} {s.SaveAbility} save vs {s.Name}: {save.Total} vs DC {z.Owner.SpellSaveDC} → {(saved ? "saved" : "failed")}");
             var dmg = Dice.RollDamage(SpellResolver.EffectDice(z.Owner, s, z.Slot), false);
-            int amount = saved ? dmg.Total / 2 : dmg.Total;
+            int amount = Checks.AreaDamage(victim, s.SaveAbility, dmg.Total, saved, true);
             if (z.DamageLeft >= 0) amount = Math.Min(amount, z.DamageLeft);
             int lost = amount > 0 ? victim.TakeDamage(amount, s.DamageType, false, log) : 0;
             if (lost > 0) AttackResolver.RaiseConcentrationCheck(victim, lost);

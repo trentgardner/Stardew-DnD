@@ -148,6 +148,7 @@ namespace DnD.Game
                 ZonesNewTurn();
                 SyncBanished();
                 if (cur.C is Dragonling && cur.Active) RechargeBreath(cur, null);
+                if (cur.C is PlayerCharacter hero && cur.Active) { var hlog = new List<string>(); hero.StartOfTurnInCombat(hlog); hlog.ForEach(Log); }
                 if (cur.C is Monster mon && cur.Active)
                 {
                     var mlog = new List<string>();

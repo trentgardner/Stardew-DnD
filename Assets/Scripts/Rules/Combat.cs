@@ -27,6 +27,8 @@ namespace DnD.Rules
         public AttackContext Context;
         public TurnState Turn;
         public int TargetAC;
+        /// <summary>Barbarian 9: Brutal Strike declared for this attack (1 = Forceful Blow, 2 = Hamstring Blow); Rogue 5: Cunning Strike (1 = Trip, 2 = Poison, 3 = Withdraw).</summary>
+        public int BrutalStrike, CunningStrike;
         public readonly List<string> AdvantageReasons = new List<string>();
         public readonly List<string> DisadvantageReasons = new List<string>();
 
@@ -76,7 +78,7 @@ namespace DnD.Rules
             }
             if (atk.IsSpell && attacker.HasEffect("innate_sorcery")) adv.Add("innate sorcery");
             bool strMelee = !atk.Ranged && !atk.IsSpell && attacker is PlayerCharacter apc && (atk.Weapon == null || !atk.Weapon.Has(WeaponProperty.Finesse) || apc.Mod(Ability.STR) >= apc.Mod(Ability.DEX));
-            if (strMelee && attacker.HasEffect("reckless")) adv.Add("reckless");
+            if (strMelee && attacker.HasEffect("reckless") && !attacker.HasEffect("brutal_ready")) adv.Add("reckless");
             if (target.HasEffect("reckless")) adv.Add("target is reckless");
 
             if (atk.Ranged || (atk.IsSpell && atk.RangeNormal > 5))
@@ -112,6 +114,8 @@ namespace DnD.Rules
 
             // Consume one-shot effects.
             attacker.Effects.RemoveAll(e => e.DisadvantageOnNextAttack || e.AdvantageOnNextAttack);
+            var brutal = attacker.Effects.Find(e => e.Id == "brutal_ready");
+            if (brutal != null && !atk.Ranged && !atk.IsSpell) { res.BrutalStrike = Math.Max(1, brutal.Power); attacker.Effects.Remove(brutal); }
             target.Effects.RemoveAll(e => e.ConsumedWhenAttacked && (e.AdvantageForAttacker == null || e.AdvantageForAttacker == attacker));
 
             int nat = res.Roll.Natural;
@@ -144,8 +148,16 @@ namespace DnD.Rules
                 if (sneak > 0 && !r.Turn.SneakAttackUsed && SneakAttackEligible(r))
                 {
                     r.Turn.SneakAttackUsed = true;
+                    var cunning = pc.Effects.Find(e => e.Id == "cunning_ready");
+                    if (cunning != null && pc.HasFeature("Cunning Strike")) { pc.Effects.Remove(cunning); r.CunningStrike = Math.Max(1, cunning.Power); sneak--; }
                     roll.Dice.AddRange(Dice.RollDamage(new DiceExpr(sneak, 6), r.Critical).Dice);
                     roll.Terms.Add(new RollTerm("sneak attack", 0));
+                }
+                // Barbarian 9: Brutal Strike: +1d10 when the attack it was declared for hits.
+                if (r.BrutalStrike > 0)
+                {
+                    roll.Dice.AddRange(Dice.RollDamage(new DiceExpr(1, 10), r.Critical).Dice);
+                    roll.Terms.Add(new RollTerm("brutal strike", 0));
                 }
                 // Hunter's Mark: +1d6 force on weapon hits against the creature you marked.
                 if (atk.Weapon != null && r.Target.Effects.Any(e => e.Id == "hunters_mark" && e.Source == pc))
@@ -177,6 +189,14 @@ namespace DnD.Rules
                 }
             }
             return roll;
+        }
+
+        /// <summary>Rogue 5: Uncanny Dodge: your reaction halves one attack's damage. Returns the damage to take.</summary>
+        public static int UncannyDodge(PlayerCharacter pc, int damage, TurnState turn)
+        {
+            if (!pc.HasFeature("Uncanny Dodge") || turn == null || turn.ReactionUsed || pc.IsIncapacitated || damage <= 1) return damage;
+            turn.ReactionUsed = true;
+            return damage / 2;
         }
 
         /// <summary>Number of Sneak Attack d6s for a character (0 if not a rogue).</summary>
@@ -316,7 +336,7 @@ namespace DnD.Rules
         public static int ApplySaveDamage(PlayerCharacter caster, Creature target, SpellDef s, DamageRoll dmg, bool saved, List<string> log, DamageRoll second = null)
         {
             bool half = s.HalfOnSave || (s.IsCantrip && caster.HasFeature("Potent Cantrip"));
-            int Part(int total) => saved ? (half ? total / 2 : 0) : total;
+            int Part(int total) => Checks.AreaDamage(target, s.SaveAbility, total, saved, half);
             int amount = Part(dmg.Total), amount2 = second != null ? Part(second.Total) : 0;
             if (amount <= 0 && amount2 <= 0) { log.Add($"{target.Name} avoids the effect."); return 0; }
             int dealt = amount > 0 ? target.TakeDamage(amount, s.DamageType, false, log) : 0;
@@ -490,7 +510,7 @@ namespace DnD.Rules
             {
                 var e = c.Effects[i];
                 if (e.RepeatSave == null) continue;
-                var save = Checks.RollSave(c, e.RepeatSave.Value, AdvantageState.Normal);
+                var save = Checks.TryIndomitable(c, e.RepeatSave.Value, e.RepeatSaveDC, Checks.RollSave(c, e.RepeatSave.Value, AdvantageState.Normal), log);
                 if (Checks.ResolveSave(save, e.RepeatSaveDC))
                 {
                     c.Effects.RemoveAt(i);

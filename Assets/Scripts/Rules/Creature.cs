@@ -120,8 +120,12 @@ namespace DnD.Rules
 
         public void RemoveEffect(string id) => Effects.RemoveAll(e => e.Id == id);
 
+        /// <summary>Conditions this creature can't be given right now (Mindless Rage, Aura of Courage...).</summary>
+        public virtual bool ConditionImmune(Condition c) => false;
+
         public void AddEffect(ActiveEffect e)
         {
+            if (e.Condition.HasValue && ConditionImmune(e.Condition.Value)) return;
             // Effects with the same id from the same source don't stack; refresh instead.
             Effects.RemoveAll(x => x.Id == e.Id && x.Source == e.Source);
             Effects.Add(e);

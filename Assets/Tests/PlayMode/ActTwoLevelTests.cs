@@ -106,5 +106,34 @@ namespace DnD.Tests
             Time.timeScale = 1;
             Assert.IsFalse(g.AnyInCombat, "the fight finishes (won or lost)");
         }
+
+        [UnityTest]
+        public IEnumerator ExtraAttackSurvivesRetargetAfterKill()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(5), "fighter", "human", level: 5);
+            yield return Frames(2);
+            g.Warp(p, "forest", new Vector2Int(34, 8), false);
+            yield return Frames(3);
+            p.Hud.CloseAll();
+            g.StartGroupCombat("forest_wolves", p);
+            var c = g.Combats.Single();
+            var u = c.Units.First(x => x.Owner == p);
+            if (u.Cb == null) u.Cb = new Combatant(u.C);
+            var first = c.ActionsFor(p).First(a => a.Name.StartsWith("Attack ("));
+            Assert.AreEqual(ActionCost.Action, first.Cost);
+            StringAssert.Contains("2 attacks", first.Tooltip, "the button says Extra Attack gives two");
+            // The state right after the first swing of the Attack action killed wolf A:
+            var wolves = c.Units.Where(x => x.C.Team == Team.Enemies).ToList();
+            wolves[0].C.HP = 0;
+            u.Cb.Turn.ActionUsed = true;
+            u.Cb.Turn.AttacksLeftInAction = ((PlayerCharacter)u.C).AttacksPerAction - 1;
+            var second = c.ActionsFor(p).FirstOrDefault(a => a.Name.StartsWith("Attack (") && a.Name.EndsWith("2/2"));
+            Assert.IsNotNull(second, "the second attack is still on the bar after the action is spent");
+            Assert.IsTrue(second.Enabled, "and usable");
+            Assert.AreEqual(ActionCost.Free, second.Cost, "it doesn't need another action");
+            Assert.AreEqual(Targeting.Enemy, second.Target, "it picks its own target (a different wolf)");
+            Assert.IsTrue(c.ActionsFor(p).First(a => a.Name.StartsWith("Attack (")).Name.EndsWith("2/2"), "the plain Attack button becomes 'Attack 2/2' (clicking an enemy uses it)");
+        }
     }
 }

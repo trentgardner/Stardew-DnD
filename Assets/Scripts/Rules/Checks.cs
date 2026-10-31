@@ -40,8 +40,31 @@ namespace DnD.Rules
         {
             adv = CheckAdvantage(c, SkillUtil.AbilityOf(s), adv);
             var r = Dice.RollD20(adv, SkillTerms(c, s));
+            // Rogue 7: Reliable Talent: a d20 of 9 or lower counts as 10 on a skill you're proficient in.
+            if (c is PlayerCharacter pc && pc.HasFeature("Reliable Talent") && pc.IsProficient(s))
+                for (int i = 0; i < r.Dice.Count; i++)
+                    if (!r.Dice[i].Discarded && r.Dice[i].Value < 10) { r.Dice[i] = new DieRoll(20, 10); break; }
             ApplyEffectDice(c, r, checkRoll: true);
             return r;
+        }
+
+        /// <summary>Fighter 9: Indomitable: reroll a failed save with a bonus equal to your fighter level. Returns the save to use.</summary>
+        public static D20Result TryIndomitable(Creature c, Ability a, int dc, D20Result save, List<string> log, string vs = null)
+        {
+            if (!(c is PlayerCharacter pc) || ResolveSave(save, dc) || pc.ResourceLeft("indomitable") <= 0 || pc.IsIncapacitated) return save;
+            pc.SpendResource("indomitable");
+            var again = RollSave(c, a, AdvantageState.Normal, vs);
+            again.Terms.Add(new RollTerm("indomitable", pc.Level));
+            log?.Add($"{pc.Name} is Indomitable! Rerolls: {again.Total} vs DC {dc}.");
+            return again;
+        }
+
+        /// <summary>Damage from an area effect after the save (Rogue/Monk 7: Evasion on DEX saves).</summary>
+        public static int AreaDamage(Creature c, Ability a, int full, bool saved, bool halfOnSave)
+        {
+            bool evasion = a == Ability.DEX && c is PlayerCharacter pc && pc.HasFeature("Evasion") && !pc.IsIncapacitated;
+            if (evasion) return saved && halfOnSave ? 0 : full / 2;
+            return saved ? (halfOnSave ? full / 2 : 0) : full;
         }
 
         public static D20Result RollAbilityCheck(Creature c, Ability a, AdvantageState adv)

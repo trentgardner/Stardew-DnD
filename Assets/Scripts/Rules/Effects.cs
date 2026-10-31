@@ -97,6 +97,8 @@ namespace DnD.Rules
                 case "rage": return new ActiveEffect { Id = id, Name = "Raging", Source = source, RoundsLeft = 100 };
                 case "reckless": return new ActiveEffect { Id = id, Name = "Reckless", Source = source, RoundsLeft = 1 };
                 case "steady_aim": return new ActiveEffect { Id = id, Name = "Steady Aim", Source = source, RoundsLeft = 1, AdvantageOnNextAttack = true };
+                case "brutal_ready": return new ActiveEffect { Id = id, Name = "Brutal Strike ready", Source = source, RoundsLeft = 1 };
+                case "cunning_ready": return new ActiveEffect { Id = id, Name = "Cunning Strike ready", Source = source, RoundsLeft = 1 };
                 case "haste": return new ActiveEffect { Id = id, Name = "Hasted", Source = source, RoundsLeft = 10, Concentration = true, AcBonus = 2, SpeedDoubled = true, AdvantageOnSaveAbility = Ability.DEX };
                 case "lethargic": return new ActiveEffect { Id = id, Name = "Lethargic", Source = source, RoundsLeft = 2, Condition = Rules.Condition.Incapacitated };
                 case "slowed_spell": return new ActiveEffect { Id = id, Name = "Slowed", Source = source, RoundsLeft = 10, Concentration = true, AcBonus = -2, SpeedHalved = true, NoReactions = true, RepeatSave = Ability.WIS, RepeatSaveDC = saveDC };
