@@ -260,6 +260,7 @@ namespace DnD.Rules
 
         public override bool AdvantageOnSave(Ability a, string vs)
         {
+            if (EffectSaveAdvantage(a)) return true;
             if (vs == "concentration" && Invocations.Contains("eldritch_mind")) return true;
             if (a == Ability.STR && Raging) return true;
             if (a == Ability.DEX && HasFeature("Danger Sense") && !Has(Condition.Incapacitated)) return true;

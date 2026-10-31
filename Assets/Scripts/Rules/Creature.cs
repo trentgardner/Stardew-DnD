@@ -97,7 +97,10 @@ namespace DnD.Rules
             {
                 if (Has(Condition.Grappled) || Has(Condition.Restrained) || IsIncapacitated) return 0;
                 int s = BaseSpeed - 5 * Exhaustion;
-                foreach (var e in Effects) s -= e.SpeedPenalty;
+                bool doubled = false, halved = false;
+                foreach (var e in Effects) { s -= e.SpeedPenalty; doubled |= e.SpeedDoubled; halved |= e.SpeedHalved; }
+                if (doubled) s *= 2;
+                if (halved) s /= 2;
                 return Math.Max(0, s);
             }
         }
@@ -129,6 +132,28 @@ namespace DnD.Rules
             Has(Condition.Unconscious) || Has(Condition.Petrified);
 
         public bool IsDown => HP <= 0;
+
+        /// <summary>Banished to another plane for now (Banishment): out of the fight until it returns.</summary>
+        public bool IsBanished
+        {
+            get { foreach (var e in Effects) if (e.Banished) return true; return false; }
+        }
+
+        /// <summary>Gone for good (a full minute of Banishment): counts as defeated.</summary>
+        public void Vanish(List<string> log)
+        {
+            Effects.Clear();
+            HP = 0;
+            IsDead = true;
+            log?.Add($"{Name} does not return.");
+        }
+
+        /// <summary>Saves an effect grants Advantage on (Haste: DEX, Beacon of Hope: WIS).</summary>
+        protected bool EffectSaveAdvantage(Ability a)
+        {
+            foreach (var e in Effects) if (e.AdvantageOnSaveAbility == a) return true;
+            return false;
+        }
         public virtual bool IsDead { get; protected set; }
 
         /// <summary>Penalty applied to every d20 Test (2024 Exhaustion: -2 per level).</summary>
@@ -138,7 +163,7 @@ namespace DnD.Rules
         public virtual int SkillBonus(Skill s) => Mod(SkillUtil.AbilityOf(s));
         public virtual int InitiativeBonus => Mod(Ability.DEX);
         public virtual bool InitiativeAdvantage => false;
-        public virtual bool AdvantageOnSave(Ability a, string vs) => false;
+        public virtual bool AdvantageOnSave(Ability a, string vs) => EffectSaveAdvantage(a);
 
         public int PassivePerception => 10 + SkillBonus(Skill.Perception);
 
@@ -157,7 +182,14 @@ namespace DnD.Rules
                 amount -= absorbed;
             }
             int before = HP;
+            // Death Ward: the first time this would drop you to 0 HP, you drop to 1 instead.
+            if (amount >= HP && HP > 0)
+            {
+                var ward = Effects.Find(e => e.Id == "death_ward");
+                if (ward != null) { Effects.Remove(ward); amount = HP - 1; log?.Add($"Death Ward holds! {Name} stays on their feet."); }
+            }
             HP -= amount;
+            if (amount > 0) Effects.RemoveAll(e => e.EndsOnDamage);
             OnDamaged(before, amount, critical, log);
             return amount;
         }

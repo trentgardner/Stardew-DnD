@@ -108,6 +108,7 @@ namespace DnD.Rules
             if (attacker.D20Penalty != 0) terms.Add(new RollTerm("exhaustion", attacker.D20Penalty));
             res.Roll = Dice.RollD20(adv, terms);
             foreach (var e in attacker.Effects) if (e.AttackDie > 0) Dice.AddBonusDie(res.Roll, e.AttackDie);
+            foreach (var e in attacker.Effects) if (e.AttackPenaltyDie > 0) Dice.AddBonusDie(res.Roll, -e.AttackPenaltyDie);
 
             // Consume one-shot effects.
             attacker.Effects.RemoveAll(e => e.DisadvantageOnNextAttack || e.AdvantageOnNextAttack);
@@ -311,20 +312,45 @@ namespace DnD.Rules
             return Checks.RollSave(target, s.SaveAbility, AdvantageState.Normal, vs);
         }
 
-        /// <summary>Applies save-based damage: full on fail, half (or Potent Cantrip half) on success.</summary>
-        public static int ApplySaveDamage(PlayerCharacter caster, Creature target, SpellDef s, DamageRoll dmg, bool saved, List<string> log)
+        /// <summary>Applies save-based damage: full on fail, half (or Potent Cantrip half) on success. `second` is the other damage type, if the spell has one.</summary>
+        public static int ApplySaveDamage(PlayerCharacter caster, Creature target, SpellDef s, DamageRoll dmg, bool saved, List<string> log, DamageRoll second = null)
         {
-            int amount = dmg.Total;
-            if (saved)
-            {
-                bool half = s.HalfOnSave || (s.IsCantrip && caster.HasFeature("Potent Cantrip"));
-                amount = half ? amount / 2 : 0;
-            }
-            if (amount <= 0) { log.Add($"{target.Name} avoids the effect."); return 0; }
-            int dealt = target.TakeDamage(amount, s.DamageType, false, log);
-            log.Insert(0, $"{target.Name} takes {dealt} {s.DamageType.ToString().ToLower()} damage{(saved ? " (saved)" : "")}.");
+            bool half = s.HalfOnSave || (s.IsCantrip && caster.HasFeature("Potent Cantrip"));
+            int Part(int total) => saved ? (half ? total / 2 : 0) : total;
+            int amount = Part(dmg.Total), amount2 = second != null ? Part(second.Total) : 0;
+            if (amount <= 0 && amount2 <= 0) { log.Add($"{target.Name} avoids the effect."); return 0; }
+            int dealt = amount > 0 ? target.TakeDamage(amount, s.DamageType, false, log) : 0;
+            if (amount2 > 0 && !target.IsDead) dealt += target.TakeDamage(amount2, s.SecondDamageType, false, log);
+            string types = s.DamageType.ToString().ToLower() + (second != null ? " and " + s.SecondDamageType.ToString().ToLower() : "");
+            log.Insert(0, $"{target.Name} takes {dealt} {types} damage{(saved ? " (saved)" : "")}.");
             if (dealt > 0) AttackResolver.RaiseConcentrationCheck(target, dealt);
             return dealt;
+        }
+
+        /// <summary>Rolls a spell's second damage type (never upcast), or null if it has none.</summary>
+        public static DamageRoll RollSecond(SpellDef s, bool critical) => s.SecondDice.IsNone ? null : Dice.RollDamage(s.SecondDice, critical);
+
+        /// <summary>The extra dice of the smite spells, by slot level (2024: Blinding 3d8, Staggering 4d6, Banishing 5d10, +1 die per level above).</summary>
+        public static DiceExpr SmiteDice(string spellId, int slotLevel)
+        {
+            switch (spellId)
+            {
+                case "blinding_smite": return new DiceExpr(3 + Math.Max(0, slotLevel - 3), 8);
+                case "staggering_smite": return new DiceExpr(4 + Math.Max(0, slotLevel - 4), 6);
+                case "banishing_smite": return new DiceExpr(5 + Math.Max(0, slotLevel - 5), 10);
+                default: return new DiceExpr(0, 0);
+            }
+        }
+
+        /// <summary>Healing actually received: Beacon of Hope makes the dice count as their maximum.</summary>
+        public static int HealTotal(DamageRoll roll, Creature target)
+        {
+            bool max = false;
+            foreach (var e in target.Effects) max |= e.MaxHealing;
+            if (!max) return roll.Total;
+            int t = roll.Expr.Count * roll.Expr.Sides + roll.Expr.Bonus;
+            foreach (var x in roll.Terms) t += x.Value;
+            return Math.Max(0, t);
         }
 
         /// <summary>Spends the slot (or nothing for cantrips). Returns false if unavailable.</summary>
@@ -358,6 +384,7 @@ namespace DnD.Rules
         public bool Dashed, Disengaged;
         public bool CastLeveledSpellThisTurn;
         public bool CleaveUsed;
+        public bool HasteActionUsed;
         public bool SneakAttackUsed, FrenzyUsed, ColossusUsed, HordeBreakerUsed;
         /// <summary>Sorcerer Quickened Spell: the next action spell this turn costs the Bonus Action instead.</summary>
         public bool QuickenNextSpell;
@@ -372,9 +399,11 @@ namespace DnD.Rules
             AttacksLeftInAction = 0;
             Dashed = Disengaged = false;
             CastLeveledSpellThisTurn = false;
-            CleaveUsed = false;
+            CleaveUsed = HasteActionUsed = false;
             SneakAttackUsed = FrenzyUsed = ColossusUsed = HordeBreakerUsed = QuickenNextSpell = false;
             ObjectInteractionUsed = false;
+            // Slow, Staggering Smite: no reactions while it lasts.
+            foreach (var e in c.Effects) if (e.NoReactions) ReactionUsed = true;
         }
     }
 
@@ -447,6 +476,7 @@ namespace DnD.Rules
                     {
                         fx.RemoveAt(i);
                         log?.Add($"{e.Name} ends on {cb.Creature.Name}.");
+                        EffectEnded(cb.Creature, e, true, log);
                     }
                 }
             }
@@ -497,8 +527,24 @@ namespace DnD.Rules
         public void EndConcentration(Creature caster)
         {
             foreach (var cb in Order)
+            {
+                var ended = cb.Creature.Effects.FindAll(e => e.Concentration && e.Source == caster);
                 cb.Creature.Effects.RemoveAll(e => e.Concentration && e.Source == caster);
+                foreach (var e in ended) EffectEnded(cb.Creature, e, false, null);
+            }
             caster.ConcentratingOn = null;
+        }
+
+        /// <summary>Aftermath of an effect ending. `fullDuration` = it ran out rather than being broken.</summary>
+        public static void EffectEnded(Creature c, ActiveEffect e, bool fullDuration, List<string> log)
+        {
+            if (e.Id == "haste" && !c.IsDead)
+            {
+                c.AddEffect(EffectLibrary.Create("lethargic", c));
+                log?.Add($"A wave of lethargy sweeps over {c.Name}.");
+            }
+            // Banished for the whole minute: a creature from elsewhere doesn't come back (and in this world, nothing banished does).
+            if (e.Banished && fullDuration && e.Power >= 0) c.Vanish(log);
         }
     }
 }

@@ -36,7 +36,7 @@ namespace DnD.Game
         }
         public bool IsHuman => Ctrl != null;
         public string Name => C.Name;
-        public bool Active => !C.IsDead && !C.IsDown;
+        public bool Active => !C.IsDead && !C.IsDown && !C.IsBanished;
     }
 
     /// <summary>
@@ -145,6 +145,8 @@ namespace DnD.Game
                 var log = new List<string>();
                 Enc.StartTurn(log);
                 foreach (var l in log) Log(l);
+                ZonesNewTurn();
+                SyncBanished();
                 if (cur.C is Dragonling && cur.Active) RechargeBreath(cur, null);
                 RefreshTracker();
 
@@ -157,6 +159,8 @@ namespace DnD.Game
                 else if (cur.IsHuman) yield return PlayerTurn(cur);
                 else yield return AiTurn(cur);
 
+                if (CheckEnd()) break;
+                TriggerZones(cur); // ending a turn inside Spirit Guardians, a Wall of Fire...
                 if (CheckEnd()) break;
                 var endLog = new List<string>();
                 Enc.EndTurn(endLog);
@@ -244,8 +248,8 @@ namespace DnD.Game
         {
             int dist = Zone.DistanceFt(attacker.Pos, target.Pos);
             bool dark = Zone.Def.Dark;
-            bool attackerSees = !dark || attacker.C.Darkvision >= dist || LitNear(target.A.transform.position) || LitNear(attacker.A.transform.position);
-            bool targetSees = !dark || target.C.Darkvision >= dist || LitNear(attacker.A.transform.position);
+            bool attackerSees = (!dark || attacker.C.Darkvision >= dist || LitNear(target.A.transform.position) || LitNear(attacker.A.transform.position)) && !target.C.Has(Condition.Invisible);
+            bool targetSees = (!dark || target.C.Darkvision >= dist || LitNear(attacker.A.transform.position)) && !attacker.C.Has(Condition.Invisible);
             return new AttackContext
             {
                 DistanceFt = dist,
@@ -286,6 +290,8 @@ namespace DnD.Game
             Finished = true;
             DrawGrid(false);
             ClearHighlights();
+            ClearZoneFx();
+            foreach (var u in Units) { u.C.Effects.RemoveAll(e => e.Banished); SyncBanished(); }
             foreach (var h in Humans) { h.Hud.ShowLog(false); h.Hud.Find<CombatHud>()?.Close(); }
             if (victory)
             {
@@ -314,6 +320,9 @@ namespace DnD.Game
             Finished = true;
             DrawGrid(false);
             ClearHighlights();
+            ClearZoneFx();
+            foreach (var u in Units) u.C.Effects.RemoveAll(e => e.Banished);
+            SyncBanished();
             foreach (var h in Humans) { h.Hud.ShowLog(false); h.Hud.Find<CombatHud>()?.Close(); }
             foreach (var u in Units) if (u.C is PlayerCharacter pc && pc.IsDown && !pc.IsDead) pc.Stable = true; // carried out by friends
             // Enemies you dropped before pulling out still count: they won't be there when you come back.

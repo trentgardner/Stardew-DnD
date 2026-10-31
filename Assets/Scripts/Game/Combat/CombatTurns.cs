@@ -22,6 +22,7 @@ namespace DnD.Game
         public int RangeFt;
         public int AreaTiles;          // sphere radius / cone length in tiles (0 = single target)
         public bool AreaFromSelf;      // cones & cubes originate at the caster
+        public bool AreaLine;          // a 5-ft-wide line (Lightning Bolt)
         public bool Enabled = true;
         public string Why;             // reason it's disabled
         public Func<Unit, Vector2Int, IEnumerator> Run;
@@ -233,6 +234,19 @@ namespace DnD.Game
                     }
                 }
             }
+            var storm = pc.Effects.FirstOrDefault(e => e.Id == "call_lightning");
+            if (storm != null && pc.ConcentratingOn == "call_lightning")
+            {
+                var cl = SpellsDb.Get("call_lightning");
+                list.Add(Need(new CombatAction { Name = "Call Lightning (again)", Group = ActionGroup.Spells, Cost = ActionCost.Action, Target = Targeting.Tile, RangeFt = cl.RangeFt, AreaTiles = 1,
+                    Tooltip = "Your storm is still overhead: call another bolt, no slot needed.", Run = (me, tile) => CastSpell(me, pc, cl, tile, storm.Power) }, t, pc));
+            }
+            if (pc.HasEffect("swift_quiver") && weapon.Ranged)
+                list.Add(Need(new CombatAction { Name = "Swift Quiver (2 shots)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.Enemy, RangeFt = weapon.RangeLong,
+                    Tooltip = "Bonus Action: two attacks with your ranged weapon.", Run = (me, tile) => SwiftQuiver(me, UnitAt(tile), weapon) }, t, pc));
+            if (pc.HasEffect("haste") && !t.HasteActionUsed)
+                list.Add(new CombatAction { Name = $"Hasted Attack ({weapon.Name})", Group = ActionGroup.Abilities, Cost = ActionCost.Free, Target = Targeting.Enemy, RangeFt = weapon.Ranged ? weapon.RangeLong : weapon.ReachFt,
+                    Tooltip = "Haste: one extra weapon attack this turn.", Run = (me, tile) => { me.Cb.Turn.HasteActionUsed = true; return AttackAction(me, UnitAt(tile), weapon, false); } });
             if (pc.HasEffect("spiritual_weapon"))
                 list.Add(Need(new CombatAction { Name = "Spiritual Weapon strike", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.Enemy, RangeFt = 60,
                     Run = (me, tile) => SpellAttack(me, pc, UnitAt(tile), SpellsDb.Get("spiritual_weapon"), 2) }, t, pc));
@@ -385,7 +399,7 @@ namespace DnD.Game
         }
 
         static bool CombatUsable(SpellDef s) =>
-            s.Kind != SpellKind.Utility || s.Id == "spare_the_dying" || s.Id == "misty_step";
+            s.Kind != SpellKind.Utility || s.Id == "spare_the_dying" || s.Id == "misty_step" || s.Id == "dimension_door" || s.Id == "guardian_of_faith";
 
         CombatAction SpellAction(Unit u, PlayerCharacter pc, SpellDef s)
         {
@@ -404,15 +418,111 @@ namespace DnD.Game
                 case SpellKind.Utility: a.Target = s.Id == "spare_the_dying" ? Targeting.AllyDown : Targeting.Tile; break;
                 default:
                     if (s.Shape == TargetShape.Single) a.Target = Targeting.Enemy;
-                    else { a.Target = Targeting.Tile; a.AreaTiles = Math.Max(1, s.AreaFt / 5); a.AreaFromSelf = s.RangeFt == 0; if (a.AreaFromSelf) a.RangeFt = s.AreaFt; }
+                    else { a.Target = Targeting.Tile; a.AreaTiles = Math.Max(1, s.AreaFt / 5); a.AreaFromSelf = s.RangeFt == 0; a.AreaLine = s.Shape == TargetShape.Line && s.ZoneLineTiles == 0; if (a.AreaFromSelf) a.RangeFt = s.AreaFt; }
                     break;
             }
+            if (s.Kind == SpellKind.Heal && s.MaxTargets > 1) { a.Target = Targeting.Tile; a.AreaTiles = Math.Max(1, s.AreaFt / 5); }
             if (s.CastTime == CastTime.Reaction || s.CastTime == CastTime.Minute || s.CastTime == CastTime.TenMinutes) { a.Enabled = false; a.Why = s.CastTime == CastTime.Reaction ? "Reaction: offered automatically when you're hit." : "Takes too long to cast in combat."; }
             if (!s.IsCantrip && pc.LowestAvailableSlot(s.Level) < 0 && !(s.Id == "hunters_mark" && pc.ResourceLeft("favored_enemy") > 0)) { a.Enabled = false; a.Why = "No spell slots left."; }
             if (!s.IsCantrip && t.CastLeveledSpellThisTurn) { a.Enabled = false; a.Why = "Only one spell slot per turn (2024 rules)."; }
             Need(a, t, pc);
             a.Run = (me, tile) => CastSpell(me, pc, s, tile);
             return a;
+        }
+
+        // ================================================================== lines, walls, smites
+
+        /// <summary>A 5-ft-wide line from `from` towards `toward`, `length` tiles long (Lightning Bolt).</summary>
+        List<Vector2Int> LineTiles(Vector2Int from, Vector2Int toward, int length)
+        {
+            var list = new List<Vector2Int>();
+            Vector2 dir = toward - from;
+            if (dir.sqrMagnitude < 0.01f) return list;
+            dir.Normalize();
+            for (int i = 1; i <= length; i++)
+            {
+                var p = from + new Vector2Int(Mathf.RoundToInt(dir.x * i), Mathf.RoundToInt(dir.y * i));
+                if (!Zone.IsWalkable(p)) break;
+                if (!list.Contains(p)) list.Add(p);
+            }
+            return list;
+        }
+
+        /// <summary>A wall `length` tiles long through `centre`, square to the caster's line of sight (Wall of Fire).</summary>
+        List<Vector2Int> WallTiles(Unit me, Vector2Int centre, int length)
+        {
+            var d = centre - me.Pos;
+            var side = Mathf.Abs(d.x) >= Mathf.Abs(d.y) ? new Vector2Int(0, 1) : new Vector2Int(1, 0);
+            var list = new List<Vector2Int>();
+            for (int i = -length / 2; i < length - length / 2; i++)
+            {
+                var p = centre + side * i;
+                if (Zone.IsWalkable(p)) list.Add(p);
+            }
+            return list;
+        }
+
+        static IEnumerable<Vector2Int> Neighbours(Vector2Int p)
+        {
+            for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) if (dx != 0 || dy != 0) yield return p + new Vector2Int(dx, dy);
+        }
+
+        /// <summary>Blinding, Staggering or Banishing Smite landing on a melee hit.</summary>
+        IEnumerator SpellSmite(Unit me, PlayerCharacter pc, Unit target, ActiveEffect ready, bool critical)
+        {
+            pc.Effects.Remove(ready);
+            string id = ready.Id.Replace("_ready", "");
+            var spell = SpellsDb.Get(id);
+            var type = id == "blinding_smite" ? DamageType.Radiant : id == "staggering_smite" ? DamageType.Psychic : DamageType.Force;
+            var expr = SpellResolver.SmiteDice(id, Math.Max(spell.Level, ready.Power));
+            var roll = Dice.RollDamage(expr, critical);
+            yield return WaitDamageRoll(me, spell.Name + "!", $"{expr} {type.ToString().ToLower()}{(critical ? " (critical: doubled)" : "")}", roll, DieColor.Damage);
+            var log = new List<string>();
+            int taken = target.C.TakeDamage(roll.Total, type, critical, log);
+            target.A.Popup("-" + taken, UIKit.Gold);
+            log.ForEach(Log);
+            OnDamaged(target);
+            if (!target.Active) yield break;
+            if (id == "blinding_smite") { target.C.AddEffect(EffectLibrary.Create("blinded_smite", pc, pc.SpellSaveDC)); target.A.Popup("Blinded", UIKit.UtilityBlue); }
+            else if (id == "staggering_smite")
+            {
+                var save = Checks.RollSave(target.C, Ability.WIS, AdvantageState.Normal);
+                if (!Checks.ResolveSave(save, pc.SpellSaveDC)) { target.C.AddEffect(EffectLibrary.Create("staggered", pc)); target.Cb.Turn.ReactionUsed = true; target.A.Popup("Staggered", UIKit.UtilityBlue); }
+                else Log($"{target.Name} shrugs off the stagger ({save.Total} vs DC {pc.SpellSaveDC}).");
+            }
+            else if (id == "banishing_smite" && target.C.HP <= 50)
+            {
+                if (pc.ConcentratingOn != null) EndConcentration(pc);
+                pc.ConcentratingOn = "banishing_smite";
+                target.C.AddEffect(EffectLibrary.Create("banished_smite", pc));
+                SyncBanished();
+                Log($"{target.Name} is banished!");
+            }
+        }
+
+        /// <summary>Lightning Arrow: the shot becomes lightning (4d8, half on a miss) and bursts over everyone within 10 ft.</summary>
+        IEnumerator LightningArrow(Unit me, PlayerCharacter pc, Unit target, ActiveEffect ready, bool hit, bool critical)
+        {
+            pc.Effects.Remove(ready);
+            int lvl = Math.Max(3, ready.Power);
+            var main = Dice.RollDamage(new DiceExpr(4 + (lvl - 3), 8), critical);
+            yield return WaitDamageRoll(me, "Lightning Arrow!", $"{4 + lvl - 3}d8 lightning{(hit ? "" : " (miss: half)")}", main, DieColor.Damage);
+            var log = new List<string>();
+            int taken = target.C.TakeDamage(hit ? main.Total : main.Total / 2, DamageType.Lightning, critical, log);
+            target.A.Popup("-" + taken, UIKit.DamageRed);
+            log.ForEach(Log);
+            OnDamaged(target);
+            var burst = Dice.RollDamage(new DiceExpr(2 + (lvl - 3), 8));
+            foreach (var o in Units.Where(o => o != target && o != me && o.Active && Zone.DistanceFt(o.Pos, target.Pos) <= 10).ToList())
+            {
+                var save = Checks.RollSave(o.C, Ability.DEX, AdvantageState.Normal);
+                bool ok = Checks.ResolveSave(save, pc.SpellSaveDC);
+                var l2 = new List<string>();
+                int t2 = o.C.TakeDamage(ok ? burst.Total / 2 : burst.Total, DamageType.Lightning, false, l2);
+                o.A.Popup("-" + t2, UIKit.DamageRed);
+                l2.ForEach(Log);
+                OnDamaged(o);
+            }
         }
 
         // ================================================================== targeting
@@ -435,6 +545,7 @@ namespace DnD.Game
         {
             var list = new List<Vector2Int>();
             if (a.AreaTiles <= 0) return list;
+            if (a.AreaLine) return LineTiles(u.Pos, cursor, a.AreaTiles);
             if (a.AreaFromSelf)
             {
                 Vector2 dir = ((Vector2)(cursor - u.Pos));
@@ -558,6 +669,8 @@ namespace DnD.Game
                 }
                 yield return u.A.WalkPath(new List<Vector2Int> { step }, 5f);
                 turn.MovementLeftFt -= 5;
+                if (Zones.Count > 0) { DrawZones(); TriggerZones(u); if (!u.Active) break; }
+                foreach (var o in Units) if (o != u && Zones.Any(z => z.FollowsOwner && z.Owner == u.C)) TriggerZones(o); // a moving aura sweeps over others
             }
             RefreshTracker();
         }
@@ -586,6 +699,15 @@ namespace DnD.Game
             Ticker($"{me.Name} attacks {target.Name}: {res.Roll.Breakdown()} vs AC {(me.IsHuman ? "?" : res.TargetAC.ToString())} → {(res.Critical ? "CRITICAL HIT!" : res.Hit ? "HIT" : "MISS")}{adv}");
             yield return new WaitForSeconds(0.5f);
 
+            var arrow = atk.Ranged && !atk.IsSpell && me.C is PlayerCharacter archer ? archer.Effects.FirstOrDefault(e => e.Id == "lightning_arrow_ready") : null;
+            if (arrow != null)
+            {
+                Sfx.Play(res.Hit ? "hit" : "miss");
+                yield return LightningArrow(me, (PlayerCharacter)me.C, target, arrow, res.Hit, res.Critical);
+                RefreshTracker();
+                yield break;
+            }
+
             if (res.Hit)
             {
                 Sfx.Play(res.Critical ? "crit" : "hit");
@@ -604,6 +726,8 @@ namespace DnD.Game
                 ApplyHitResults(me, target, res, dmg);
                 if (me.C is PlayerCharacter smiter && !atk.Ranged && !atk.IsSpell && target.Active)
                 {
+                    var spellSmite = smiter.Effects.FirstOrDefault(e => e.Id == "blinding_smite_ready" || e.Id == "staggering_smite_ready" || e.Id == "banishing_smite_ready");
+                    if (spellSmite != null) yield return SpellSmite(me, smiter, target, spellSmite, res.Critical);
                     var ready = smiter.Effects.FirstOrDefault(e => e.Id == "smite_ready");
                     if (ready != null)
                     {
@@ -681,18 +805,21 @@ namespace DnD.Game
 
         // ================================================================== spells
 
-        IEnumerator CastSpell(Unit me, PlayerCharacter pc, SpellDef s, Vector2Int tile)
+        IEnumerator CastSpell(Unit me, PlayerCharacter pc, SpellDef s, Vector2Int tile, int freeAtSlot = 0)
         {
             var turn = me.Cb.Turn;
-            int slot = s.IsCantrip ? 0 : pc.LowestAvailableSlot(s.Level);
-            if (!SpellResolver.PaySlot(pc, s, slot)) { me.Ctrl?.Hud.Toast("No slot available.", UIKit.Bad); yield break; }
+            int slot = freeAtSlot > 0 ? freeAtSlot : s.IsCantrip ? 0 : pc.LowestAvailableSlot(s.Level);
+            if (freeAtSlot == 0 && !SpellResolver.PaySlot(pc, s, slot)) { me.Ctrl?.Hud.Toast("No slot available.", UIKit.Bad); yield break; }
             if (s.CastTime == CastTime.BonusAction || turn.QuickenNextSpell) { turn.BonusActionUsed = true; turn.QuickenNextSpell = false; }
             else turn.ActionUsed = true;
             if (!s.IsCantrip) turn.CastLeveledSpellThisTurn = true;
             var log = new List<string>();
-            SpellResolver.StartConcentration(pc, s, log);
-            if (log.Count > 0) Enc.EndConcentration(pc);
-            if (s.Concentration) pc.ConcentratingOn = s.Id;
+            if (freeAtSlot == 0)
+            {
+                if (s.Concentration && pc.ConcentratingOn != null) EndConcentration(pc);
+                SpellResolver.StartConcentration(pc, s, log);
+                if (s.Concentration) pc.ConcentratingOn = s.Id;
+            }
             Sfx.Play("spell");
             Log($"{pc.Name} casts {s.Name}{(slot > 0 ? $" (level {slot} slot)" : "")}!");
             me.A.Face(Zone.ToWorld(tile));
@@ -727,14 +854,28 @@ namespace DnD.Game
                 case SpellKind.Save:
                 {
                     var targets = new List<Unit>();
-                    var area = AreaTiles(me, new CombatAction { AreaTiles = s.Shape == TargetShape.Single ? 0 : Math.Max(1, s.AreaFt / 5), AreaFromSelf = s.RangeFt == 0, RangeFt = s.RangeFt == 0 ? s.AreaFt : s.RangeFt }, tile);
+                    List<Vector2Int> area;
+                    if (s.ZoneLineTiles > 0) area = WallTiles(me, tile, s.ZoneLineTiles);
+                    else area = AreaTiles(me, new CombatAction { AreaTiles = s.Shape == TargetShape.Single ? 0 : Math.Max(1, s.AreaFt / 5), AreaFromSelf = s.RangeFt == 0, AreaLine = s.Shape == TargetShape.Line, RangeFt = s.RangeFt == 0 ? s.AreaFt : s.RangeFt }, tile);
                     if (s.Shape == TargetShape.Single) { if (target != null) targets.Add(target); }
-                    else targets.AddRange(Units.Where(o => !o.C.IsDead && area.Contains(o.Pos) && o != me));
-                    DamageRoll dmg = null;
+                    else targets.AddRange(Units.Where(o => o.Active && area.Contains(o.Pos) && o != me && (!s.OnlyEnemies || Hostile(me, o))));
+                    if (s.MaxTargets > 1 && targets.Count > s.MaxTargets) targets = targets.OrderBy(o => Zone.DistanceFt(tile, o.Pos)).Take(s.MaxTargets).ToList();
+                    if (s.Id == "call_lightning" && freeAtSlot == 0) { var storm = EffectLibrary.Create("call_lightning", pc); storm.Power = Math.Max(slot, s.Level); pc.AddEffect(storm); }
+                    if (s.ZoneLineTiles > 0)
+                    {
+                        // Wall of Fire: the wall appears, everyone caught in it saves now, then it keeps burning.
+                        var wall = ZoneRules.Create(pc, s, slot, tile.x, tile.y, area.Select(t => (t.x, t.y)).ToList());
+                        AddZone(wall);
+                        TriggerZoneOnAll(wall);
+                        break;
+                    }
+                    DamageRoll dmg = null, second = null;
                     if (!s.Dice.IsNone)
                     {
                         dmg = SpellResolver.RollEffect(pc, s, Math.Max(slot, s.Level), false);
                         yield return WaitDamageRoll(me, s.Name, $"{SpellResolver.EffectDice(pc, s, Math.Max(slot, s.Level))} {s.DamageType.ToString().ToLower()} · {s.SaveAbility} save DC {pc.SpellSaveDC}", dmg, DieColor.Damage);
+                        second = SpellResolver.RollSecond(s, false);
+                        if (second != null) yield return WaitDamageRoll(me, s.Name, $"+ {s.SecondDice} {s.SecondDamageType.ToString().ToLower()}", second, DieColor.Damage);
                     }
                     foreach (var t in targets)
                     {
@@ -746,7 +887,7 @@ namespace DnD.Game
                         {
                             var lines = new List<string>();
                             int before = t.C.HP;
-                            SpellResolver.ApplySaveDamage(pc, t.C, s, dmg, saved, lines);
+                            SpellResolver.ApplySaveDamage(pc, t.C, s, dmg, saved, lines, second);
                             lines.ForEach(Log);
                             t.A.Popup("-" + Math.Max(0, before - t.C.HP), UIKit.DamageRed);
                             OnDamaged(t);
@@ -758,13 +899,22 @@ namespace DnD.Game
 
                 case SpellKind.Heal:
                 {
+                    var healed = new List<Unit>();
+                    if (s.MaxTargets > 1)
+                        healed.AddRange(Units.Where(o => !o.C.IsDead && !Hostile(me, o) && Zone.DistanceFt(tile, o.Pos) <= Math.Max(5, s.AreaFt) && Zone.DistanceFt(me.Pos, o.Pos) <= s.RangeFt)
+                            .OrderBy(o => o.C.HP * 100 / Math.Max(1, o.C.MaxHP)).Take(s.MaxTargets));
+                    else if (target != null) healed.Add(target);
+                    if (healed.Count == 0) { me.Ctrl?.Hud.Toast("No allies there.", UIKit.Bad); break; }
                     var dmg = SpellResolver.RollEffect(pc, s, Math.Max(slot, s.Level), false);
-                    yield return WaitDamageRoll(me, s.Name, $"Healing {target.Name}", dmg, DieColor.Healing);
-                    bool wasDown = target.C.IsDown;
-                    int h = target.C.Heal(dmg.Total);
-                    target.A.Popup("+" + h, UIKit.HealGreen);
+                    yield return WaitDamageRoll(me, s.Name, healed.Count == 1 ? $"Healing {healed[0].Name}" : $"Healing {healed.Count} allies", dmg, DieColor.Healing);
                     Sfx.Play("heal");
-                    Log($"{target.Name} regains {h} HP{(wasDown ? " and gets back up!" : ".")}");
+                    foreach (var hu in healed)
+                    {
+                        bool wasDown = hu.C.IsDown;
+                        int h = hu.C.Heal(SpellResolver.HealTotal(dmg, hu.C));
+                        hu.A.Popup("+" + h, UIKit.HealGreen);
+                        Log($"{hu.Name} regains {h} HP{(wasDown ? " and gets back up!" : ".")}");
+                    }
                     break;
                 }
 
@@ -779,6 +929,22 @@ namespace DnD.Game
 
                 case SpellKind.Buff:
                 {
+                    if (s.Id == "spirit_guardians")
+                    {
+                        AddZone(ZoneRules.Create(pc, s, slot, me.Pos.x, me.Pos.y));
+                        me.A.Popup("Spirit Guardians", UIKit.Gold);
+                        Log("Spectral guardians wheel around " + pc.Name + ".");
+                        break;
+                    }
+                    if (s.Id == "greater_restoration")
+                    {
+                        var who = target ?? me;
+                        int removed = who.C.Effects.RemoveAll(e => e.Condition == Condition.Charmed || e.Condition == Condition.Frightened || e.Condition == Condition.Paralyzed || e.Condition == Condition.Petrified);
+                        if (who.C.Exhaustion > 0) { who.C.Exhaustion--; removed++; }
+                        who.A.Popup("Restored", UIKit.HealGreen);
+                        Log(removed > 0 ? $"{who.Name} is restored." : $"{who.Name} feels refreshed, though nothing ailed them.");
+                        break;
+                    }
                     var recipients = new List<Unit>();
                     if (target != null) recipients.Add(target); else recipients.Add(me);
                     if (s.MaxTargets > 1)
@@ -786,6 +952,7 @@ namespace DnD.Game
                     foreach (var r in recipients)
                     {
                         var fx = EffectLibrary.Create(s.EffectId, pc);
+                        fx.Power = Math.Max(slot, s.Level);
                         r.C.AddEffect(fx);
                         if (s.Id == "aid") r.C.Heal(5);
                         if (s.Id == "armor_of_agathys") r.C.TempHP = Math.Max(r.C.TempHP, 5 * Math.Max(1, slot));
@@ -798,6 +965,23 @@ namespace DnD.Game
                 case SpellKind.Utility:
                     if (s.Id == "spare_the_dying" && target?.C is PlayerCharacter down) { down.Stabilize(); target.A.Popup("Stable", UIKit.HealGreen); Log($"{target.Name} is stabilized."); }
                     else if (s.Id == "misty_step" && !Occupied(tile)) { me.A.PlaceAt(Zone, tile); me.A.Popup("*poof*", UIKit.UtilityBlue); }
+                    else if (s.Id == "dimension_door" && !Occupied(tile) && Zone.IsWalkable(tile))
+                    {
+                        var buddy = Units.FirstOrDefault(o => o != me && o.Active && !Hostile(me, o) && Zone.DistanceFt(o.Pos, me.Pos) <= 5);
+                        me.A.PlaceAt(Zone, tile);
+                        me.A.Popup("*pop*", UIKit.UtilityBlue);
+                        if (buddy != null)
+                        {
+                            var spot = Neighbours(tile).FirstOrDefault(n => Zone.IsWalkable(n) && !Occupied(n));
+                            if (spot != default) { buddy.A.PlaceAt(Zone, spot); Log($"{buddy.Name} steps through with {pc.Name}."); }
+                        }
+                    }
+                    else if (s.Id == "guardian_of_faith" && Zone.IsWalkable(tile))
+                    {
+                        var g = ZoneRules.Create(pc, s, slot, tile.x, tile.y);
+                        AddZone(g);
+                        Log("A spectral guardian appears, sword raised.");
+                    }
                     break;
             }
             RefreshTracker();
@@ -1001,6 +1185,17 @@ namespace DnD.Game
             target.A.Popup("+" + h, UIKit.HealGreen);
             Sfx.Play("heal");
             Log($"{pc.Name} lays hands on {target.Name}: +{h} HP ({pc.ResourceLeft("lay_on_hands")} left in the pool).");
+        }
+
+        IEnumerator SwiftQuiver(Unit me, Unit target, AttackOption weapon)
+        {
+            me.Cb.Turn.BonusActionUsed = true;
+            for (int i = 0; i < 2; i++)
+            {
+                if (target == null || !target.Active) target = Units.Where(o => o.Active && Hostile(me, o) && Zone.DistanceFt(me.Pos, o.Pos) <= weapon.RangeLong).OrderBy(o => Zone.DistanceFt(me.Pos, o.Pos)).FirstOrDefault();
+                if (target == null) yield break;
+                yield return AttackAction(me, target, weapon, false);
+            }
         }
 
         IEnumerator ReadySmite(Unit me, PlayerCharacter pc)
@@ -1462,7 +1657,7 @@ namespace DnD.Game
             var save = Checks.RollSave(c, Ability.CON, AdvantageState.Normal);
             bool ok = Checks.ResolveSave(save, dc);
             Ticker($"{c.Name} concentration (CON save): {save.Total} vs DC {dc} → {(ok ? "holds" : "BROKEN")}");
-            if (!ok) Enc.EndConcentration(c);
+            if (!ok) EndConcentration(c);
         }
     }
 }

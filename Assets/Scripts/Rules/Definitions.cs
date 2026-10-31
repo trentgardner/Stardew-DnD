@@ -23,7 +23,7 @@ namespace DnD.Rules
         Utility
     }
 
-    public enum TargetShape { Single, Self, Sphere, Cone, Cube, Line }
+    public enum TargetShape { Single, Self, Sphere, Cone, Cube, Line, Cylinder }
 
     public class SpellDef
     {
@@ -50,6 +50,14 @@ namespace DnD.Rules
         public int UpcastDice;
         /// <summary>Effect key applied on hit / failed save / to buff targets (see EffectLibrary).</summary>
         public string EffectId;
+        /// <summary>A second damage type rolled alongside (Flame Strike's radiant, Ice Storm's cold). Never upcast.</summary>
+        public DiceExpr SecondDice;
+        public DamageType SecondDamageType;
+        /// <summary>Area spells that only touch hostile creatures (Slow, Mass heals pick allies).</summary>
+        public bool OnlyEnemies;
+        /// <summary>Lingering zones (Spirit Guardians, Guardian of Faith): radius in tiles; Wall of Fire uses ZoneLineTiles.</summary>
+        public int ZoneRadiusTiles;
+        public int ZoneLineTiles;
         public bool Ritual;
         public string Description;
         public List<string> Classes = new List<string>();
