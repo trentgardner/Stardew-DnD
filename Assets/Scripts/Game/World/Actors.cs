@@ -245,6 +245,19 @@ namespace DnD.Game
             string key = input.UsesMouse ? "[E]" : "(A)";
             Slot.Hud.SetPrompt(_focus != null ? $"{key} {_focus.PromptText(Slot)}" : null);
             if (_focus != null && input.Confirm) { _focus.Interact(Slot); return; }
+            // Clicks on the hotbar belong to the hotbar: left uses the item, right opens its options. They never reach the world.
+            if (input.UsesMouse && (input.MouseLeft || input.MouseRight))
+            {
+                int hs = Slot.Hud.HotbarSlotAt(input.MouseScreen);
+                if (hs >= 0)
+                {
+                    Slot.Hud.HotbarIndex = hs;
+                    if (Slot.Character.Bag.Slots[hs] == null) return;
+                    if (input.MouseLeft) ItemUse.UseFromBag(Slot, hs);
+                    else { var inv = new InventoryScreen(null, null); Slot.Hud.Push(inv); inv.OpenOptionsFor(hs); }
+                    return;
+                }
+            }
             if (input.UsesMouse && input.MouseLeft)
             {
                 var world = Slot.Cam.ScreenToWorldPoint(input.MouseScreen);
@@ -264,16 +277,13 @@ namespace DnD.Game
             if (input.Journal) { Slot.Hud.Push(new JournalScreen()); return; }
             if (input.Pause) { Slot.Hud.Push(new PauseScreen()); return; }
 
-            // Hotbar: number keys use an item; gamepad LB/RB select, X uses.
+            // Hotbar: number keys use an item at once; Q/R (pad LB/RB) or the mouse wheel select; X uses the selected one.
             int hk = input.HotbarPressed;
             if (hk >= 0) { Slot.Hud.HotbarIndex = hk; ItemUse.UseFromBag(Slot, hk); }
-            if (!input.UsesMouse)
-            {
-                if (input.NextTab) Slot.Hud.HotbarScroll(1);
-                if (input.PrevTab) Slot.Hud.HotbarScroll(-1);
-                if (input.AltAction) ItemUse.UseFromBag(Slot, Slot.Hud.HotbarIndex);
-            }
-            else if (input.Scroll != 0) Slot.Hud.HotbarScroll(input.Scroll > 0 ? -1 : 1);
+            if (input.NextTab) Slot.Hud.HotbarScroll(1);
+            if (input.PrevTab) Slot.Hud.HotbarScroll(-1);
+            if (input.HotbarUse) ItemUse.UseFromBag(Slot, Slot.Hud.HotbarIndex);
+            if (input.SwapWeapons) { Slot.Character.SwapWeaponSets(out var swapMsg); Slot.Hud.Toast(swapMsg, UIKit.UtilityBlue); Sfx.Play("ui"); }            if (input.UsesMouse && input.Scroll != 0) Slot.Hud.HotbarScroll(input.Scroll > 0 ? -1 : 1);
         }
 
         public void TickLight(float gameMinutes)

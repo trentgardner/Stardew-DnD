@@ -15,13 +15,43 @@ namespace DnD.Game
     ///            View sort · LB/RB switch panel · B close
     /// Closing while holding a stack puts it back.
     /// </summary>
+    public enum ItemFilter { All, Gear, Use, Treasure, Quest }
+
+    /// <summary>The backpack's filter tabs. Every item is in exactly one of Gear / Use / Treasure / Quest.</summary>
+    public static class ItemFilters
+    {
+        public static readonly string[] Labels = { "All", "Gear", "Use", "Treasure", "Quest" };
+
+        public static bool Matches(ItemDef d, ItemFilter f)
+        {
+            if (d == null || f == ItemFilter.All) return true;
+            if (d.QuestItem) return f == ItemFilter.Quest;
+            switch (f)
+            {
+                case ItemFilter.Use: return d.Kind == ItemKind.Consumable;
+                case ItemFilter.Treasure: return d.Kind == ItemKind.Treasure;
+                case ItemFilter.Gear: return d.Kind == ItemKind.Weapon || d.Kind == ItemKind.Armor || d.Kind == ItemKind.Shield || d.Kind == ItemKind.Gear || d.Kind == ItemKind.Wondrous;
+                default: return false;
+            }
+        }
+    }
+
     public class InventoryScreen : GameScreen
     {
+        ItemFilter _filter;
+        /// <summary>Dims backpack items that don't match (nothing moves, so the hotbar and your muscle memory stay put).</summary>
+        public ItemFilter Filter { get => _filter; set { _filter = value; if (Root != null) Rebuild(); } }
+        public float BagCellAlpha(int i) => _bagCells[i].Icon.color.a;
+        public bool Holding => _held != null;
+        float _aDownAt = -1;
+        /// <summary>Moves the cursor (panel 0 backpack, 1 the other bag, 2 equipment).</summary>
+        public void CursorTo(int panel, int cell) { _panel = panel; _cursor = cell; Redraw(); }
+        readonly List<RectTransform> _filterRts = new List<RectTransform>();
         readonly Inventory _otherInv;
         readonly string _otherTitle;
         PlayerSlot _partner;
 
-        class Cell { public Inventory Inv; public int Index; public RectTransform Rt; public Image Icon, Bg; public Text Count; public string EquipSlot; }
+        class Cell { public Inventory Inv; public int Index; public RectTransform Rt; public Image Icon, Bg, Junk; public Text Count; public string EquipSlot; }
 
         readonly List<Cell> _bagCells = new List<Cell>();
         readonly List<Cell> _otherCells = new List<Cell>();
@@ -50,6 +80,18 @@ namespace DnD.Game
             if (moved > 0) _partner.Hud.Toast($"{Slot.Character.Name} gave you {moved}× {name}", UIKit.Gold);
         }
 
+        /// <summary>Moves a whole backpack stack into someone else's bag; whatever doesn't fit stays with you (and you're told).</summary>
+        public void SendTo(int bagIndex, Inventory target, string name)
+        {
+            var st = Bag.Slots[bagIndex];
+            if (st == null || target == null) return;
+            int total = st.Count;
+            int moved = Bag.QuickTransfer(bagIndex, target);
+            if (moved < total) Hud.Toast($"{name}'s bag is full ({total - moved} didn't fit).", UIKit.Bad);
+            else Hud.Toast($"Gave {name} {moved}× {ItemsDb.Get(st.ItemId)?.Name}.", UIKit.UtilityBlue);
+            Sfx.Play("ui");
+        }
+
         /// <summary>Hands coins to your trade partner (coins weigh nothing).</summary>
         public void GiveGold(int copper)
         {
@@ -62,41 +104,59 @@ namespace DnD.Game
 
         public override void Build()
         {
-            // Trade with your partner if they're standing nearby and nothing else is open.
-            if (_otherInv == null)
-            {
-                foreach (var p in GameRoot.I.Players)
-                    if (p != Slot && p.IsReady && p.Zone == Slot.Zone && Vector2.Distance(p.Avatar.transform.position, Slot.Avatar.transform.position) < 3f)
-                        _partner = p;
-            }
+            if (_tabs == null) BuildTabs();
             var other = OtherInv;
-            float h = other != null ? 345 : 265;
+            int otherCount = other != null ? Mathf.Min(other.Size, 36) : 0, otherRows = Mathf.CeilToInt(otherCount / 12f);
+            float h = other != null ? 265 + 24 + otherRows * 24 : 265;
             Window(new Vector2(320, h), other != null ? null : "Inventory");
 
             float y = other != null ? -8 : -26;
             if (other != null)
             {
-                var title = UIKit.Rect(Root, "OtherTitle", new Vector2(0, 1), new Vector2(1, 1), new Vector2(10, y - 16), new Vector2(-10, y));
-                UIKit.Label(title, _partner != null ? $"Trade with {_partner.Character.Name}" : _otherTitle, 12, UIKit.Ink, TextAnchor.MiddleLeft).fontStyle = FontStyle.Bold;
-                y -= 18;
-                MakeGrid(other, _otherCells, y, Mathf.Min(other.Size, 24));
-                y -= Mathf.CeilToInt(Mathf.Min(other.Size, 24) / 12f) * 24 + 6;
+                // Tabs: one per bag you can reach (click, or LT/RT on a controller). A single bag just gets a title.
+                float x = 10;
+                for (int i = 0; i < _tabs.Count; i++)
+                {
+                    var t = _tabs[i];
+                    string label = t.Partner != null ? $"Trade: {t.Label}" : t.Label;
+                    float w = Mathf.Clamp(label.Length * 7 + 14, 50, 120);
+                    var rt = UIKit.Rect(Root, "Tab" + i, new Vector2(0, 1), new Vector2(0, 1), new Vector2(x, y - 18), new Vector2(x + w, y));
+                    if (_tabs.Count > 1) UIKit.Image(rt, i == _tab ? new Color(1f, 0.85f, 0.45f) : new Color(0.85f, 0.8f, 0.7f, 0.6f));
+                    var lbl = UIKit.Label(rt, label, i == _tab ? 11 : 10, UIKit.Ink, _tabs.Count > 1 ? TextAnchor.MiddleCenter : TextAnchor.MiddleLeft);
+                    if (i == _tab) lbl.fontStyle = FontStyle.Bold;
+                    _tabRts.Add(rt);
+                    x += w + 4;
+                }
+                y -= 22;
+                MakeGrid(other, _otherCells, y, otherCount);
+                y -= otherRows * 24 + 6;
             }
             var bagTitle = UIKit.Rect(Root, "BagTitle", new Vector2(0, 1), new Vector2(1, 1), new Vector2(10, y - 16), new Vector2(-10, y));
-            UIKit.Label(bagTitle, "Backpack (top row = hotbar)", 11, UIKit.Ink, TextAnchor.MiddleLeft).fontStyle = FontStyle.Bold;
+            UIKit.Label(bagTitle, "Backpack", 11, UIKit.Ink, TextAnchor.MiddleLeft).fontStyle = FontStyle.Bold;
+            // Filter tabs (click; L3 on a controller cycles them).
+            float fx = 72;
+            for (int i = 0; i < ItemFilters.Labels.Length; i++)
+            {
+                float fw = ItemFilters.Labels[i].Length * 6 + 10;
+                var frt = UIKit.Rect(Root, "Filter" + i, new Vector2(0, 1), new Vector2(0, 1), new Vector2(fx, y - 15), new Vector2(fx + fw, y - 1));
+                UIKit.Image(frt, i == (int)_filter ? new Color(1f, 0.85f, 0.45f) : new Color(0.85f, 0.8f, 0.7f, 0.5f));
+                UIKit.Label(frt, ItemFilters.Labels[i], 8, UIKit.Ink, TextAnchor.MiddleCenter);
+                _filterRts.Add(frt);
+                fx += fw + 3;
+            }
             y -= 18;
             MakeGrid(Bag, _bagCells, y, Bag.Size);
             y -= 3 * 24 + 6;
 
             // Equipment row
-            string[] eq = { "weapon", "armor", "shield", "Cloak", "Ring", "Amulet", "Trinket", "Focus" };
+            string[] eq = { "weapon", "offset", "armor", "shield", "Cloak", "Ring", "Amulet", "Trinket", "Focus" };
             for (int i = 0; i < eq.Length; i++)
             {
                 var c = MakeCell(null, i, new Vector2(12 + i * 26, y), eq[i]);
                 c.EquipSlot = eq[i];
                 _equipCells.Add(c);
             }
-            var eqLbl = UIKit.Rect(Root, "EqLbl", new Vector2(0, 1), new Vector2(1, 1), new Vector2(222, y - 22), new Vector2(-8, y));
+            var eqLbl = UIKit.Rect(Root, "EqLbl", new Vector2(0, 1), new Vector2(1, 1), new Vector2(250, y - 22), new Vector2(-4, y));
             UIKit.Label(eqLbl, "Equipped", 10, UIKit.Dim, TextAnchor.MiddleLeft);
             y -= 28;
 
@@ -105,7 +165,7 @@ namespace DnD.Game
             var foot = UIKit.Rect(Root, "Footer", new Vector2(0, 0), new Vector2(1, 0), new Vector2(8, 4), new Vector2(-8, 20));
             _footer = UIKit.Label(foot, "", 8, UIKit.Dim, TextAnchor.MiddleCenter);
             _footer.text = In.UsesMouse
-                ? "Drag/click: move · <b>Right-click: options</b> · Double-click: use/equip · Shift+click: send · T: sort" + (_partner != null ? " · G: gold" : "")
+                ? "Drag: move · <b>Right-click: options</b> · Double-click: use · Shift+click: send · T: sort" + (_partner != null ? " · G: gold" : "")
                 : "A: move · <b>X: options</b> · Y: use/equip · R3+A: send · View: sort · LB/RB: panel · B: close";
 
             var held = UIKit.Box(Root, "Held", new Vector2(0, 1), new Vector2(18, 18), Vector2.zero);
@@ -117,7 +177,46 @@ namespace DnD.Game
             Redraw();
         }
 
-        Inventory OtherInv => _otherInv ?? _partner?.Character.Bag;
+        /// <summary>One bag shown beside yours: the chest/loot/storage you opened, a companion, or your co-op partner.</summary>
+        class Tab { public string Label; public Inventory Inv; public PlayerSlot Partner; }
+        List<Tab> _tabs;
+        int _tab;
+        readonly List<RectTransform> _tabRts = new List<RectTransform>();
+
+        /// <summary>What's in the panel beside your backpack right now (null when there's nobody and nothing).</summary>
+        public Inventory OtherInv => _tabs != null && _tabs.Count > 0 ? _tabs[_tab].Inv : null;
+        public IReadOnlyList<string> Tabs => (_tabs ?? new List<Tab>()).ConvertAll(t => t.Label);
+
+        /// <summary>Shows another bag beside yours. A stack you're holding stays in your hand (so you can carry it across).</summary>
+        public void SelectTab(int i)
+        {
+            if (_tabs == null || i < 0 || i >= _tabs.Count || i == _tab) return;
+            _tab = i;
+            _partner = _tabs[_tab].Partner;
+            Rebuild();
+        }
+
+        /// <summary>The chest you opened (if any) first, then each companion, then a co-op partner within 3 tiles.</summary>
+        void BuildTabs()
+        {
+            _tabs = new List<Tab>();
+            var g = GameRoot.I;
+            if (_otherInv != null) _tabs.Add(new Tab { Label = _otherTitle, Inv = _otherInv });
+            foreach (var comp in g.CompanionsOf(Slot))
+                if (comp.Character != null) _tabs.Add(new Tab { Label = comp.Character.Name, Inv = comp.Character.Bag });
+            foreach (var p in g.Players)
+                if (p != Slot && p.IsReady && p.Zone == Slot.Zone && Vector2.Distance(p.Avatar.transform.position, Slot.Avatar.transform.position) < 3f)
+                    _tabs.Add(new Tab { Label = p.Character.Name, Inv = p.Character.Bag, Partner = p });
+            _tab = Mathf.Clamp(_tab, 0, Mathf.Max(0, _tabs.Count - 1));
+            _partner = _tabs.Count > 0 ? _tabs[_tab].Partner : null;
+        }
+
+        void Rebuild()
+        {
+            if (Root) Object.Destroy(Root.gameObject);
+            _bagCells.Clear(); _otherCells.Clear(); _equipCells.Clear(); _tabRts.Clear(); _filterRts.Clear();
+            Build();
+        }
 
         void MakeGrid(Inventory inv, List<Cell> into, float y, int count)
         {
@@ -135,6 +234,9 @@ namespace DnD.Game
             c.Bg = UIKit.Image(rt, Color.white, ArtRegistry.Get("ui_slot"));
             c.Icon = UIKit.Image(UIKit.Fill(rt, "Icon", 2), Color.white);
             c.Count = UIKit.Label(rt, "", 8, UIKit.Ink, TextAnchor.LowerRight);
+            var jb = UIKit.Box(rt, "Junk", new Vector2(0, 1), new Vector2(9, 9), new Vector2(0, 0));
+            c.Junk = UIKit.Image(jb, Color.white, ArtRegistry.Get("ui_junk"));
+            c.Junk.enabled = false;
             if (label != null) { c.Count.fontSize = 6; c.Count.color = UIKit.Dim; c.Count.alignment = TextAnchor.MiddleCenter; } // empty equipment slots show their name
             return c;
         }
@@ -147,6 +249,7 @@ namespace DnD.Game
             switch (slot)
             {
                 case "weapon": return pc.MainHand?.Id;
+                case "offset": return pc.OffSetWeapon?.Id;
                 case "armor": return pc.Armor?.Id;
                 case "shield": return pc.Shield ? "shield" : null;
                 default: return pc.Worn.Find(w => w.Slot.ToString() == slot)?.Id;
@@ -166,6 +269,10 @@ namespace DnD.Game
                     else { var st = c.Inv.Slots[c.Index]; id = st?.ItemId; count = st?.Count ?? 0; }
                     c.Icon.enabled = id != null;
                     if (id != null) c.Icon.sprite = ArtRegistry.Get(ItemsDb.Get(id)?.Icon ?? "missing");
+                    float a = panel == 0 && id != null && !ItemFilters.Matches(ItemsDb.Get(id), _filter) ? 0.3f : 1f;
+                    c.Icon.color = new Color(1, 1, 1, a);
+                    c.Junk.enabled = panel == 0 && id != null && Slot.Character.Junk.Contains(id);
+                    c.Count.color = new Color(c.Count.color.r, c.Count.color.g, c.Count.color.b, a);
                     if (c.EquipSlot == null) c.Count.text = count > 1 ? count.ToString() : "";
                     else c.Count.text = id == null ? SlotShort(c.EquipSlot) : "";
                     bool sel = panel == _panel && i == _cursor;
@@ -201,6 +308,8 @@ namespace DnD.Game
                 string hint = hc != null && hc.EquipSlot != null ? $"equipped: {(In.UsesMouse ? "click" : "A")} to take off"
                     : _held == null ? $"{(In.UsesMouse ? "right-click" : "X")} for options" : "";
                 head += $"\n\n<b>{def.Name}</b>  ({def.Weight:0.#} lb, {def.PriceText})" + (hint.Length > 0 ? UIKit.Colorize("  · " + hint, UIKit.Dim) : "") + $"\n{def.Description}\n{extra}";
+                string cmp = ItemCompare.Describe(pc, def);
+                if (cmp.Length > 0) head += "\n" + cmp;
             }
             else if (hc != null && hc.EquipSlot != null)
                 head += $"\n\n<b>{SlotLong(hc.EquipSlot)} slot</b>: empty.\n" + UIKit.Colorize($"Equip something from your backpack: {(In.UsesMouse ? "double-click it, or right-click → Equip" : "select it and press Y")}.", UIKit.Dim);
@@ -217,9 +326,9 @@ namespace DnD.Game
         }
 
         static string SlotShort(string slot) =>
-            slot == "weapon" ? "Wpn" : slot == "armor" ? "Armor" : slot == "shield" ? "Shld" : slot == "Cloak" ? "Cloak" : slot == "Ring" ? "Ring" : slot == "Amulet" ? "Amul" : slot == "Trinket" ? "Trnk" : slot == "Focus" ? "Focus" : slot;
+            slot == "weapon" ? "Wpn" : slot == "offset" ? "Wpn 2" : slot == "armor" ? "Armor" : slot == "shield" ? "Shld" : slot == "Cloak" ? "Cloak" : slot == "Ring" ? "Ring" : slot == "Amulet" ? "Amul" : slot == "Trinket" ? "Trnk" : slot == "Focus" ? "Focus" : slot;
 
-        static string SlotLong(string slot) => slot == "weapon" ? "Weapon" : slot == "armor" ? "Armor" : slot == "shield" ? "Shield" : slot;
+        static string SlotLong(string slot) => slot == "weapon" ? "Weapon" : slot == "offset" ? "Off-set weapon (swap: Z / hold X)" : slot == "armor" ? "Armor" : slot == "shield" ? "Shield" : slot;
 
         public override void Tick()
         {
@@ -230,6 +339,20 @@ namespace DnD.Game
                 Hud.Toast("Your partner left, so the trade is closed.", UIKit.Dim);
                 Close();
                 return;
+            }
+            // Filters: click a tab, or L3 on a controller.
+            if (In.UsesMouse && In.MouseLeft)
+                for (int i = 0; i < _filterRts.Count; i++)
+                    if (UIKit.Contains(_filterRts[i], In.MouseScreen, Cam)) { _filter = (ItemFilter)i; Rebuild(); return; }
+            if (!In.UsesMouse && In.SneakToggle) { _filter = (ItemFilter)(((int)_filter + 1) % ItemFilters.Labels.Length); Rebuild(); return; }
+            // Switching bags: click a tab (mouse) or LT/RT (controller).
+            if (_tabs != null && _tabs.Count > 1)
+            {
+                if (In.UsesMouse && In.MouseLeft)
+                    for (int i = 0; i < _tabRts.Count; i++)
+                        if (UIKit.Contains(_tabRts[i], In.MouseScreen, Cam)) { SelectTab(i); return; }
+                if (!In.UsesMouse && In.Spells) { SelectTab((_tab + 1) % _tabs.Count); return; }
+                if (!In.UsesMouse && In.Journal) { SelectTab((_tab + _tabs.Count - 1) % _tabs.Count); return; }
             }
             var cells = Panel(_panel);
 
@@ -305,7 +428,19 @@ namespace DnD.Game
                 Redraw();
             }
 
-            bool confirm = clicked || (!In.UsesMouse && In.Confirm) || (In.UsesMouse && In.Confirm);
+            // Controller: A acts when released (a tap); held 0.35 s on an item it opens the item wheel instead.
+            bool padTap = false;
+            if (!In.UsesMouse)
+            {
+                if (In.Confirm) _aDownAt = Time.unscaledTime;
+                if (_aDownAt >= 0)
+                {
+                    if (!In.ConfirmHeld) { _aDownAt = -1; padTap = true; }
+                    else if (Time.unscaledTime - _aDownAt >= 0.35f && _held == null && Current != null && Current.EquipSlot == null && Current.Inv.Slots[Current.Index] != null)
+                    { _aDownAt = -1; OpenWheel(); return; }
+                }
+            }
+            bool confirm = clicked || padTap || (In.UsesMouse && In.Confirm);
             bool alt = rightClicked || (!In.UsesMouse && In.AltAction) || (In.UsesMouse && In.AltAction && !rightClicked);
 
             if (confirm && In.QuickModifier) QuickTransfer();
@@ -356,10 +491,31 @@ namespace DnD.Game
             var c = Current;
             if (c == null) return;
             if (c.EquipSlot != null) { if (EquippedId(c.EquipSlot) != null) { Slot.Character.Unequip(c.EquipSlot); Redraw(); } return; }
+            var opts = OptionsFor(c);
+            if (opts == null) return;
             var st = c.Inv.Slots[c.Index];
-            if (st == null) return;
             var def = ItemsDb.Get(st.ItemId);
-            if (def == null) return;
+            opts.Add(("Cancel", null));
+            Hud.Push(new ChoiceScreen(def.Name + (st.Count > 1 ? $" ×{st.Count}" : ""), def.Description, opts));
+        }
+
+        /// <summary>Hold A on a controller: the same options as the right-click menu, on a wheel.</summary>
+        void OpenWheel()
+        {
+            var c = Current;
+            if (c == null || c.EquipSlot != null) return;
+            var opts = OptionsFor(c);
+            if (opts == null || opts.Count == 0) return;
+            Hud.Push(new RadialMenu(opts));
+        }
+
+        /// <summary>Everything you can do with the item in a cell (shared by the right-click menu and the controller wheel).</summary>
+        List<(string, System.Action)> OptionsFor(Cell c)
+        {
+            var st = c.Inv.Slots[c.Index];
+            if (st == null) return null;
+            var def = ItemsDb.Get(st.ItemId);
+            if (def == null) return null;
             var g = GameRoot.I;
             int index = c.Index;
             var inv = c.Inv;
@@ -370,6 +526,11 @@ namespace DnD.Game
                 bool gear = def.Kind == ItemKind.Weapon || def.Kind == ItemKind.Armor || def.Kind == ItemKind.Shield || def.Kind == ItemKind.Wondrous;
                 var cons = def as ConsumableDef;
                 if (gear) opts.Add(("Equip", () => { ItemUse.UseFromBag(Slot, index); Redraw(); }));
+                if (def is WeaponDef) opts.Add(("Equip as off-set weapon (swap: Z / hold X)", () =>
+                {
+                    if (!Slot.Character.EquipFromBag(index, out var m, offSet: true)) Hud.Toast(m, UIKit.Bad); else Hud.Toast(m, UIKit.UtilityBlue);
+                    Redraw();
+                }));
                 else if (cons != null && cons.Effect == ConsumableEffect.Heal) opts.Add(("Drink it yourself", () => { ItemUse.UseFromBag(Slot, index); Redraw(); }));
                 else if (cons != null) opts.Add(("Use", () => { ItemUse.UseFromBag(Slot, index); Redraw(); }));
                 if (cons != null && cons.Effect == ConsumableEffect.Heal)
@@ -388,13 +549,24 @@ namespace DnD.Game
                         }
                 }
             }
+            if (mine)
+                foreach (var comp in g.CompanionsOf(Slot))
+                    if (comp.Character != null && comp.Character.Bag != OtherInv)
+                    {
+                        var who = comp.Character;
+                        opts.Add(($"Send to {who.Name}", () => { SendTo(index, who.Bag, who.Name); Redraw(); }));
+                    }
             if (OtherInv != null)
-                opts.Add((mine ? $"Send to {(_partner != null ? _partner.Character.Name : _otherTitle)}" : "Take", () => { _panel = mine ? 0 : 1; _cursor = index; QuickTransfer(); }));
+                opts.Add((mine ? $"Send to {_tabs[_tab].Label}" : "Take", () => { _panel = mine ? 0 : 1; _cursor = index; QuickTransfer(); }));
             else if (mine)
                 opts.Add((index < Inventory.HotbarSize ? "Move to backpack" : "Move to hotbar", () => { _panel = 0; _cursor = index; QuickTransfer(); }));
+            if (mine && !def.QuestItem && def.PriceCp > 0)
+            {
+                bool junk = Slot.Character.Junk.Contains(def.Id);
+                opts.Add((junk ? "Unmark junk" : "Mark as junk (sell it all at any shop)", () => { Slot.Character.MarkJunk(def.Id, !junk); Redraw(); }));
+            }
             if (st.Count > 1) opts.Add(("Split stack (pick up half)", () => { _held = inv.PickUpHalf(index); Redraw(); }));
-            opts.Add(("Cancel", null));
-            Hud.Push(new ChoiceScreen(def.Name + (st.Count > 1 ? $" ×{st.Count}" : ""), def.Description, opts));
+            return opts;
         }
 
         void SecondaryAction()
@@ -416,13 +588,12 @@ namespace DnD.Game
             if (target == null)
             {
                 // No second panel: move between hotbar and backpack.
-                var st = Bag.Slots[c.Index];
-                if (st == null) return;
-                int start = c.Index < Inventory.HotbarSize ? Inventory.HotbarSize : 0;
-                int end = c.Index < Inventory.HotbarSize ? Bag.Size : Inventory.HotbarSize;
-                for (int i = start; i < end; i++) if (Bag.Slots[i] == null) { Bag.Move(c.Index, i); break; }
+                if (Bag.Slots[c.Index] == null) return;
+                int to = c.Index < Inventory.HotbarSize ? Bag.ToBackpack(c.Index) : Bag.ToHotbar(c.Index);
+                if (to < 0) Hud.Toast(c.Index < Inventory.HotbarSize ? "Your backpack is full." : "Your hotbar is full.", UIKit.Bad);
             }
             else if (_partner != null && c.Inv == Bag) SendToPartner(c.Index);
+            else if (c.Inv == Bag) SendTo(c.Index, target, _tabs[_tab].Label); // says so if it doesn't all fit
             else c.Inv.QuickTransfer(c.Index, target);
             Sfx.Play("ui");
             Redraw();

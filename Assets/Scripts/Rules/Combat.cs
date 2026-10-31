@@ -361,6 +361,8 @@ namespace DnD.Rules
         public bool SneakAttackUsed, FrenzyUsed, ColossusUsed, HordeBreakerUsed;
         /// <summary>Sorcerer Quickened Spell: the next action spell this turn costs the Bonus Action instead.</summary>
         public bool QuickenNextSpell;
+        /// <summary>The free object interaction (2024): used by swapping weapon sets.</summary>
+        public bool ObjectInteractionUsed;
 
         public void Reset(Creature c)
         {
@@ -372,6 +374,7 @@ namespace DnD.Rules
             CastLeveledSpellThisTurn = false;
             CleaveUsed = false;
             SneakAttackUsed = FrenzyUsed = ColossusUsed = HordeBreakerUsed = QuickenNextSpell = false;
+            ObjectInteractionUsed = false;
         }
     }
 

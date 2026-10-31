@@ -341,6 +341,11 @@ namespace DnD.Game
                     Tooltip = "If you haven't moved: Advantage on your next attack this turn; your Speed becomes 0.",
                     Run = (me, tile) => SteadyAim(me, pc) }, t, pc, t.MovementLeftFt >= pc.Speed));
 
+            if (pc.MainHand != null || pc.OffSetWeapon != null)
+                list.Add(new CombatAction { Name = "Swap Weapons", Group = ActionGroup.Actions, Cost = ActionCost.Free, Target = Targeting.None,
+                    Enabled = !t.ObjectInteractionUsed, Why = "You've already swapped this turn.",
+                    Tooltip = $"Free once per turn (your object interaction): {(pc.MainHand?.Name ?? "empty hands")} ⇄ {(pc.OffSetWeapon?.Name ?? "empty hands")}.",
+                    Run = (me, tile) => { me.Cb.Turn.ObjectInteractionUsed = true; pc.SwapWeaponSets(out var m); Log($"{pc.Name}: {m}"); me.A.Popup("Swap!", Color.white); return Nothing(); } });
             list.Add(Need(new CombatAction { Name = "Dash", Group = ActionGroup.Actions, Cost = ActionCost.Action, Target = Targeting.None, Run = (me, tile) => Simple(me, "Dash") }, t, pc));
             list.Add(Need(new CombatAction { Name = "Disengage", Group = ActionGroup.Actions, Cost = ActionCost.Action, Target = Targeting.None, Run = (me, tile) => Simple(me, "Disengage") }, t, pc));
             list.Add(Need(new CombatAction { Name = "Dodge", Group = ActionGroup.Actions, Cost = ActionCost.Action, Target = Targeting.None, Run = (me, tile) => Simple(me, "Dodge") }, t, pc));

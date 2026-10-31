@@ -70,16 +70,23 @@ namespace DnD.Tests
     public class ScriptInput : DnD.Game.PlayerInput
     {
         int _frame = -1;
-        public bool Esc, Inv;
-        bool _esc, _inv;
+        public bool Esc, Inv, Next, Prev, Alt, Left, Right, Swap;
+        /// <summary>Where the mouse is (screen pixels). Stays put between frames.</summary>
+        public Vector2 MousePos;
+        bool _esc, _inv, _next, _prev, _alt, _left, _right, _swap;
 
         void Tick()
         {
             if (_frame == Time.frameCount) return;
             _frame = Time.frameCount;
-            _esc = Esc; _inv = Inv;
-            Esc = Inv = false;
+            _esc = Esc; _inv = Inv; _next = Next; _prev = Prev; _alt = Alt; _left = Left; _right = Right; _swap = Swap;
+            Esc = Inv = Next = Prev = Alt = Left = Right = Swap = false;
         }
+
+        public override Vector2 MouseScreen => MousePos;
+        public override bool MouseLeft { get { Tick(); return _left; } }
+        public override bool MouseRight { get { Tick(); return _right; } }
+        public override bool SwapWeapons { get { Tick(); return _swap; } }
 
         public override string DeviceName => "Script";
         public override bool IsConnected => true;
@@ -93,9 +100,9 @@ namespace DnD.Tests
         public override bool Spells => false;
         public override bool Journal => false;
         public override bool EndTurn => false;
-        public override bool NextTab => false;
-        public override bool PrevTab => false;
-        public override bool AltAction => false;
+        public override bool NextTab { get { Tick(); return _next; } }
+        public override bool PrevTab { get { Tick(); return _prev; } }
+        public override bool AltAction { get { Tick(); return _alt; } }
         public override bool QuickModifier => false;
         public override bool SneakToggle => false;
         public override bool Highlight => false;

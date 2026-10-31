@@ -36,6 +36,19 @@ namespace DnD.Rules
         public readonly List<string> MasteredWeapons = new List<string>();
 
         public WeaponDef MainHand;
+        /// <summary>The second weapon set (BG3-style melee/ranged): swapped in with SwapWeaponSets. Null = an empty hand.</summary>
+        public WeaponDef OffSetWeapon;
+        /// <summary>The shield belongs to the main set: it's on your back while the off-set is out.</summary>
+        public bool ShieldStowed;
+        /// <summary>Item ids this player marked as junk ("sell all junk" at any shop). Quest items never.</summary>
+        public readonly HashSet<string> Junk = new HashSet<string>();
+        public bool MarkJunk(string itemId, bool on)
+        {
+            var def = Content.ItemsDb.Get(itemId);
+            if (def == null || def.QuestItem) return false;
+            if (on) Junk.Add(itemId); else Junk.Remove(itemId);
+            return true;
+        }
         public ArmorDef Armor;
         public bool Shield;
         public Inventory Bag = new Inventory();
@@ -112,6 +125,7 @@ namespace DnD.Rules
             {
                 float w = Bag.TotalWeight();
                 if (MainHand != null) w += MainHand.Weight;
+                if (OffSetWeapon != null) w += OffSetWeapon.Weight;
                 if (Armor != null) w += Armor.Weight;
                 if (Shield) w += 6;
                 foreach (var x in Worn) w += x.Weight;
@@ -579,13 +593,22 @@ namespace DnD.Rules
         /// <summary>
         /// Equips the item in a bag slot. Whatever was equipped goes back into that same slot (a clean swap).
         /// </summary>
-        public bool EquipFromBag(int slot, out string message)
+        public bool EquipFromBag(int slot, out string message, bool offSet = false)
         {
             message = null;
             var stack = Bag.Slots[slot];
             if (stack == null) return false;
             var def = Content.ItemsDb.Get(stack.ItemId);
             string returned = null;
+            if (offSet)
+            {
+                if (!(def is WeaponDef ow)) { message = "Only a weapon goes in the off-set."; return false; }
+                returned = OffSetWeapon?.Id; OffSetWeapon = ow;
+                Bag.PickUp(slot, 1);
+                if (returned != null) { if (Bag.Slots[slot] == null) Bag.Slots[slot] = new ItemStack(returned, 1); else Bag.Add(returned, 1); }
+                message = $"{def.Name} is your off-set weapon. (Swap: Z, or hold X on a controller.)";
+                return true;
+            }
             switch (def)
             {
                 case WeaponDef w:
@@ -607,7 +630,7 @@ namespace DnD.Rules
                     {
                         if (!Class.Shields) { message = "You aren't trained with shields."; return false; }
                         if (MainHand != null && MainHand.Has(WeaponProperty.TwoHanded)) { message = "Your weapon needs both hands."; return false; }
-                        if (Shield) { message = "You already have a shield."; return false; }
+                        if (Shield || ShieldStowed) { message = "You already have a shield."; return false; }
                         Shield = true; break;
                     }
                     message = "That can't be equipped.";
@@ -620,6 +643,19 @@ namespace DnD.Rules
                 else Bag.Add(returned, 1);
             }
             message = $"Equipped {def.Name}.";
+            return true;
+        }
+
+        /// <summary>
+        /// Swaps the main and off-set weapons. The shield goes on your back with the main set and comes back with it,
+        /// so a sword-and-board fighter can swap to a longbow. (In combat the caller charges the free object interaction.)
+        /// </summary>
+        public bool SwapWeaponSets(out string message)
+        {
+            (MainHand, OffSetWeapon) = (OffSetWeapon, MainHand);
+            if (ShieldStowed) { ShieldStowed = false; Shield = true; }
+            else if (Shield) { Shield = false; ShieldStowed = true; }
+            message = MainHand != null ? $"You draw your {MainHand.Name}." : "You put your weapon away.";
             return true;
         }
 
@@ -640,6 +676,7 @@ namespace DnD.Rules
             switch (slotName)
             {
                 case "weapon": id = MainHand?.Id; break;
+                case "offset": id = OffSetWeapon?.Id; break;
                 case "armor": id = Armor?.Id; break;
                 case "shield": id = Shield ? "shield" : null; break;
                 default:
@@ -651,6 +688,7 @@ namespace DnD.Rules
             switch (slotName)
             {
                 case "weapon": MainHand = null; break;
+                case "offset": OffSetWeapon = null; break;
                 case "armor": Armor = null; break;
                 case "shield": Shield = false; break;
                 default: Worn.RemoveAll(x => x.Slot.ToString() == slotName); break;

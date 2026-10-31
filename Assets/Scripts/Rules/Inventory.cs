@@ -193,6 +193,19 @@ namespace DnD.Rules
             return moved;
         }
 
+        /// <summary>Moves a backpack stack to the first free hotbar slot (0–11). Returns that slot, or -1 if the hotbar is full.</summary>
+        public int ToHotbar(int slot) => MoveToFirstFree(slot, 0, HotbarSize);
+
+        /// <summary>Moves a hotbar stack to the first free backpack slot. Returns that slot, or -1 if the backpack is full.</summary>
+        public int ToBackpack(int slot) => MoveToFirstFree(slot, HotbarSize, Slots.Length);
+
+        int MoveToFirstFree(int slot, int start, int end)
+        {
+            if (Slots[slot] == null) return -1;
+            for (int i = start; i < end; i++) if (Slots[i] == null) { Move(slot, i); return i; }
+            return -1;
+        }
+
         /// <summary>Combines partial stacks of the same item.</summary>
         public void Consolidate()
         {

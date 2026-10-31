@@ -31,6 +31,9 @@ namespace DnD.Tests
         }
 
         public void Hold(Vector2 leftStick) { _state.leftStick = leftStick; Send(); }
+        /// <summary>Holds a button down (until Release).</summary>
+        public void Press(GamepadButton b) { _state = _state.WithButton(b, true); Send(); }
+        public void Release(GamepadButton b) { _state = _state.WithButton(b, false); Send(); }
 
         public void Unplug() { if (Pad.added) InputSystem.RemoveDevice(Pad); }
         public void Replug() { if (!Pad.added) InputSystem.AddDevice(Pad); }
