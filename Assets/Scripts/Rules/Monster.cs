@@ -41,6 +41,8 @@ namespace DnD.Rules
         public int AC;
         public DiceExpr HitDice;
         public int Speed = 30;
+        /// <summary>Flying speed (0 = can't fly). Flyers cross water and chasms on the grid.</summary>
+        public int FlySpeed;
         public int[] Scores = { 10, 10, 10, 10, 10, 10 };
         public int ProficiencyBonus = 2;
         public int Darkvision;

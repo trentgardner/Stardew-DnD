@@ -69,6 +69,32 @@ namespace DnD.Rules.Content
             F("ranger", 9, "Expertise", "Two more skills get Expertise.");
             F("ranger", 10, "Tireless", "Action: gain 1d8 + WIS temporary HP (WIS-modifier uses per Long Rest). A Short Rest removes a level of Exhaustion.");
 
+            // ---------------- Cleric (Life)
+            F("cleric", 5, "Sear Undead", "Your Turn Undead also deals radiant damage (there are no undead in Sundermere... that you know of).");
+            S("cleric", 6, "Blessed Healer", "When you heal another creature with a spell, you regain 2 + the spell's level in HP.");
+            F("cleric", 7, "Blessed Strikes", "Potent Spellcasting: add your WIS modifier to the damage of your cleric cantrips.");
+            Asi("cleric", 8);
+            F("cleric", 10, "Divine Intervention", "Once per Long Rest, cast any cleric spell of level 5 or lower without a spell slot.");
+            Classes["cleric"].Subclass.LaterSpells[5] = new System.Collections.Generic.List<string> { "mass_healing_word", "revivify" };
+            Classes["cleric"].Subclass.LaterSpells[7] = new System.Collections.Generic.List<string> { "death_ward", "guardian_of_faith" };
+            Classes["cleric"].Subclass.LaterSpells[9] = new System.Collections.Generic.List<string> { "greater_restoration", "mass_cure_wounds" };
+
+            // ---------------- Druid (Land)
+            F("druid", 5, "Wild Resurgence", "Out of Wild Shape uses? Spend a spell slot to regain one.");
+            S("druid", 6, "Natural Recovery", "Once per Long Rest, a Short Rest recovers spell slots totalling up to half your druid level.");
+            F("druid", 7, "Elemental Fury", "Potent Spellcasting: add your WIS modifier to the damage of your druid cantrips.");
+            Asi("druid", 8);
+            F("druid", 8, "Wild Shape Improvement", "Beast forms up to CR 1, including ones that fly (Dire Wolf, Giant Owl).");
+            S("druid", 10, "Nature's Ward", "You can't be Poisoned, and you resist your land's damage type (Arid fire, Polar cold, Temperate lightning).");
+
+            // ---------------- Bard (Lore)
+            F("bard", 5, "Font of Inspiration", "Bardic Inspiration comes back on a Short Rest, and you can spend a spell slot to regain a use. Your Bardic die becomes a d8.");
+            S("bard", 6, "Magical Discoveries", "Learn two spells from the Cleric, Druid or Wizard lists; they're always prepared.");
+            F("bard", 7, "Countercharm", "Allies within 30 ft have Advantage on saves against being Charmed or Frightened.");
+            Asi("bard", 8);
+            F("bard", 9, "Expertise", "Two more skills get Expertise.");
+            F("bard", 10, "Magical Secrets", "Your new prepared spells can come from the Bard, Cleric, Druid or Wizard lists. Your Bardic die becomes a d10.");
+
             S("rogue", 9, "Supreme Sneak", "You have Advantage on Stealth checks if you move no more than half your Speed on your turn.");
         }
     }

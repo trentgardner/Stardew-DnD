@@ -5,7 +5,7 @@ using DnD.Rules.Content;
 
 namespace DnD.Rules
 {
-    public enum ChoiceKind { Expertise, BonusSkill, Cantrip, Spell, Feat, FightingStyle, HunterPrey, LandType, Invocation, Metamagic, HunterDefense, DraconicElement }
+    public enum ChoiceKind { Expertise, BonusSkill, Cantrip, Spell, Feat, FightingStyle, HunterPrey, LandType, Invocation, Metamagic, HunterDefense, DraconicElement, BonusSpell }
 
     /// <summary>One decision the next level asks for, e.g. "pick 2 spells from these".</summary>
     public class LevelUpChoice
@@ -86,6 +86,9 @@ namespace DnD.Rules
                     Options = SkillProficiencies.Where(s => !Expertise.Contains(s)).Select(s => s.ToString()).OrderBy(s => s).ToList() });
             if (Class.Id == "ranger" && next == 3)
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.HunterPrey, Count = 1, Title = "Hunter's Prey", Options = new List<string> { "colossus_slayer", "horde_breaker" } });
+            if (Class.Id == "bard" && next == 6 && Class.Subclass?.Id == "lore")
+                list.Add(new LevelUpChoice { Kind = ChoiceKind.BonusSpell, Count = 2, Title = "Magical Discoveries: two spells from the Cleric, Druid or Wizard lists (always prepared)",
+                    Options = new[] { "cleric", "druid", "wizard" }.SelectMany(c => SpellsDb.ForClass(c, MaxSpellLevelAt(next))).Where(s => !KnowsSpell(s.Id) && !s.Classes.Contains("bard")).Select(s => s.Id).Distinct().ToList() });
             if (Class.Id == "ranger" && next == 7)
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.HunterDefense, Count = 1, Title = "Defensive Tactics", Options = new List<string> { "escape_the_horde", "multiattack_defense" } });
             if (Class.Id == "druid" && next == 3)
@@ -229,6 +232,10 @@ namespace DnD.Rules
                     case ChoiceKind.Metamagic:
                         if (!Metamagic.Contains(id)) Metamagic.Add(id);
                         log?.Add($"Metamagic: {DescribeOption(id)}");
+                        break;
+                    case ChoiceKind.BonusSpell:
+                        if (!BonusAlwaysPrepared.Contains(id)) BonusAlwaysPrepared.Add(id);
+                        log?.Add($"Magical Discovery: {DescribeOption(id)}");
                         break;
                     case ChoiceKind.HunterDefense:
                         HunterDefense = id;

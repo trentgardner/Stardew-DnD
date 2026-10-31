@@ -152,5 +152,35 @@ namespace DnD.Tests
             var wolf = g.Combats.Single().Units.First(u => u.C.Team == Team.Enemies);
             Assert.AreEqual(0, Auras.ProtectionBonus(wolf.C), "enemies never do, however close");
         }
+
+        [UnityTest]
+        public IEnumerator DruidShapesIntoAFlyingFormAtEight()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(8), "druid", "human", level: 8);
+            yield return Frames(2);
+            g.Warp(p, "forest", new Vector2Int(34, 8), false);
+            yield return Frames(3);
+            p.Hud.CloseAll();
+            g.StartGroupCombat("forest_wolves", p);
+            var c = g.Combats.Single();
+            var u = c.Units.First(x => x.Owner == p);
+            if (u.Cb == null) u.Cb = new Combatant(u.C);
+            var owl = c.ActionsFor(p).FirstOrDefault(a => a.Name.Contains("Giant Owl"));
+            Assert.IsNotNull(owl, "Giant Owl is one of the druid's forms at 8");
+            var run = owl.Run(u, u.Pos);
+            while (run.MoveNext()) { }
+            var pc = (PlayerCharacter)p.Character;
+            Assert.AreEqual("giant_owl", pc.WildShape?.Id);
+            Assert.AreEqual("mon_owlbear_cub", u.A.Look, "the sprite is the owl's");
+            Assert.IsTrue(CombatInstance.Flies(u), "and it flies");
+            // Somewhere on the map there's water: flying crosses it, walking doesn't.
+            var zone = u.A.Zone;
+            Vector2Int water = default; bool found = false;
+            for (int x = 0; x < zone.W && !found; x++) for (int y = 0; y < zone.H && !found; y++) { var t = new Vector2Int(x, y); if (zone.CharAt(t) == '~') { water = t; found = true; } }
+            Assume.That(found, "this zone has water");
+            Assert.IsTrue(zone.IsPassable(water, true), "an owl can be over the water");
+            Assert.IsFalse(zone.IsPassable(water, false), "a wolf can't");
+        }
     }
 }

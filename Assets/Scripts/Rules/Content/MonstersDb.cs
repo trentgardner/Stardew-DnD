@@ -160,6 +160,24 @@ namespace DnD.Rules.Content
                 Attacks = { Melee("Gore", 3, "1d6+1", DamageType.Piercing) },
                 Traits = { "Bad temper" },
             };
+            // ---------------- Wild Shape forms at druid 8 (CR 1, flying)
+            All["dire_wolf"] = new MonsterDef
+            {
+                Id = "dire_wolf", Name = "Dire Wolf", SpriteId = "mon_dire_wolf", AC = 14, HitDice = DiceExpr.Parse("5d10+10"),
+                Scores = new[] { 17, 15, 15, 3, 12, 7 }, CR = 1, XP = 200, Speed = 50, PackTactics = true,
+                Description = "A wolf the size of a pony. (SRD Dire Wolf.)",
+                Attacks = { new MonsterAttackDef { Name = "Bite", ToHit = 5, Damage = DiceExpr.Parse("2d6+3"), DamageType = DamageType.Piercing, OnHitEffect = "prone", OnHitSave = Ability.STR, OnHitSaveDC = 13 } },
+                ProficientSkills = { Skill.Perception, Skill.Stealth },
+            };
+            All["giant_owl"] = new MonsterDef
+            {
+                Id = "giant_owl", Name = "Giant Owl", SpriteId = "mon_owlbear_cub", AC = 12, HitDice = DiceExpr.Parse("3d10+3"),
+                Scores = new[] { 13, 15, 12, 8, 13, 10 }, Darkvision = 120, CR = 0.25, XP = 50, Speed = 5, FlySpeed = 60,
+                Description = "A great silent owl. (SRD Giant Owl.)",
+                Attacks = { Melee("Talons", 3, "2d6+1", DamageType.Slashing) },
+                ProficientSkills = { Skill.Perception, Skill.Stealth },
+            };
+
             // ---------------- Act II test monsters (SRD; stat lines from the SRD stat blocks, names neutral)
             All["ogre"] = new MonsterDef
             {

@@ -30,6 +30,13 @@ namespace DnD.Rules
             return best;
         }
 
+        /// <summary>Bard 7: Countercharm: an ally within 30 ft of a conscious bard has Advantage on saves against being Charmed or Frightened.</summary>
+        public static bool Countercharm(Creature c)
+        {
+            foreach (var p in Near(c, 30)) if (Projects(p, c, "Countercharm")) return true;
+            return false;
+        }
+
         /// <summary>Aura of Devotion (no Charmed) and Aura of Courage (no Frightened).</summary>
         public static bool Immune(Creature c, Condition cond)
         {

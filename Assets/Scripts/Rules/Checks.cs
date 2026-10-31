@@ -80,7 +80,7 @@ namespace DnD.Rules
 
         public static D20Result RollSave(Creature c, Ability a, AdvantageState adv, string vs = null)
         {
-            if (c.AdvantageOnSave(a, vs)) adv = Dice.Combine(true, adv == AdvantageState.Disadvantage);
+            if (c.AdvantageOnSave(a, vs) || ((vs == "charmed" || vs == "frightened") && Auras.Countercharm(c))) adv = Dice.Combine(true, adv == AdvantageState.Disadvantage);
             var terms = new List<RollTerm> { new RollTerm(a + " save", c.SaveBonus(a)) };
             if (c.D20Penalty != 0) terms.Add(new RollTerm("exhaustion", c.D20Penalty));
             int aura = Auras.ProtectionBonus(c);

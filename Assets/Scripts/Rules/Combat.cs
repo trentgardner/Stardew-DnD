@@ -310,7 +310,8 @@ namespace DnD.Rules
                 Ranged = s.RangeFt > 5,
                 Spell = s,
                 Ability = caster.Class.SpellAbility,
-                DamageMod = s.Id == "eldritch_blast" && caster.Invocations.Contains("agonizing_blast") ? caster.SpellMod : 0,
+                DamageMod = (s.Id == "eldritch_blast" && caster.Invocations.Contains("agonizing_blast") ? caster.SpellMod : 0)
+                    + (s.IsCantrip && (caster.HasFeature("Blessed Strikes") || caster.HasFeature("Elemental Fury")) ? caster.Mod(Ability.WIS) : 0),
             };
         }
 
@@ -327,6 +328,8 @@ namespace DnD.Rules
         {
             var terms = new List<RollTerm>();
             if (s.AddSpellMod) terms.Add(new RollTerm(caster.Class.SpellAbility.ToString(), caster.SpellMod));
+            if (s.IsCantrip && s.Kind != SpellKind.Heal && (caster.HasFeature("Blessed Strikes") || caster.HasFeature("Elemental Fury")))
+                terms.Add(new RollTerm("potent spellcasting", caster.Mod(Ability.WIS)));
             if (s.Kind == SpellKind.Heal && caster.HasFeature("Disciple of Life") && s.Level > 0)
                 terms.Add(new RollTerm("Disciple of Life", 2 + Math.Max(slotLevel, s.Level)));
             if (s.Kind != SpellKind.Heal && caster.HasFeature("Empowered Evocation") && s.School == "Evocation")
@@ -354,6 +357,10 @@ namespace DnD.Rules
             if (dealt > 0) AttackResolver.RaiseConcentrationCheck(target, dealt);
             return dealt;
         }
+
+        /// <summary>Life 6: Blessed Healer: when you heal someone else with a spell, you regain 2 + the slot level.</summary>
+        public static int BlessedHealerAmount(PlayerCharacter caster, SpellDef s, int slotLevel) =>
+            caster.HasFeature("Blessed Healer") && s.Kind == SpellKind.Heal && s.Level > 0 ? 2 + Math.Max(slotLevel, s.Level) : 0;
 
         /// <summary>Rolls a spell's second damage type (never upcast), or null if it has none.</summary>
         public static DamageRoll RollSecond(SpellDef s, bool critical) => s.SecondDice.IsNone ? null : Dice.RollDamage(s.SecondDice, critical);
@@ -412,7 +419,7 @@ namespace DnD.Rules
         public bool Dashed, Disengaged;
         public bool CastLeveledSpellThisTurn;
         public bool CleaveUsed;
-        public bool StunningStrikeUsed;
+        public bool StunningStrikeUsed, WildResurgenceUsed;
         public bool HasteActionUsed;
         public bool SneakAttackUsed, FrenzyUsed, ColossusUsed, HordeBreakerUsed;
         /// <summary>Sorcerer Quickened Spell: the next action spell this turn costs the Bonus Action instead.</summary>
@@ -428,7 +435,7 @@ namespace DnD.Rules
             AttacksLeftInAction = 0;
             Dashed = Disengaged = false;
             CastLeveledSpellThisTurn = false;
-            CleaveUsed = HasteActionUsed = StunningStrikeUsed = false;
+            CleaveUsed = HasteActionUsed = StunningStrikeUsed = WildResurgenceUsed = false;
             SneakAttackUsed = FrenzyUsed = ColossusUsed = HordeBreakerUsed = QuickenNextSpell = false;
             ObjectInteractionUsed = false;
             // Slow, Staggering Smite: no reactions while it lasts.

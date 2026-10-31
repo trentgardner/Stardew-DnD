@@ -193,6 +193,8 @@ namespace DnD.Rules
                 foreach (var f in Class.Subclass.Features) if (f.Level == Level) log?.Add($"New feature ({Class.Subclass.Name}): {f.Name}");
                 foreach (var s in Class.Subclass.AlwaysPreparedAt(Level))
                     if (!PreparedSpells.Contains(s)) PreparedSpells.Add(s);
+                if (LandType != null && CircleSpellsLater.TryGetValue(LandType, out var later) && later.TryGetValue(Level, out var circle))
+                    foreach (var s in circle) if (!BonusAlwaysPrepared.Contains(s)) BonusAlwaysPrepared.Add(s);
             }
             return gain;
         }
@@ -258,7 +260,24 @@ namespace DnD.Rules
         public override bool InitiativeAdvantage => HasFeature("Remarkable Athlete") || HasFeature("Feral Instinct");
 
         public override bool ConditionImmune(Condition c) =>
-            (Raging && HasFeature("Mindless Rage") && (c == Condition.Charmed || c == Condition.Frightened));
+            (Raging && HasFeature("Mindless Rage") && (c == Condition.Charmed || c == Condition.Frightened))
+            || (c == Condition.Poisoned && HasFeature("Nature's Ward"));
+
+        /// <summary>Bard 5: Font of Inspiration: spend a spell slot to regain a Bardic Inspiration use.</summary>
+        public bool FontOfInspiration(List<string> log)
+        {
+            if (!HasFeature("Font of Inspiration") || ResourceLeft("bardic_inspiration") >= ResourceMax("bardic_inspiration")) return false;
+            int slot = LowestAvailableSlot(1);
+            if (slot <= 0) return false;
+            SlotsUsed[slot]++;
+            RegainResource("bardic_inspiration", 1);
+            log?.Add($"{Name} turns a level {slot} slot into Bardic Inspiration.");
+            return true;
+        }
+
+        /// <summary>Land 10: Nature's Ward: resistance to the damage type of your land.</summary>
+        DamageType? NaturesWardResistance => !HasFeature("Nature's Ward") ? (DamageType?)null
+            : LandType == "arid" ? DamageType.Fire : LandType == "polar" ? DamageType.Cold : LandType == "temperate" ? DamageType.Lightning : DamageType.Poison;
 
         // ---------------------------------------------------------------- monk, paladin, ranger 5-10
 
@@ -365,6 +384,8 @@ namespace DnD.Rules
             {
                 case "second_wind": return Class.Id == "fighter" ? (Level >= 10 ? 4 : Level >= 4 ? 3 : 2) : 0;
                 case "action_surge": return Class.Id == "fighter" && Level >= 2 ? 1 : 0;
+                case "divine_intervention": return HasFeature("Divine Intervention") ? 1 : 0;
+                case "natural_recovery": return HasFeature("Natural Recovery") ? 1 : 0;
                 case "wholeness": return HasFeature("Wholeness of Body") ? Math.Max(1, Mod(Ability.WIS)) : 0;
                 case "tireless": return HasFeature("Tireless") ? Math.Max(1, Mod(Ability.WIS)) : 0;
                 case "indomitable": return Class.Id == "fighter" && Level >= 9 ? (Level >= 17 ? 3 : Level >= 13 ? 2 : 1) : 0;
@@ -434,7 +455,7 @@ namespace DnD.Rules
         public override int TakeDamage(int amount, DamageType type, bool critical, List<string> log)
         {
             // Rage: resistance to bludgeoning, piercing and slashing (added only for this hit).
-            bool rageResist = Raging && (type == DamageType.Bludgeoning || type == DamageType.Piercing || type == DamageType.Slashing) && !Resistances.Contains(type);
+            bool rageResist = ((Raging && (type == DamageType.Bludgeoning || type == DamageType.Piercing || type == DamageType.Slashing)) || NaturesWardResistance == type) && !Resistances.Contains(type);
             if (rageResist) Resistances.Add(type);
             try { return base.TakeDamage(amount, type, critical, log); }
             finally { if (rageResist) Resistances.Remove(type); }
@@ -636,6 +657,8 @@ namespace DnD.Rules
             RegainResource("focus", 99);
             RegainResource("wild_shape", 1);
             if (Class.Caster == CasterType.Pact) SlotsUsed = new int[10]; // Pact Magic: slots back on a Short Rest
+            if (HasFeature("Font of Inspiration")) RegainResource("bardic_inspiration", 99);
+            NaturalRecovery(log);
             if (HasFeature("Tireless") && Exhaustion > 0) { Exhaustion--; log?.Add($"{Name} shakes off some weariness (Tireless)."); }
             log?.Add($"{Name} finishes a short rest.");
         }

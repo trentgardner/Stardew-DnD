@@ -320,6 +320,16 @@ namespace DnD.Game
                 list.Add(Need(new CombatAction { Name = "Step of the Wind (1 Focus)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
                     Tooltip = "Dash and Disengage as a Bonus Action.", Run = (me, tile) => StepOfTheWind(me, pc) }, t, pc, fp));
             }
+            if (pc.ResourceMax("divine_intervention") > 0 && !pc.HasEffect("divine_ready"))
+                list.Add(new CombatAction { Name = "Divine Intervention", Group = ActionGroup.Spells, Cost = ActionCost.Free, Target = Targeting.None, Enabled = pc.ResourceLeft("divine_intervention") > 0, Why = "Once per Long Rest.",
+                    Tooltip = "Call on Aurelith: your next cleric spell of level 5 or lower this turn needs no slot.",
+                    Run = (me, tile) => { pc.AddEffect(new ActiveEffect { Id = "divine_ready", Name = "Divine Intervention", Source = pc, RoundsLeft = 1 }); me.A.Popup("Aurelith listens", UIKit.Gold); return Nothing(); } });
+            if (pc.HasFeature("Wild Resurgence") && pc.ResourceLeft("wild_shape") == 0 && pc.LowestAvailableSlot(1) > 0 && !t.WildResurgenceUsed)
+                list.Add(new CombatAction { Name = "Wild Resurgence (slot → Wild Shape)", Group = ActionGroup.Abilities, Cost = ActionCost.Free, Target = Targeting.None,
+                    Tooltip = "Spend your lowest spell slot to regain a Wild Shape use.", Run = (me, tile) => { me.Cb.Turn.WildResurgenceUsed = true; var l = new List<string>(); pc.WildResurgence(l); l.ForEach(Log); return Nothing(); } });
+            if (pc.HasFeature("Font of Inspiration") && pc.ResourceLeft("bardic_inspiration") < pc.ResourceMax("bardic_inspiration") && pc.LowestAvailableSlot(1) > 0)
+                list.Add(new CombatAction { Name = "Font of Inspiration (slot → Inspiration)", Group = ActionGroup.Abilities, Cost = ActionCost.Free, Target = Targeting.None,
+                    Tooltip = "Spend your lowest spell slot to regain a Bardic Inspiration use.", Run = (me, tile) => { var l = new List<string>(); pc.FontOfInspiration(l); l.ForEach(Log); return Nothing(); } });
             if (pc.ResourceMax("wholeness") > 0)
                 list.Add(Need(new CombatAction { Name = $"Wholeness of Body ({pc.ResourceLeft("wholeness")})", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
                     Tooltip = $"Heal 1d{pc.MartialArtsDie} + WIS.", Run = (me, tile) => { me.Cb.Turn.BonusActionUsed = true; var l = new List<string>(); int h = pc.WholenessOfBody(l); me.A.Popup("+" + h, UIKit.HealGreen); l.ForEach(Log); return Nothing(); } },
@@ -453,7 +463,9 @@ namespace DnD.Game
             }
             if (s.Kind == SpellKind.Heal && s.MaxTargets > 1) { a.Target = Targeting.Tile; a.AreaTiles = Math.Max(1, s.AreaFt / 5); }
             if (s.CastTime == CastTime.Reaction || s.CastTime == CastTime.Minute || s.CastTime == CastTime.TenMinutes) { a.Enabled = false; a.Why = s.CastTime == CastTime.Reaction ? "Reaction: offered automatically when you're hit." : "Takes too long to cast in combat."; }
-            if (!s.IsCantrip && pc.LowestAvailableSlot(s.Level) < 0 && !(s.Id == "hunters_mark" && pc.ResourceLeft("favored_enemy") > 0)) { a.Enabled = false; a.Why = "No spell slots left."; }
+            bool divine = DivineInterventionCovers(pc, s);
+            if (divine) a.Name += " (Divine Intervention)";
+            if (!s.IsCantrip && !divine && pc.LowestAvailableSlot(s.Level) < 0 && !(s.Id == "hunters_mark" && pc.ResourceLeft("favored_enemy") > 0)) { a.Enabled = false; a.Why = "No spell slots left."; }
             if (!s.IsCantrip && t.CastLeveledSpellThisTurn) { a.Enabled = false; a.Why = "Only one spell slot per turn (2024 rules)."; }
             Need(a, t, pc);
             a.Run = (me, tile) => CastSpell(me, pc, s, tile);
@@ -654,8 +666,12 @@ namespace DnD.Game
 
         // ================================================================== movement
 
-        HashSet<Vector2Int> Reachable(Unit u, int feet)
+        /// <summary>Owl-shaped druids (and anyone under Fly) cross water.</summary>
+        public static bool Flies(Unit u) => (u.C is PlayerCharacter p && p.Flying) || (u.C is Monster m && m.Def.FlySpeed > 0);
+
+        public HashSet<Vector2Int> Reachable(Unit u, int feet)
         {
+            bool fly = Flies(u);
             var result = new HashSet<Vector2Int>();
             var dist = new Dictionary<Vector2Int, int> { [u.Pos] = 0 };
             var q = new Queue<Vector2Int>();
@@ -668,8 +684,8 @@ namespace DnD.Game
                 {
                     var n = c + d;
                     int cost = dist[c] + 5;
-                    if (cost > feet || dist.ContainsKey(n) || !Zone.IsWalkable(n)) continue;
-                    if (d.x != 0 && d.y != 0 && (!Zone.IsWalkable(new Vector2Int(c.x + d.x, c.y)) || !Zone.IsWalkable(new Vector2Int(c.x, c.y + d.y)))) continue;
+                    if (cost > feet || dist.ContainsKey(n) || !Zone.IsPassable(n, fly)) continue;
+                    if (d.x != 0 && d.y != 0 && (!Zone.IsPassable(new Vector2Int(c.x + d.x, c.y), fly) || !Zone.IsPassable(new Vector2Int(c.x, c.y + d.y), fly))) continue;
                     var occ = Units.FirstOrDefault(o => o != u && o.Pos == n && !o.C.IsDead);
                     if (occ != null && Hostile(u, occ) && occ.Active) continue; // can't move through enemies
                     dist[n] = cost;
@@ -698,7 +714,7 @@ namespace DnD.Game
 
         IEnumerator MoveTo(Unit u, Vector2Int dest)
         {
-            var path = Zone.FindPath(u.Pos, dest, p => Units.Any(o => o != u && o.Pos == p && Hostile(u, o) && o.Active));
+            var path = Zone.FindPath(u.Pos, dest, p => Units.Any(o => o != u && o.Pos == p && Hostile(u, o) && o.Active), flying: Flies(u));
             var turn = u.Cb.Turn;
             foreach (var step in path)
             {
@@ -879,9 +895,19 @@ namespace DnD.Game
 
         // ================================================================== spells
 
+        static bool DivineInterventionCovers(PlayerCharacter pc, SpellDef s) =>
+            pc.HasEffect("divine_ready") && !s.IsCantrip && s.Level <= 5 && s.Classes.Contains("cleric");
+
         IEnumerator CastSpell(Unit me, PlayerCharacter pc, SpellDef s, Vector2Int tile, int freeAtSlot = 0)
         {
             var turn = me.Cb.Turn;
+            if (freeAtSlot == 0 && DivineInterventionCovers(pc, s))
+            {
+                pc.RemoveEffect("divine_ready");
+                pc.SpendResource("divine_intervention");
+                freeAtSlot = s.Level;
+                Log($"Aurelith answers! {pc.Name} casts {s.Name} without a slot (Divine Intervention).");
+            }
             int slot = freeAtSlot > 0 ? freeAtSlot : s.IsCantrip ? 0 : pc.LowestAvailableSlot(s.Level);
             if (freeAtSlot == 0 && !SpellResolver.PaySlot(pc, s, slot)) { me.Ctrl?.Hud.Toast("No slot available.", UIKit.Bad); yield break; }
             if (s.CastTime == CastTime.BonusAction || turn.QuickenNextSpell) { turn.BonusActionUsed = true; turn.QuickenNextSpell = false; }
@@ -989,6 +1015,8 @@ namespace DnD.Game
                         hu.A.Popup("+" + h, UIKit.HealGreen);
                         Log($"{hu.Name} regains {h} HP{(wasDown ? " and gets back up!" : ".")}");
                     }
+                    int blessed = healed.Any(o => o != me) ? SpellResolver.BlessedHealerAmount(pc, s, Math.Max(slot, s.Level)) : 0;
+                    if (blessed > 0) { int bh = pc.Heal(blessed); if (bh > 0) { me.A.Popup("+" + bh, UIKit.HealGreen); Log($"Blessed Healer: {pc.Name} regains {bh} HP."); } }
                     break;
                 }
 
@@ -1660,7 +1688,7 @@ namespace DnD.Game
                 else
                 {
                     // Can't reach this turn: close the distance.
-                    var path = Zone.FindPath(u.Pos, target.Pos, p => Units.Any(o => o != u && o.Pos == p && o.Active));
+                    var path = Zone.FindPath(u.Pos, target.Pos, p => Units.Any(o => o != u && o.Pos == p && o.Active), flying: Flies(u));
                     int steps = Math.Min(turn.MovementLeftFt / 5, Math.Max(0, path.Count - 1));
                     if (steps > 0) yield return MoveTo(u, path[steps - 1]);
                 }
