@@ -384,6 +384,8 @@ namespace DnD.Rules
             {
                 case "second_wind": return Class.Id == "fighter" ? (Level >= 10 ? 4 : Level >= 4 ? 3 : 2) : 0;
                 case "action_surge": return Class.Id == "fighter" && Level >= 2 ? 1 : 0;
+                case "sorcerous_restoration": return HasFeature("Sorcerous Restoration") ? 1 : 0;
+                case "embers_luck": return HasFeature("Ember's Own Luck") ? Math.Max(1, Mod(Ability.CHA)) : 0;
                 case "divine_intervention": return HasFeature("Divine Intervention") ? 1 : 0;
                 case "natural_recovery": return HasFeature("Natural Recovery") ? 1 : 0;
                 case "wholeness": return HasFeature("Wholeness of Body") ? Math.Max(1, Mod(Ability.WIS)) : 0;
@@ -455,7 +457,8 @@ namespace DnD.Rules
         public override int TakeDamage(int amount, DamageType type, bool critical, List<string> log)
         {
             // Rage: resistance to bludgeoning, piercing and slashing (added only for this hit).
-            bool rageResist = ((Raging && (type == DamageType.Bludgeoning || type == DamageType.Piercing || type == DamageType.Slashing)) || NaturesWardResistance == type) && !Resistances.Contains(type);
+            bool rageResist = ((Raging && (type == DamageType.Bludgeoning || type == DamageType.Piercing || type == DamageType.Slashing)) || NaturesWardResistance == type
+                || AffinityType == type || (HasFeature("Ember Resilience") && type == DamageType.Fire)) && !Resistances.Contains(type);
             if (rageResist) Resistances.Add(type);
             try { return base.TakeDamage(amount, type, critical, log); }
             finally { if (rageResist) Resistances.Remove(type); }
@@ -531,7 +534,7 @@ namespace DnD.Rules
         }
 
         static readonly string[] ExtraAttackClasses = { "fighter", "barbarian", "monk", "paladin", "ranger" };
-        public int AttacksPerAction => Class.Id == "fighter" && Level >= 11 ? 3 : Level >= 5 && Array.IndexOf(ExtraAttackClasses, Class.Id) >= 0 ? 2 : 1;
+        public int AttacksPerAction => Class.Id == "fighter" && Level >= 11 ? 3 : Level >= 5 && (Array.IndexOf(ExtraAttackClasses, Class.Id) >= 0 || ThirstingBlade) ? 2 : 1;
 
         // ---------------------------------------------------------------- death saves
 
@@ -658,6 +661,7 @@ namespace DnD.Rules
             RegainResource("wild_shape", 1);
             if (Class.Caster == CasterType.Pact) SlotsUsed = new int[10]; // Pact Magic: slots back on a Short Rest
             if (HasFeature("Font of Inspiration")) RegainResource("bardic_inspiration", 99);
+            SorcerousRestoration(log);
             NaturalRecovery(log);
             if (HasFeature("Tireless") && Exhaustion > 0) { Exhaustion--; log?.Add($"{Name} shakes off some weariness (Tireless)."); }
             log?.Add($"{Name} finishes a short rest.");

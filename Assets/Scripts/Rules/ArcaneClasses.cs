@@ -11,7 +11,47 @@ namespace DnD.Rules
         /// <summary>Eldritch Invocations known (ids, e.g. "agonizing_blast").</summary>
         public readonly List<string> Invocations = new List<string>();
 
-        public static readonly string[] InvocationOptions = { "agonizing_blast", "armor_of_shadows", "repelling_blast", "pact_of_the_blade", "eldritch_mind", "ember_sight" };
+        public static readonly string[] InvocationOptions = { "agonizing_blast", "armor_of_shadows", "repelling_blast", "pact_of_the_blade", "eldritch_mind", "ember_sight",
+            "thirsting_blade", "misty_visions", "beast_speech" };
+
+        /// <summary>Invocations with a prerequisite: (level, other invocation).</summary>
+        static readonly Dictionary<string, (int level, string needs)> InvocationPrereqs = new Dictionary<string, (int, string)>
+        {
+            { "thirsting_blade", (5, "pact_of_the_blade") },
+        };
+
+        public bool CanLearnInvocation(string id, int atLevel) =>
+            !InvocationPrereqs.TryGetValue(id, out var p) || (atLevel >= p.level && Invocations.Contains(p.needs));
+
+        /// <summary>Thirsting Blade: Extra Attack with a pact weapon (a melee weapon, with Pact of the Blade).</summary>
+        bool ThirstingBlade => Invocations.Contains("thirsting_blade") && Invocations.Contains("pact_of_the_blade") && MainHand != null && !MainHand.IsRanged;
+
+        /// <summary>Sorcerer 6 (Draconic): Elemental Affinity type ("fire", "cold", "lightning", "acid", "poison").</summary>
+        public string DraconicElement;
+        public static readonly string[] DraconicElements = { "fire", "cold", "lightning", "acid", "poison" };
+
+        DamageType? AffinityType => DraconicElement == null || !HasFeature("Elemental Affinity") ? (DamageType?)null
+            : (DamageType)Enum.Parse(typeof(DamageType), char.ToUpper(DraconicElement[0]) + DraconicElement.Substring(1));
+
+        /// <summary>Sorcerer 7: Sorcery Incarnate: out of Innate Sorcery uses, spend 2 sorcery points to activate it anyway.</summary>
+        public bool SorceryIncarnate(List<string> log)
+        {
+            if (!HasFeature("Sorcery Incarnate") || ResourceLeft("innate_sorcery") > 0 || HasEffect("innate_sorcery") || !SpendResource("sorcery_points", 2)) return false;
+            AddEffect(EffectLibrary.Create("innate_sorcery", this));
+            log?.Add($"{Name} burns 2 sorcery points to unleash Innate Sorcery.");
+            return true;
+        }
+
+        /// <summary>Sorcerer 5: Sorcerous Restoration on a short rest: half your level in sorcery points, once per long rest.</summary>
+        void SorcerousRestoration(List<string> log)
+        {
+            if (!HasFeature("Sorcerous Restoration")) return;
+            ResourcesUsed.TryGetValue("sorcery_points", out int used);
+            if (used <= 0 || !SpendResource("sorcerous_restoration")) return;
+            int back = Math.Min(used, Level / 2);
+            ResourcesUsed["sorcery_points"] = used - back;
+            log?.Add($"{Name} recovers {back} sorcery points (Sorcerous Restoration).");
+        }
 
         public int InvocationsKnownAt(int level) => Class.Id != "warlock" ? 0 : level >= 18 ? 10 : level >= 15 ? 9 : level >= 12 ? 8 : level >= 9 ? 7 : level >= 7 ? 6 : level >= 5 ? 5 : level >= 2 ? 3 : 1;
 

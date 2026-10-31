@@ -96,7 +96,9 @@ namespace DnD.Rules
             int newInvocations = InvocationsKnownAt(next) - Invocations.Count;
             if (newInvocations > 0)
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.Invocation, Count = newInvocations, Title = $"Eldritch Invocations: learn {newInvocations}",
-                    Options = InvocationOptions.Where(o => !Invocations.Contains(o)).ToList() });
+                    Options = InvocationOptions.Where(o => !Invocations.Contains(o) && CanLearnInvocation(o, next)).ToList() });
+            if (Class.Id == "sorcerer" && next == 6 && Class.Subclass?.Id == "draconic")
+                list.Add(new LevelUpChoice { Kind = ChoiceKind.DraconicElement, Count = 1, Title = "Elemental Affinity: your draconic element", Options = DraconicElements.ToList() });
             if (Class.Id == "sorcerer" && (next == 2 || next == 10))
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.Metamagic, Count = 2, Title = "Metamagic: two ways to twist your spells", Options = MetamagicOptions.Where(o => !Metamagic.Contains(o)).ToList() });
             if (Class.Id == "fighter" && next == 7 && Class.Subclass?.Id == "champion")
@@ -165,6 +167,10 @@ namespace DnD.Rules
                 case "dueling": return "Dueling (+2 damage, one-handed melee)";
                 case "great_weapon": return "Great Weapon Fighting (reroll 1s and 2s)";
                 case "archery": return "Archery (+2 to hit with ranged weapons)";
+                case "thirsting_blade": return "Thirsting Blade (Extra Attack with your pact weapon)";
+                case "misty_visions": return "Misty Visions (cast Silent Image at will)";
+                case "beast_speech": return "Beast Speech (speak with animals at will)";
+                case "fire": case "cold": case "lightning": case "acid": case "poison": return char.ToUpper(id[0]) + id.Substring(1) + " (resistance, and +CHA to your spells of this type)";
                 case "escape_the_horde": return "Escape the Horde (Opportunity Attacks against you have Disadvantage)";
                 case "multiattack_defense": return "Multiattack Defense (after a creature hits you, its other attacks that turn have Disadvantage)";
                 case "colossus_slayer": return "Colossus Slayer (+1d8 once per turn vs a wounded foe)";
@@ -232,6 +238,10 @@ namespace DnD.Rules
                     case ChoiceKind.Metamagic:
                         if (!Metamagic.Contains(id)) Metamagic.Add(id);
                         log?.Add($"Metamagic: {DescribeOption(id)}");
+                        break;
+                    case ChoiceKind.DraconicElement:
+                        DraconicElement = id;
+                        log?.Add($"Elemental Affinity: {id}");
                         break;
                     case ChoiceKind.BonusSpell:
                         if (!BonusAlwaysPrepared.Contains(id)) BonusAlwaysPrepared.Add(id);

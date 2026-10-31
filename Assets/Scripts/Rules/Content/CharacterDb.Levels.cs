@@ -95,6 +95,26 @@ namespace DnD.Rules.Content
             F("bard", 9, "Expertise", "Two more skills get Expertise.");
             F("bard", 10, "Magical Secrets", "Your new prepared spells can come from the Bard, Cleric, Druid or Wizard lists. Your Bardic die becomes a d10.");
 
+            // ---------------- Sorcerer (Draconic)
+            F("sorcerer", 5, "Sorcerous Restoration", "Once per Long Rest, a Short Rest gives back sorcery points equal to half your level.");
+            S("sorcerer", 6, "Elemental Affinity", "Pick a draconic element: you resist it, and add your CHA modifier to the damage of your spells of that type.");
+            F("sorcerer", 7, "Sorcery Incarnate", "Out of Innate Sorcery uses? Spend 2 sorcery points to activate it.");
+            Asi("sorcerer", 8);
+            F("sorcerer", 10, "Metamagic", "Learn two more Metamagic options.");
+
+            // ---------------- Warlock (Ember Patron)
+            F("warlock", 5, "More Invocations", "Your invocations grow (5 at level 5, 6 at 7, 7 at 9). Thirsting Blade becomes available.");
+            S("warlock", 6, "Ember's Own Luck", "Add 1d10 to a failed save when it could make the difference. CHA-modifier uses per Long Rest.");
+            Asi("warlock", 8);
+            F("warlock", 9, "Contact Patron", "Once per Long Rest, ask your patron a question (they answer in riddles and warmth).");
+            S("warlock", 10, "Ember Resilience", "Your patron's fire runs in you: resistance to fire damage.");
+
+            // ---------------- Wizard (Evoker)
+            F("wizard", 5, "Memorize Spell", "On a Short Rest, swap one prepared spell for another in your spellbook.");
+            S("wizard", 6, "Sculpt Spells", "Up to 1 + the spell's level of your allies in your Evocation spells' areas are untouched.");
+            Asi("wizard", 8);
+            S("wizard", 10, "Empowered Evocation", "Add your INT modifier to one damage roll of your wizard Evocation spells.");
+
             S("rogue", 9, "Supreme Sneak", "You have Advantage on Stealth checks if you move no more than half your Speed on your turn.");
         }
     }

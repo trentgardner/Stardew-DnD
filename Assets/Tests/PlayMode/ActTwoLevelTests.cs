@@ -182,5 +182,37 @@ namespace DnD.Tests
             Assert.IsTrue(zone.IsPassable(water, true), "an owl can be over the water");
             Assert.IsFalse(zone.IsPassable(water, false), "a wolf can't");
         }
+
+        [UnityTest]
+        public IEnumerator FireballSparesSculptedAllies()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(9), "fighter", "human", level: 5);
+            var wiz = CharacterFactory.Create(CharacterFactory.DefaultChoices("wizard", "elf", "Sable"));
+            wiz.XP = 999999;
+            while (wiz.Level < 6) wiz.LevelUp(wiz.AutoPlan(), null);
+            if (!wiz.PreparedSpells.Contains("fireball")) wiz.PreparedSpells.Add("fireball");
+            var comp = g.SpawnCompanion(p, wiz, "hums");
+            comp.Manual = false;
+            yield return Frames(2);
+            g.Warp(p, "forest", new Vector2Int(34, 8), false);
+            yield return Frames(3);
+            p.Hud.CloseAll();
+            g.StartGroupCombat("forest_wolves", p);
+            var c = g.Combats.Single();
+            var me = c.Units.First(u => u.C == wiz);
+            var hero = c.Units.First(u => u.Owner == p);
+            var wolf = c.Units.First(u => u.C.Team == Team.Enemies && u.Active);
+            if (me.Cb == null) me.Cb = new Combatant(me.C);
+            hero.C.MaxHP = hero.C.HP = 300; wolf.C.MaxHP = wolf.C.HP = 300;
+            // The fighter stands right next to the wolf; the wizard is well back.
+            var near = wolf.Pos + Vector2Int.left;
+            if (!hero.A.Zone.IsWalkable(near) || c.Occupied(near)) near = wolf.Pos + Vector2Int.right;
+            hero.A.PlaceAt(hero.A.Zone, near);
+            var run = c.DebugCast(me, "fireball", wolf.Pos);
+            while (run.MoveNext()) { }
+            Assert.Less(wolf.C.HP, 300, "the wolf is caught in the fireball");
+            Assert.AreEqual(300, hero.C.HP, "the fighter next to it is sculpted out");
+        }
     }
 }

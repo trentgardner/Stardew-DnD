@@ -59,6 +59,17 @@ namespace DnD.Rules
             return again;
         }
 
+        /// <summary>Last-ditch help for a failed save: Indomitable (fighter 9), then Ember's Own Luck (+1d10, warlock 6) if it could still turn it.</summary>
+        public static D20Result Rescue(Creature c, Ability a, int dc, D20Result save, List<string> log, string vs = null)
+        {
+            save = TryIndomitable(c, a, dc, save, log, vs);
+            if (ResolveSave(save, dc) || !(c is PlayerCharacter pc) || dc - save.Total > 10 || pc.ResourceLeft("embers_luck") <= 0) return save;
+            pc.SpendResource("embers_luck");
+            int v = Dice.AddBonusDie(save, 10);
+            log?.Add($"Ember's Own Luck: {pc.Name} adds {v} → {save.Total} vs DC {dc}.");
+            return save;
+        }
+
         /// <summary>Damage from an area effect after the save (Rogue/Monk 7: Evasion on DEX saves).</summary>
         public static int AreaDamage(Creature c, Ability a, int full, bool saved, bool halfOnSave)
         {

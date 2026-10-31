@@ -43,6 +43,7 @@ namespace RulesTests
             MartialTests10();
             HolyMartialTests10();
             NatureCasterTests10();
+            ArcaneTests10();
             RogueTests();
             BarbarianTests();
             MonkTests();

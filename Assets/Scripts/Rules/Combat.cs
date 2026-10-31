@@ -332,6 +332,9 @@ namespace DnD.Rules
                 terms.Add(new RollTerm("potent spellcasting", caster.Mod(Ability.WIS)));
             if (s.Kind == SpellKind.Heal && caster.HasFeature("Disciple of Life") && s.Level > 0)
                 terms.Add(new RollTerm("Disciple of Life", 2 + Math.Max(slotLevel, s.Level)));
+            var affinity = caster.DraconicElement != null && caster.HasFeature("Elemental Affinity") ? caster.DraconicElement : null;
+            if (affinity != null && s.Kind != SpellKind.Heal && string.Equals(s.DamageType.ToString(), affinity, StringComparison.OrdinalIgnoreCase))
+                terms.Add(new RollTerm("elemental affinity", caster.Mod(Ability.CHA)));
             if (s.Kind != SpellKind.Heal && caster.HasFeature("Empowered Evocation") && s.School == "Evocation")
                 terms.Add(new RollTerm("Empowered Evocation", caster.Mod(Ability.INT)));
             return Dice.RollDamage(EffectDice(caster, s, slotLevel), critical, terms);
@@ -356,6 +359,16 @@ namespace DnD.Rules
             log.Insert(0, $"{target.Name} takes {dealt} {types} damage{(saved ? " (saved)" : "")}.");
             if (dealt > 0) AttackResolver.RaiseConcentrationCheck(target, dealt);
             return dealt;
+        }
+
+        /// <summary>Evoker 6: Sculpt Spells: up to 1 + the spell's level of your allies in an Evocation spell's area are left untouched.</summary>
+        public static List<Creature> Sculpted(PlayerCharacter caster, SpellDef s, IEnumerable<Creature> inArea)
+        {
+            var list = new List<Creature>();
+            if (!caster.HasFeature("Sculpt Spells") || s.School != "Evocation" || s.Level == 0) return list;
+            foreach (var c in inArea)
+                if (c.Team == caster.Team && c != caster && list.Count < 1 + s.Level) list.Add(c);
+            return list;
         }
 
         /// <summary>Life 6: Blessed Healer: when you heal someone else with a spell, you regain 2 + the slot level.</summary>
@@ -534,7 +547,7 @@ namespace DnD.Rules
             {
                 var e = c.Effects[i];
                 if (e.RepeatSave == null) continue;
-                var save = Checks.TryIndomitable(c, e.RepeatSave.Value, e.RepeatSaveDC, Checks.RollSave(c, e.RepeatSave.Value, AdvantageState.Normal), log);
+                var save = Checks.Rescue(c, e.RepeatSave.Value, e.RepeatSaveDC, Checks.RollSave(c, e.RepeatSave.Value, AdvantageState.Normal), log);
                 if (Checks.ResolveSave(save, e.RepeatSaveDC))
                 {
                     c.Effects.RemoveAt(i);

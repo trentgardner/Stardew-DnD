@@ -56,7 +56,7 @@ namespace DnD.Rules
             z.HitThisTurn.Add(victim);
             var s = z.Spell;
             if (s.Id == "spirit_guardians") victim.AddEffect(EffectLibrary.Create("spirit_slowed", z.Owner));
-            var save = Checks.TryIndomitable(victim, s.SaveAbility, z.Owner.SpellSaveDC, Checks.RollSave(victim, s.SaveAbility, AdvantageState.Normal), log);
+            var save = Checks.Rescue(victim, s.SaveAbility, z.Owner.SpellSaveDC, Checks.RollSave(victim, s.SaveAbility, AdvantageState.Normal), log);
             bool saved = Checks.ResolveSave(save, z.Owner.SpellSaveDC);
             log?.Add($"{victim.Name} {s.SaveAbility} save vs {s.Name}: {save.Total} vs DC {z.Owner.SpellSaveDC} → {(saved ? "saved" : "failed")}");
             var dmg = Dice.RollDamage(SpellResolver.EffectDice(z.Owner, s, z.Slot), false);

@@ -363,6 +363,11 @@ namespace DnD.Game
                 list.Add(Need(new CombatAction { Name = $"Innate Sorcery ({pc.ResourceLeft("innate_sorcery")})", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
                     Tooltip = "For 1 minute: +1 to your spell save DC and Advantage on spell attacks.",
                     Run = (me, tile) => InnateSorcery(me, pc) }, t, pc, pc.ResourceLeft("innate_sorcery") > 0 && !pc.HasEffect("innate_sorcery")));
+            if (pc.HasFeature("Sorcery Incarnate") && pc.ResourceLeft("innate_sorcery") == 0 && !pc.HasEffect("innate_sorcery"))
+                list.Add(Need(new CombatAction { Name = "Innate Sorcery (2 pts, Sorcery Incarnate)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
+                    Tooltip = "Out of uses: burn 2 sorcery points to unleash Innate Sorcery anyway.",
+                    Run = (me, tile) => { me.Cb.Turn.BonusActionUsed = true; var l = new List<string>(); if (pc.SorceryIncarnate(l)) me.A.Popup("Innate Sorcery", UIKit.UtilityBlue); l.ForEach(Log); return Nothing(); } },
+                    t, pc, pc.ResourceLeft("sorcery_points") >= 2));
             if (pc.ResourceMax("sorcery_points") > 0)
             {
                 list.Add(new CombatAction { Name = $"Font of Magic: make a level-1 slot (2 of {pc.ResourceLeft("sorcery_points")} pts)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
@@ -895,6 +900,9 @@ namespace DnD.Game
 
         // ================================================================== spells
 
+        /// <summary>Tests: cast a spell as this unit right now (pays the slot as usual).</summary>
+        public IEnumerator DebugCast(Unit me, string spellId, Vector2Int tile) => CastSpell(me, (PlayerCharacter)me.C, SpellsDb.Get(spellId), tile);
+
         static bool DivineInterventionCovers(PlayerCharacter pc, SpellDef s) =>
             pc.HasEffect("divine_ready") && !s.IsCantrip && s.Level <= 5 && s.Classes.Contains("cleric");
 
@@ -960,6 +968,9 @@ namespace DnD.Game
                     if (s.Shape == TargetShape.Single) { if (target != null) targets.Add(target); }
                     else targets.AddRange(Units.Where(o => o.Active && area.Contains(o.Pos) && o != me && (!s.OnlyEnemies || Hostile(me, o))));
                     if (s.MaxTargets > 1 && targets.Count > s.MaxTargets) targets = targets.OrderBy(o => Zone.DistanceFt(tile, o.Pos)).Take(s.MaxTargets).ToList();
+                    // Evoker 6: Sculpt Spells: friends in the blast are left untouched.
+                    var sculpted = SpellResolver.Sculpted(pc, s, targets.Select(o => o.C));
+                    if (sculpted.Count > 0) { targets.RemoveAll(o => sculpted.Contains(o.C)); Log($"{pc.Name} sculpts the spell around {string.Join(", ", sculpted.Select(c => c.Name))}."); }
                     if (s.Id == "call_lightning" && freeAtSlot == 0) { var storm = EffectLibrary.Create("call_lightning", pc); storm.Power = Math.Max(slot, s.Level); pc.AddEffect(storm); }
                     if (s.ZoneLineTiles > 0)
                     {
@@ -1757,7 +1768,7 @@ namespace DnD.Game
                 foreach (var t in Units.Where(o => o != u && o.Active && zoneTiles.Contains(o.Pos)).ToList())
                 {
                     var lines = new List<string>();
-                    var save = Checks.TryIndomitable(t.C, ab.SaveAbility, ab.SaveDC, Checks.RollSave(t.C, ab.SaveAbility, AdvantageState.Normal), lines);
+                    var save = Checks.Rescue(t.C, ab.SaveAbility, ab.SaveDC, Checks.RollSave(t.C, ab.SaveAbility, AdvantageState.Normal), lines);
                     bool ok = Checks.ResolveSave(save, ab.SaveDC);
                     Ticker($"{t.Name} {ab.SaveAbility} save: {save.Breakdown()} vs DC {ab.SaveDC} → {(ok ? "SAVED" : "FAILED")}");
                     int lost = t.C.TakeDamage(Checks.AreaDamage(t.C, ab.SaveAbility, dmg.Total, ok, true), ab.DamageType, false, lines);
