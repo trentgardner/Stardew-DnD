@@ -137,6 +137,18 @@ namespace DnD.Game
                     new QuestTrigger(QuestEvent.FlagSet, Factions.CommittedFlag, Answers.Road, Answers.Chosen),
                 },
             });
+            // ------------------------------------------------------------ Act II Phase 5: the blight at home
+            Add(new QuestDef
+            {
+                Act = 2, Id = "ash_on_doors", Title = "Ash on the Doors", Giver = "rhoswen",
+                StageText = new[] {
+                    "", "Someone is marking Thistledown's doors with ash: a hand, pressed flat. Look at the marks (the general store, the Sleeping Drake, and your own front door).",
+                    "Whoever it is comes at night. Wait in the square after dark.",
+                    "Complete. You know who was marking the doors, and why." },
+                Triggers = { QuestTrigger.AllFlags(1, 2, "ash_mark_1", "ash_mark_2", "ash_mark_3") },
+                Reward = new QuestReward { Xp = 900, Npc = "rhoswen", Friendship = 50 },
+            });
+
             // ------------------------------------------------------------ Act II Phase 4: the Crown
             Add(new QuestDef
             {

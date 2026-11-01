@@ -203,6 +203,84 @@ namespace DnD.Tests
             Assert.AreEqual(1, Count(p, "until the ash stops falling"));
         }
 
+        // ============================================================ Task 3: Ash on the Doors
+
+        static SecretInteractable SpotNamed(string id) => Object.FindObjectsByType<SecretInteractable>(FindObjectsSortMode.None).Single(s => s.Def.Id == id);
+
+        static void StartAshQuest(GameRoot g, PlayerSlot p)
+        {
+            var c = new DCtx { P = p };
+            g.Quests.Set(Answers.Id, Answers.Chosen, p);
+            DialogueDb.Get("rhoswen").Nodes["ash_job"].OnEnter(c);
+        }
+
+        [UnityTest]
+        public IEnumerator AshOnTheDoorsRuns()
+        {
+            var g = GameRoot.I;
+            var p = ActTwo(g, g.DebugStart(Still(20), "rogue", "human"));
+            yield return Frames(2);
+            var c = new DCtx { P = p };
+            var rho = DialogueDb.Get("rhoswen");
+            var ask = rho.Nodes["after"].Options.Single(o => o.Text == "Anything I can help with, Captain?");
+            Assert.IsFalse(ask.Show(c), "not at blight 1");
+            StartAshQuest(g, p);
+            Assert.AreEqual(1, g.Quests.Stage("ash_on_doors"));
+            g.Clock.Minutes = 12 * 60;
+            g.Warp(p, "town", new Vector2Int(24, 17), false);
+            yield return Frames(3);
+            foreach (var id in new[] { "ash_mark_1", "ash_mark_2", "ash_mark_3" }) { SpotNamed(id).Resolve(p, Rules.CheckOutcome.Success); p.Hud.CloseAll(); }
+            Assert.AreEqual(2, g.Quests.Stage("ash_on_doors"));
+            Assert.IsFalse(SpotNamed("ash_stakeout").Available(p), "nobody comes at noon");
+            g.Clock.Minutes = 22 * 60;
+            yield return Frames(2);
+            Assert.IsTrue(SpotNamed("ash_stakeout").Available(p));
+            SpotNamed("ash_stakeout").Resolve(p, Rules.CheckOutcome.Success);
+            yield return Frames(2);
+            Assert.IsTrue(p.Hud.Top is DialogueScreen, "Teodor, caught in the act");
+            p.Hud.CloseAll();
+        }
+
+        [UnityTest]
+        public IEnumerator TeodorEveryFate()
+        {
+            var g = GameRoot.I;
+            var p = ActTwo(g, g.DebugStart(Still(21), "rogue", "human"));
+            yield return Frames(2);
+            var c = new DCtx { P = p };
+            StartAshQuest(g, p);
+            var caught = DialogueDb.Get("teodor_caught").Nodes["caught"];
+            var teo = WorldDb.Npcs["teodor"];
+            void Reset()
+            {
+                g.Quests.Stages["ash_on_doors"] = 2; g.Quests.Paid.Remove("ash_on_doors");
+                foreach (var f in new[] { "teodor_redeemed", "teodor_jailed", "teodor_fled" }) g.World.Flags.Remove(f);
+            }
+            var cases = new (string name, System.Action run, string flag, string zone)[]
+            {
+                ("talked down", () => caught.Options.Single(o => o.Check == Rules.Skill.Persuasion).OnSuccess(c), "teodor_redeemed", "town"),
+                ("insight", () => caught.Options.Single(o => o.Check == Rules.Skill.Insight).OnSuccess(c), "teodor_redeemed", "town"),
+                ("the Captain", () => Opt(caught, "Come with me").Do(c), "teodor_jailed", "watchhouse"),
+                ("sent away", () => Opt(caught, "Go. Don't").Do(c), "teodor_fled", null),
+            };
+            foreach (var (name, run, flag, zone) in cases)
+            {
+                Reset();
+                int xp = p.Character.XP;
+                run();
+                run();
+                Assert.IsTrue(g.Quests.Done("ash_on_doors"), name);
+                Assert.AreEqual(xp + 900 + (name == "insight" ? LoreDb.FindXp : 0), p.Character.XP, $"{name}: paid once (Insight also finds the creed)");
+                Assert.IsTrue(g.World.Flag(flag), name);
+                var e = WorldDb.Current(teo, 12, 1, g.World);
+                Assert.AreEqual(zone, e?.Zone, $"{name}: where Teodor is at noon");
+                Assert.IsFalse(SpotNamed("ash_stakeout").Available(p), $"{name}: the stakeout never returns");
+            }
+            Assert.IsTrue(g.World.LoreFound.Contains("ashsworn_creed"), "Insight learns the creed");
+        }
+
+        static DOption Opt(DNode n, string startsWith) => n.Options.Single(o => o.Text.StartsWith(startsWith));
+
         [UnityTest]
         public IEnumerator DragonFeelsTheBlight()
         {

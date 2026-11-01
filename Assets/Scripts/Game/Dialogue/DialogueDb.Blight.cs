@@ -73,8 +73,82 @@ namespace DnD.Game
 
         public const string SharedDreamLore = "shared_dream";
 
+        static void RhoswenAshJob(Dialogue d)
+        {
+            const string who = "Captain Rhoswen Vale";
+            d.Node("ash_job", who,
+                c => "Since you ask. Somebody's been marking doors with ash. A hand, pressed flat, right at eye height. Ironkettle's, the Drake's, and... yours. People are frightened enough without this. Find out who."
+                    + (c.G.World.Flag("banner_crown") ? " And no, I'm not telling the Redoubt. Not yet. This is Thistledown's business." : ""),
+                c => "She looks very tired.",
+                c => c.G.Quests.Start("ash_on_doors", c.P))
+                .Bye("We'll find out.");
+            foreach (var id in new[] { "after", "dragon", "progress" })
+                if (d.Nodes.TryGetValue(id, out var n))
+                    BeforeBye(n, x => x.Say("Anything I can help with, Captain?", "ash_job", show: c => c.G.World.Act >= 2 && c.Blight >= 2 && c.G.Quests.Stage("ash_on_doors") == 0));
+        }
+
+        static Dialogue BlightDialogue(string id)
+        {
+            switch (id)
+            {
+                case "teodor": return Teodor();
+                case "teodor_caught": return TeodorCaught();
+                default: return null;
+            }
+        }
+
+        // =================================================================== Teodor Brisk: frightened and wrong, not evil
+
+        static Dialogue Teodor()
+        {
+            var d = new Dialogue("teodor", c => "start");
+            const string who = "Teodor Brisk";
+            d.Node("start", who,
+                c => c.G.World.Flag("teodor_jailed") ? "I'm not going anywhere. Tell the Captain I'm sorry. I meant to tell her myself. I keep not managing it."
+                    : c.G.World.Flag("teodor_redeemed") ? "Candles? These stay lit a little longer. Don't ask me how. I think I'm just trying harder."
+                    : c.Blight >= 2 ? "Candles! Long-burning, good tallow. Everybody needs more light these days. Don't they. Don't they just."
+                    : "Candles, lamps, tapers! Light for every room, a penny a night!",
+                c => "A thin, tidy man in a waxed apron, with ink-black hair and a candlemaker's burn across one palm.")
+                .Bye("Not today, thanks.");
+            return d;
+        }
+
+        static void AshDone(DCtx c, string fate)
+        {
+            if (c.G.Quests.Done("ash_on_doors")) return;
+            c.G.World.SetFlag(fate);
+            c.G.Quests.Set("ash_on_doors", 3, c.P);
+        }
+
+        static Dialogue TeodorCaught()
+        {
+            var d = new Dialogue("teodor_caught", c => "caught");
+            const string who = "Teodor Brisk";
+            d.Node("caught", who,
+                c => "Don't- please. Please. It's only ash. It doesn't hurt anyone. It's a sign, that's all, so she knows which doors are friendly. The hearths are going out. Mine went first. A man at the Ford told me: the ones who meet at the old beacon say when she wakes, the cold ends. I just want the cold to end.",
+                c => "In the dark of the square, a thin figure with a bowl of ash, frozen halfway to a door. It's Teodor the chandler. He's shaking.")
+                .Roll(Skill.Persuasion, 15, "The cold isn't ending, Teodor. You're frightening your neighbours.", "redeemed", "stubborn", onSuccess: c => AshDone(c, "teodor_redeemed"))
+                .Roll(Skill.Insight, 14, "(Insight) Who told you that, really?", "redeemed_creed", "stubborn", onSuccess: c => { LoreDb.Find("ashsworn_creed", c.P); AshDone(c, "teodor_redeemed"); })
+                .Say("Come with me to the Captain.", "jailed", doIt: c => AshDone(c, "teodor_jailed"))
+                .Say("Go. Don't come back.", "fled", doIt: c => AshDone(c, "teodor_fled"));
+            d.Node("stubborn", who, c => "You don't understand. Nobody understands. It's so COLD.",
+                c => "He clutches the bowl to his chest. He isn't going to be talked round tonight.")
+                .Say("Come with me to the Captain.", "jailed", doIt: c => AshDone(c, "teodor_jailed"))
+                .Say("Go. Don't come back.", "fled", doIt: c => AshDone(c, "teodor_fled"));
+            d.Node("redeemed", who, c => "...Frightening them. I- I was trying to keep them warm. I'll scrub the doors. Tonight. All of them.",
+                c => "He puts the bowl down very carefully, as if it might break, and starts to cry, quietly, with relief.").Bye("Get some sleep, Teodor.");
+            d.Node("redeemed_creed", who, c => "I didn't ask his name. Grey coat. Kind voice. He said they light no fires of their own, they just wait for hers. I wanted so badly to believe him.",
+                c => "He sets the bowl down and stares at his burned hand.").Bye("Get some sleep, Teodor.");
+            d.Node("jailed", who, c => "...All right. All right. She'll be fair. The Captain's always fair.",
+                c => "He walks beside you to the watch house without a word. Captain Vale meets you at the door, takes one look, and sighs like someone who has been let down by a friend.").Bye("(Leave him with the watch)");
+            d.Node("fled", who, c => "Thank you. Thank you. I'll go somewhere warm.",
+                c => "He's gone into the dark before you've finished deciding whether that was the right thing to do.").Bye("(Watch him go)");
+            return d;
+        }
+
         static void AddBlightLines(string id, Dialogue d)
         {
+            if (id == "rhoswen") RhoswenAshJob(d);
             if (!Worries.TryGetValue(id, out var w)) return;
             foreach (var nodeId in w.Nodes)
             {
