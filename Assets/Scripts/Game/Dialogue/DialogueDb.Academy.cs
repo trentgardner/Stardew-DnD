@@ -353,7 +353,7 @@ namespace DnD.Game
                 .Say("Why a checkpoint on a scholars' road?", "why")
                 .Say("Where are you from?", "home")
                 .Bye("Take care, Sergeant.");
-            d.Node("home", who, c => "Port Varrel. Salt and gulls and my mother's fish stew. I put in for a transfer back. They sent me further inland. That's the Crown for you: always listening, never hearing.")
+            d.Node("home", who, c => "Port Varrel. Salt and gulls and my mother's fish stew. I put in for a transfer back. They sent me further inland. That's the army for you: every request answered, none of them granted.")
                 .Bye("I hope you get home.");
             return d;
         }

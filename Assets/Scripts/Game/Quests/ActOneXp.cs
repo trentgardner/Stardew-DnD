@@ -22,6 +22,7 @@ namespace DnD.Game
             int xp = Hatching;
             foreach (var z in WorldDb.Zones.Values)
             {
+                if (z.Act >= 2) continue; // Act II places are closed in Act I
                 bool main = MainZones.Contains(z.Id);
                 if (!includeSide && !main) continue;
                 xp += PerPlace;
@@ -37,6 +38,7 @@ namespace DnD.Game
             }
             foreach (var q in QuestDb.All.Values)
             {
+                if (q.Act >= 2) continue;
                 bool mainQuest = MainQuests.Contains(q.Id);
                 if (!includeSide && !mainQuest) continue;
                 foreach (var kv in q.StageXp) if (kv.Key <= HatchedStage(q)) xp += kv.Value; // milestones before the hatching

@@ -17,6 +17,7 @@ namespace DnD.Game
         {
             var z = new ZoneDef
             {
+                Act = 2,
                 Id = "lantern_road", Name = "The Lantern Road", Map = Maps.LanternRoad, DefaultSpawn = new Vector2Int(1, 14), Music = "music_road",
                 EnterNarration = "The Lantern Road climbs east out of the valley. Iron lantern posts line it every hundred paces, cold in the daylight. The fields on either side should be gold this time of year. They're grey.",
             };
@@ -93,6 +94,7 @@ namespace DnD.Game
         {
             var z = new ZoneDef
             {
+                Act = 2,
                 Id = "academy", Name = "The Starfall Academy", Map = Maps.Academy, DefaultSpawn = new Vector2Int(27, 40), Music = "music_academy",
                 BlightWeight = 0.15f, // the wards hold the ash back
                 MagicLit = true,
@@ -135,6 +137,7 @@ namespace DnD.Game
 
             var glass = new ZoneDef
             {
+                Act = 2,
                 Id = "glasshouse", Name = "The Glasshouse", Map = Maps.Glasshouse, Indoors = true, DefaultSpawn = new Vector2Int(9, 10), Music = "music_academy",
                 EnterNarration = "Warm, wet air and the smell of growing things. Lilies the colour of embers line the beds, and some of them have gone grey at the edges, like paper held too near a candle.",
             };
@@ -143,6 +146,7 @@ namespace DnD.Game
 
             var obs = new ZoneDef
             {
+                Act = 2,
                 Id = "observatory", Name = "The Observatory", Map = Maps.Observatory, Indoors = true, DefaultSpawn = new Vector2Int(7, 9), Music = "music_academy",
                 EnterNarration = "A domed room open to the sky through a slit in the roof. A model of the heavens turns on its own in a circle of glowing runes, and every surface is covered in star charts, most of them annotated in a furious, beautiful hand.",
             };
@@ -214,6 +218,7 @@ namespace DnD.Game
 
             var lib = new ZoneDef
             {
+                Act = 2,
                 Id = "library", Name = "The Library of Quiet Stars", Map = Maps.Library, Indoors = true, DefaultSpawn = new Vector2Int(17, 22), Music = "music_library",
                 EnterNarration = "Shelves climb into a dark that might be a ceiling and might be sky. Lanterns drift between the stacks on their own, turning their light toward whoever is reading. It is so quiet you can hear the books breathing. You're almost sure that's a figure of speech.",
             };
@@ -250,6 +255,7 @@ namespace DnD.Game
 
             var res = new ZoneDef
             {
+                Act = 2,
                 Id = "restricted", Name = "The Restricted Section", Map = Maps.Restricted, Indoors = true, Dark = true, DefaultSpawn = new Vector2Int(1, 9), Music = "music_restricted",
                 EnterNarration = "The books in here are chained to their shelves, and some of the chains are new. Suits of armour stand in the alcoves. One of them turns its helm, very slowly, to follow you.",
             };
@@ -271,6 +277,7 @@ namespace DnD.Game
 
             var hall = new ZoneDef
             {
+                Act = 2,
                 Id = "sealing_hall", Name = "The Sealing Hall", Map = Maps.SealingHall, Indoors = true, Dark = true, DragonStays = true, DefaultSpawn = new Vector2Int(12, 19), Music = "music_sealing",
                 EnterNarration = "Someone has been building something down here, for a long time, with great care. A circle of runes, ring inside ring, wide as a barn. Pillars stand around it like teeth. In the middle, an empty dais. The circle is big enough to hold a dragon. Not a small one.",
             };
@@ -291,6 +298,7 @@ namespace DnD.Game
             Zones["academy"].Warps.Add(new WarpDef(44, 13, "ashby_tower", 8, 12));
             var z = new ZoneDef
             {
+                Act = 2,
                 Id = "ashby_tower", Name = "The Orrery Tower", Map = Maps.AshbyTower, Indoors = true, DefaultSpawn = new Vector2Int(8, 12), Music = "music_ashby",
                 EnterNarration = "The stairs climb, and climb. You count three hundred and twelve. From outside, the tower has four windows. At the top is a round study full of star charts and books and quiet, with a great window looking north, at the mountains.",
             };

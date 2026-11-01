@@ -50,6 +50,8 @@ namespace DnD.Game
         public Dictionary<int, int> StageXp = new Dictionary<int, int>();
         /// <summary>Act II: which of the four forces this quest belongs to (null = nobody's), and whether it's that force's major quest (the point of no return).</summary>
         public string Faction;
+        /// <summary>The act this quest belongs to (the Act I XP audit only counts Act I).</summary>
+        public int Act = 1;
         public bool Major;
         public int Last => StageText.Length - 1;
     }
@@ -109,7 +111,7 @@ namespace DnD.Game
             });
             Add(new QuestDef
             {
-                Id = Answers.Id, Title = "Answers", Giver = "rhoswen",
+                Act = 2, Id = Answers.Id, Title = "Answers", Giver = "rhoswen",
                 StageXp = { [Answers.Academy] = 400, [Answers.Heard] = 600 },
                 StageText = new[] {
                     "", "Hearths are going cold down the valley. Captain Vale says if anyone has answers, it's the Starfall Academy, up the Lantern Road past Miller's Ford.",
@@ -127,7 +129,7 @@ namespace DnD.Game
             });
             Add(new QuestDef
             {
-                Id = "overdue", Title = "Overdue", Giver = "thorne",
+                Act = 2, Id = "overdue", Title = "Overdue", Giver = "thorne",
                 StageText = new[] {
                     "", "Archivist Thorne will open the Restricted Section to you, if you bring back three very overdue books: one the geese have been sitting on, one Pell 'borrowed', and one lost somewhere in the hedge maze.",
                     "You have all three books. Return them to Archivist Thorne.",
@@ -137,7 +139,7 @@ namespace DnD.Game
             });
             Add(new QuestDef
             {
-                Id = "glasshouse", Title = "The Wilting Glasshouse", Giver = "oakes",
+                Act = 2, Id = "glasshouse", Title = "The Wilting Glasshouse", Giver = "oakes",
                 StageText = new[] {
                     "", "Professor Oakes's ember-lilies are turning grey, and something is moving in the far beds of the Glasshouse. Deal with it, kindly if you can.",
                     "The vines are still. Now find what's wrong at the root.",
@@ -148,7 +150,7 @@ namespace DnD.Game
             });
             Add(new QuestDef
             {
-                Id = "measure_wyrm", Title = "The Measure of a Wyrm", Giver = "varrow",
+                Act = 2, Id = "measure_wyrm", Title = "The Measure of a Wyrm", Giver = "varrow",
                 StageText = new[] {
                     "", "Magister Varrow wants to measure your dragon under the stars. Find her at the Observatory's telescopes after dark (eight bells and later).",
                     "Complete. Varrow has her numbers, or doesn't. Either way, she gave you a star chart." },
