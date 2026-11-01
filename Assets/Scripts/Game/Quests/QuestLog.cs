@@ -95,6 +95,11 @@ namespace DnD.Game
 
         static bool Matches(QuestTrigger t, string id)
         {
+            if (t.LitZone != null)
+            {
+                var lit = GameRoot.I?.World?.LitBraziers;
+                return t.LitZone == id && lit != null && lit.Count(k => k.StartsWith(id + ":")) >= t.AtLeast;
+            }
             if (t.AllOf == null) return t.Id == id;
             var w = GameRoot.I?.World;
             if (w == null || System.Array.IndexOf(t.AllOf, id) < 0) return false;

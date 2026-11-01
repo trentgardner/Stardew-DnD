@@ -149,7 +149,7 @@ namespace DnD.Game
         // Brilliant, beloved, frightened and half right. Never a villain. He says "the Queen" and "the tyrant", nothing more.
 
         /// <summary>Hearing him out, whichever way it goes, moves "Answers" on (the FlagSet trigger).</summary>
-        static void Heard(DCtx c) => c.G.World.SetFlag("ashby_heard");
+        static void Heard(DCtx c) { c.G.World.SetFlag("ashby_heard"); Factions.Hear("academy"); }
 
         static Dialogue Ashby()
         {

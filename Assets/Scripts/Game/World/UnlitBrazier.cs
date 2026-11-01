@@ -10,7 +10,7 @@ namespace DnD.Game
     public class UnlitBrazier : Interactable
     {
         public static readonly List<UnlitBrazier> All = new List<UnlitBrazier>();
-        public string Key;
+        public string Key, ZoneId;
         public bool Lit { get; private set; }
         public override float Range => 1.6f;
 
@@ -21,6 +21,7 @@ namespace DnD.Game
 
         public void Init(string zoneId, Vector2Int m)
         {
+            ZoneId = zoneId;
             Key = KeyFor(zoneId, m);
             if (GameRoot.I.World.LitBraziers.Contains(Key)) SetLit();
         }

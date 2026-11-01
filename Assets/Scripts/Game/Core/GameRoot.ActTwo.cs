@@ -17,6 +17,7 @@ namespace DnD.Game
                 // The main quest of Act II begins with it (an Act II save from before it existed picks it up here too).
                 var p1 = Players.FirstOrDefault(p => p.Character != null);
                 if (p1 != null && Quests.Stage(Answers.Id) == 0) Quests.Start(Answers.Id, p1);
+                if (World.Flag("ashby_heard")) Factions.Hear("academy"); // Phase 3 saves heard him before hearing-out existed
             }
             foreach (var c in Companions) if (c != null && c.Character != null) AutoLevel(c.Character);
         }

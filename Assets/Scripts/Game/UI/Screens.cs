@@ -670,10 +670,12 @@ namespace DnD.Game
                 if (!g.World.Friendship.ContainsKey(n.Id)) continue;
                 sb.AppendLine($"{n.Name} — {new string('♥', h)}{new string('♡', Mathf.Max(0, 5 - h))}");
             }
-            var standing = FactionDb.All.Values.Where(f => g.World.Standing.ContainsKey(f.Id) || g.World.CommittedFaction == f.Id).ToList();
+            var standing = FactionDb.All.Values.Where(f => g.World.Standing.ContainsKey(f.Id) || g.World.CommittedFaction == f.Id || Factions.Heard(f.Id)).ToList();
             if (standing.Count > 0)
             {
                 sb.AppendLine("\n<b>The four forces</b>");
+                sb.AppendLine($"Heard out: {Factions.HeardCount}/{FactionDb.All.Count}");
+                foreach (var f in FactionDb.All.Values.Where(f => Factions.Heard(f.Id))) sb.AppendLine($"<i>{FactionDb.Title(f.Id)}: \"{f.Belief}\"</i>");
                 foreach (var f in standing)
                 {
                     int s = Factions.Standing(f.Id);
