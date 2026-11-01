@@ -1661,7 +1661,7 @@ namespace DnD.Game
         {
             yield return new WaitForSeconds(0.35f);
             var turn = u.Cb.Turn;
-            var foes = Units.Where(o => Hostile(u, o) && o.Active).ToList();
+            var foes = Units.Where(o => Hostile(u, o) && o.Active && !Spares(u, o)).ToList();
             if (foes.Count == 0) yield break;
 
             // Companion healer: pick up a fallen friend first.
@@ -1919,7 +1919,7 @@ namespace DnD.Game
             foreach (var u in Units.ToList())
             {
                 if (u == justActed || !u.Active || !(u.C is Monster m) || m.Def.LegendaryPerRound <= 0 || m.LegendaryLeft <= 0) continue;
-                var foes = Units.Where(o => Hostile(u, o) && o.Active).ToList();
+                var foes = Units.Where(o => Hostile(u, o) && o.Active && !Spares(u, o)).ToList();
                 if (foes.Count == 0) yield break;
                 foreach (var la in m.Def.LegendaryActions)
                 {

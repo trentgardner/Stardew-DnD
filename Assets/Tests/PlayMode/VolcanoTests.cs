@@ -298,6 +298,163 @@ namespace DnD.Tests
             Assert.AreEqual("heart_again", d.Start(c));
         }
 
+        // ============================================================ Task 4: the illusion of peace, the fight, the half solution
+
+        static PlayerSlot AtTheHeart(GameRoot g, PlayerSlot p, string side = "crown")
+        {
+            AtTheGate(g, p, side);
+            g.Quests.Set(Answers.Id, Answers.Gate, p);
+            g.Warp(p, "emberhorn_heart", new Vector2Int(2, 10), false);
+            p.Hud.CloseAll();
+            return p;
+        }
+
+        static IEnumerator FinishFight(GameRoot g, PlayerSlot p, bool win)
+        {
+            var input = p.Input;
+            p.Input = new FuzzInput(7) { CancelChance = 0, MenuChance = 0 };
+            yield return Frames(2);
+            foreach (var c in g.Combats.ToList())
+                foreach (var u in c.Units)
+                {
+                    if (win && u.C.Team == Team.Enemies) u.C.HP = 0;
+                    if (!win && u.C.Team == Team.Players) { u.C.HP = 0; if (u.C is PlayerCharacter pc) pc.DeathFailures = 3; }
+                }
+            Time.timeScale = 4;
+            float start = Time.realtimeSinceStartup;
+            while (g.AnyInCombat && Time.realtimeSinceStartup - start < 90f) yield return null;
+            Time.timeScale = 1;
+            p.Input = input;
+            yield return Frames(30);
+            Assert.IsFalse(g.AnyInCombat, "the fight ends");
+            p.Hud.CloseAll();
+        }
+
+        [UnityTest]
+        public IEnumerator TalkAlwaysEndsInAFight()
+        {
+            var g = GameRoot.I;
+            var p = AtTheHeart(g, g.DebugStart(Still(30), "bard", "elf"));
+            yield return Frames(3);
+            var d = DialogueDb.Get("warden_parley");
+            foreach (var node in d.Nodes.Values.Where(n => n.Id != "turn"))
+            {
+                // From every node, some path reaches "turn".
+                var seen = new System.Collections.Generic.HashSet<string>();
+                var q = new System.Collections.Generic.Queue<string>(); q.Enqueue(node.Id);
+                while (q.Count > 0)
+                {
+                    var id = q.Dequeue();
+                    if (!seen.Add(id) || !d.Nodes.ContainsKey(id)) continue;
+                    foreach (var o in d.Nodes[id].Options) foreach (var nx in new[] { o.Next, o.Success, o.Failure }) if (nx != null) q.Enqueue(nx);
+                }
+                Assert.IsTrue(seen.Contains("turn"), $"{node.Id} can reach the fight");
+            }
+            var c = new DCtx { P = p };
+            Opt(d.Nodes["turn"], "(Roll initiative").Do(c);
+            yield return Frames(2);
+            Assert.IsTrue(g.Combats.Any(x => x.GroupId == "warden"), "the talk ends in the fight");
+            Assert.IsFalse(g.World.PacifiedGroups.Contains("warden"), "no peaceful way past it");
+        }
+
+        static DOption Opt(DNode n, string startsWith) => n.Options.First(o => o.Text.StartsWith(startsWith));
+
+        [UnityTest]
+        public IEnumerator InsightOnlyWithTheBestiary()
+        {
+            var g = GameRoot.I;
+            var p = AtTheHeart(g, g.DebugStart(Still(31), "cleric", "dwarf"));
+            yield return Frames(3);
+            var c = new DCtx { P = p };
+            var insight = DialogueDb.Get("warden_parley").Nodes["speak"].Options.Single(o => o.Check == Skill.Insight);
+            Assert.IsFalse(insight.Show(c), "no bestiary, no weak spot");
+            g.World.LoreFound.Add("emberhorn_warden");
+            Assert.IsTrue(insight.Show(c), "you read the bestiary in the Restricted Section");
+            insight.OnSuccess(c);
+            Assert.IsTrue(g.World.Flag(DialogueDb.WardenWeakness));
+        }
+
+        [UnityTest]
+        public IEnumerator RollingWellPays()
+        {
+            var g = GameRoot.I;
+            var p = AtTheHeart(g, g.DebugStart(Still(32), "bard", "elf"));
+            yield return Frames(3);
+            var c = new DCtx { P = p };
+            var d = DialogueDb.Get("warden_parley");
+            d.Nodes["speak"].Options.Single(o => o.Check == Skill.Persuasion).OnSuccess(c);
+            Assert.IsTrue(g.World.Flag(DialogueDb.WardenHesitated));
+            var show = d.Nodes["speak"].Options.Single(o => o.Check == Skill.AnimalHandling);
+            show.OnSuccess(c);
+            Assert.IsTrue(g.World.Flag(DialogueDb.WardenSparesDragon));
+            Assert.IsTrue(Opt(d.Nodes["hesitates"], "(It's time").Show(c), "two tries: it's time");
+            Opt(d.Nodes["turn"], "(Roll initiative").Do(c);
+            yield return Frames(2);
+            Assert.IsTrue(g.Combats.Single().EnemiesSurprised, "it hesitated: the party gets the first move");
+        }
+
+        [UnityTest, Timeout(300000)]
+        public IEnumerator VictoryEasesTheBlightOnce()
+        {
+            var g = GameRoot.I;
+            var p = AtTheHeart(g, g.DebugStart(Still(33), "fighter", "dwarf"));
+            yield return Frames(3);
+            Assert.AreEqual(3, g.World.BlightStage);
+            var c = new DCtx { P = p };
+            Opt(DialogueDb.Get("warden_parley").Nodes["turn"], "(Roll initiative").Do(c);
+            yield return FinishFight(g, p, true);
+            Assert.AreEqual(Answers.Rest, g.Quests.Stage(Answers.Id));
+            Assert.AreEqual(2, g.World.BlightStage, "the half solution: the ash thins");
+            Assert.IsTrue(g.World.BlightEased && g.World.Flag(GameRoot.WardenFallen));
+            Assert.IsTrue(g.World.LoreFound.Contains("warden_last_words"));
+            Assert.IsTrue(p.Hud.LogLines.Any(l => l.Contains("Hold... the door")));
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(3);
+            Assert.AreEqual(2, g.World.BlightStage, "eased exactly once, after a reload too");
+            Assert.AreEqual(Answers.Rest, g.Quests.Stage(Answers.Id));
+        }
+
+        [UnityTest, Timeout(300000)]
+        public IEnumerator WipeResetsTheWarden()
+        {
+            var g = GameRoot.I;
+            var p = AtTheHeart(g, g.DebugStart(Still(34), "fighter", "dwarf"));
+            yield return Frames(3);
+            g.World.SetFlag(DialogueDb.WardenHesitated);
+            g.World.SetFlag(DialogueDb.WardenWeakness);
+            g.World.SetFlag("warden_try_persuade");
+            var c = new DCtx { P = p };
+            Opt(DialogueDb.Get("warden_parley").Nodes["turn"], "(Roll initiative").Do(c);
+            yield return FinishFight(g, p, false);
+            yield return Frames(120);
+            Assert.IsFalse(g.World.DefeatedGroups.Contains("warden"), "the Warden still stands");
+            Assert.IsFalse(g.World.Flag(DialogueDb.WardenHesitated), "the talk's boons must be earned again");
+            Assert.IsFalse(g.World.Flag("warden_try_persuade"), "and every approach can be tried again");
+            Assert.IsTrue(g.World.Flag(DialogueDb.WardenWeakness), "what you learned, you keep");
+            Assert.AreNotEqual(Answers.Rest, g.Quests.Stage(Answers.Id));
+        }
+
+        [UnityTest]
+        public IEnumerator CoopPartnerJoinsTheWardenFight()
+        {
+            var g = GameRoot.I;
+            var p1 = AtTheHeart(g, g.DebugStart(Still(35), "fighter", "dwarf"));
+            var p2 = g.DebugStart(Still(36), "wizard", "elf");
+            yield return Frames(3);
+            p2.Hud.CloseAll();
+            g.Warp(p2, "town", WorldDb.Zones["town"].DefaultSpawn, false); // P2 is back home when P1 starts it
+            yield return Frames(2);
+            Opt(DialogueDb.Get("warden_parley").Nodes["turn"], "(Roll initiative").Do(new DCtx { P = p1 });
+            yield return Frames(2);
+            var fight = g.Combats.Single();
+            Assert.IsFalse(fight.Humans.Contains(p2), "P2 is elsewhere");
+            g.Warp(p2, "emberhorn_heart", new Vector2Int(4, 10), false);
+            yield return Frames(10);
+            Assert.IsTrue(fight.Humans.Contains(p2), "P2 walks in and joins the fight");
+            Assert.IsFalse(p2.Hud.Top is DialogueScreen, "not stuck in a conversation");
+        }
+
         [UnityTest]
         public IEnumerator NoBreathOrLegendaryFromTheFallen()
         {

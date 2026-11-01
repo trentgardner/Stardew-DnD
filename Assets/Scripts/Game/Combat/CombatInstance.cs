@@ -62,6 +62,15 @@ namespace DnD.Game
 
         public CombatInstance(GameRoot g, Zone zone, string groupId) { G = g; Zone = zone; GroupId = groupId; }
 
+        /// <summary>Creatures given fire resistance for this fight only (Ashby's ward).</summary>
+        public readonly List<Creature> WardResisted = new List<Creature>();
+        /// <summary>The fight started with the enemies surprised (an ambush, or a Warden that hesitated).</summary>
+        public bool EnemiesSurprised => _enemiesSurprised;
+
+        /// <summary>A Warden shown the young dragon won't turn on it while it's still itself (phase one).</summary>
+        bool Spares(Unit attacker, Unit target) =>
+            target.C is Dragonling && attacker.C is Monster m && m.Def.Id == "warden" && !m.PhaseTwo && G.World.Flag(DialogueDb.WardenSparesDragon);
+
         // ================================================================== setup
 
         public Unit AddUnit(Creature c, Actor a, PlayerSlot owner = null, EnemyAgent enemy = null, CompanionAgent comp = null)

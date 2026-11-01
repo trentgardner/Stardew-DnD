@@ -712,8 +712,41 @@ namespace DnD.Game
         public void EndParley(string groupId) => _parley.Remove(groupId);
 
         /// <summary>Story hooks for a group being dealt with, whichever way it went (fight, talk, scare).</summary>
+        /// <summary>Your side's last help at the Heart, applied when the Warden fight begins (Perrin's ward, Odo's mark).</summary>
+        void ApplyWardenBoons(CombatInstance c)
+        {
+            if (c.GroupId != WardenGroup) return;
+            if (World.Flag(DialogueDb.WardActiveFlag))
+                foreach (var u in c.Units.Where(u => u.C.Team == Team.Players && !(u.C is Dragonling)))
+                    if (u.C.Resistances.Add(DamageType.Fire)) c.WardResisted.Add(u.C);
+            if (World.Flag(DialogueDb.WardenMarkedFlag))
+                foreach (var u in c.Units.Where(u => u.C is Monster m && m.Def.Id == "warden"))
+                {
+                    var mark = EffectLibrary.Create("guiding_bolt", u.C);
+                    mark.Name = "Marked by Odo";
+                    mark.RoundsLeft = 100;
+                    u.C.AddEffect(mark);
+                }
+        }
+
+        public const string WardenGroup = "warden", WardenFallen = "warden_fallen";
+
+        /// <summary>The Warden falls: the half solution. Answers ends, the blight eases (once), and its last words.</summary>
+        void WardenFalls()
+        {
+            if (World.Flag(WardenFallen)) return;
+            World.SetFlag(WardenFallen);
+            Blight.Ease();
+            var p1 = Players.FirstOrDefault(p => p.IsReady && p.Character != null);
+            Quests.Set(Answers.Id, Answers.Rest, p1);
+            LoreDb.Find("warden_last_words", p1);
+            foreach (var p in Players.Where(x => x.IsReady))
+                p.Hud.Narrate("The Warden lays its great head down on the black stone. \"Hold... the door,\" it breathes, and the light goes out of it. Far below, the lava sinks back into its channels, and for the first time in a year, the mountain is quiet.");
+        }
+
         void OnGroupResolved(string groupId)
         {
+            if (groupId == WardenGroup) WardenFalls();
             Quests.Notify(QuestEvent.GroupResolved, groupId);
             var def = Zones.Values.SelectMany(z => z.Def.EnemyGroups).FirstOrDefault(g => g.Id == groupId);
             if (def?.ResolvedFlag != null) World.SetFlag(def.ResolvedFlag);
@@ -803,6 +836,7 @@ namespace DnD.Game
                         c.AddUnit(comp.Character, comp.Actor, comp: comp);
             }
             AddDragonTo(c, false);
+            ApplyWardenBoons(c);
             if (!c.Units.Any(u => u.Owner != null))
             {
                 // Nobody's there to fight (e.g. a conversation ended in a threat while you stood elsewhere): don't run a fight with no heroes.
@@ -820,6 +854,12 @@ namespace DnD.Game
             DragonBackOut();
             if (c.Brawl) { EndBrawl(c, victory); return; }
             foreach (var u in c.Units.Where(u => u.C is PlayerCharacter pc && pc.IsDead)) _deathTime[u.C.Uid] = NowAbs;
+            foreach (var cr in c.WardResisted) cr.Resistances.Remove(DamageType.Fire); // Ashby's ward holds for one fight
+            if (!victory && c.GroupId == WardenGroup)
+            {
+                // The Warden regroups at full strength; the talk can be tried again (what you learned, you keep).
+                foreach (var f in new[] { DialogueDb.WardenHesitated, DialogueDb.WardenSparesDragon, "warden_try_persuade", "warden_try_show", "warden_try_insight", "parley:" + WardenGroup }) World.Flags.Remove(f);
+            }
             if (!victory) StartCoroutine(PartyWipe(c));
             else if (c.GroupId != null) OnGroupResolved(c.GroupId);
         }
