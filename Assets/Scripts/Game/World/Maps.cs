@@ -10,6 +10,8 @@
 //          K anvil/forge  N bench  p planter  L washing line
 //          d scorched earth  e glowing crystals  H kobold hut  i brazier  V stairs down  u tent
 //          puzzle pieces (see ZoneDef.Puzzle): Q plate  I lever  J push block  Z gate  / mirror  @ light source  % light crystal
+//          Academy (Act II): z bookshelf  # hedge  + ward pillar  ^ floating stone  & the Grand Orrery  $ the Starwell
+//                            ! telescope  - desk  < rune floor (walkable)
 namespace DnD.Game
 {
     public static class Maps

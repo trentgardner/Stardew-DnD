@@ -237,7 +237,17 @@ namespace DnD.Game
 
             // Warps (doors, mine entrance)
             var warp = Zone.WarpAt(MapPos);
-            if (warp != null && warp != _lastWarp) { _lastWarp = warp; GameRoot.I.Warp(Slot, warp.ToZone, warp.ToPos, true); return; }
+            if (warp != null && warp != _lastWarp)
+            {
+                _lastWarp = warp;
+                if (!warp.Open(GameRoot.I.World)) { if (warp.ClosedText != null) Slot.Hud.Narrate(warp.ClosedText); }
+                else
+                {
+                    GameRoot.I.Warp(Slot, warp.ToZone, warp.ToPos, true);
+                    if (warp.Narration != null) Slot.Hud.Narrate(warp.Narration, false);
+                    return;
+                }
+            }
             if (warp == null) _lastWarp = null;
 
             // Interaction
@@ -499,7 +509,12 @@ namespace DnD.Game
             if (IsDragon) { PickNearestLeader(); if (GetComponent<DragonPet>()?.Busy == true) return; }
             if (Leader == null || Leader.Avatar == null || Leader.InCombat && Character != null) return;
             if (Waiting) { Actor.Moving = false; return; }
-            if (Actor.Zone != Leader.Zone) { Actor.PlaceAt(Leader.Zone, Leader.MapPos); return; }
+            if (Actor.Zone != Leader.Zone)
+            {
+                if (IsDragon && Leader.Zone.Def.DragonStays) { Actor.Moving = false; return; } // it won't go in there; it waits
+                Actor.PlaceAt(Leader.Zone, Leader.MapPos);
+                return;
+            }
             var target = FollowSpot();
             float d = Vector2.Distance(transform.position, target);
             Actor.Moving = d > 0.25f;
@@ -518,7 +533,7 @@ namespace DnD.Game
         void PickNearestLeader()
         {
             var g = GameRoot.I;
-            if (g.Dragon != null && g.Dragon.MaxHP != Dragonling.MaxHPFor(g.PartyLevel)) g.Dragon.SetPartyLevel(g.PartyLevel);
+            if (g.Dragon != null && g.Dragon.MaxHP != Dragonling.MaxHPFor(g.PartyLevel, g.Dragon.Stage)) g.Dragon.SetPartyLevel(g.PartyLevel);
             if (Leader != null && Leader.InCombat) return; // don't swap mid-fight
             bool leaderOk = Leader != null && Leader.IsReady;
             bool leaderHere = leaderOk && Leader.Zone == Actor.Zone;

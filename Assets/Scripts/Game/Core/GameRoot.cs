@@ -572,7 +572,16 @@ namespace DnD.Game
             if (!Zones.TryGetValue(zoneId, out var zone)) return;
             if (sfx) Sfx.Play("door");
             p.Avatar.PlaceAt(zone, pos);
-            foreach (var c in CompanionsOf(p)) if (!c.Waiting) c.Actor.PlaceAt(zone, pos);
+            foreach (var c in CompanionsOf(p))
+            {
+                if (c.Waiting) continue;
+                if (c.IsDragon && zone.Def.DragonStays)
+                {
+                    p.Hud.Narrate($"{World.DragonName} won't come down the stairs. Every scale is standing on end.");
+                    continue;
+                }
+                c.Actor.PlaceAt(zone, pos);
+            }
             SnapCamera(p);
             foreach (var g in zone.Def.EnemyGroups) SpawnGroupIfNeeded(zone, g);
             foreach (var n in _npcs) n.UpdateSchedule(false);
@@ -977,6 +986,10 @@ namespace DnD.Game
             d.Actor.name = World.DragonName;
             Companions.Add(d);
             DragonGrew();
+            // Loaded inside a place it won't enter (the Sealing Hall): it's waiting just outside, where the way in starts.
+            var here = leader?.Zone;
+            if (here != null && here.Def.DragonStays && here.Def.Warps.Count > 0 && Zones.TryGetValue(here.Def.Warps[0].ToZone, out var outside))
+                d.Actor.PlaceAt(outside, here.Def.Warps[0].ToPos);
         }
 
         /// <summary>The dragon is in some fight right now (it only ever joins one).</summary>

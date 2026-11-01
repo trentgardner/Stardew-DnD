@@ -78,17 +78,23 @@ namespace DnD.Game
 
         public override string PromptText(PlayerSlot p) => Def.Prompt;
 
-        bool Present
+        bool Present => PresentNow(Def);
+
+        /// <summary>Is this secret here right now (its quest stage, its hours)?</summary>
+        public static bool PresentNow(SecretDef def)
         {
-            get
+            var g = GameRoot.I;
+            if (def.FromHour >= 0)
             {
-                if (!Def.IsQuestSpot) return true;
-                var g = GameRoot.I;
-                if (g.Quests.Stage(Def.QuestId) != Def.QuestStage) return false;
-                if (!Def.Daily && g.World.Flag(FoundKey)) return false; // done: the goat went home, the herb is picked
-                if (Def.NightOnly && g.Clock.Hour >= 5 && g.Clock.Hour < 20) return false;
-                return true;
+                int h = g.Clock.Hour;
+                bool inside = def.FromHour <= def.ToHour ? h >= def.FromHour && h < def.ToHour : h >= def.FromHour || h < def.ToHour;
+                if (!inside) return false;
             }
+            if (!def.IsQuestSpot) return true;
+            if (g.Quests.Stage(def.QuestId) != def.QuestStage) return false;
+            if (!def.Daily && g.World.Flag("secret:" + def.Id)) return false; // done: the goat went home, the herb is picked
+            if (def.NightOnly && g.Clock.Hour >= 5 && g.Clock.Hour < 20) return false;
+            return true;
         }
         public override bool Available(PlayerSlot p) => Present;
 
@@ -96,7 +102,7 @@ namespace DnD.Game
         void Update()
         {
             if (_sparkle != null && _sparkle.enabled) _sparkle.color = new Color(1, 1, 1, 0.55f + 0.45f * Mathf.Sin(Time.time * 5f));
-            if (!Def.IsQuestSpot) return;
+            if (!Def.IsQuestSpot && Def.FromHour < 0) return;
             if (_sr == null) _sr = GetComponent<SpriteRenderer>();
             if (_sr != null) _sr.enabled = Present;
         }

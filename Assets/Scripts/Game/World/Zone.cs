@@ -196,7 +196,7 @@ namespace DnD.Game
         void BuildCell(Vector2Int m, char c)
         {
             string floor = FloorFor(m);
-            if ("qceiHuxrZJQI/@%Ag".IndexOf(c) >= 0) floor = PropGround(m, floor);
+            if ("qceiHuxrZJQI/@%Agz+^&$!-".IndexOf(c) >= 0) floor = PropGround(m, floor);
             _base.SetTile(Cell(m), GetTile(floor, false));
             switch (c)
             {
@@ -263,6 +263,28 @@ namespace DnD.Game
                 // puzzle pieces: the puzzle layer dresses these; a closed gate and a push block are solid
                 case 'Z': case 'J': Ground(m, floor); Solid(m); break;
                 case 'Q': case 'I': case '/': case '@': case '%': Ground(m, floor); break;
+                // Act II: the Academy's set dressing (visible magic).
+                case 'z': Ground(m, floor); Solid(m); Prop(m, "obj_bookshelf"); break;
+                case '#': Ground(m, floor); Solid(m); Prop(m, "obj_hedge"); break;
+                case '+': Ground(m, floor); Solid(m); ArcaneGlow(Prop(m, "obj_ward")).AddComponent<WardShimmer>(); break;
+                case '^': Ground(m, floor); Solid(m); ArcaneGlow(Prop(m, "obj_floating_stone")).AddComponent<Floater>(); break;
+                case '&': Ground(m, floor); Solid(m); ArcaneGlow(Prop(m, "obj_orrery_0"), 4f).AddComponent<FrameFlip>().Id = "obj_orrery"; break;
+                case '$':
+                    Ground(m, floor); Solid(m);
+                    Prop(m, "obj_starwell");
+                    var spark = ArcaneGlow(Prop(m, "fx_starlight"), 4f);
+                    spark.GetComponent<SpriteRenderer>().sortingOrder += 1;
+                    spark.AddComponent<Floater>().Amplitude = 0.14f;
+                    break;
+                case '!': Ground(m, floor); Solid(m); Prop(m, "obj_telescope"); break;
+                case '-': Ground(m, floor); Solid(m); Prop(m, "obj_desk"); break;
+                case '<':
+                    Ground(m, floor);
+                    var rune = Prop(m, "obj_rune");
+                    rune.transform.position += new Vector3(0, 0.4f, 0); // a flat floor marking, not a standing prop
+                    rune.GetComponent<SpriteRenderer>().sortingOrder = -900;
+                    rune.AddComponent<WardShimmer>().Min = 0.35f;
+                    break;
                 case 'T': Ground(m, floor); Solid(m); Prop(m, "obj_tree"); break;
                 case 't': Ground(m, floor); Solid(m); Prop(m, "obj_tree"); break;
                 case 'h': Ground(m, floor); Solid(m); Prop(m, "obj_bush"); break;
@@ -296,6 +318,13 @@ namespace DnD.Game
                     break;
                 default: Ground(m, floor); break;
             }
+        }
+
+        /// <summary>A cool arcane light (wards, floating stones, the orrery), seen at night and in the dark.</summary>
+        static GameObject ArcaneGlow(GameObject go, float radius = 2f)
+        {
+            LightSource.Attach(go, radius, new Color(0.6f, 0.8f, 1f, 1f));
+            return go;
         }
 
         GameObject Prop(Vector2Int m, string sprite, bool glow = false)
@@ -354,7 +383,7 @@ namespace DnD.Game
                 float t = i / (float)steps;
                 var p = new Vector2Int(Mathf.RoundToInt(Mathf.Lerp(a.x, b.x, t)), Mathf.RoundToInt(Mathf.Lerp(a.y, b.y, t)));
                 char c = CharAt(p);
-                if (c == 'X' || c == 'W' || c == 'w' || c == 'T' || c == 'U' || c == 'R' || c == 'G' || c == 'S' || c == 'P' || c == 'e' || c == 'H') return false;
+                if (c == 'X' || c == 'W' || c == 'w' || c == 'T' || c == 'U' || c == 'R' || c == 'G' || c == 'S' || c == 'P' || c == 'e' || c == 'H' || c == 'z' || c == '#') return false;
                 if (c == 'Z' && Blocked[p.x, p.y]) return false; // a closed puzzle gate
             }
             return true;

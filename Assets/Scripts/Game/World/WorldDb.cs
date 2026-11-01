@@ -12,6 +12,18 @@ namespace DnD.Game
         public string ToZone;
         public Vector2Int ToPos;
         public WarpDef(int x, int y, string zone, int tx, int ty) { At = new Vector2Int(x, y); ToZone = zone; ToPos = new Vector2Int(tx, ty); }
+        /// <summary>Closed before this act (Act I stays light: the Academy road waits for Act II).</summary>
+        public int MinAct = 1;
+        /// <summary>Only open while this world flag is set / not set (a warded door, a looping corridor).</summary>
+        public string RequiresFlag, ForbidFlag;
+        /// <summary>Narrated when you step onto it while it's closed.</summary>
+        public string ClosedText;
+        /// <summary>Narrated when an open warp takes you (e.g. "The shelves go on. And on.").</summary>
+        public string Narration;
+        public bool Open(WorldState w) =>
+            (w == null || w.Act >= MinAct) &&
+            (RequiresFlag == null || (w != null && w.Flag(RequiresFlag))) &&
+            (ForbidFlag == null || w == null || !w.Flag(ForbidFlag));
     }
 
     public class EnemySpawn
@@ -86,6 +98,8 @@ namespace DnD.Game
         public bool IsQuestSpot => QuestId != null;
         /// <summary>Only there after dark (20:00 to 05:00).</summary>
         public bool NightOnly;
+        /// <summary>Only there from FromHour up to (not including) ToHour; wraps past midnight. -1 = any time.</summary>
+        public int FromHour = -1, ToHour = -1;
         /// <summary>Success settles this enemy group peacefully (full XP, as if talked down), e.g. returning a lost cub.</summary>
         public string PacifiesGroup;
         /// <summary>A sneak route: success moves the player (and their companions) to this tile in the same zone. Once found, no roll again.</summary>
@@ -108,6 +122,8 @@ namespace DnD.Game
         public bool Dark;
         public bool Indoors;
         public bool SafeForLongRest;
+        /// <summary>The dragon refuses to follow into this place (it waits where it is until you come back).</summary>
+        public bool DragonStays;
         /// <summary>How much the blight shows here (0-1); -1 = the default for the kind of place (see Blight.Weight).</summary>
         public float BlightWeight = -1;
         /// <summary>Murals, carvings and records with lore for the journal (Act II).</summary>
