@@ -568,6 +568,173 @@ namespace DnD.Tests
             Assert.AreEqual(2, g.Quests.Stage("green_bargain"), "the last token finishes it after a reload");
         }
 
+        // ============================================================ Task 5: the Wyrmwatch
+
+        [UnityTest]
+        public IEnumerator CragfootIsReachable()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(40), "ranger", "human");
+            yield return Frames(2);
+            Assert.IsFalse(WorldDb.Zones["lantern_road"].Warps.Find(w => w.ToZone == "cragfoot").Open(g.World), "closed in Act I");
+            ActTwo(g, p);
+            TakeWarp(g, p, "lantern_road", 59, 14);
+            yield return Frames(3);
+            Assert.AreEqual("cragfoot", p.Zone.Def.Id);
+            AssertAllReachable(g, p.Zone, p.Avatar.MapPos);
+            TakeWarp(g, p, "cragfoot", 22, 0);
+            yield return Frames(3);
+            Assert.AreEqual("ashmaw_lair", p.Zone.Def.Id);
+            AssertAllReachable(g, p.Zone, p.Avatar.MapPos);
+        }
+
+        [UnityTest]
+        public IEnumerator EmberEyesFullRun()
+        {
+            foreach (bool calm in new[] { true, false })
+            {
+                var g = GameRoot.I;
+                var p = ActTwo(g, g.DebugStart(Still(calm ? 41 : 42), "ranger", "human"));
+                yield return Frames(2);
+                var c = new DCtx { P = p };
+                var cal = DialogueDb.Get("calloway");
+                cal.Nodes["intro"].OnEnter(c);
+                Assert.IsTrue(Factions.Heard("hunters"));
+                cal.Nodes["eyes"].OnEnter(c);
+                Assert.AreEqual(1, g.Quests.Stage("ember_eyes"));
+                g.Clock.Minutes = 22 * 60;
+                g.Warp(p, "cragfoot", new Vector2Int(38, 22), false);
+                yield return Frames(3);
+                SpotNamed("pen_watch").Resolve(p, Rules.CheckOutcome.Success);
+                p.Hud.CloseAll();
+                Assert.AreEqual(2, g.Quests.Stage("ember_eyes"));
+                yield return Frames(3);
+                Assert.IsTrue(Object.FindObjectsByType<EnemyAgent>(FindObjectsSortMode.None).Any(e => e.Group != null && e.Group.Id == "cragfoot_wolves"), "the wolves come over the palisade");
+                int xp = p.Character.XP;
+                if (calm) g.PacifyGroup("cragfoot_wolves", p);
+                else yield return WinFight(g, p, "cragfoot_wolves");
+                Assert.AreEqual(3, g.Quests.Stage("ember_eyes"));
+                Assert.AreEqual(xp + 3 * 200, p.Character.XP, "calm or fight, the same XP");
+                var odo = DialogueDb.Get("odo");
+                Assert.AreEqual("hurt", odo.Start(c));
+                var medicine = odo.Nodes["hurt"].Options.Single(o => o.Check == Rules.Skill.Medicine);
+                medicine.OnSuccess(c);
+                Assert.AreEqual(4, g.Quests.Stage("ember_eyes"));
+                SpotNamed("wolf_collar").Resolve(p, Rules.CheckOutcome.Success);
+                p.Hud.CloseAll();
+                Assert.AreEqual(5, g.Quests.Stage("ember_eyes"));
+                Assert.AreEqual("eyes_done", cal.Start(c));
+                xp = p.Character.XP;
+                cal.Nodes["eyes_done"].OnEnter(c);
+                cal.Nodes["eyes_done"].OnEnter(c);
+                Assert.IsTrue(g.Quests.Done("ember_eyes"));
+                Assert.AreEqual(xp + 1200, p.Character.XP, "paid once");
+                Assert.AreEqual(10, Factions.Standing("hunters"));
+                g.QuitToTitle();
+                yield return Frames(2);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator OdoCanBeHealedWithAPotion()
+        {
+            var g = GameRoot.I;
+            var p = ActTwo(g, g.DebugStart(Still(43), "fighter", "human"));
+            yield return Frames(2);
+            var c = new DCtx { P = p };
+            g.Quests.Start("ember_eyes", p);
+            g.Quests.Stages["ember_eyes"] = 3;
+            var drink = Opt(DialogueDb.Get("odo").Nodes["hurt"], "Here, drink this");
+            while (p.Character.CountOf("potion_healing") > 0) p.Character.RemoveItem("potion_healing");
+            while (p.Character.CountOf("potion_greater_healing") > 0) p.Character.RemoveItem("potion_greater_healing");
+            Assert.IsFalse(drink.Show(c), "only with a potion to give");
+            g.GiveItem(p, "potion_healing");
+            Assert.IsTrue(drink.Show(c));
+            drink.Do(c);
+            Assert.AreEqual(4, g.Quests.Stage("ember_eyes"));
+            Assert.AreEqual(0, p.Character.CountOf("potion_healing"), "the potion is used up");
+        }
+
+        [UnityTest]
+        public IEnumerator LongHuntEveryChoiceCompletes()
+        {
+            var g = GameRoot.I;
+            var p = ActTwo(g, g.DebugStart(Still(44), "ranger", "human"));
+            yield return Frames(2);
+            var c = new DCtx { P = p };
+            var cal = DialogueDb.Get("calloway");
+            g.World.SetFlag("met_calloway");
+            HearAll();
+            g.Quests.Set("ember_eyes", 6, p);
+            var commit = Opt(cal.Nodes["start"], "We'll stand with the Wyrmwatch");
+            Assert.IsTrue(commit.Show(c));
+            commit.Do(c);
+            yield return ConfirmCommit(p);
+            Assert.AreEqual("hunters", g.World.CommittedFaction);
+            Assert.AreEqual(1, g.Quests.Stage("long_hunt"));
+            g.Warp(p, "cragfoot", new Vector2Int(22, 6), false);
+            yield return Frames(3);
+            SpotNamed("ashmaw_claws").Resolve(p, Rules.CheckOutcome.Success);
+            p.Hud.CloseAll();
+            Assert.AreEqual(1, g.Quests.Stage("long_hunt"), "one sign isn't a trail");
+            SpotNamed("ashmaw_bones").Resolve(p, Rules.CheckOutcome.Success);
+            p.Hud.CloseAll();
+            Assert.AreEqual(2, g.Quests.Stage("long_hunt"));
+            g.Warp(p, "ashmaw_lair", new Vector2Int(12, 17), false);
+            yield return Frames(3);
+            int xp = p.Character.XP;
+            g.PacifyGroup("ashmaw_den", p);
+            p.Hud.CloseAll();
+            Assert.AreEqual(3, g.Quests.Stage("long_hunt"));
+            Assert.AreEqual(xp + 2300, p.Character.XP, "talking the Ashmaw down pays like killing it");
+            Assert.IsTrue(SpotNamed("ashmaw_nest").Available(p));
+
+            var egg = DialogueDb.Get("wyvern_egg").Nodes["nest"];
+            var report = cal.Nodes["hunt_report"];
+            foreach (var (eggChoice, hunters, bond) in new[] { ("Destroy it", 10, -1), ("Leave it be", -10, 2), ("Take it to the Academy", -5, 0) })
+                foreach (var (bell, bellHunters, bellBond) in new[] { ("Do it", 10, -1), ("No bell", -5, 0) })
+                {
+                    g.Quests.Stages["long_hunt"] = 3; g.Quests.Paid.Remove("long_hunt");
+                    g.World.Standing["hunters"] = 0; g.World.DragonBond = 50;
+                    Opt(egg, eggChoice).Do(c);
+                    Assert.AreEqual(4, g.Quests.Stage("long_hunt"), eggChoice);
+                    Assert.AreEqual("hunt_report", cal.Start(c));
+                    Opt(report, bell).Do(c);
+                    Assert.IsTrue(g.Quests.Done("long_hunt"), $"{eggChoice} / {bell}");
+                    Assert.AreEqual(hunters + bellHunters + 30, Factions.Standing("hunters"), $"{eggChoice} / {bell}");
+                    Assert.AreEqual(50 + bond + bellBond, g.World.DragonBond, $"{eggChoice} / {bell}");
+                }
+            Assert.IsTrue(g.World.Flag("wyvern_egg_saved"));
+            Assert.IsTrue(p.Character.CountOf("wyvern_egg") > 0);
+            Assert.IsTrue(g.World.Flag("banner_hunters"));
+            int cloaks = p.Character.CountOf("wyrmwatch_cloak");
+            Opt(report, "Do it").Do(c);
+            Assert.AreEqual(cloaks, p.Character.CountOf("wyrmwatch_cloak"), "turning it in again pays nothing");
+        }
+
+        [UnityTest]
+        public IEnumerator LongHuntSurvivesSaveLoad()
+        {
+            var g = GameRoot.I;
+            var p = ActTwo(g, g.DebugStart(Still(45), "ranger", "human"));
+            yield return Frames(2);
+            Factions.Commit("hunters", p);
+            g.Quests.Start("long_hunt", p);
+            g.Quests.Set("long_hunt", 2, p);
+            g.Warp(p, "ashmaw_lair", new Vector2Int(12, 17), false);
+            yield return Frames(3);
+            yield return WinFight(g, p, "ashmaw_den");
+            Assert.AreEqual(3, g.Quests.Stage("long_hunt"));
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(3);
+            p = g.Players[0];
+            g.Warp(p, "ashmaw_lair", new Vector2Int(12, 17), false);
+            yield return Frames(3);
+            Assert.IsFalse(Object.FindObjectsByType<EnemyAgent>(FindObjectsSortMode.None).Any(e => e.Group != null && e.Group.Id == "ashmaw_den" && !e.Monster.IsDown && e.Monster.Team == DnD.Rules.Team.Enemies), "no Ashmaw on load");
+            Assert.IsTrue(SpotNamed("ashmaw_nest").Available(p));
+        }
+
         [UnityTest]
         public IEnumerator CrownsBannerSurvivesSaveLoad()
         {

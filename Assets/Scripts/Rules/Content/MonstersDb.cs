@@ -300,6 +300,24 @@ namespace DnD.Rules.Content
                 Resistances = { DamageType.Bludgeoning, DamageType.Piercing }, Vulnerabilities = { DamageType.Fire },
             };
 
+            All["ember_eyed_wolf"] = new MonsterDef
+            {
+                Id = "ember_eyed_wolf", Name = "Ember-Eyed Wolf", SpriteId = "mon_ember_wolf", AC = 14, HitDice = DiceExpr.Parse("5d10+10"),
+                Scores = new[] { 17, 15, 15, 3, 12, 7 }, Darkvision = 60, CR = 1, XP = 200, Speed = 50, PackTactics = true,
+                Description = "A wolf the size of a pony, grey with ash, eyes burning like coals. Some of them used to be somebody's dog. (SRD Dire Wolf.)",
+                Attacks = { new MonsterAttackDef { Name = "Bite", ToHit = 5, Damage = DiceExpr.Parse("2d6+3"), DamageType = DamageType.Piercing, OnHitEffect = "prone", OnHitSave = Ability.STR, OnHitSaveDC = 13 } },
+                ProficientSkills = { Skill.Perception, Skill.Stealth },
+            };
+            All["ashmaw"] = new MonsterDef
+            {
+                Id = "ashmaw", Name = "The Ashmaw", SpriteId = "mon_ashmaw", AC = 14, HitDice = DiceExpr.Parse("13d10+39"),
+                Scores = new[] { 19, 10, 16, 5, 12, 6 }, Darkvision = 60, CR = 6, XP = 2300, Speed = 20, ProficiencyBonus = 3,
+                Description = "An ember-eyed wyvern that has been taking Cragfoot's goats: leather wings, a hooked tail, and fire gone grey in its throat. (SRD Wyvern; the stinger's poison is folded into one roll.)",
+                Attacks = { Melee("Bite", 7, "2d6+4", DamageType.Piercing, 10), Melee("Stinger", 7, "4d6+4", DamageType.Poison, 10) },
+                Multiattack = { "Bite", "Stinger" },
+                ProficientSkills = { Skill.Perception }, CopperMin = 2000, CopperMax = 6000,
+            };
+
             // The party's hatchling (see Dragonling): HP comes from the party's level, not from hit dice.
             All["dragonling"] = new MonsterDef
             {

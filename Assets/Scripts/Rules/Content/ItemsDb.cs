@@ -129,6 +129,10 @@ namespace DnD.Rules.Content
                 "High Magister Ashby made it himself, the night after the ninth circle held for a breath. He said he wanted you to have something that would hold.", ac: 1);
             All["ward_charm"].Icon = "item_ring";
             C("bloom_draught", "Bloom Draught", ConsumableEffect.Heal, 2500, "2d4+2", "Dew from the Throne of Blossoms in a hawthorn cup. Drink (Bonus Action) to regain 2d4+2 HP. It tastes like the first warm day of spring.");
+            Wondrous("wyrmwatch_cloak", "Wyrmwatch Cloak", WornSlot.Cloak, 500, false, "A hunter's cloak of grey oiled wool, with the order's silver eye at the clasp. While you wear it you have +1 to saving throws.",
+                "Every member of the Wyrmwatch is given one on the day they first stand between a village and something with burning eyes. Calloway's is mostly patches.", save: 1);
+            All["wyrmwatch_cloak"].Icon = "item_watchwarden_cloak";
+            All["wyvern_egg"] = new ItemDef { Id = "wyvern_egg", Name = "Wyvern Egg", Kind = ItemKind.Treasure, PriceCp = 0, Icon = "item_star_shard", QuestItem = true, Weight = 3, Description = "A leathery grey egg, warm to the touch. Something inside it shifts when you talk. The Academy would want to see it. The Wyrmwatch would want it smashed." };
             All["star_chart"] = new ItemDef { Id = "star_chart", Name = "Varrow's Star Chart", Kind = ItemKind.Treasure, PriceCp = 5000, Icon = "item_star_chart", Description = "A hand-inked chart of the autumn sky, annotated in a furious, beautiful hand. Twelve stars over the Wyrmback are circled. One more is circled twice." };
             All["star_iron"] = new ItemDef { Id = "star_iron", Name = "Lump of Star-Iron", Kind = ItemKind.Treasure, PriceCp = 2500, Icon = "item_star_iron", Description = "Heavy, dark and pitted, still faintly warm. Garrick would love this." };
             All["dragon_treat"] = new ItemDef { Id = "dragon_treat", Name = "Smoked Pepper Jerky", Kind = ItemKind.Consumable, PriceCp = 5, Icon = "item_dragon_treat", Description = "Fiery, chewy and far too spicy for people. Baby dragons go wild for it." };

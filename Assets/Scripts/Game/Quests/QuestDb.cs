@@ -216,6 +216,36 @@ namespace DnD.Game
                 Reward = new QuestReward { Xp = 3000, Npc = "sorrel", Friendship = 100, Flag = "banner_fae" },
             });
 
+            // ------------------------------------------------------------ Act II Phase 4: the Wyrmwatch
+            Add(new QuestDef
+            {
+                Act = 2, Id = "ember_eyes", Title = "Ember Eyes", Giver = "calloway", Faction = "hunters",
+                StageText = new[] {
+                    "", "Something has been taking Cragfoot's goats at night. Keep watch over the empty pen after dark.",
+                    "Wolves over the palisade! Deal with them.",
+                    "The wolves are gone, but Odo Fenn is hurt. Help him.",
+                    "Odo will live. Search where the wolves came through the palisade.",
+                    "You found a dog's collar on one of them. Tell Huntmaster Calloway.",
+                    "Complete. The danger is real, and the beasts were someone's, once." },
+                Triggers = { new QuestTrigger(QuestEvent.GroupResolved, "cragfoot_wolves", 2, 3) },
+                Reward = new QuestReward { Xp = 1200, Npc = "calloway", Friendship = 50 },
+            });
+            Add(new QuestDef
+            {
+                Act = 2, Id = "long_hunt", Title = "The Long Hunt", Giver = "calloway", Faction = "hunters", Major = true,
+                StageText = new[] {
+                    "", "You stand with the Wyrmwatch. Track the Ashmaw, the wyvern taking Cragfoot's goats, up the goat track north of the hamlet.",
+                    "The trail leads into the cliffs. Find the Ashmaw's lair.",
+                    "The Ashmaw is dealt with. Search its nest.",
+                    "Report to Huntmaster Calloway.",
+                    "Complete. The hunt is over, and the Wyrmwatch stands behind you." },
+                Triggers = {
+                    QuestTrigger.AllFlags(1, 2, "ashmaw_track_a", "ashmaw_track_b"),
+                    new QuestTrigger(QuestEvent.GroupResolved, "ashmaw_den", 2, 3),
+                },
+                Reward = new QuestReward { Xp = 3000, Item = "wyrmwatch_cloak", Npc = "calloway", Friendship = 100, Flag = "banner_hunters" },
+            });
+
             Add(new QuestDef
             {
                 Act = 2, Id = "overdue", Title = "Overdue", Giver = "thorne",

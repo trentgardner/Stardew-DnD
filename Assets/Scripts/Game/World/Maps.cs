@@ -504,6 +504,68 @@ namespace DnD.Game
             "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
         };
 
+        // Act II Phase 4: Cragfoot and the Wyrmwatch Lodge, east along the Lantern Road. Road (0, 15-16) west; the goat track (22-23, 0) north.
+        public static readonly string[] Cragfoot =
+        {
+            "TTTTTTTTTTTTTTTTTTTTTT,,TTTTTTTTTTTTTTTTTTTTTT",
+            "TXXXXXXXXXXXXXXXXXXXXX,,XXXXXXXXXXXXXXXXXXXXXT",
+            "TXXXXXXXXXXXXXXXXXXXXX,,XXXXXXXXXXXXXXXXXXXXXT",
+            "TXXXXXXXXXXXXXXXXXXXXX,,XXXXXXXXXXXXXXXXXXXXXT",
+            "T....XX.......X..XX...,,.........X......XXX..T",
+            "T................XX...,,..............q......T",
+            "T...RRRR........q..s..,,..GGGGGGGGGGGG.......T",
+            "T...RRRR...RRRR.......,,..GGGGGGGGGGGG.:::::.T",
+            "T...WwDW...RRRR.......,,..GGGGGGGGGGGG.:P:P:.T",
+            "T..........WwDW.......,,..GGGGGGGGGGGG.:::::.T",
+            "T.....................,,..WWwWWDWWwWWW.:::::.T",
+            "T.....................,,...............:P:P:.T",
+            "T.t......t.....t......,,...............:::::.T",
+            "T............*........,,............t..::::x.T",
+            "T...........................h................T",
+            ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.....T",
+            ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.....T",
+            "T..h........................................fT",
+            "T.......*.....t...............*............tfT",
+            "T.................N.O....t..................fT",
+            "T...UUUU..........................ffff.ffff.fT",
+            "T...UUUU...RRRR..........*........f.......f.fT",
+            "T...WwDW...RRRR...................f.......f..T",
+            "T..........WwDW.....*.............f..x....f..T",
+            "T..........................RRRR...f.......f.fT",
+            "T...............UUUU.......RRRR...f.....x.f.fT",
+            "T...............UUUU.......WwDW...f.......f.fT",
+            "T.t.............WwDW.iAi..........fffffffff.fT",
+            "T.........t.................................fT",
+            "T.......................h......t............fT",
+            "T........................................h..fT",
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        };
+
+        // Act II Phase 4: the Ashmaw's lair above Cragfoot (Dark). The way in is (12-13, 19).
+        public static readonly string[] AshmawLair =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXX::XXXX::::::XXXXXXX",
+            "XXXXXXX::XXXX::::::XXXXXXX",
+            "XXXXXXX::::::::::::XXXXXXX",
+            "XXXXXXX:::::::r::::::::::X",
+            "X::::::::::::x:::::::::::X",
+            "X:::::::::e::::e:::::::::X",
+            "X:::::e::::::::::::r:::::X",
+            "X::::::::::d:::::::::::::X",
+            "X::::r::::::::d::::::::::X",
+            "X::r:::::d::::::::::e::::X",
+            "X:::::::::::::::d::::::::X",
+            "X::::::::::::::::::::::::X",
+            "X:::::::r::::::::r:::::::X",
+            "X::::::::::::::::::::XXXXX",
+            "XXXXX::::::::::::::::XXXXX",
+            "XXXXX::::::::::::::::XXXXX",
+            "XXXXX::::::::::::::::XXXXX",
+            "XXXXX::::::::::::::::XXXXX",
+            "XXXXXXXXXXXX::XXXXXXXXXXXX",
+        };
+
         // Act II: the Starfall Academy grounds. Gate (27-28, 43) south; library door (12,11), the Orrery Tower (44,13), the Observatory (48,25), the Glasshouse (8,26).
         public static readonly string[] Academy =
         {

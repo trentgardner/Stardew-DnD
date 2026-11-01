@@ -1460,6 +1460,14 @@ tint mon_ashsworn_keeper_0 mon_ashsworn_ksrc_0 0 0.3 1.1
 tint mon_ashsworn_keeper_1 mon_ashsworn_ksrc_1 0 0.3 1.1
 tint obj_lantern_cold obj_lantern 0 0.2 0.55
 audio music_glade "Audio/Musics/6 - Story.ogg"
+audio music_cragfoot "Audio/Musics/4 - Village.ogg"
+audio music_ashmaw "Audio/Musics/21 - Dungeon.ogg"
+actor npc_calloway "Actor/Character/Eskimo/SpriteSheet.png"
+actor npc_odo "Actor/Character/NinjaEskimo/SpriteSheet.png"
+actor npc_mother_hale "Actor/Character/OldWoman/SpriteSheet.png"
+still mon_ashmaw_src "Actor/Monster/Dragon/SpriteSheet.png"
+tint mon_ashmaw_0 mon_ashmaw_src_0 0 0.35 0.8
+tint mon_ashmaw_1 mon_ashmaw_src_1 0 0.35 0.8
 actor npc_sorrel "Actor/Character/Spirit/SpriteSheet.png"
 actor npc_blossom_speaker "Actor/Character/MaskGoldRacoon/SpriteSheet.png"
 actor npc_frost_speaker "Actor/Character/MaskRacoon/SpriteSheet.png"
@@ -1516,3 +1524,5 @@ tint  item_ember_lily item_ember_lily_src -95 1.4 1.1
 # Act II Phase 4: the Frost court's thorn guardians (after mon_vine_src)
 tint mon_thorn_guardian_0 mon_vine_src_0 180 0.15 1.5
 tint mon_thorn_guardian_1 mon_vine_src_1 180 0.15 1.5
+tint mon_ember_wolf_0 mon_wolf_0 -15 0.3 0.75
+tint mon_ember_wolf_1 mon_wolf_1 -15 0.3 0.75

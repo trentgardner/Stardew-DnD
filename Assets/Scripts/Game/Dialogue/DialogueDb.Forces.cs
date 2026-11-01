@@ -14,6 +14,10 @@ namespace DnD.Game
             {
                 case "marsh": return Marsh();
                 case "sorrel": return Sorrel();
+                case "calloway": return Calloway();
+                case "odo": return Odo();
+                case "mother_hale": return MotherHale();
+                case "wyvern_egg": return WyvernEgg();
                 case "blossom_speaker": return CourtSpeaker("blossom_speaker", "Speaker of Blossoms", "heard_blossom",
                     "The spring belongs to whoever makes the most of it, and that is us. Every flower in this glade drinks from it. Frost would sit on it, and keep it pretty, and let nothing grow.",
                     "A slim figure in a gold mask shaped like a sleepy fox, petals caught in their hair. They speak in a hurry, as if spring might end while they're talking.");
@@ -387,6 +391,142 @@ namespace DnD.Game
             Factions.Adjust("fae", 30, c.P);
             c.G.GiveItem(c.P, "bloom_draught", 3);
             c.G.Quests.Set("green_bargain", 3, c.P);
+        }
+
+        // =================================================================== The Wyrmwatch: Huntmaster Bryn Calloway, Odo, Mother Hale
+        // Weathered, blunt, kind to children. Brave people protecting villages from beasts that really are dangerous.
+
+        static Dialogue Calloway()
+        {
+            var d = new Dialogue("calloway", c =>
+                !c.G.World.Flag("met_calloway") ? "intro"
+                : c.G.Quests.Stage("ember_eyes") == 5 ? "eyes_done"
+                : c.G.Quests.Stage("long_hunt") == 4 ? "hunt_report"
+                : c.G.Quests.Stage("long_hunt") is int s && s >= 1 && s < 4 ? "hunt_task"
+                : "start");
+            const string who = "Huntmaster Bryn Calloway";
+            d.Node("intro", who,
+                c => $"So that's it. That's the one everybody's talking about. ...It's smaller than I thought. They always are, at first. Bryn Calloway. I run the Wyrmwatch. Keep your hand on its collar while you're in my village, and we'll get along.",
+                c => $"A broad, weathered woman in grey oiled wool, with a crossbow across her back and old burn scars up one arm. She doesn't take her eyes off {c.G.World.DragonName} once.",
+                c => { c.G.World.SetFlag("met_calloway"); Factions.Hear("hunters"); })
+                .Say("What does the Wyrmwatch want with our dragon?", "want")
+                .Roll(Skill.Insight, 15, "(Insight) She's afraid of it.", "afraid", "afraid_no")
+                .Say("What's the Wyrmwatch?", "what");
+            d.Node("want", who,
+                c => "Want? Nothing. I want it to stay small and stay kind and stay yours. But I've buried too many people to believe in 'stay'. Every village we've lost to an ember-eyed beast had somebody in it who said 'it's only small'. So we watch. We'd like to watch yours. A bell on its collar, so a village can hear it coming. A hunter near it, always. And if the day comes, someone who can do what needs doing.")
+                .Say("And if we say no?", "no")
+                .Say("(Back)", "start");
+            d.Node("no", who, c => "Then you say no. I'm not the Crown. I don't take things. I just wait, and I'm usually right, and I hate it.")
+                .Say("(Back)", "start");
+            d.Node("afraid", who, c => "...",
+                c => "She is. Honestly, deeply afraid of the young dragon at your heel, and ashamed of it, because it hasn't done anything. She's seen what grown ones do. She keeps her hands still on purpose.")
+                .Say("(Back)", "start");
+            d.Node("afraid_no", who, c => "...", c => "A hunter's face: patient, watchful, unreadable.").Say("(Back)", "start");
+            d.Node("what", who,
+                c => "An order. Old as the Pact, or near enough. We hunt what comes down off the mountain with fire in its eyes. Cinder hounds. Ember-eyed bears. Worse. There used to be a few of us. This year there's a lot of us, and it's still not enough.")
+                .Say("(Back)", "start");
+
+            d.Node("start", who,
+                c => c.G.World.CommittedFaction == "hunters" ? "The Wyrmwatch looks after its own. That's you now."
+                    : c.G.World.CommittedFaction != null ? $"{FactionDb.Title(c.G.World.CommittedFaction)}, is it. Well. I hope they're right. I hope I'm wrong. I'd like that for once."
+                    : c.G.Clock.Hour >= 20 || c.G.Clock.Hour < 6 ? "Quiet. Too quiet. Keep your voice down: they hear further than you'd think." : "Still here? Good. Somebody ought to see what it's like out here, before they decide anything.")
+                .Say("What does the Wyrmwatch want with our dragon?", "want")
+                .Say("Is there anything we can do for Cragfoot?", "eyes", show: c => c.G.Quests.Stage("ember_eyes") == 0 && c.G.Quests.CanStart("ember_eyes"))
+                .Say("Is there anything more we can do?", "hunt_job", show: c => Uncommitted(c) && c.G.Quests.Stage("ember_eyes") > 0 && !Factions.MajorOpen("hunters"))
+                .CommitOption("We'll stand with the Wyrmwatch.", "hunters", "long_hunt")
+                .Bye("Take care, Huntmaster.");
+            d.Node("hunt_job", who, c => NotYet(c, "hunters", "Help me with the goats first. Then we'll talk about the thing that's been eating them."))
+                .Say("(Back)", "start");
+            d.Node("eyes", who,
+                c => "Something's taking the goats. At night, over the palisade, no noise. Mother Hale's lost three and her dog. I've got two hunters fit to stand and one of them's Odo. Keep watch with us tonight, by the pen, after dark. If it's what I think it is, you'll want your weapons out and your dragon close.",
+                onEnter: c => c.G.Quests.Start("ember_eyes", c.P))
+                .Bye("We'll keep watch.");
+            d.Node("eyes_done", who,
+                c => "Bramble. Mother Hale's dog. ...He went missing in the spring, before the ash got bad. I'll tell her. No, I'll tell her: it's my job. That's the part of the work nobody sings about. They were somebody's, once. Most of them were.",
+                c => "She turns the collar over in her scarred hands for a long moment.",
+                c => { if (!c.G.Quests.Done("ember_eyes")) { Factions.Adjust("hunters", 10, c.P); c.G.Quests.Set("ember_eyes", 6, c.P); } })
+                .Bye("I'm sorry, Huntmaster.");
+
+            d.Node("hunt_task", who,
+                c => c.G.Quests.Stage("long_hunt") == 1
+                    ? "The Ashmaw. A wyvern, ember-eyed, nests somewhere up the goat track. It's had nine goats and a mule, and it's going to have a child next. Read the track: claw marks, bones. Find where it sleeps."
+                    : c.G.Quests.Stage("long_hunt") == 2 ? "The cliffs, then. Go carefully. Kill it if you have to. Drive it off if you can. I won't think less of you either way. Much."
+                    : "Its nest. Look in its nest. Then come back and tell me what you found.")
+                .Bye("On it.");
+            d.Node("hunt_report", who,
+                c => "It's done, then. Cragfoot will sleep tonight. One more thing, and then the Wyrmwatch stands with you, all of us, for good. A bell. Silver, small. On its collar. So that whatever it grows into, a village will hear it coming.",
+                c => $"She holds out a small silver bell on a leather loop. {c.G.World.DragonName} stares at it.")
+                .Say("Do it.", "hunt_belled", doIt: c => { c.G.World.SetFlag("wyrmwatch_belled"); Factions.Adjust("hunters", 10, c.P); DragonPet.AddBond(c.P, -1, "the bell"); HuntDone(c); })
+                .Say("No bell.", "hunt_unbelled", doIt: c => { Factions.Adjust("hunters", -5, c.P); HuntDone(c); });
+            d.Node("hunt_belled", who,
+                c => "Thank you. I mean it. Here: a Wyrmwatch cloak. You've earned it.",
+                c => $"The bell tinkles with every step {c.G.World.DragonName} takes. It sulks for an hour, then discovers it can ring the bell on purpose, and is unbearable about it.")
+                .Bye("Thank you, Huntmaster.");
+            d.Node("hunt_unbelled", who,
+                c => "...Your call. It's your dragon. I'll just listen harder. Here: a Wyrmwatch cloak anyway. You've earned that much.")
+                .Bye("Thank you, Huntmaster.");
+            return d;
+        }
+
+        static void HuntDone(DCtx c)
+        {
+            if (c.G.Quests.Done("long_hunt")) return;
+            Factions.Adjust("hunters", 30, c.P);
+            c.G.Quests.Set("long_hunt", 5, c.P);
+        }
+
+        static Dialogue Odo()
+        {
+            var d = new Dialogue("odo", c => c.G.Quests.Stage("ember_eyes") == 3 ? "hurt" : "start");
+            const string who = "Odo Fenn";
+            void healed(DCtx c) { if (c.G.Quests.Stage("ember_eyes") == 3) c.G.Quests.Set("ember_eyes", 4, c.P); }
+            d.Node("start", who,
+                c => c.G.Quests.Done("ember_eyes") || c.G.Quests.Stage("ember_eyes") >= 4
+                    ? "Still got all my fingers. Counted 'em twice. Thanks to you."
+                    : "Odo Fenn, hunter of the Wyrmwatch. Second-best shot in Cragfoot. There are two of us.",
+                c => "A cheerful young man in a hood two sizes too big, holding a crossbow like it might go off.")
+                .Bye("Good hunting, Odo.");
+            d.Node("hurt", who,
+                c => "It's fine. It's fine! It's a scratch. It's a really big scratch. Is it meant to be that colour?",
+                c => "Odo sits against the palisade with his leg out, very pale, a wolf's bite through his boot.")
+                .Roll(Skill.Medicine, 12, "(Medicine) Clean and bind the wound.", "patched", "patch_fail", social: false, onSuccess: healed)
+                .Say("Here, drink this.", "patched", doIt: c => { if (c.G.TakeQuestItem(c.P, "potion_healing") || c.G.TakeQuestItem(c.P, "potion_greater_healing")) healed(c); },
+                    show: c => c.P.Character.CountOf("potion_healing") > 0 || c.P.Character.CountOf("potion_greater_healing") > 0)
+                .Bye("Hold on, Odo.");
+            d.Node("patched", who, c => "Oh, that's better. That's much better. I'm going to be sick. No I'm not. Yes I am. No. Thank you!",
+                c => "The colour comes back to his face, slowly.").Bye("Rest, Odo.");
+            d.Node("patch_fail", who, c => "Ow. OW. Maybe let someone else have a go?", c => "The bandage slips. You'll need to try again, or find something stronger.")
+                .Say("(Try again)", "hurt");
+            return d;
+        }
+
+        static Dialogue MotherHale()
+        {
+            var d = new Dialogue("mother_hale", c => "start");
+            const string who = "Mother Hale";
+            d.Node("start", who,
+                c => c.G.Quests.Done("ember_eyes")
+                    ? "Bryn told me. About Bramble. ...He was a good dog. A silly, good dog. I'm glad it was you who found him, and not the crows."
+                    : "Have you seen a dog? Black and white, one ear up, answers to Bramble, or to biscuits. He went off in the spring. He'll come back. They do.",
+                c => "A small, sturdy old woman with a shawl and a lamp she keeps lit in the window, day and night.")
+                .Bye("Take care, Mother Hale.");
+            return d;
+        }
+
+        /// <summary>The Ashmaw's nest: one egg, and three ways to leave it.</summary>
+        static Dialogue WyvernEgg()
+        {
+            var d = new Dialogue("wyvern_egg", c => "nest");
+            void done(DCtx c) { if (c.G.Quests.Stage("long_hunt") == 3) c.G.Quests.Set("long_hunt", 4, c.P); }
+            d.Node("nest", null, c => "",
+                c => $"In the nest of bones and branches, one egg: grey, leathery, warm. Something inside it shifts when you lean close. Calloway's order was plain. {c.G.World.DragonName} sniffs the egg, very carefully, and looks at you.")
+                .Say("Destroy it. That's the job.", "smashed", doIt: c => { Factions.Adjust("hunters", 10, c.P); DragonPet.AddBond(c.P, -1, "the egg"); done(c); })
+                .Say("Leave it be.", "left", doIt: c => { Factions.Adjust("hunters", -10, c.P); DragonPet.AddBond(c.P, 2, "the egg"); done(c); })
+                .Say("Take it to the Academy. Let them raise it.", "taken", doIt: c => { Factions.Adjust("hunters", -5, c.P); c.G.World.SetFlag("wyvern_egg_saved"); c.G.GiveItem(c.P, "wyvern_egg"); done(c); });
+            d.Node("smashed", null, c => "", c => $"It's quick. It's quieter than you expected. {c.G.World.DragonName} turns away and won't look at you for a while.").Bye("(Leave the nest)");
+            d.Node("left", null, c => "", c => $"You leave it in its nest, warm in the dark. {c.G.World.DragonName} presses against your legs all the way down the mountain.").Bye("(Leave the nest)");
+            d.Node("taken", null, c => "", c => $"You wrap it in a cloak. It's heavier than it looks. {c.G.World.DragonName} insists on walking right beside it.").Bye("(Leave the nest)");
+            return d;
         }
 
         static void BannerDone(DCtx c)

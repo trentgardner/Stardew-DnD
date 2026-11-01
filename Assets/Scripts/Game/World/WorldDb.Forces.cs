@@ -14,6 +14,146 @@ namespace DnD.Game
             BuildRedoubt();
             BuildAcademyForce();
             BuildGlade();
+            BuildCragfoot();
+        }
+
+        // =================================================================== The Wyrmwatch: Cragfoot, the lodge and the Ashmaw's lair
+
+        static void BuildCragfoot()
+        {
+            var road = Zones["lantern_road"];
+            road.Warps.Add(new WarpDef(59, 14, "cragfoot", 1, 15) { MinAct = 2 });
+            road.Warps.Add(new WarpDef(59, 15, "cragfoot", 1, 16) { MinAct = 2 });
+
+            var z = new ZoneDef
+            {
+                Act = 2,
+                Id = "cragfoot", Name = "Cragfoot", Map = Maps.Cragfoot, DefaultSpawn = new Vector2Int(2, 15), Music = "music_cragfoot",
+                EnterNarration = "A hamlet of stone cottages at the very foot of the Wyrmback, where the road gives up and the goat tracks begin. Smoke from six chimneys. A long timber hall with antlers over the door: the Wyrmwatch Lodge. And an empty goat pen with its gate hanging open.",
+            };
+            z.Warps.Add(new WarpDef(0, 15, "lantern_road", 58, 14));
+            z.Warps.Add(new WarpDef(0, 16, "lantern_road", 58, 15));
+            z.Warps.Add(new WarpDef(22, 0, "ashmaw_lair", 12, 18) { MinAct = 2 });
+            z.Warps.Add(new WarpDef(23, 0, "ashmaw_lair", 13, 18) { MinAct = 2 });
+            z.DoorSigns[new Vector2Int(31, 10)] = new BuildingSign("The Wyrmwatch Lodge", "THE WYRMWATCH LODGE\n\nWe watch so you can sleep.\n\nThe door is barred from inside. A hand-lettered card in the window: HUNTERS ON PATROL. KNOCK FOR THE HUNTMASTER (she's out front).");
+            z.DoorSigns[new Vector2Int(6, 8)] = new BuildingSign("The Hale Cottage", "Mother Hale's cottage. A dog's water bowl by the step, full and untouched.");
+            z.DoorSigns[new Vector2Int(13, 9)] = new BuildingSign("A Shepherd's Cottage", "Shuttered tight. A sign: GONE TO THE LOWLANDS WITH THE FLOCK. BACK WHEN IT'S SAFE.");
+            z.DoorSigns[new Vector2Int(6, 22)] = new BuildingSign("The Fenn Cottage", "A hunter's cottage. Odo Fenn's name is carved over the door, badly, by Odo Fenn.");
+            z.DoorSigns[new Vector2Int(13, 23)] = new BuildingSign("A Cheesemaker's Cottage", "The smell of goat's cheese, strong enough to lean on. Nobody's answering.");
+            z.DoorSigns[new Vector2Int(18, 27)] = new BuildingSign("The Shrine-Keeper's Cottage", "A blue door with a hearth-knot painted on it, for luck. The paint is new.");
+            z.DoorSigns[new Vector2Int(29, 26)] = new BuildingSign("A Weaver's Cottage", "Somebody is weaving inside. The loom doesn't stop when you knock.");
+            z.Signs[new Vector2Int(19, 6)] = "The old watchtower is a stump now, but the view from beside it goes all the way up the Wyrmback. On a clear day, the hunters say, you can see the mountain breathe.";
+            z.Lore.Add(new LoreSpotDef { Id = "trophy_wall", Pos = new Vector2Int(30, 11), Prompt = "Read the hunters' tallies by the door", Sprite = "obj_inscription" });
+
+            z.Secrets[new Vector2Int(16, 6)] = new SecretDef
+            {
+                Id = "watchtower_cache", Sprite = "obj_crate", Prompt = "Check under the watchtower's loose stones", Skill = Rules.Skill.Perception, DC = 14,
+                Items = { new KeyValuePair<string, int>("potion_greater_healing", 1), new KeyValuePair<string, int>("rations", 3) },
+                Success = "A hunters' cache, wrapped in oilcloth: a potion, trail rations and a note. 'For whoever needs it. Put something back if you can.'",
+                Failure = "Stones, moss, a very annoyed lizard. Look again another day.",
+                AlreadyFound = "The cache, and the note. Somebody has put back a single sock.",
+            };
+            z.Secrets[new Vector2Int(38, 5)] = new SecretDef
+            {
+                Id = "lodge_carving", Sprite = "obj_crate", Prompt = "Search the woodpile behind the lodge", Skill = Rules.Skill.Investigation, DC = 13, Copper = 2000,
+                Success = "Under the logs, a little wooden dragon, carved with great care and never painted, and a purse of coins. The tag on the purse says: FOR BRYN'S BIRTHDAY. The carving has no tag at all.",
+                Failure = "Logs, logs and a spider who has made her peace with logs. Another day.",
+                AlreadyFound = "The woodpile, a little tidier.",
+            };
+
+            // Ember Eyes: keep watch, the wolves come, Odo is hurt, and one of them wore a collar.
+            const string e = "ember_eyes";
+            z.Secrets[new Vector2Int(38, 21)] = new SecretDef
+            {
+                Id = "pen_watch", Sprite = "obj_bush", Prompt = "Keep watch over the empty pen", Skill = Rules.Skill.Perception, DC = 10, NightOnly = true,
+                QuestId = e, QuestStage = 1, AdvanceTo = 2,
+                Success = "You wait in the dark by the pen. An hour. Two. Then, along the palisade, three pairs of coals open in the blackness, and something drops over the fence without a sound. \"WOLVES!\" Odo yells, somewhere to your left.",
+                Failure = "You doze off, and wake to a cold dawn and nothing at all. Try again tonight.",
+                AlreadyFound = "The pen, empty.",
+            };
+            var wolves = new EnemyGroupDef
+            {
+                Id = "cragfoot_wolves", Style = EncounterStyle.Beasts, TalkDC = 15, ScareDC = 14, Label = "the ember-eyed wolves", SightTiles = 8,
+                QuestId = e, MinStage = 2, MaxStage = 2, Unique = true,
+                Spotted = "Three wolves the size of ponies, grey with ash, eyes burning like banked coals. They don't growl. They just come.",
+                Befriended = "You stand your ground and speak low and steady, and something in the biggest wolf's eyes flickers. It whines, and backs off, and the others follow it over the palisade into the night. \"They'll be back,\" says the Huntmaster behind you. \"They always come back.\"",
+            };
+            wolves.Members.Add(new EnemySpawn("ember_eyed_wolf", 40, 23));
+            wolves.Members.Add(new EnemySpawn("ember_eyed_wolf", 36, 24));
+            wolves.Members.Add(new EnemySpawn("ember_eyed_wolf", 41, 26));
+            z.EnemyGroups.Add(wolves);
+            z.Secrets[new Vector2Int(39, 22)] = new SecretDef
+            {
+                Id = "wolf_collar", Sprite = "obj_inscription", Prompt = "Search where the wolves came through", Skill = Rules.Skill.Investigation, DC = 12,
+                QuestId = e, QuestStage = 4, AdvanceTo = 5,
+                Success = "Caught on a splinter of the palisade: a worn leather collar, with a little brass tag. BRAMBLE. Someone in Cragfoot loved this dog, before the ash came and its eyes caught fire.",
+                Failure = "Mud, tufts of grey fur, and nothing else you can find in this light. Try again tomorrow.",
+                AlreadyFound = "The splinter where the collar caught.",
+            };
+
+            // The Long Hunt: two sets of signs on the goat track.
+            const string h = "long_hunt";
+            z.Secrets[new Vector2Int(21, 5)] = new SecretDef
+            {
+                Id = "ashmaw_claws", Sprite = "obj_rock", Prompt = "Read the marks on the rocks (Survival)", Skill = Rules.Skill.Survival, DC = 14,
+                QuestId = h, QuestStage = 1, SetsFlag = "ashmaw_track_a",
+                Success = "Claw marks, deep and fresh, going up. Something big landed here and took off again, hard, scattering gravel downhill.",
+                Failure = "Scratches on rocks. Could be anything. Look again tomorrow, in better light.",
+                AlreadyFound = "The claw marks, going up.",
+            };
+            z.Secrets[new Vector2Int(24, 12)] = new SecretDef
+            {
+                Id = "ashmaw_bones", Sprite = "obj_rock", Prompt = "Look at the scorched bones (Nature)", Skill = Rules.Skill.Nature, DC = 14,
+                QuestId = h, QuestStage = 1, SetsFlag = "ashmaw_track_b",
+                Success = "Goat bones, scorched grey, not black. Whatever ate this one breathes fire that has gone wrong. And it went home to eat it: up the track, into the cliffs.",
+                Failure = "Bones. Sad ones. You can't read more from them today.",
+                AlreadyFound = "The grey-scorched bones.",
+            };
+            Zones[z.Id] = z;
+
+            var lair = new ZoneDef
+            {
+                Act = 2,
+                Id = "ashmaw_lair", Name = "The Ashmaw's Lair", Map = Maps.AshmawLair, Dark = true, DefaultSpawn = new Vector2Int(12, 17), Music = "music_ashmaw",
+                EnterNarration = "A cave mouth high in the cliffs, wide enough for wings. The floor is scorched grey in long streaks, and the air smells of smoke that went out a long time ago. Something breathes in the dark. Slowly. Like bellows.",
+            };
+            lair.Warps.Add(new WarpDef(12, 19, "cragfoot", 22, 1));
+            lair.Warps.Add(new WarpDef(13, 19, "cragfoot", 23, 1));
+            var maw = new EnemyGroupDef
+            {
+                Id = "ashmaw_den", Style = EncounterStyle.Beasts, TalkDC = 18, ScareDC = 17, Label = "the Ashmaw", SightTiles = 7,
+                QuestId = h, MinStage = 2, MaxStage = 2, Unique = true,
+                Spotted = "The Ashmaw uncoils from its nest: a wyvern, all leather wings and hooked tail, with ash in its scales and one eye burning like a coal. It screams, and the cave screams back.",
+                Befriended = "It isn't a dragon. It's a hungry, frightened animal with a coal in its eye. You talk it down out of its rage, step by step, until it shakes its head like a dog coming out of water, and goes, out of the cave and north, away from every village you know.",
+            };
+            maw.Members.Add(new EnemySpawn("ashmaw", 12, 8));
+            lair.EnemyGroups.Add(maw);
+            lair.Secrets[new Vector2Int(12, 5)] = new SecretDef
+            {
+                Id = "ashmaw_nest", Sprite = "obj_inscription", Prompt = "Look in the nest", Skill = Rules.Skill.Investigation, DC = 5,
+                QuestId = h, QuestStage = 3, Dialogue = "wyvern_egg",
+                Success = "", Failure = "Bones and branches. Look again.", AlreadyFound = "The empty nest.",
+            };
+            Zones[lair.Id] = lair;
+
+            var calloway = new NpcDef { Id = "calloway", Name = "Huntmaster Bryn Calloway", Title = "The Wyrmwatch", Look = "npc_calloway", Dialogue = "calloway" };
+            calloway.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep in the lodge, boots on"));
+            calloway.Schedule.Add(new ScheduleEntry(6, "cragfoot", 41, 9, "drilling the young hunters in the yard"));
+            calloway.Schedule.Add(new ScheduleEntry(12, "cragfoot", 31, 12, "mending a crossbow on the lodge steps"));
+            calloway.Schedule.Add(new ScheduleEntry(20, "cragfoot", 37, 19, "keeping watch over the empty pen"));
+            calloway.Schedule.Add(new ScheduleEntry(23, null, 0, 0, "asleep in the lodge, boots on"));
+            calloway.Schedule.Add(new ScheduleEntry(12, "cragfoot", 22, 26, "at the shrine, alone, as she is every Hearthday", Hearthday));
+            Npcs[calloway.Id] = calloway;
+            var odo = new NpcDef { Id = "odo", Name = "Odo Fenn", Title = "Hunter of the Wyrmwatch", Look = "npc_odo", Dialogue = "odo" };
+            odo.Schedule.Add(new ScheduleEntry(0, "cragfoot", 33, 12, "on the lodge steps, sharpening something"));
+            odo.Schedule.Add(new ScheduleEntry(0, "cragfoot", 40, 12, "losing at target practice", Stormday));
+            Npcs[odo.Id] = odo;
+            var hale = new NpcDef { Id = "mother_hale", Name = "Mother Hale", Title = "Cragfoot", Look = "npc_mother_hale", Dialogue = "mother_hale" };
+            hale.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
+            hale.Schedule.Add(new ScheduleEntry(7, "cragfoot", 8, 10, "on her step, calling for someone"));
+            hale.Schedule.Add(new ScheduleEntry(19, null, 0, 0, "indoors, with the lamp in the window"));
+            hale.Schedule.Add(new ScheduleEntry(7, "cragfoot", 20, 18, "drawing water and gossiping", Coinday));
+            Npcs[hale.Id] = hale;
         }
 
         // =================================================================== The Fae Courts: the Gloaming Glade
