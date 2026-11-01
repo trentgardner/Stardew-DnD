@@ -169,6 +169,89 @@ namespace DnD.Tests
             Assert.IsTrue(g.World.Flag(WorldDb.EmberhornOpen));
         }
 
+        // ============================================================ Task 6: acceptance
+
+        [UnityTest, Timeout(600000)]
+        public IEnumerator BlightAndRoadGoldenPath()
+        {
+            var g = GameRoot.I;
+            var p = ActTwo(g, g.DebugStart(Still(20), "ranger", "elf"));
+            yield return Frames(2);
+            var c = new DCtx { P = p };
+            Assert.AreEqual(1, g.World.BlightStage, "Act II: the ash has begun");
+            string calm = DialogueDb.Get("elowen").Nodes["start"].Text(c);
+            Factions.Commit("hunters", p);
+            Assert.AreEqual(2, g.World.BlightStage, "a side chosen: the ash thickens");
+            Assert.AreNotEqual(calm, DialogueDb.Get("elowen").Nodes["start"].Text(c), "Elowen is frightened now");
+            g.Warp(p, "forest", WorldDb.Zones["forest"].DefaultSpawn, false);
+            yield return Frames(3);
+            Assert.IsTrue(Object.FindObjectsByType<EnemyAgent>(FindObjectsSortMode.None).Any(e => e.Group != null && e.Group.Id == "blight_wolves_forest"), "ember-eyed wolves in the Whisperwood");
+            g.Quests.Start("long_hunt", p);
+            g.Quests.Set("long_hunt", QuestDb.Get("long_hunt").Last, p);
+            Assert.AreEqual(Answers.Allies, g.Quests.Stage(Answers.Id));
+            var warp = WorldDb.Zones["cragfoot"].Warps.Find(w => w.ToZone == "emberhorn_road");
+            g.Warp(p, warp.ToZone, warp.ToPos, false);
+            yield return Frames(3);
+            Assert.AreEqual(Answers.OnTheRoad, g.Quests.Stage(Answers.Id));
+            Assert.AreEqual(3, g.World.BlightStage);
+            DialogueDb.Get("ally_odo").Nodes["greet"].OnEnter(c);
+            Assert.IsTrue(g.World.Flag(WorldDb.AllyGift));
+            SpotNamed("second_ideal_history").Resolve(p, Rules.CheckOutcome.Success);
+            p.Hud.CloseAll();
+            SpotNamed("emberhorn_gate").Resolve(p, Rules.CheckOutcome.Success);
+            p.Hud.CloseAll();
+            Assert.AreEqual(Answers.Gate, g.Quests.Stage(Answers.Id));
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(3);
+            Assert.AreEqual(Answers.Gate, g.Quests.Stage(Answers.Id));
+            Assert.AreEqual(3, g.World.BlightStage);
+            Assert.IsTrue(g.World.Flag(WorldDb.OathSecond) && g.World.Flag(WorldDb.AllyGift) && g.World.Flag(WorldDb.EmberhornOpen));
+        }
+
+        [UnityTest]
+        public IEnumerator CaptureBlightAndRoad()
+        {
+            var g = GameRoot.I;
+            var p = ActTwo(g, g.DebugStart(Still(21), "paladin", "human"));
+            yield return Frames(2);
+            Factions.Commit("academy", p);
+            IEnumerator At(string zone, int x, int y, string shot, int hour = 11)
+            {
+                g.Clock.Minutes = hour * 60;
+                g.Warp(p, zone, new Vector2Int(x, y), false);
+                yield return Frames(40);
+                p.Hud.CloseAll();
+                p.Hud.HideNarration();
+                yield return Frames(5);
+                Shot(shot);
+            }
+            yield return At("town", 24, 17, "act2_blight_town");
+            yield return At("forest", 38, 24, "act2_blight_forest");
+            g.World.SetFlag("banner_academy");
+            yield return At("emberhorn_road", 9, 15, "act2_blight_last_camp");
+            yield return At("emberhorn_road", 25, 9, "act2_blight_waystation");
+            yield return At("emberhorn_road", 44, 14, "act2_blight_grey_vigil");
+            yield return At("emberhorn_road", 54, 14, "act2_blight_gate");
+        }
+
+        static void Shot(string name)
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "embers_screenshots");
+            Directory.CreateDirectory(dir);
+            var rt = new RenderTexture(1280, 720, 24);
+            var cams = Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
+            System.Array.Sort(cams, (a, b) => a.depth.CompareTo(b.depth));
+            foreach (var cam in cams) { if (!cam.isActiveAndEnabled) continue; var old = cam.targetTexture; cam.targetTexture = rt; cam.Render(); cam.targetTexture = old; }
+            RenderTexture.active = rt;
+            var tex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
+            tex.Apply();
+            RenderTexture.active = null;
+            File.WriteAllBytes(Path.Combine(dir, name + ".png"), tex.EncodeToPNG());
+            Object.Destroy(rt);
+        }
+
         // ============================================================ Task 5: the Second Ideal
 
         [UnityTest]

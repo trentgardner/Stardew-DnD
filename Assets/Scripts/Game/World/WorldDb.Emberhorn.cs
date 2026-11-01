@@ -40,6 +40,7 @@ namespace DnD.Game
             z.Warps.Add(new WarpDef(0, 15, "cragfoot", 44, 15));
             z.Warps.Add(new WarpDef(0, 16, "cragfoot", 44, 16));
             z.Warps.Add(new WarpDef(59, 14, "emberhorn_road", 56, 14) { MinAct = 3, ClosedText = "The way into the mountain is open, and hot, and waiting. (Act II's finale arrives in a later update.)" });
+            z.DoorSigns[new Vector2Int(59, 14)] = new BuildingSign("The Emberhorn's Gate", "A door carved into the mountain's flank, taller than a tower, its edges glowing faintly like the rim of a cooling pot. It stands open. The air that comes out of it is hot, and slow, like breath.");
             z.Signs[new Vector2Int(12, 18)] = "The Last Camp's fire. Someone keeps it fed day and night. Nobody says why, and nobody lets it go out.";
             z.Signs[new Vector2Int(44, 8)] = "The Grey Vigil's fire burns without smoke, and gives no warmth at all when you hold out your hands.";
 
