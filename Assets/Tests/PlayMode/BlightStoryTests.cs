@@ -254,7 +254,7 @@ namespace DnD.Tests
             void Reset()
             {
                 g.Quests.Stages["ash_on_doors"] = 2; g.Quests.Paid.Remove("ash_on_doors");
-                foreach (var f in new[] { "teodor_redeemed", "teodor_jailed", "teodor_fled" }) g.World.Flags.Remove(f);
+                foreach (var f in new[] { "teodor_redeemed", "teodor_jailed", "teodor_fled", WorldDb.TeodorAway }) g.World.Flags.Remove(f);
             }
             var cases = new (string name, System.Action run, string flag, string zone)[]
             {
@@ -274,9 +274,19 @@ namespace DnD.Tests
                 Assert.IsTrue(g.World.Flag(flag), name);
                 var e = WorldDb.Current(teo, 12, 1, g.World);
                 Assert.AreEqual(zone, e?.Zone, $"{name}: where Teodor is at noon");
+                Assert.AreEqual(zone, WorldDb.Current(teo, 12, WorldDb.Hearthday, g.World)?.Zone, $"{name}: and on Hearthday too");
                 Assert.IsFalse(SpotNamed("ash_stakeout").Available(p), $"{name}: the stakeout never returns");
             }
             Assert.IsTrue(g.World.LoreFound.Contains("ashsworn_creed"), "Insight learns the creed");
+        }
+
+        [UnityTest]
+        public IEnumerator TeodorIsNotInActOne()
+        {
+            var g = GameRoot.I;
+            g.DebugStart(Still(22), "rogue", "human");
+            yield return Frames(2);
+            foreach (var day in new[] { 0, 1, WorldDb.Hearthday }) Assert.IsNull(WorldDb.Current(WorldDb.Npcs["teodor"], 12, day, g.World)?.Zone, "Act I stays light: he isn't on the map");
         }
 
         static DOption Opt(DNode n, string startsWith) => n.Options.Single(o => o.Text.StartsWith(startsWith));

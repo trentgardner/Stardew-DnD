@@ -118,6 +118,9 @@ namespace DnD.Game
 
         // =================================================================== Ash on the Doors: Teodor Brisk, the chandler
 
+        /// <summary>Set when Teodor is jailed or has fled: his stall stands empty.</summary>
+        public const string TeodorAway = "teodor_away";
+
         static void BuildTeodor()
         {
             var town = Zones["town"];
@@ -147,9 +150,10 @@ namespace DnD.Game
 
             var teodor = new NpcDef { Id = "teodor", Name = "Teodor Brisk", Title = "Chandler", Look = "npc_teodor", Dialogue = "teodor" };
             teodor.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "at home, with every candle lit"));
-            teodor.Schedule.Add(new ScheduleEntry(8, "town", 29, 20, "selling candles by the market stall"));
+            // Act II only (Act I stays light), and only while he's still free to keep his stall.
+            teodor.Schedule.Add(new ScheduleEntry(8, "town", 29, 20, "selling candles by the market stall") { RequiresFlag = ActTwoFlag, ForbidFlag = TeodorAway });
             teodor.Schedule.Add(new ScheduleEntry(18, null, 0, 0, "at home, with every candle lit"));
-            teodor.Schedule.Add(new ScheduleEntry(8, "town", 7, 10, "lighting candles at the temple door", Hearthday));
+            teodor.Schedule.Add(new ScheduleEntry(8, "town", 7, 10, "lighting candles at the temple door", Hearthday) { RequiresFlag = ActTwoFlag, ForbidFlag = TeodorAway });
             foreach (int h in new[] { 0, 8, 18 }) // his fate overrides every part of his day
             {
                 teodor.Schedule.Add(new ScheduleEntry(h, "watchhouse", 9, 3, "in the holding cell, very quiet") { RequiresFlag = "teodor_jailed" });

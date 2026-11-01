@@ -157,6 +157,7 @@ namespace DnD.Game
         {
             if (c.G.Quests.Done("ash_on_doors")) return;
             c.G.World.SetFlag(fate);
+            if (fate != "teodor_redeemed") c.G.World.SetFlag(WorldDb.TeodorAway);
             c.G.Quests.Set("ash_on_doors", 3, c.P);
         }
 

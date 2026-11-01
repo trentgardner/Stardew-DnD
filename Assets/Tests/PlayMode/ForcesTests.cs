@@ -251,7 +251,7 @@ namespace DnD.Tests
                 if (talk) Opt(marsh.Nodes["banner_report"], "Do it").Do(c);
                 else marsh.Nodes["banner_report"].Options.Single(o => o.Check == Rules.Skill.AnimalHandling).OnSuccess(c);
                 Assert.IsTrue(g.Quests.Done("crowns_banner"));
-                Assert.AreEqual(xp + 3000, p.Character.XP);
+                Assert.AreEqual(xp + 3000 + 500, p.Character.XP, "the major, plus Answers stage 6 (the Emberhorn)");
                 Assert.AreEqual(talk ? bond - 1 : bond, g.World.DragonBond);
                 Assert.IsTrue(g.World.Flag("banner_crown"));
                 Assert.AreEqual(1, p.Character.CountOf("crown_writ"));
@@ -371,7 +371,7 @@ namespace DnD.Tests
                 xp = p.Character.XP;
                 Opt(ashby.Nodes["circle_report"], "It'll hold").Do(c);
                 Assert.IsTrue(g.Quests.Done("ninth_circle"));
-                Assert.AreEqual(xp + 3000, p.Character.XP);
+                Assert.AreEqual(xp + 3000 + 500, p.Character.XP, "the major, plus Answers stage 6 (the Emberhorn)");
                 Assert.AreEqual(0, p.Character.CountOf("focus_stone"), "the stones go back to Ashby");
                 Assert.AreEqual(1, p.Character.CountOf("ward_charm"));
                 Assert.IsTrue(g.World.Flag("banner_academy"));
@@ -536,7 +536,7 @@ namespace DnD.Tests
                 xp = p.Character.XP;
                 Opt(bargain, "We'll sign it as written").Do(c);
                 Assert.IsTrue(g.Quests.Done("green_bargain"));
-                Assert.AreEqual(xp + 3000, p.Character.XP);
+                Assert.AreEqual(xp + 3000 + 500, p.Character.XP, "the major, plus Answers stage 6 (the Emberhorn)");
                 Assert.IsTrue(g.World.Flag("fae_clause"), "signed as written: the dragon owes the Courts a favour");
                 Assert.IsTrue(g.World.Flag("banner_fae"));
                 Assert.AreEqual(3, p.Character.CountOf("bloom_draught"));
