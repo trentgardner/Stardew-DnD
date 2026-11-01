@@ -275,6 +275,8 @@ namespace DnD.Tests
             g.Quests.Set(Answers.Id, Answers.Gate, p);
             string ally = new System.Collections.Generic.Dictionary<string, string> { ["crown"] = "ally_holloway", ["academy"] = "ally_perrin", ["fae"] = "ally_thimble", ["hunters"] = "ally_odo" }[side];
             Assert.AreEqual("emberhorn_heart", WorldDb.Current(WorldDb.Npcs[ally], 12, 1, g.World)?.Zone, "the ally went ahead to the Heart");
+            foreach (var other in new[] { "ally_holloway", "ally_perrin", "ally_thimble", "ally_odo" }.Where(x => x != ally))
+                Assert.AreNotEqual("emberhorn_heart", WorldDb.Current(WorldDb.Npcs[other], 12, 1, g.World)?.Zone, $"{other} isn't there for {side}");
             g.Warp(p, "emberhorn_heart", new Vector2Int(2, 10), false);
             yield return Frames(4);
             p.Hud.CloseAll();
@@ -453,6 +455,106 @@ namespace DnD.Tests
             yield return Frames(10);
             Assert.IsTrue(fight.Humans.Contains(p2), "P2 walks in and joins the fight");
             Assert.IsFalse(p2.Hud.Top is DialogueScreen, "not stuck in a conversation");
+        }
+
+        // ============================================================ Task 5: acceptance
+
+        static SecretInteractable SpotNamed(string id) => Object.FindObjectsByType<SecretInteractable>(FindObjectsSortMode.None).Single(s => s.Def.Id == id);
+
+        [UnityTest, Timeout(600000)]
+        public IEnumerator VolcanoGoldenPath()
+        {
+            var g = GameRoot.I;
+            var p = AtTheGate(g, g.DebugStart(Still(40), "paladin", "human"), "hunters");
+            yield return Frames(2);
+            g.World.LoreFound.Add("emberhorn_warden"); // read in the Restricted Section, back in Phase 3
+            g.Warp(p, "emberhorn_road", new Vector2Int(55, 14), false);
+            yield return Frames(3);
+            SpotNamed("emberhorn_gate").Resolve(p, CheckOutcome.Success);
+            p.Hud.CloseAll();
+            var gate = WorldDb.Zones["emberhorn_road"].Warps.Find(w => w.At == new Vector2Int(59, 14));
+            g.Warp(p, gate.ToZone, gate.ToPos, false);
+            yield return Frames(3);
+            Assert.AreEqual("emberhorn_throat", p.Zone.Def.Id);
+            g.PacifyGroup("throat_salamanders", p);
+            g.PacifyGroup("throat_elemental", p);
+            LoreDb.Find("iron_ring", p);
+            g.Warp(p, "emberhorn_heart", new Vector2Int(2, 10), false);
+            yield return Frames(4);
+            p.Hud.CloseAll();
+            var odo = Object.FindObjectsByType<NpcAgent>(FindObjectsSortMode.None).Single(n => n.Def.Id == "ally_odo");
+            DialogueDb.Get("ally_odo").Nodes["boon"].OnEnter(new DCtx { P = p, Npc = odo });
+            var d = DialogueDb.Get("warden_parley");
+            var c = new DCtx { P = p };
+            d.Nodes["speak"].Options.Single(o => o.Check == Skill.Insight).OnSuccess(c);
+            Assert.IsTrue(g.World.Flag(DialogueDb.WardenWeakness));
+            Opt(d.Nodes["turn"], "(Roll initiative").Do(c);
+            yield return Frames(2);
+            var warden = g.Combats.Single().Units.Single(u => u.C is Monster m && m.Def.Id == "warden");
+            Assert.IsTrue(warden.C.Effects.Any(e => e.Name == "Marked by Odo"), "Odo's mark is on it");
+            yield return FinishFight(g, p, true);
+            Assert.AreEqual(Answers.Rest, g.Quests.Stage(Answers.Id));
+            Assert.AreEqual(2, g.World.BlightStage);
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(3);
+            Assert.AreEqual(Answers.Rest, g.Quests.Stage(Answers.Id));
+            Assert.IsTrue(g.World.Flag(GameRoot.WardenFallen));
+            Assert.IsTrue(g.World.LoreFound.Contains("iron_ring") && g.World.LoreFound.Contains("warden_last_words"));
+        }
+
+        [UnityTest]
+        public IEnumerator CaptureVolcano()
+        {
+            var g = GameRoot.I;
+            var p = AtTheGate(g, g.DebugStart(Still(41), "paladin", "human"), "fae");
+            yield return Frames(2);
+            g.Quests.Set(Answers.Id, Answers.Gate, p);
+            IEnumerator At(string zone, int x, int y, string shot)
+            {
+                g.Warp(p, zone, new Vector2Int(x, y), false);
+                yield return Frames(40);
+                p.Hud.CloseAll();
+                p.Hud.HideNarration();
+                yield return Frames(5);
+                Shot(shot);
+            }
+            yield return At("emberhorn_throat", 12, 12, "act2_volcano_throat");
+            yield return At("emberhorn_throat", 18, 6, "act2_volcano_ring");
+            yield return At("emberhorn_heart", 6, 10, "act2_volcano_heart");
+            Opt(DialogueDb.Get("warden_parley").Nodes["turn"], "(Roll initiative").Do(new DCtx { P = p });
+            yield return Frames(3);
+            var c = g.Combats.Single();
+            foreach (var u in c.Units) if (u.Cb == null) u.Cb = new Combatant(u.C);
+            var warden = c.Units.Single(u => u.C is Monster m && m.Def.Id == "warden");
+            var hero = c.Units.Single(u => u.Owner == p);
+            hero.A.PlaceAt(c.Zone, new Vector2Int(15, 11));
+            yield return c.DebugAiTurn(warden);
+            yield return Frames(20);
+            Shot("act2_volcano_breath");
+            var m2 = (Monster)warden.C;
+            m2.HP = m2.MaxHP / 2;
+            c.OnDamaged(warden);
+            yield return c.Erupt(c.PickEruptionTiles(new System.Random(3)));
+            yield return Frames(5);
+            Shot("act2_volcano_phase2");
+        }
+
+        static void Shot(string name)
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "embers_screenshots");
+            Directory.CreateDirectory(dir);
+            var rt = new RenderTexture(1280, 720, 24);
+            var cams = Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
+            System.Array.Sort(cams, (a, b) => a.depth.CompareTo(b.depth));
+            foreach (var cam in cams) { if (!cam.isActiveAndEnabled) continue; var old = cam.targetTexture; cam.targetTexture = rt; cam.Render(); cam.targetTexture = old; }
+            RenderTexture.active = rt;
+            var tex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
+            tex.Apply();
+            RenderTexture.active = null;
+            File.WriteAllBytes(Path.Combine(dir, name + ".png"), tex.EncodeToPNG());
+            Object.Destroy(rt);
         }
 
         [UnityTest]

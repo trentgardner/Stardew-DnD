@@ -21,6 +21,7 @@ namespace DnD.Game
                 if (p1 != null && Quests.Stage(Answers.Id) == Answers.Chosen && new[] { "banner_crown", "banner_academy", "banner_fae", "banner_hunters" }.Any(World.Flag))
                     Quests.Set(Answers.Id, Answers.Allies, p1); // a Phase 4 save that already finished its side's major quest
                 if (Quests.Stage(Answers.Id) >= Answers.Gate) World.SetFlag(WorldDb.EmberhornGate); // a Phase 5 save that already reached the gate
+                WorldDb.SendAllyAhead(World);
             }
             foreach (var c in Companions) if (c != null && c.Character != null) AutoLevel(c.Character);
             Blight.Sync();

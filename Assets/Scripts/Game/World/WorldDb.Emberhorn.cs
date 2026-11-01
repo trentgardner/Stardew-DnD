@@ -63,7 +63,7 @@ namespace DnD.Game
             var heart = new ZoneDef
             {
                 Act = 2,
-                Id = "emberhorn_heart", Name = "The Heart of the Emberhorn", Map = Maps.EmberhornHeart, Indoors = true, DefaultSpawn = new Vector2Int(2, 10), Music = "music_heart",
+                Id = "emberhorn_heart", Name = "The Heart of the Emberhorn", Map = Maps.EmberhornHeart, Dark = true, DefaultSpawn = new Vector2Int(2, 10), Music = "music_heart",
                 BlightWeight = 0f, DragonStays = false,
                 EnterNarration = "The tunnel opens into the mountain's heart: a caldera of black glass, ringed with lava, open to a sky of smoke far above. In the middle, coiled around nothing, is a dragon. It is enormous. It is grey at the edges, like paper held too close to a candle. And it is awake.",
             };
@@ -90,6 +90,17 @@ namespace DnD.Game
 
         /// <summary>World flag: the party has stood at the Emberhorn's gate (Answers 8): the way in is open.</summary>
         public const string EmberhornGate = "emberhorn_gate";
+
+        /// <summary>World flag: your side's ally has gone ahead to the Heart (set once the gate is open; only your side's).</summary>
+        public static string AllyAtHeart(string banner) => "at_heart:" + banner;
+
+        /// <summary>Once the gate is open, the ally of the side you stand with goes ahead to wait at the Heart.</summary>
+        public static void SendAllyAhead(WorldState w)
+        {
+            if (w == null || !w.Flag(EmberhornGate) || w.CommittedFaction == null) return;
+            string banner = "banner_" + w.CommittedFaction;
+            if (w.Flag(banner)) w.SetFlag(AllyAtHeart(banner));
+        }
 
         static void BuildEmberhornRoad()
         {
@@ -181,8 +192,8 @@ namespace DnD.Game
                 n.Schedule.Add(new ScheduleEntry(0, "emberhorn_road", 10, 17, "keeping the Last Camp's fire fed") { RequiresFlag = banner, ForbidFlag = EmberhornGate });
                 n.Schedule.Add(new ScheduleEntry(0, "emberhorn_road", 11, 18, "sitting up late by the fire, watching the mountain", Hearthday) { RequiresFlag = banner, ForbidFlag = EmberhornGate });
                 // Once the gate is open they go ahead of you, to wait at the Heart's threshold.
-                n.Schedule.Add(new ScheduleEntry(0, "emberhorn_heart", 3, 12, "waiting at the edge of the Heart, very still") { RequiresFlag = EmberhornGate });
-                n.Schedule.Add(new ScheduleEntry(0, "emberhorn_heart", 3, 12, "waiting at the edge of the Heart, very still", Hearthday) { RequiresFlag = EmberhornGate });
+                n.Schedule.Add(new ScheduleEntry(0, "emberhorn_heart", 3, 12, "waiting at the edge of the Heart, very still") { RequiresFlag = AllyAtHeart(banner) });
+                n.Schedule.Add(new ScheduleEntry(0, "emberhorn_heart", 3, 12, "waiting at the edge of the Heart, very still", Hearthday) { RequiresFlag = AllyAtHeart(banner) });
                 Npcs[id] = n;
             }
         }

@@ -1147,6 +1147,7 @@ namespace DnD.Game
         void OnQuestsChanged()
         {
             Blight.Sync();
+            WorldDb.SendAllyAhead(World);
             RefreshNpcs();
             foreach (var z in Zones.Values)
                 foreach (var grp in z.Def.EnemyGroups)
