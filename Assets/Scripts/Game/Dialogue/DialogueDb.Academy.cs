@@ -97,24 +97,51 @@ namespace DnD.Game
         {
             var d = new Dialogue("pell", c => "start");
             const string who = "Pell";
+            bool wantsBook(DCtx c) => c.G.Quests.Stage("overdue") == 1 && !c.G.World.Flag("book_pell");
             d.Node("start", who,
                 c => c.G.Clock.Hour < 1
                     ? "Shh! Shh. Listen. Any second now. Twelve, and then... You'll see. You'll hear. Whatever."
                     : "Lectures are optional. Philosophically. If you're from the Archivist, I've never heard of her.")
+                .Say("Thorne wants her book back.", "book", show: wantsBook)
                 .Bye("Carry on, Pell.");
+            d.Node("book", who, c => "What book? I don't have a book. I've never seen a book. ...It's a really good book, though. 'Ninety Nights Under the Wyrmback.' I'm on night sixty.")
+                .Roll(Skill.Persuasion, 13, "You can finish it properly once it's back. Thorne will let you, if you ask nicely.", "gives", "no")
+                .Roll(Skill.Intimidation, 12, "Book. Now.", "gives", "no")
+                .Roll(Skill.Deception, 14, "Thorne's coming across the lawn right now.", "gives", "no")
+                .Say("I'll trade you a star shard for it.", "gives", doIt: c => c.G.TakeQuestItem(c.P, "star_shard"), show: c => c.P.Character.CountOf("star_shard") > 0)
+                .Say("Here: ten gold for your trouble.", "gives", doIt: c => c.P.Character.Copper -= 1000, show: c => c.P.Character.Copper >= 1000)
+                .Bye("Never mind.");
+            d.Node("gives", who,
+                c => "Fine. FINE. Here. Night sixty, she'll know where I got to, she always knows. ...Listen. Since you're here. Have you heard the bells at midnight? Twelve, and then one more. Everyone says I'm making it up. Come to the bell green at midnight. You'll see.",
+                c => "He hands over a dog-eared book with a pressed fern for a bookmark.",
+                c => { if (!c.G.World.Flag("book_pell")) { c.G.GiveItem(c.P, "overdue_book"); c.G.World.SetFlag("book_pell"); } })
+                .Bye("Thanks, Pell.");
+            d.Node("no", who, c => "Nope. Not today. Today I am a wall.", c => "He folds his arms and becomes, as promised, a wall.").Bye("We'll be back.");
             return d;
         }
 
         static Dialogue Oakes()
         {
-            var d = new Dialogue("oakes", c => c.G.World.Flag("met_oakes") ? "start" : "intro");
+            var d = new Dialogue("oakes", c => c.G.Quests.Stage("glasshouse") == 3 ? "done" : c.G.World.Flag("met_oakes") ? "start" : "intro");
             const string who = "Professor Bramwell Oakes";
             d.Node("intro", who,
                 c => "Mind the lilies! Mind them, mind them, there. Thank you. Bramwell Oakes, Master of the Glasshouse. Forty years I've grown ember-lilies, and they've never once looked like this.",
                 c => "A round, earthy man with soil under every fingernail and a magnifying glass on a chain. He cradles a grey-edged lily like a sick kitten.",
                 c => c.G.World.SetFlag("met_oakes"))
+                .Say("Can we help?", "ask", show: c => c.G.Quests.Stage("glasshouse") == 0)
                 .Bye("I hope they recover.");
-            d.Node("start", who, c => "Grey at the edges. Grey! As if the fire in them is going out.").Bye("Good luck, Professor.");
+            d.Node("start", who, c => c.G.Quests.Stage("glasshouse") == 2 ? "Still? Still. The vines are quiet, bless you, but it's at the root, I know it is. Look under the beds." : "Grey at the edges. Grey! As if the fire in them is going out.")
+                .Say("Can we help?", "ask", show: c => c.G.Quests.Stage("glasshouse") == 0)
+                .Bye("Good luck, Professor.");
+            d.Node("ask", who,
+                c => "Would you? The far beds have... woken up. The vines. They've gone grey and they move, and they don't like me any more. I don't want them hurt if it can be helped. They're frightened, I think. Plants can be frightened. Nobody believes me.",
+                onEnter: c => c.G.Quests.Start("glasshouse", c.P))
+                .Bye("We'll be gentle if we can.");
+            d.Node("done", who,
+                c => "The heat-stone. The HEAT-STONE. A hundred years it's warmed this place, and now... grey fire. I'll order a new one, from the coast, far from the mountains. Here, take these. If the lilies can't be warm, at least you can.",
+                c => "He presses two warm, glowing petals into your hands, and then, after a moment's thought, hugs you. He smells of compost and kindness.",
+                c => { c.G.Quests.Set("glasshouse", 4, c.P); c.G.GiveItem(c.P, "ember_lily"); })
+                .Bye("Thank you, Professor.");
             return d;
         }
 
@@ -190,7 +217,7 @@ namespace DnD.Game
 
         static Dialogue Thorne()
         {
-            var d = new Dialogue("thorne", c => c.G.World.Flag("met_thorne") ? "start" : "intro");
+            var d = new Dialogue("thorne", c => c.G.Quests.Stage("overdue") == 2 ? "returned" : c.G.World.Flag("met_thorne") ? "start" : "intro");
             const string who = "Archivist Mirelle Thorne";
             d.Node("intro", who,
                 c => "Visitors. Wonderful. Lower your voices: the books are listening, and some of them are rude. Mirelle Thorne, Archivist. If you've come to borrow, you'll need a reason. If you've come to return, you'll need a better one, because I KNOW how late it is.",
@@ -201,25 +228,75 @@ namespace DnD.Game
             d.Node("corridor", who,
                 c => "The Restricted Section. Restricted, as in: not for you. The corridor makes sure of that. It's a very old joke and it still works.")
                 .Roll(Skill.Insight, 14, "(Insight) She's hiding something. What?", "corridor_insight", "corridor_insight_no")
+                .Say("How would someone earn a pass?", "earn", show: c => c.G.Quests.Stage("overdue") == 0)
                 .Bye("Understood.");
             d.Node("corridor_insight", who, c => "...",
                 c => "Her eyes flick to the floor, as if she can see through it. Whatever is below the Restricted Section, she knows about it, and she hates it, and she has been told not to say so.")
-                .Bye("We'll leave it there. For now.");
-            d.Node("corridor_insight_no", who, c => "...", c => "She stamps a card. The verdict is: none of your business.").Bye("Fair enough.");
-            d.Node("start", who, c => "Quietly, please.").Say("What's beyond the long corridor?", "corridor").Bye("Sorry.");
+                .Say("(Back)", "corridor");
+            d.Node("corridor_insight_no", who, c => "...", c => "She stamps a card. The verdict is: none of your business.").Say("(Back)", "corridor");
+            d.Node("earn", who,
+                c => "Earn? Hm. Three books are missing from my shelves, very overdue. The geese by the pond are sitting on one. Pell 'borrowed' another, and Pell thinks I don't know. The third is somewhere in the hedge maze, where it has been for eleven years. Bring them back and I'll stamp you a pass. And I'll walk you through the corridor myself.",
+                onEnter: c => c.G.Quests.Start("overdue", c.P))
+                .Bye("Three books. On it.");
+            d.Node("returned", who,
+                c => "Eleven years. ELEVEN. And this one has goose on it. ...Thank you. I mean that. Here: your pass. Show it to the armours, they'll know my seal. And come, I'll walk you through the stacks. Mind you don't look at the gaps.",
+                c => "She stamps a small brass card so hard the desk jumps, then takes you down the endless corridor, which, with her beside you, ends quite normally at a warded door.",
+                c =>
+                {
+                    for (int i = 0; i < 3; i++) c.G.TakeQuestItem(c.P, "overdue_book");
+                    foreach (var f in new[] { WorldDb.RestrictedPass, WorldDb.ThornePassShown, WorldDb.StacksUnlooped }) c.G.World.SetFlag(f);
+                    c.G.Quests.Set("overdue", 3, c.P);
+                })
+                .Bye("Thank you, Archivist.");
+            d.Node("start", who, c => "Quietly, please.")
+                .Say("What's beyond the long corridor?", "corridor")
+                .Bye("Sorry.");
             return d;
         }
 
         static Dialogue Varrow()
         {
-            var d = new Dialogue("varrow", c => c.G.World.Flag("met_varrow") ? "start" : "intro");
+            bool night(DCtx c) => c.G.Clock.Hour >= 20 || c.G.Clock.Hour < 3;
+            var d = new Dialogue("varrow", c =>
+                c.G.Quests.Stage("measure_wyrm") == 1 && night(c) && In(c, "academy") ? "measure" : c.G.World.Flag("met_varrow") ? "start" : "intro");
             const string who = "Magister Isolde Varrow";
+            void Done(DCtx c) => c.G.Quests.Set("measure_wyrm", 2, c.P);
             d.Node("intro", who,
-                c => $"You're the ones from the valley. With the... yes. Isolde Varrow. I count stars. Lately I count other things. Wingspans, for instance. Yours must be- no. Later. I'm being rude.",
+                c => "You're the ones from the valley. With the... yes. Isolde Varrow. I count stars. Lately I count other things. Wingspans, for instance. Yours must be- no. Later. I'm being rude.",
                 c => $"A tall woman with ink-stained cuffs and an astrolabe on a ribbon round her wrist. Her eyes keep sliding back to {c.G.World.DragonName}, measuring.",
                 c => c.G.World.SetFlag("met_varrow"))
+                .Say("Measure what, exactly?", "ask", show: c => c.G.Quests.Stage("measure_wyrm") == 0)
                 .Bye("Nice to meet you, Magister.");
-            d.Node("start", who, c => c.G.Clock.Hour >= 20 || c.G.Clock.Hour < 3 ? "Clear sky tonight. Every star where it should be. That's what worries me." : "Charts, charts, charts.").Bye("Goodbye, Magister.");
+            d.Node("start", who, c => night(c) ? "Clear sky tonight. Every star where it should be. That's what worries me." : "Charts, charts, charts.")
+                .Say("Measure what, exactly?", "ask", show: c => c.G.Quests.Stage("measure_wyrm") == 0)
+                .Roll(Skill.Insight, 15, "(Insight) Who else reads your notes?", "post", "post_no", show: c => c.G.Quests.Stage("measure_wyrm") >= 1 && !c.G.World.Flag("varrow_post"))
+                .Bye("Goodbye, Magister.");
+            d.Node("ask", who,
+                c => $"{c.G.World.DragonName}. Wingspan, length, the temperature of its breath, how it stands against the stars. The stars over the Wyrmback have been... restless. I want to know if a waking dragon is part of the same sky. Bring it to the telescopes after dark. I'll be gentle.",
+                onEnter: c => c.G.Quests.Start("measure_wyrm", c.P))
+                .Bye("We'll think about it.");
+            d.Node("measure", who,
+                c => $"There you are. Look at it in the starlight. Look at the SHAPE of it. Now: may I? A tape, a thermometer, five minutes. It won't hurt. It may tickle.",
+                c => $"{c.G.World.DragonName} eyes the measuring tape like it's a snake.")
+                .Say("Go ahead.", "measured", doIt: c => { DragonPet.AddBond(c.P, -3, "being measured"); Factions.Adjust("academy", 5, c.P); Done(c); })
+                .Say("Not tonight. Sorry, Magister.", "refused", doIt: Done)
+                .Roll(Skill.AnimalHandling, 13, $"Let it decide. (Kneel beside it, calm and close)", "decided_yes", "decided_no",
+                    onSuccess: c => { DragonPet.AddBond(c.P, 2, "being asked"); Factions.Adjust("academy", 5, c.P); Done(c); },
+                    onFailure: c => { DragonPet.AddBond(c.P, -1, "being asked, and sulking about it"); Done(c); }, social: false)
+                .Roll(Skill.Insight, 15, "(Insight) Who else reads your notes?", "post", "post_no", show: c => !c.G.World.Flag("varrow_post"));
+            d.Node("measured", who, c => "Remarkable. Remarkable. Thank you. Here: a chart of tonight's sky. Look at the circled ones.",
+                c => $"{c.G.World.DragonName} submits to the tape with the air of a cat at the vet, and sulks for an hour after.").Bye("Goodnight, Magister.");
+            d.Node("refused", who, c => "Of course. Of course. Its sky, not mine. Take this anyway: a chart of tonight. Look at the circled ones.",
+                c => "She hides her disappointment well. Not perfectly.").Bye("Goodnight, Magister.");
+            d.Node("decided_yes", who, c => "It... offered me its wing. Did you see that? It OFFERED. Here, take the chart, take it, I need to write this down.",
+                c => $"{c.G.World.DragonName} holds out one wing, very dignified, for exactly as long as it takes to measure, and not one second longer.").Bye("Goodnight, Magister.");
+            d.Node("decided_no", who, c => "No? No. Fair. Here, take the chart anyway. Some other night, perhaps.",
+                c => $"{c.G.World.DragonName} turns its back on the tape, and on her, and on you a bit too.").Bye("Goodnight, Magister.");
+            d.Node("post", who, c => "...",
+                c => "She writes every note twice. The first copy goes in her own book. The second she folds, seals with plain, unmarked wax, and gives to the evening post, every evening, without fail. She doesn't know you've noticed.",
+                c => c.G.World.SetFlag("varrow_post"))
+                .Bye("Goodnight, Magister.");
+            d.Node("post_no", who, c => "...", c => "Just a scholar, scribbling.").Bye("Goodnight, Magister.");
             return d;
         }
 

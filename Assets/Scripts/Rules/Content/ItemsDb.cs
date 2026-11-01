@@ -113,6 +113,7 @@ namespace DnD.Rules.Content
               "A coal said to be a fragment of dragonfire. Press it to a fallen ally's heart to bring them back with 1 HP.");
             C("scroll_revivify", "Scroll of Revivify", ConsumableEffect.SpellScroll, 30000, null, "Returns a creature that died within the last minute to life with 1 HP.", "revivify");
             C("torch", "Torch", ConsumableEffect.Light, 1, null, "Bright light 20 ft, dim light 20 ft more. Burns for 1 hour.");
+            C("ember_lily", "Ember-Lily Petal", ConsumableEffect.Heal, 2500, "3d4+3", "A petal from Professor Oakes's glasshouse, warm as a hearthstone. Chew it (Bonus Action) to regain 3d4+3 HP.");
             C("rations", "Rations (1 day)", ConsumableEffect.Ration, 50, null, "Travel food. Only matters when you're far from a hot meal.");
 
             AddMagicItems();
@@ -121,6 +122,8 @@ namespace DnD.Rules.Content
             All["gemstone"] = new ItemDef { Id = "gemstone", Name = "Polished Gemstone", Kind = ItemKind.Treasure, PriceCp = 1000, Icon = "item_gem", Description = "Kobolds love these." };
             All["copper_trinket"] = new ItemDef { Id = "copper_trinket", Name = "Shiny Copper Trinket", Kind = ItemKind.Treasure, PriceCp = 50, Icon = "item_trinket", Description = "Probably stolen from a farmhouse." };
             All["star_shard"] = new ItemDef { Id = "star_shard", Name = "Star Shard", Kind = ItemKind.Treasure, PriceCp = 1000, Icon = "item_star_shard", Description = "A sliver of green-gold crystal from the crater. It glows faintly, and hums if you hold it to your ear." };
+            All["overdue_book"] = new ItemDef { Id = "overdue_book", Name = "Overdue Library Book", Kind = ItemKind.Treasure, PriceCp = 0, Icon = "item_overdue_book", StackSize = 3, QuestItem = true, Description = "Property of the Library of Quiet Stars. Very, very overdue. The book seems aware of this." };
+            All["star_chart"] = new ItemDef { Id = "star_chart", Name = "Varrow's Star Chart", Kind = ItemKind.Treasure, PriceCp = 5000, Icon = "item_star_chart", Description = "A hand-inked chart of the autumn sky, annotated in a furious, beautiful hand. Twelve stars over the Wyrmback are circled. One more is circled twice." };
             All["star_iron"] = new ItemDef { Id = "star_iron", Name = "Lump of Star-Iron", Kind = ItemKind.Treasure, PriceCp = 2500, Icon = "item_star_iron", Description = "Heavy, dark and pitted, still faintly warm. Garrick would love this." };
             All["dragon_treat"] = new ItemDef { Id = "dragon_treat", Name = "Smoked Pepper Jerky", Kind = ItemKind.Consumable, PriceCp = 5, Icon = "item_dragon_treat", Description = "Fiery, chewy and far too spicy for people. Baby dragons go wild for it." };
             All["lucky_pebble"] = new ItemDef { Id = "lucky_pebble", Name = "Kobold Good-Luck Pebble", Kind = ItemKind.Treasure, PriceCp = 10, Icon = "item_lucky_pebble", Description = "A smooth grey pebble with a face scratched on it. The kobolds swear it's lucky. The face looks worried." };

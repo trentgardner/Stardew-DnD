@@ -1487,3 +1487,11 @@ pattern a2_rug1
 end
 paint mon_rug_0 a2_rug0 k=2a1418 r=7a2a35 g=b8893a y=e0c070 f=c9b48a
 paint mon_rug_1 a2_rug1 k=2a1418 r=7a2a35 g=b8893a y=e0c070 f=c9b48a
+# ---------------------------------------------------------------- Act II Phase 3: the professors' quests
+still mon_vine_src "Actor/Monster/Bamboo/SpriteSheet.png"
+tint  mon_vine_blight_0 mon_vine_src_0 -30 0.45 0.8
+tint  mon_vine_blight_1 mon_vine_src_1 -30 0.45 0.8
+icon  item_overdue_book "Items/Object/Book.png"
+icon  item_star_chart "Items/Scroll/ScrollEmpty.png"
+icon  item_ember_lily_src "Items/Resource/Grass.png"
+tint  item_ember_lily item_ember_lily_src -95 1.4 1.1

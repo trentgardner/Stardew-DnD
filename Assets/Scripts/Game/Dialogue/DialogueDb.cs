@@ -624,7 +624,7 @@ namespace DnD.Game
                       show: c => !beasts && c.Is("bard"), role: "Bard", onSuccess: c => c.G.PacifyGroup(g.Id, c.P))
                 .Roll(Skill.Deception, g.TalkDC + 2, "Careful. The Watch is right behind us. All of them. With dogs.", "fled", "fail",
                       show: c => !beasts, onSuccess: c => c.G.PacifyGroup(g.Id, c.P, fled: true))
-                .Roll(Skill.AnimalHandling, g.TalkDC, "(Slow movements, soft voice) Easy... easy now...", "befriended", "fail",
+                .Roll(g.TalkSkill ?? Skill.AnimalHandling, g.TalkDC, g.TalkSkill == Skill.Nature ? "(Kneel, and listen for what's wrong in the roots)" : "(Slow movements, soft voice) Easy... easy now...", "befriended", "fail",
                       show: c => beasts, onSuccess: c => c.G.PacifyGroup(g.Id, c.P))
                 .Roll(Skill.Intimidation, g.ScareDC, beasts ? "(Make yourself HUGE and roar)" : "Leave. Now. While you still can.", "fled", "fail",
                       onSuccess: c => c.G.PacifyGroup(g.Id, c.P, fled: true))

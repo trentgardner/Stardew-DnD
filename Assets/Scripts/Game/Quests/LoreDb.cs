@@ -54,6 +54,8 @@ namespace DnD.Game
                 "The Academy's annals, one fat volume per year. One year's entries have been written over in a different ink, neat and careful, the original lines scraped away so thoroughly the page has gone thin as skin. Hold it to the light and you can see that something was there. You can't see what.");
             Add("sealing_work", "Notes from the Sealing Hall", Records,
                 "Notes left on a workbench, in several hands. \"Circle nine of twelve complete.\" \"Test binding held a fire-drake of the third size for one hour, four minutes.\" \"Not enough.\" And, underlined twice, in a hand you'll come to know: \"It must hold forever. Gently, and forever.\"");
+            Add("grey_fire", "Grey Fire", Places,
+                "The glasshouse's heat-stone was quarried from the Emberhorn's slopes a hundred years ago and has burned warm and steady ever since. Now it's cracked, and the fire inside has gone grey: not out, but wrong, like a hearth that gives light and no heat.");
             Add("ashen_queen", "The Ashen Queen", Legend,
                 "The temple mural shows a dragon of grey fire, wings spread over burning fields. Beneath it the priests painted the old hymn: \"When the Ashen Queen rose, the hearths of the world went cold, for she drank every flame. Then the Great Ones lay down upon her, and the mountains were made, and the fire came home to the hearths.\" In the last panel the Dawnmother's sun rises behind the Wyrmback, as if nothing could ever wake what sleeps there.");
             Add("sleeping_mountains", "The Sleeping Mountains", Places,

@@ -59,6 +59,8 @@ namespace DnD.Game
         public bool Brawl;
         /// <summary>If this world flag is set when they spot you, a friend vouched for you: they stand down (full XP) and VouchText is narrated.</summary>
         public string VouchFlag, VouchText;
+        /// <summary>Beasts only: the skill that calms them (default Animal Handling; e.g. Nature for blighted vines).</summary>
+        public Rules.Skill? TalkSkill;
         public bool InStage(QuestLog q) => QuestId == null || (q.Stage(QuestId) >= MinStage && q.Stage(QuestId) <= MaxStage);
     }
 
@@ -391,6 +393,7 @@ namespace DnD.Game
             BuildAcademy();
             BuildLibrary();
             BuildAshbyTower();
+            BuildProfessorsQuests();
 
             var shop = new ZoneDef { Id = "shop", Name = "Ironkettle General Goods", Map = Maps.Shop, Indoors = true, DefaultSpawn = new Vector2Int(6, 7),
                 EnterNarration = "The shop smells of lamp oil and leather. Every shelf is organized with terrifying dwarven precision.", ShopCounter = new Vector2Int(6, 3) };

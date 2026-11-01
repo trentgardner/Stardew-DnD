@@ -434,5 +434,104 @@ namespace DnD.Tests
             g.World.SetFlag("seen:sealing_hall");
             Assert.IsTrue(confront.Show(c));
         }
+
+        // ============================================================ Task 6: the professors' quests
+
+        [UnityTest]
+        public IEnumerator OverdueBooksOpenTheRestrictedSection()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(50), "rogue", "gnome");
+            yield return Frames(2);
+            ActTwoAt(g, p, "academy", new Vector2Int(27, 30));
+            yield return Frames(2);
+            var thorne = DialogueDb.Get("thorne");
+            var c = new DCtx { P = p };
+            thorne.Nodes["earn"].OnEnter(c);
+            Assert.AreEqual(1, g.Quests.Stage("overdue"));
+            SpotNamed("geese_nest").Resolve(p, Rules.CheckOutcome.Success);
+            SpotNamed("maze_book").Resolve(p, Rules.CheckOutcome.Success);
+            p.Hud.CloseAll();
+            Assert.AreEqual(1, g.Quests.Stage("overdue"), "two of three");
+            var pell = DialogueDb.Get("pell");
+            pell.Nodes["gives"].OnEnter(c);
+            pell.Nodes["gives"].OnEnter(c); // talking to him twice doesn't make a fourth book
+            Assert.AreEqual(3, p.Character.CountOf("overdue_book"));
+            Assert.AreEqual(2, g.Quests.Stage("overdue"), "all three: back to Thorne");
+            int xp = p.Character.XP;
+            Assert.AreEqual("returned", thorne.Start(c));
+            thorne.Nodes["returned"].OnEnter(c);
+            Assert.AreEqual(0, p.Character.CountOf("overdue_book"), "the books go home");
+            Assert.IsTrue(g.Quests.Done("overdue"));
+            foreach (var f in new[] { WorldDb.RestrictedPass, WorldDb.ThornePassShown, WorldDb.StacksUnlooped }) Assert.IsTrue(g.World.Flag(f), f);
+            Assert.AreEqual(xp + 600, p.Character.XP, "paid once");
+        }
+
+        [UnityTest]
+        public IEnumerator GlasshouseQuestRunsPeacefully()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(51), "druid", "elf");
+            yield return Frames(2);
+            ActTwoAt(g, p, "glasshouse", new Vector2Int(9, 10));
+            yield return Frames(2);
+            var group = WorldDb.Zones["glasshouse"].EnemyGroups.Single(e => e.Id == "glasshouse_blights");
+            Assert.AreEqual(Rules.Skill.Nature, group.TalkSkill, "calmed with Nature, not Animal Handling");
+            var c = new DCtx { P = p };
+            DialogueDb.Get("oakes").Nodes["ask"].OnEnter(c);
+            Assert.AreEqual(1, g.Quests.Stage("glasshouse"));
+            int xp = p.Character.XP;
+            g.PacifyGroup("glasshouse_blights", p);
+            Assert.AreEqual(2, g.Quests.Stage("glasshouse"), "the vines are still");
+            Assert.AreEqual(xp + 400, p.Character.XP, "calming them pays the group's full XP, as fighting would");
+            var stone = SpotNamed("cracked_heatstone");
+            Assert.IsTrue(stone.Available(p), "now find the root");
+            stone.Resolve(p, Rules.CheckOutcome.Success);
+            p.Hud.CloseAll();
+            Assert.AreEqual(3, g.Quests.Stage("glasshouse"));
+            Assert.IsTrue(g.World.LoreFound.Contains("grey_fire"));
+            Assert.IsFalse(SpotNamed("cracked_heatstone_arcana").Available(p), "the other route closes once one works");
+            xp = p.Character.XP;
+            var oakes = DialogueDb.Get("oakes");
+            Assert.AreEqual("done", oakes.Start(c));
+            oakes.Nodes["done"].OnEnter(c);
+            Assert.IsTrue(g.Quests.Done("glasshouse"));
+            Assert.AreEqual(xp + 700, p.Character.XP);
+            Assert.AreEqual(2, p.Character.CountOf("ember_lily"));
+        }
+
+        [UnityTest]
+        public IEnumerator MeasureOfAWyrmEveryChoiceCompletes()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(52), "ranger", "human");
+            yield return Frames(2);
+            g.ApplyActTwoStart(p);
+            p.Hud.CloseAll();
+            var d = DialogueDb.Get("varrow");
+            var c = new DCtx { P = p };
+            var node = d.Nodes["measure"];
+            void Reset() { g.Quests.Stages["measure_wyrm"] = 1; g.World.DragonBond = 50; g.World.Standing["academy"] = 0; }
+
+            Reset();
+            node.Options.Single(o => o.Text == "Go ahead.").Do(c);
+            Assert.AreEqual(2, g.Quests.Stage("measure_wyrm"));
+            Assert.AreEqual(47, g.World.DragonBond); Assert.AreEqual(5, Factions.Standing("academy"));
+
+            Reset();
+            node.Options.Single(o => o.Text.StartsWith("Not tonight")).Do(c);
+            Assert.AreEqual(2, g.Quests.Stage("measure_wyrm"));
+            Assert.AreEqual(50, g.World.DragonBond); Assert.AreEqual(0, Factions.Standing("academy"));
+
+            var decide = node.Options.Single(o => o.Check == Rules.Skill.AnimalHandling);
+            Reset();
+            decide.OnSuccess(c);
+            Assert.AreEqual(2, g.Quests.Stage("measure_wyrm"));
+            Assert.AreEqual(52, g.World.DragonBond); Assert.AreEqual(5, Factions.Standing("academy"));
+            Reset();
+            decide.OnFailure(c);
+            Assert.AreEqual(2, g.Quests.Stage("measure_wyrm"));
+            Assert.AreEqual(49, g.World.DragonBond); Assert.AreEqual(0, Factions.Standing("academy"));
+        }
     }
 }

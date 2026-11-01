@@ -26,6 +26,7 @@ namespace DnD.Game
 
             z.Signs[new Vector2Int(6, 13)] = "A lantern post of black iron, taller than a man. A brass plate on its foot: LIT BY THE ACADEMY, FOR ALL WHO TRAVEL.\n\nThe glass is clean. The wick is dry. Nobody has lit it in a while.";
 
+            z.DoorSigns[new Vector2Int(32, 21)] = new BuildingSign("Abandoned Farmhouse", "Chalked on the door: GONE TO PORT VARREL.\n\nUnderneath, in another hand: SO HAVE WE.\n\nThe door is swollen shut with ash.");
             z.Secrets[new Vector2Int(24, 8)] = new SecretDef
             {
                 Id = "halfway_lamp", Sprite = "obj_brazier", Prompt = "Tend the Halfway Lamp", Skill = Rules.Skill.Religion, DC = 12, Daily = true, HeroicInspiration = true,
@@ -84,6 +85,7 @@ namespace DnD.Game
             holloway.Schedule.Add(new ScheduleEntry(0, "lantern_road", 46, 11, "dozing on his feet at the barrier"));
             holloway.Schedule.Add(new ScheduleEntry(6, "lantern_road", 46, 11, "checking travellers at the barrier"));
             holloway.Schedule.Add(new ScheduleEntry(19, "lantern_road", 48, 12, "warming his hands at the fire"));
+            holloway.Schedule.Add(new ScheduleEntry(6, "lantern_road", 48, 11, "writing his weekly letter home to Port Varrel", Hearthday));
             Npcs[holloway.Id] = holloway;
         }
 
@@ -104,6 +106,10 @@ namespace DnD.Game
             z.Warps.Add(new WarpDef(48, 25, "observatory", 7, 9));
             // The library (12,11) and the Orrery Tower (44,13) doors are added with their interiors.
 
+            z.DoorSigns[new Vector2Int(12, 11)] = new BuildingSign("The Library of Quiet Stars", "THE LIBRARY OF QUIET STARS\n\nSilence is requested. Silence is expected. Silence will be enforced.\n- M. Thorne, Archivist");
+            z.DoorSigns[new Vector2Int(44, 13)] = new BuildingSign("The Orrery Tower", "THE ORRERY TOWER\nHigh Magister C. Ashby\n\nVisitors are welcome. The stairs are not.");
+            z.DoorSigns[new Vector2Int(48, 25)] = new BuildingSign("The Observatory", "THE OBSERVATORY\n\nDo not touch the lenses. Do not touch the charts. Do not touch the Magister.");
+            z.DoorSigns[new Vector2Int(8, 26)] = new BuildingSign("The Glasshouse", "THE GLASSHOUSE\nProf. B. Oakes\n\nPlease close the door. The lilies feel the cold.");
             z.Signs[new Vector2Int(37, 10)] = "THE THIRTEEN BELLS\n\nRung at every hour by the Porters' Guild, as they have been since the founding.\n\nA newer notice, pinned beneath: STUDENTS ARE NOT TO BE ON THE BELL GREEN AFTER MIDNIGHT. THIS MEANS YOU, PELL.";
             z.Signs[new Vector2Int(27, 13)] = "Twelve bronze dragons lie in a ring, wings folded, heads resting on their forelegs, around a pit of carved stone flames. Each is a little different. Students have rubbed their noses golden.";
 
@@ -161,6 +167,7 @@ namespace DnD.Game
             juniper.Schedule.Add(new ScheduleEntry(9, "academy", 32, 25, "sketching the orrery"));
             juniper.Schedule.Add(new ScheduleEntry(17, "academy", 22, 34, "at supper, talking with her mouth full"));
             juniper.Schedule.Add(new ScheduleEntry(21, null, 0, 0, "asleep"));
+            juniper.Schedule.Add(new ScheduleEntry(9, "academy", 14, 31, "drawing the Starwell (no lectures on Hearthday)", Hearthday));
             Npcs[juniper.Id] = juniper;
 
             var pell = new NpcDef { Id = "pell", Name = "Pell", Title = "Second-year student (allegedly)", Look = "npc_pell", Dialogue = "pell" };
@@ -168,12 +175,14 @@ namespace DnD.Game
             pell.Schedule.Add(new ScheduleEntry(1, null, 0, 0, "asleep (late for class)"));
             pell.Schedule.Add(new ScheduleEntry(10, "academy", 20, 34, "skipping a lecture on the refectory lawn"));
             pell.Schedule.Add(new ScheduleEntry(18, "academy", 35, 11, "loitering near the bell tower"));
+            pell.Schedule.Add(new ScheduleEntry(10, "academy", 29, 36, "feeding the geese (they hate him)", Coinday));
             Npcs[pell.Id] = pell;
 
             var oakes = new NpcDef { Id = "oakes", Name = "Professor Bramwell Oakes", Title = "Master of the Glasshouse", Look = "npc_oakes", Dialogue = "oakes" };
             oakes.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
             oakes.Schedule.Add(new ScheduleEntry(7, "glasshouse", 9, 6, "fretting over the ember-lilies"));
             oakes.Schedule.Add(new ScheduleEntry(19, null, 0, 0, "at dinner, still talking about soil"));
+            oakes.Schedule.Add(new ScheduleEntry(7, "academy", 46, 40, "pruning the hedge maze, very slowly", Leafday));
             Npcs[oakes.Id] = oakes;
 
             var varrow = new NpcDef { Id = "varrow", Name = "Magister Isolde Varrow", Title = "Astronomer", Look = "npc_varrow", Dialogue = "varrow" };
@@ -182,12 +191,14 @@ namespace DnD.Game
             varrow.Schedule.Add(new ScheduleEntry(11, "observatory", 5, 2, "correcting star charts"));
             varrow.Schedule.Add(new ScheduleEntry(18, null, 0, 0, "at dinner"));
             varrow.Schedule.Add(new ScheduleEntry(20, "academy", 47, 27, "at the telescopes, counting"));
+            varrow.Schedule.Add(new ScheduleEntry(11, "library", 25, 21, "borrowing more star charts than she's allowed", Dawnday));
             Npcs[varrow.Id] = varrow;
 
             foreach (var (id, x) in new[] { ("crown_guard_w", 25), ("crown_guard_e", 30) })
             {
                 var guard = new NpcDef { Id = id, Name = "Crown soldier", Title = "The Academy garrison", Look = "npc_crown_soldier", Dialogue = "crown_guard" };
                 guard.Schedule.Add(new ScheduleEntry(0, "academy", x, 40, "standing a long watch at the gate"));
+                guard.Schedule.Add(new ScheduleEntry(6, "academy", x, 40, "polishing armour that is already polished (inspection day)", Stormday));
                 Npcs[guard.Id] = guard;
             }
         }
@@ -270,6 +281,7 @@ namespace DnD.Game
             thorne.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep (with a book)"));
             thorne.Schedule.Add(new ScheduleEntry(7, "library", 17, 18, "at the long desk, stamping returns with great force"));
             thorne.Schedule.Add(new ScheduleEntry(22, null, 0, 0, "asleep (with a book)"));
+            thorne.Schedule.Add(new ScheduleEntry(7, "academy", 10, 31, "reading by the Starwell on her day off (the library is closed)", Hearthday));
             Npcs[thorne.Id] = thorne;
         }
 
@@ -288,7 +300,56 @@ namespace DnD.Game
             ashby.Schedule.Add(new ScheduleEntry(0, "ashby_tower", 8, 2, "at the great window, watching the mountains"));
             ashby.Schedule.Add(new ScheduleEntry(8, "ashby_tower", 8, 7, "at his desk, writing very small"));
             ashby.Schedule.Add(new ScheduleEntry(22, "ashby_tower", 8, 2, "at the great window, watching the mountains"));
+            ashby.Schedule.Add(new ScheduleEntry(18, "academy", 27, 19, "walking the courtyard alone at dusk, as he does every Hearthday", Hearthday));
             Npcs[ashby.Id] = ashby;
+        }
+
+        static void BuildProfessorsQuests()
+        {
+            var academy = Zones["academy"];
+            academy.Secrets[new Vector2Int(37, 33)] = new SecretDef
+            {
+                Id = "geese_nest", Sprite = "obj_bush", Prompt = "Coax the geese off their nest", Skill = Rules.Skill.AnimalHandling, DC = 13,
+                QuestId = "overdue", QuestStage = 1, SetsFlag = "book_geese", Items = { new KeyValuePair<string, int>("overdue_book", 1) },
+                Success = "You talk low and steady and offer the head goose a crust. It considers you with deep contempt, then waddles off. Under it, carefully incubated: a library book. It's warm. It's VERY overdue.",
+                Failure = "The goose rises up to its full height and HONKS. You retreat with your dignity mostly intact. Try again tomorrow.",
+                AlreadyFound = "The geese glare at you. They remember.",
+            };
+            academy.Secrets[new Vector2Int(46, 34)] = new SecretDef
+            {
+                Id = "maze_book", Sprite = "obj_hedge", Prompt = "Reach into the hedge", Skill = Rules.Skill.Investigation, DC = 8,
+                QuestId = "overdue", QuestStage = 1, SetsFlag = "book_maze", Items = { new KeyValuePair<string, int>("overdue_book", 1) },
+                Success = "At the heart of the maze, wedged deep in the hedge where someone hid it during a game of hide-and-seek eleven years ago: a library book. The bookmark is still in chapter three.",
+                Failure = "Leaves, twigs, a lost glove. The book must be deeper in. Tomorrow.",
+                AlreadyFound = "An empty gap in the hedge, exactly book-shaped.",
+            };
+
+            var glass = Zones["glasshouse"];
+            var blights = new EnemyGroupDef
+            {
+                Id = "glasshouse_blights", Style = EncounterStyle.Beasts, TalkSkill = Rules.Skill.Nature, TalkDC = 14, ScareDC = 15, Label = "the blighted vines", SightTiles = 5,
+                QuestId = "glasshouse", MinStage = 1, MaxStage = 1, Unique = true,
+                Spotted = "The grey vines in the far beds uncoil, and stand, and come toward you on roots like knotted fingers.",
+                Befriended = "You kneel and lay a hand on the soil. Something in the roots is cold and wrong and frightened. You soothe what you can. One by one the vines sink back into their beds and lie still.",
+            };
+            blights.Members.Add(new EnemySpawn("vine_blight", 4, 5));
+            blights.Members.Add(new EnemySpawn("vine_blight", 15, 5));
+            blights.Members.Add(new EnemySpawn("vine_blight", 5, 8));
+            blights.Members.Add(new EnemySpawn("vine_blight", 14, 8));
+            glass.EnemyGroups.Add(blights);
+            const string heat = "At the heart of the glasshouse, under the beds, the old heat-stone that warms everything: a block of volcanic rock from the Emberhorn's slopes. It's cracked clean through, and the fire inside it has gone grey.";
+            glass.Secrets[new Vector2Int(9, 3)] = new SecretDef
+            {
+                Id = "cracked_heatstone", Sprite = "obj_rock", Prompt = "Find the root of it (Nature)", Skill = Rules.Skill.Nature, DC = 13,
+                QuestId = "glasshouse", QuestStage = 2, AdvanceTo = 3, Lore = "grey_fire",
+                Success = heat, Failure = "Soil, roots, more soil. Whatever it is, it's deeper. Tomorrow.", AlreadyFound = "The cracked heat-stone, cold and grey.",
+            };
+            glass.Secrets[new Vector2Int(10, 3)] = new SecretDef
+            {
+                Id = "cracked_heatstone_arcana", Sprite = "obj_rock", Prompt = "Feel for the magic (Arcana)", Skill = Rules.Skill.Arcana, DC = 13,
+                QuestId = "glasshouse", QuestStage = 2, AdvanceTo = 3, Lore = "grey_fire",
+                Success = heat, Failure = "The magic here is tangled up with the growing. You can't find the thread today.", AlreadyFound = "The cracked heat-stone, cold and grey.",
+            };
         }
     }
 }

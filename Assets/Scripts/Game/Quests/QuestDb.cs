@@ -127,6 +127,35 @@ namespace DnD.Game
             });
             Add(new QuestDef
             {
+                Id = "overdue", Title = "Overdue", Giver = "thorne",
+                StageText = new[] {
+                    "", "Archivist Thorne will open the Restricted Section to you, if you bring back three very overdue books: one the geese have been sitting on, one Pell 'borrowed', and one lost somewhere in the hedge maze.",
+                    "You have all three books. Return them to Archivist Thorne.",
+                    "Complete. Thorne stamped your pass with great force. The Restricted Section is open to you." },
+                Triggers = { QuestTrigger.AllFlags(1, 2, "book_geese", "book_pell", "book_maze") },
+                Reward = new QuestReward { Xp = 600, Copper = 4000, Npc = "thorne", Friendship = 100 },
+            });
+            Add(new QuestDef
+            {
+                Id = "glasshouse", Title = "The Wilting Glasshouse", Giver = "oakes",
+                StageText = new[] {
+                    "", "Professor Oakes's ember-lilies are turning grey, and something is moving in the far beds of the Glasshouse. Deal with it, kindly if you can.",
+                    "The vines are still. Now find what's wrong at the root.",
+                    "You found it: the glasshouse's heat-stone is cracked, and its fire has gone grey. Tell Professor Oakes.",
+                    "Complete. Oakes is going to try a new heat-stone, from somewhere far from the mountains." },
+                Triggers = { new QuestTrigger(QuestEvent.GroupResolved, "glasshouse_blights", 1, 2) },
+                Reward = new QuestReward { Xp = 700, Npc = "oakes", Friendship = 100, Item = "ember_lily" },
+            });
+            Add(new QuestDef
+            {
+                Id = "measure_wyrm", Title = "The Measure of a Wyrm", Giver = "varrow",
+                StageText = new[] {
+                    "", "Magister Varrow wants to measure your dragon under the stars. Find her at the Observatory's telescopes after dark (eight bells and later).",
+                    "Complete. Varrow has her numbers, or doesn't. Either way, she gave you a star chart." },
+                Reward = new QuestReward { Xp = 500, Npc = "varrow", Friendship = 50, Item = "star_chart" },
+            });
+            Add(new QuestDef
+            {
                 Id = "harvest_festival", Title = "The Harvest Festival", Giver = "pip",
                 StageText = new[] {
                     "", "Pip says the Harvest Festival is on Day 10 in the square, from nine bells. Try the games!",
