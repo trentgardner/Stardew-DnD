@@ -53,6 +53,16 @@ namespace DnD.Game
         }
 
         bool _startActTwo;
+        int _bellDay = -1;
+
+        /// <summary>The Thirteen Bells: at midnight everyone on the Academy grounds hears twelve, and then a thirteenth.</summary>
+        void AcademyBells()
+        {
+            if (Clock.Hour != 0 || _bellDay == Clock.Day) return;
+            _bellDay = Clock.Day;
+            foreach (var p in Players.Where(p => p.IsReady && p.Zone != null && p.Zone.Def.Id == "academy"))
+                p.Hud.Narrate("The bells ring midnight. Twelve... and then, a breath late, a thirteenth.");
+        }
 
         /// <summary>
         /// A new game that starts at Act II (level 5 preview): Act I's story counts as told, the dragon has hatched

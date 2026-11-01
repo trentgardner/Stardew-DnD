@@ -389,6 +389,7 @@ namespace DnD.Game
             // Drop-in: an unassigned controller (or the keyboard) presses Start / Enter.
             TryDropIn();
             ActEndCards();
+            AcademyBells();
 
             // Quests waiting for an item notice it however it arrived (loot, chests, trades, gifts).
             if (Time.unscaledTime >= _nextItemCheck) { _nextItemCheck = Time.unscaledTime + 0.5f; CheckQuestItems(); }
@@ -590,6 +591,11 @@ namespace DnD.Game
             Quests.Notify(QuestEvent.ZoneEntered, zoneId, p);
             string key = $"entered:{p.Index}:{zoneId}:{Clock.Day}";
             if (!World.IsLocked(key)) { World.Lock(key, 24 * 60); p.Hud.Narrate(zone.Def.EnterNarration, !World.Flag("seen:" + zoneId)); World.SetFlag("seen:" + zoneId); }
+            if (zoneId == "academy" && Dragon != null && !World.Flag("dragon_academy_intro"))
+            {
+                World.SetFlag("dragon_academy_intro");
+                p.Hud.Narrate($"{World.DragonName} sneezes a puff of sparks at the walls. The wards hum back, and {World.DragonName} doesn't like that one bit.");
+            }
             if (zoneId == "town" && Dragon != null && !World.Flag("dragon_town_intro"))
             {
                 World.SetFlag("dragon_town_intro");

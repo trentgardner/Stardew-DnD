@@ -428,5 +428,87 @@ namespace DnD.Game
             "TTT.TT.T.TTTT..TTTT.T...TT.T..T.T....T.TT~~.T..T.TTTTT...T.T",
             "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
         };
+
+        // Act II: the Starfall Academy grounds. Gate (27-28, 43) south; library door (12,11), the Orrery Tower (44,13), the Observatory (48,25), the Glasshouse (8,26).
+        public static readonly string[] Academy =
+        {
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+            "TWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWT",
+            "TW..+.....+.....+.....+.....+.....+.....+GGGGGGG....+.WT",
+            "TW..UUUUUUUUUUUUUUUUU...h.......RRRRR....GGGGGGG......WT",
+            "TW..UUUUUUUUUUUUUUUUU...........RRRRR....GGGGGGG......WT",
+            "TW+.UUUUUUUUUUUUUUUUU.....t.....RRRRR....GGGGGGG.....+WT",
+            "TW..UUUUUUUUUUUUUUUUU........t..RRRRR....GGGGGGG......WT",
+            "TW..UUUUUUUUUUUUUUUUU........t..WWWWW....GGGGGGG......WT",
+            "TW..UUUUUUUUUUUUUUUUU...*.......WWDWW....GGGGGGG......WT",
+            "TW..WWwWWwWWWWWwWWwWW.......t.....q..s...GGGGGGG......WT",
+            "TW..WWWWWWWWDWWWWWWWW....................GGGGGGG...t..WT",
+            "TW+........l..l........................h.WWwWwWW.h...+WT",
+            "TW..........,,,,,,,,,,,....S.............WWWDWWW......WT",
+            "TW..........,,.........oooooo.oo..........+...+.......WT",
+            "TW...*...............pooooooooo,,,,,,,,,,,,,,.........WT",
+            "TW...................ooooooooooooo....................WT",
+            "TW..t...t...h.......oooo^ooo^oooooo...................WT",
+            "TW+................oooooooooooo^oooo........UUUUUUUUU+WT",
+            "TW.GGGGGGGGGGG.....ooo^ooooooooooooo......t.UUUUUUUUU.WT",
+            "TW.GGGGGGGGGGG.....ooooooooooooooooo........UUUUUUUUU.WT",
+            "TW.GGGGGGGGGGG,,,,,oNoooooo&oooo^oNo,,,,,,,,UUUUUUUUU.WT",
+            "TW.GGGGGGGGGGG,,,,,ooooooooooooooooo,,,,,,,,UUUUUUUUU.WT",
+            "TW.GGGGGGGGGGG,....ooooooooooooooooo.......,UUUUUUUUU.WT",
+            "TW+GGGGGGGGGGG,....oooooooooooo^oooo.......,WWwWWWwWW+WT",
+            "TW.wwwwwwwwwww,.....oooo^ooo^oooooo........,WWWWDWWWW.WT",
+            "TW.wwwwwDwwwww,......ooooooooooooo..........ooooooooo.WT",
+            "TW..........,........pooooooooooop..........ooooooooo.WT",
+            "TW..........,..h.......ooooooooo............o!ooooo!o.WT",
+            "TW..........,.....*........oo...........#############.WT",
+            "TW+.......##,##............oo...........#.....#.....#+WT",
+            "TW......#...,...#........l.oo.l.........#.###.#.###.#.WT",
+            "TW.....#..*****..#NaNNaN...oo...~~~~....#.#...#...#.#.WT",
+            "TW.......*******...........oo.j~~~~~~...#.#.#####.#.#.WT",
+            "TW..*.#..***$***...,,,,,,,,oo.l~~~~~~j..#...#...#...#.WT",
+            "TW.......*******...........oo...~~~~....###.#.#.#.###.WT",
+            "TW+....#..*****..#NaNNaN...oo...........#...#.#.....#+WT",
+            "TW......#.......#........l.oo.l...j.....#.#####.###.#.WT",
+            "TW........#####............oo...........#...........#.WT",
+            "TW.........................oo...........######.######.WT",
+            "TW..+.....+.....+.....+....oo,,,,,,,,,,,,,,,,,,.....+.WT",
+            "TWWWWWWWWWWWWWWWWWWWWWWWWWWooWWWWWWWWWWWWWWWWWWWWWWWWWWT",
+            "T.t..t..t...ttt..t....tt.tloolt...t.tt....tttt.t.t..tt.T",
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTTooTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        };
+
+        // Act II: Professor Oakes's glasshouse.
+        public static readonly string[] Glasshouse =
+        {
+            "WwwwwwwwwwwwwwwwwwwW",
+            "w:pp:vvv:::vvv::pp:w",
+            "w::::vvv:::vvv:::::w",
+            "w::::::::::::::::::w",
+            "w:vvv::::::::::vvv:w",
+            "w:vvv::pp::pp::vvv:w",
+            "w::::::::::::::::::w",
+            "w:pp:vvv::::vvv:pp:w",
+            "w::::vvv::::vvv::::w",
+            "w::::::::::::::::::w",
+            "w::x:::::::::::-:::w",
+            "WwwwwwwwwDwwwwwwwwwW",
+        };
+
+        // Act II: Magister Varrow's observatory.
+        public static readonly string[] Observatory =
+        {
+            "WWWWWWWWWWWWWWWW",
+            "Wzz:::!::!:::zzW",
+            "W::::::::::::::W",
+            "W:-:::<<<<:::-:W",
+            "W::::::<&<:::::W",
+            "W:::::<<<<:::::W",
+            "W::::::::::::::W",
+            "W:a::::::::::a:W",
+            "W::::::::::::::W",
+            "Wzz::::::::::zzW",
+            "WWWWWWWDWWWWWWWW",
+        };
     }
 }

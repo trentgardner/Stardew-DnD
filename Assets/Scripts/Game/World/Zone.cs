@@ -271,7 +271,8 @@ namespace DnD.Game
                 case '&': Ground(m, floor); Solid(m); ArcaneGlow(Prop(m, "obj_orrery_0"), 4f).AddComponent<FrameFlip>().Id = "obj_orrery"; break;
                 case '$':
                     Ground(m, floor); Solid(m);
-                    Prop(m, "obj_starwell");
+                    var well = Prop(m, "obj_starwell");
+                    if (Def.Secrets.TryGetValue(m, out var wellSecret)) well.AddComponent<SecretInteractable>().Def = wellSecret; // the Starwell can be studied
                     var spark = ArcaneGlow(Prop(m, "fx_starlight"), 4f);
                     spark.GetComponent<SpriteRenderer>().sortingOrder += 1;
                     spark.AddComponent<Floater>().Amplitude = 0.14f;

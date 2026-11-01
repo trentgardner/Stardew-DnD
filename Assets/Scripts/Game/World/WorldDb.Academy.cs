@@ -86,5 +86,110 @@ namespace DnD.Game
             holloway.Schedule.Add(new ScheduleEntry(19, "lantern_road", 48, 12, "warming his hands at the fire"));
             Npcs[holloway.Id] = holloway;
         }
+
+        static void BuildAcademy()
+        {
+            var z = new ZoneDef
+            {
+                Id = "academy", Name = "The Starfall Academy", Map = Maps.Academy, DefaultSpawn = new Vector2Int(27, 40), Music = "music_academy",
+                BlightWeight = 0.15f, // the wards hold the ash back
+                EnterNarration = "The gate opens onto another world. Stone floats here, turning slowly in the air. Wards glimmer along the walls like heat over a road, and in the great courtyard a brass orrery taller than a house turns all by itself. Somewhere a bell is ringing, and you can't tell which one.",
+            };
+            // The road's gate (the road side is added here because this zone is built after it).
+            Zones["lantern_road"].Warps.Add(new WarpDef(52, 0, "academy", 27, 40) { MinAct = 2 });
+            Zones["lantern_road"].Warps.Add(new WarpDef(53, 0, "academy", 28, 40) { MinAct = 2 });
+            z.Warps.Add(new WarpDef(27, 43, "lantern_road", 52, 1));
+            z.Warps.Add(new WarpDef(28, 43, "lantern_road", 53, 1));
+            z.Warps.Add(new WarpDef(8, 26, "glasshouse", 9, 10));
+            z.Warps.Add(new WarpDef(48, 25, "observatory", 7, 9));
+            // The library (12,11) and the Orrery Tower (44,13) doors are added with their interiors.
+
+            z.Signs[new Vector2Int(37, 10)] = "THE THIRTEEN BELLS\n\nRung at every hour by the Porters' Guild, as they have been since the founding.\n\nA newer notice, pinned beneath: STUDENTS ARE NOT TO BE ON THE BELL GREEN AFTER MIDNIGHT. THIS MEANS YOU, PELL.";
+            z.Signs[new Vector2Int(27, 13)] = "Twelve bronze dragons lie in a ring, wings folded, heads resting on their forelegs, around a pit of carved stone flames. Each is a little different. Students have rubbed their noses golden.";
+
+            z.Secrets[new Vector2Int(34, 10)] = new SecretDef
+            {
+                Id = "thirteenth_bell", Sprite = "obj_inscription", Prompt = "Listen for the thirteenth bell", Skill = Rules.Skill.Perception, DC = 14,
+                FromHour = 0, ToHour = 1, Lore = "thirteenth_bell",
+                Success = "You stand on the bell green in the dark and count. Twelve. Then, a breath late, deep enough to feel in your teeth: thirteen. It doesn't come from the tower. It comes from under your feet.",
+                Failure = "The night wind carries the sound away and you lose count somewhere around nine. Come back tomorrow night.",
+                AlreadyFound = "Twelve, and one more, from somewhere below.",
+            };
+            z.Secrets[new Vector2Int(12, 34)] = new SecretDef
+            {
+                Id = "starwell", Sprite = "obj_starwell", Prompt = "Look into the Starwell", Skill = Rules.Skill.Arcana, DC = 15, Daily = true, HeroicInspiration = true, Lore = "starwell",
+                Success = "You look past your reflection, past the water, into a depth that goes on much further than any well should. Something down there looks back, kindly. You come away feeling lucky.",
+                Failure = "Water, stars, your own face. The magic is there; you just can't find the edge of it today.",
+                AlreadyFound = "The stars in the water have moved since this morning.",
+            };
+            z.Lore.Add(new LoreSpotDef { Id = "great_ones_statue", Pos = new Vector2Int(29, 14), Prompt = "Read the plaque on the plinth", Sprite = "obj_inscription" });
+            z.Lore.Add(new LoreSpotDef { Id = "primer_ashen_age", Pos = new Vector2Int(19, 34), Prompt = "Pick up the dropped textbook", Sprite = "item_scroll_revivify" });
+            Zones[z.Id] = z;
+
+            var glass = new ZoneDef
+            {
+                Id = "glasshouse", Name = "The Glasshouse", Map = Maps.Glasshouse, Indoors = true, DefaultSpawn = new Vector2Int(9, 10), Music = "music_academy",
+                EnterNarration = "Warm, wet air and the smell of growing things. Lilies the colour of embers line the beds, and some of them have gone grey at the edges, like paper held too near a candle.",
+            };
+            glass.Warps.Add(new WarpDef(9, 11, "academy", 8, 27));
+            Zones[glass.Id] = glass;
+
+            var obs = new ZoneDef
+            {
+                Id = "observatory", Name = "The Observatory", Map = Maps.Observatory, Indoors = true, DefaultSpawn = new Vector2Int(7, 9), Music = "music_academy",
+                EnterNarration = "A domed room open to the sky through a slit in the roof. A model of the heavens turns on its own in a circle of glowing runes, and every surface is covered in star charts, most of them annotated in a furious, beautiful hand.",
+            };
+            obs.Warps.Add(new WarpDef(7, 10, "academy", 48, 26));
+            Zones[obs.Id] = obs;
+
+        }
+
+        /// <summary>The Academy's people (after BuildPlacesNpcs: Perrin gets his Act II schedule here).</summary>
+        static void BuildAcademyNpcs()
+        {
+            var perrin = Npcs["perrin"];
+            const string a2 = ActTwoFlag;
+            perrin.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep in the junior scholars' dormitory") { RequiresFlag = a2 });
+            perrin.Schedule.Add(new ScheduleEntry(8, "academy", 24, 23, "showing first-years the orrery (and getting it wrong)") { RequiresFlag = a2 });
+            perrin.Schedule.Add(new ScheduleEntry(18, "academy", 21, 34, "eating supper and reading at the same time") { RequiresFlag = a2 });
+            perrin.Schedule.Add(new ScheduleEntry(19, "academy", 21, 34, "eating supper and reading at the same time") { RequiresFlag = a2 });
+            perrin.Schedule.Add(new ScheduleEntry(20, "academy", 21, 34, "still reading, long after supper") { RequiresFlag = a2 });
+            perrin.Schedule.Add(new ScheduleEntry(23, null, 0, 0, "asleep in the junior scholars' dormitory") { RequiresFlag = a2 });
+
+            var juniper = new NpcDef { Id = "juniper", Name = "Juniper", Title = "Second-year student", Look = "npc_juniper", Dialogue = "juniper" };
+            juniper.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
+            juniper.Schedule.Add(new ScheduleEntry(9, "academy", 32, 25, "sketching the orrery"));
+            juniper.Schedule.Add(new ScheduleEntry(17, "academy", 22, 34, "at supper, talking with her mouth full"));
+            juniper.Schedule.Add(new ScheduleEntry(21, null, 0, 0, "asleep"));
+            Npcs[juniper.Id] = juniper;
+
+            var pell = new NpcDef { Id = "pell", Name = "Pell", Title = "Second-year student (allegedly)", Look = "npc_pell", Dialogue = "pell" };
+            pell.Schedule.Add(new ScheduleEntry(0, "academy", 33, 10, "on the bell green, waiting for the thirteenth bell"));
+            pell.Schedule.Add(new ScheduleEntry(1, null, 0, 0, "asleep (late for class)"));
+            pell.Schedule.Add(new ScheduleEntry(10, "academy", 20, 34, "skipping a lecture on the refectory lawn"));
+            pell.Schedule.Add(new ScheduleEntry(18, "academy", 35, 11, "loitering near the bell tower"));
+            Npcs[pell.Id] = pell;
+
+            var oakes = new NpcDef { Id = "oakes", Name = "Professor Bramwell Oakes", Title = "Master of the Glasshouse", Look = "npc_oakes", Dialogue = "oakes" };
+            oakes.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
+            oakes.Schedule.Add(new ScheduleEntry(7, "glasshouse", 9, 6, "fretting over the ember-lilies"));
+            oakes.Schedule.Add(new ScheduleEntry(19, null, 0, 0, "at dinner, still talking about soil"));
+            Npcs[oakes.Id] = oakes;
+
+            var varrow = new NpcDef { Id = "varrow", Name = "Magister Isolde Varrow", Title = "Astronomer", Look = "npc_varrow", Dialogue = "varrow" };
+            varrow.Schedule.Add(new ScheduleEntry(0, "academy", 47, 27, "at the telescopes, counting"));
+            varrow.Schedule.Add(new ScheduleEntry(3, null, 0, 0, "asleep, at last"));
+            varrow.Schedule.Add(new ScheduleEntry(11, "observatory", 5, 2, "correcting star charts"));
+            varrow.Schedule.Add(new ScheduleEntry(18, null, 0, 0, "at dinner"));
+            varrow.Schedule.Add(new ScheduleEntry(20, "academy", 47, 27, "at the telescopes, counting"));
+            Npcs[varrow.Id] = varrow;
+
+            foreach (var (id, x) in new[] { ("crown_guard_w", 25), ("crown_guard_e", 30) })
+            {
+                var guard = new NpcDef { Id = id, Name = "Crown soldier", Title = "The Academy garrison", Look = "npc_crown_soldier", Dialogue = "crown_guard" };
+                guard.Schedule.Add(new ScheduleEntry(0, "academy", x, 40, "standing a long watch at the gate"));
+                Npcs[guard.Id] = guard;
+            }
+        }
     }
 }

@@ -216,5 +216,72 @@ namespace DnD.Tests
             Assert.AreEqual(Answers.Heard, g.Quests.Stage(Answers.Id));
             Assert.AreEqual(xp, g.Players[0].Character.XP, "no re-pay on load");
         }
+
+        // ============================================================ Task 3: the Academy grounds
+
+        static PlayerSlot ActTwoAt(GameRoot g, PlayerSlot p, string zone, Vector2Int pos)
+        {
+            g.ApplyActTwoStart(p);
+            p.Hud.CloseAll();
+            g.Warp(p, zone, pos, false);
+            return p;
+        }
+
+        [UnityTest]
+        public IEnumerator AcademyGroundsAreReachable()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(20), "rogue", "elf");
+            yield return Frames(2);
+            ActTwoAt(g, p, "lantern_road", new Vector2Int(52, 2));
+            yield return Frames(2);
+            TakeWarp(g, p, "lantern_road", 52, 0);
+            yield return Frames(2);
+            Assert.AreEqual("academy", p.Zone.Def.Id);
+            Assert.AreEqual(Answers.Academy, g.Quests.Stage(Answers.Id), "reaching the Academy moves Answers on");
+            AssertAllReachable(g, p.Zone, p.MapPos);
+            foreach (var door in new[] { new Vector2Int(12, 11), new Vector2Int(44, 13), new Vector2Int(48, 25), new Vector2Int(8, 26) })
+                Assert.IsTrue(p.Zone.FindPath(p.MapPos, door + Vector2Int.up, null, 40000).Count > 0 || p.Zone.FindPath(p.MapPos, door, null, 40000).Count > 0, $"door at {door}");
+        }
+
+        [UnityTest]
+        public IEnumerator ThirteenthBellOnlyAtMidnight()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(21), "bard", "human");
+            yield return Frames(2);
+            ActTwoAt(g, p, "academy", new Vector2Int(34, 12));
+            yield return Frames(2);
+            var bell = Object.FindObjectsByType<SecretInteractable>(FindObjectsSortMode.None).Single(s => s.Def.Id == "thirteenth_bell");
+            g.Clock.Minutes = 23 * 60;
+            Assert.IsFalse(bell.Available(p), "not before midnight");
+            g.Clock.Minutes = 30;
+            Assert.IsTrue(bell.Available(p), "between midnight and one");
+            bell.Resolve(p, Rules.CheckOutcome.Success);
+            Assert.IsTrue(g.World.LoreFound.Contains("thirteenth_bell"));
+        }
+
+        [UnityTest]
+        public IEnumerator AcademyHoldsTheBlightBack()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(22), "fighter", "human");
+            yield return Frames(2);
+            g.ApplyActTwoStart(p);
+            Blight.SetStage(2);
+            Assert.Less(Blight.OverlayAlpha(g.Zones["academy"]), Blight.OverlayAlpha(g.Zones["town"]), "the wards hold the ash back");
+        }
+
+        [UnityTest]
+        public IEnumerator AcademyHasVisibleMagic()
+        {
+            var g = GameRoot.I;
+            g.DebugStart(Still(23), "wizard", "elf");
+            yield return Frames(2);
+            var z = g.Zones["academy"];
+            Assert.GreaterOrEqual(z.GetComponentsInChildren<Floater>(true).Length, 6, "floating stones");
+            Assert.GreaterOrEqual(z.GetComponentsInChildren<WardShimmer>(true).Length, 8, "wards");
+            Assert.AreEqual(1, z.GetComponentsInChildren<FrameFlip>(true).Count(f => f.Id == "obj_orrery"), "the Grand Orrery");
+        }
     }
 }
