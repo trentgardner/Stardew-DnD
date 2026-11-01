@@ -10,6 +10,8 @@
 //          K anvil/forge  N bench  p planter  L washing line
 //          d scorched earth  e glowing crystals  H kobold hut  i brazier  V stairs down  u tent
 //          puzzle pieces (see ZoneDef.Puzzle): Q plate  I lever  J push block  Z gate  / mirror  @ light source  % light crystal
+//          Academy (Act II): z bookshelf  # hedge  + ward pillar  ^ floating stone  & the Grand Orrery  $ the Starwell
+//                            ! telescope  - desk  < rune floor (walkable)
 namespace DnD.Game
 {
     public static class Maps
@@ -124,8 +126,8 @@ namespace DnD.Game
             "T...t......t..t.....,t......~~~,............TT",
             "T.r.................,......j~~~,.............T",
             "T..s................,....s.~~~j,..........s..T",
-            ",,,,,,,,,,,,,,,,,,,,,,,,,,,b~~,,,,,,,,,,,,,,TT",
-            ",,,,,,,,,,,,,,,,,,,,,,,,,,,b~~,,,,,,,,,,,,,,TT",
+            ",,,,,,,,,,,,,,,,,,,,,,,,,,,b~~,,,,,,,,,,,,,,,,",
+            ",,,,,,,,,,,,,,,,,,,,,,,,,,,b~~,,,,,,,,,,,,,,,,",
             "TT.........................~~~.......,......TT",
             "TT.....t...................~~.....RRRRRRR...TT",
             "TT.....*......*.....*.....tt~~t...RRRRRRR...TT",
@@ -390,6 +392,221 @@ namespace DnD.Game
             "TT....t........::..*......h....T",
             "T.T.T.T..T.TT.T::.TT.T..TTT....T",
             "TTTTTTTTTTTTTTT,,TTTTTTTTTTTTTTT",
+        };
+
+        // Act II: the Lantern Road, Miller's Ford to the Starfall Academy's gate (north-east).
+        public static readonly string[] LanternRoad =
+        {
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT,,TTTTTT",
+            "TTXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX..TT.TT,,T....T",
+            "TTXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.......,,....TT",
+            "TTXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX......l,,....TT",
+            "TTXXX..X...XXXXX......X.....X.X..XX..XXX..X.........,,....TT",
+            "TTh..t....*..........t.....t....h........~~.........,,....TT",
+            "TT......h...............X........t....h.j~~.......*t,,..h.TT",
+            "TTr............t.t..:::::::::..*.......t.~~........l,,.....T",
+            "T...................:i::q::i:..t.........~~...t.....,,....TT",
+            "TTt.............t...:::::::::t...........~~.:u::u:l.,,....TT",
+            "TT.......t..........:N:::::N:...........~~..:::q:::.,,....TT",
+            "T.....*........t....:::::::::...........~~..:::a:::l,,.....T",
+            "T.....................,,,,,...t......*..~~.hxx:::F:.,,.....T",
+            "T.....l.....l.....l.....,.....l.....l...~~l.:::::::.,,..t.TT",
+            ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,bb,,,,,,,,,,,,....TT",
+            ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,bb,,,,,,,,,,,.t..TT",
+            "T...............................,.......j~~................T",
+            "T...ddddd.dd.dh.dddddddd.dd....,,,,,....j~~............t..TT",
+            "T..rd.d.ddddddd.ddddddd.ddd....,,,,,....j~~....t*t........TT",
+            "T...d.dd..dddddddd.d..dd..d..R.RRRR......~~r..tt.t.t.t.t...T",
+            "T.*.dddddd..dddd*.d.dd..ddd..RRRR.R....j~~...ht*.h....t....T",
+            "TT..dddddddddddd..rddd.ddd..tWWwDWW.....~~..ttthtt...t*...TT",
+            "TT...ddtddddddq.dtd.d.ddd.d.....r....f..~~....ttttt...t....T",
+            "T...ddddddddd.ddddddddddd.d........q.f..~~......ttt..t.....T",
+            "TT...dd.ddd.d.ddddddddddd....xx......f..~~.....t.t.t..t...TT",
+            "T..rdddddddd..dd*dddddddddd..........f..h~~....ht.....ttt..T",
+            "T...dddddddd.dd.dd.dddd..dd.ffff.ffff....~~.....t.t...t....T",
+            "T.......th....t.........................j~~......h.........T",
+            "TTT.TT.T.TTTT..TTTT.T...TT.T..T.T....T.TT~~.T..T.TTTTT...T.T",
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        };
+
+        // Act II: the Starfall Academy grounds. Gate (27-28, 43) south; library door (12,11), the Orrery Tower (44,13), the Observatory (48,25), the Glasshouse (8,26).
+        public static readonly string[] Academy =
+        {
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+            "TWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWT",
+            "TW..+.....+.....+.....+.....+.....+.....+GGGGGGG....+.WT",
+            "TW..UUUUUUUUUUUUUUUUU...h.......RRRRR....GGGGGGG......WT",
+            "TW..UUUUUUUUUUUUUUUUU...........RRRRR....GGGGGGG......WT",
+            "TW+.UUUUUUUUUUUUUUUUU.....t.....RRRRR....GGGGGGG.....+WT",
+            "TW..UUUUUUUUUUUUUUUUU........t..RRRRR....GGGGGGG......WT",
+            "TW..UUUUUUUUUUUUUUUUU........t..WWWWW....GGGGGGG......WT",
+            "TW..UUUUUUUUUUUUUUUUU...*.......WWWWW....GGGGGGG......WT",
+            "TW..WWwWWwWWWWWwWWwWW.......t.....q..s...GGGGGGG......WT",
+            "TW..WWWWWWWWDWWWWWWWW....................GGGGGGG...t..WT",
+            "TW+........l..l........................h.WWwWwWW.h...+WT",
+            "TW..........,,,,,,,,,,,....S.............WWWDWWW......WT",
+            "TW..........,,.........oooooo.oo..........+...+.......WT",
+            "TW...*...............pooooooooo,,,,,,,,,,,,,,.........WT",
+            "TW...................ooooooooooooo....................WT",
+            "TW..t...t...h.......oooo^ooo^oooooo...................WT",
+            "TW+................oooooooooooo^oooo........UUUUUUUUU+WT",
+            "TW.GGGGGGGGGGG.....ooo^oo<<<<<oooooo......t.UUUUUUUUU.WT",
+            "TW.GGGGGGGGGGG.....oooooo<ooo<oooooo........UUUUUUUUU.WT",
+            "TW.GGGGGGGGGGG,,,,,oNoooo<o&o<oo^oNo,,,,,,,,UUUUUUUUU.WT",
+            "TW.GGGGGGGGGGG,,,,,oooooo<ooo<oooooo,,,,,,,,UUUUUUUUU.WT",
+            "TW.GGGGGGGGGGG,....oooooo<<<<<oooooo.......,UUUUUUUUU.WT",
+            "TW+GGGGGGGGGGG,....oooooooooooo^oooo.......,WWwWWWwWW+WT",
+            "TW.wwwwwwwwwww,.....oooo^ooo^oooooo........,WWWWDWWWW.WT",
+            "TW.wwwwwDwwwww,......ooooooooooooo..........ooooooooo.WT",
+            "TW..........,........pooooooooooop..........ooooooooo.WT",
+            "TW..........,..h.......ooooooooo............o!ooooo!o.WT",
+            "TW..........,.....*........oo...........#############.WT",
+            "TW+.......##,##............oo...........#.....#.....#+WT",
+            "TW......#...,...#........l.oo.l.........#.###.#.###.#.WT",
+            "TW.....#..*****..#NaNNaN...oo...~~~~....#.#...#...#.#.WT",
+            "TW.......*******...........oo.j~~~~~~q..#.#.#####.#.#.WT",
+            "TW..*.#..***$***...,,,,,,,,oo.l~~~~~~j..#...#.q.#...#.WT",
+            "TW.......*******...........oo...~~~~....###.#.#.#.###.WT",
+            "TW+....#..*****..#NaNNaN...oo...........#...#.#.....#+WT",
+            "TW......#.......#........l.oo.l...j.....#.#####.###.#.WT",
+            "TW........#####............oo...........#...........#.WT",
+            "TW.........................oo...........######.######.WT",
+            "TW..+.....+.....+.....+....oo,,,,,,,,,,,,,,,,,,.....+.WT",
+            "TWWWWWWWWWWWWWWWWWWWWWWWWWWooWWWWWWWWWWWWWWWWWWWWWWWWWWT",
+            "T.t..t..t...ttt..t....tt.tloolt...t.tt....tttt.t.t..tt.T",
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTTooTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        };
+
+        // Act II: Professor Oakes's glasshouse.
+        public static readonly string[] Glasshouse =
+        {
+            "WwwwwwwwwwwwwwwwwwwW",
+            "w:pp:vvv:::vvv::pp:w",
+            "w::::vvv:::vvv:::::w",
+            "w::::::::qq::::::::w",
+            "w:vvv::::::::::vvv:w",
+            "w:vvv::pp::pp::vvv:w",
+            "w::::::::::::::::::w",
+            "w:pp:vvv::::vvv:pp:w",
+            "w::::vvv::::vvv::::w",
+            "w::::::::::::::::::w",
+            "w::x:::::::::::-:::w",
+            "WwwwwwwwwDwwwwwwwwwW",
+        };
+
+        // Act II: Magister Varrow's observatory.
+        public static readonly string[] Observatory =
+        {
+            "WWWWWWWWWWWWWWWW",
+            "Wzz:::!::!:::zzW",
+            "W::::::::::::::W",
+            "W:-:::<<<<:::-:W",
+            "W::::::<&<:::::W",
+            "W:::::<<<<:::::W",
+            "W::::::::::::::W",
+            "W:a::::::::::a:W",
+            "W::::::::::::::W",
+            "Wzz::::::::::zzW",
+            "WWWWWWWDWWWWWWWW",
+        };
+
+        // Act II: the Library of Quiet Stars. Row 2 is the Endless Stacks (loop warp at 29,2); the warded door is (33,2); the way out (17,23).
+        public static readonly string[] Library =
+        {
+            "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+            "WzzzzzzzzzzzzzzqzqzzzzzzzzzzzzzqzW",
+            "W::::::::::::::::::::::::::::::::D",
+            "W::zzzzzzzzzzzzzzzzzzzzzzzzzzzzqzW",
+            "W::::::::::::::::::::::::::::::::W",
+            "W:zz::zz::zz::zz::zz::zz::zz::zz:W",
+            "W:zz::zz::zz::zz::zz^:zz::zz::zz:W",
+            "W:zz^:zz::zz::zz::zz::zz::zz::zz:W",
+            "W:zz::zz::zz::zz::zz::zz::zz::zz:W",
+            "W::::::::::::::::::::::::::::::::W",
+            "W:zz::zz::zz::zz::zz::zz::zz^:zz:W",
+            "W:zz::zz::zz^:zz::zz::zz::zz::zz:W",
+            "W:zz::zz::zz::zz::zz::zz::zz::zz:W",
+            "W::::::::::::::::::::::::::::::::W",
+            "W::::::::^:::::::::::::::^:::::::W",
+            "W::::________________________::::W",
+            "W::::__a___a__-_____-__a___a_::::W",
+            "W::::__________CCCCC_________::::W",
+            "W::^:________________________:^::W",
+            "W::::__a___a___________a___a_::::W",
+            "W::::________________________::::W",
+            "W::::::::::::::::::::::::::::::::W",
+            "W::::::::::::::::::::::::::::::::W",
+            "WWWWWWWWWWWWWWWWWDWWWWWWWWWWWWWWWW",
+        };
+
+        // Act II: the Restricted Section (dark). Door back (0,9); stairs down to the Sealing Hall (21,15).
+        public static readonly string[] Restricted =
+        {
+            "WWWWWWWWWWWWWWWWWWWWWWWW",
+            "W::::::::::::::::::::::W",
+            "W:zzzz:zzzz:zzzz:zzzz::W",
+            "W:zzzz:zzzz:zzzz:zzzz::W",
+            "W::::::::::::::::::::::W",
+            "W::::::::::::::::::::::W",
+            "W:::zz:zzzz:zzzz:zzz:::W",
+            "W:::zz:zzzz:zzzz:zzz:::W",
+            "W::::::::::::::::::::::W",
+            "D:::::^::::::::::^:::::W",
+            "W::::::::::::::::::::::W",
+            "W::zz::::::::::::::zz::W",
+            "W::zz::::::::::::::zz::W",
+            "W::zz::::::::::::::zz::W",
+            "W::::::::::^:::::::::::W",
+            "W::::::::::::::::::::V:W",
+            "W::::::::::::::::::::::W",
+            "WWWWWWWWWWWWWWWWWWWWWWWW",
+        };
+
+        // Act II: the Sealing Hall (dark). A dragon-sized rune circle around an empty dais; stairs up (12,20).
+        public static readonly string[] SealingHall =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "X::::::::::::::::::::::::X",
+            "X:^:::::+:<<<<<:+:::::^::X",
+            "X:::::::<<<<<<<<<::::::::X",
+            "X::::::<<<:::::<<<:::::::X",
+            "X::::+<<<:::::::<<<+::x::X",
+            "X:::::<<:::::::::<<:::xx:X",
+            "X::::<<:::<<<<<:::<<:::::X",
+            "X::::<<:::<:::<:::<<:::::X",
+            "X::+:<<:::<:A:<:::<<:+:::X",
+            "X::::<<:::<:::<:::<<:::::X",
+            "X::::<<:::<<<<<:::<<:::::X",
+            "X:::::<<:::::::::<<::::::X",
+            "X::::+<<<:::::::<<<+:::::X",
+            "X::::::<<<:::::<<<:::::::X",
+            "X:::::::<<<<<<<<<::::::^:X",
+            "X:^:::::+:<<<<<:+::::::::X",
+            "X::::::::::::::::::::::::X",
+            "X::--:::::::::::::::--:::X",
+            "X::::::::::::::::::::::::X",
+            "X:::::::::::E::::::::::::X",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXX",
+        };
+
+        // Act II: the Orrery Tower, High Magister Ashby's study at the top of three hundred and twelve stairs. Door (8,13).
+        public static readonly string[] AshbyTower =
+        {
+            "WWWWWWwwwwwwWWWWWW",
+            "Wzz:::::!:::::::zW",
+            "Wz::::::::::::::zW",
+            "W::-::::::::::-::W",
+            "W:::::______:::::W",
+            "W:::::__&___:::::W",
+            "W:::::______:::::W",
+            "W::^::::::::::^::W",
+            "W::::::a:::a:::::W",
+            "W:::::::::::::::zW",
+            "Wzz:::::::::::::zW",
+            "W::+:::::::::+:::W",
+            "W::::::::::::::::W",
+            "WWWWWWWWDWWWWWWWWW",
         };
     }
 }

@@ -6,6 +6,9 @@ namespace DnD.Game
     /// <summary>Things that happen in the world that can move a quest along.</summary>
     public enum QuestEvent { ZoneEntered, GroupResolved, ItemGained, FlagSet, SecretFound }
 
+    /// <summary>Act II's main quest, "answers".</summary>
+    public static class Answers { public const string Id = "answers"; public const int Road = 1, Academy = 2, Tower = 3, Heard = 4; }
+
     /// <summary>Stages of the main quest, "fallen_star" (save version 2 numbering).</summary>
     public static class FallenStar { public const int Crater = 1, Trail = 2, Warrens = 3, Egg = 4, Hatched = 5, Done = 6; }
 
@@ -47,6 +50,8 @@ namespace DnD.Game
         public Dictionary<int, int> StageXp = new Dictionary<int, int>();
         /// <summary>Act II: which of the four forces this quest belongs to (null = nobody's), and whether it's that force's major quest (the point of no return).</summary>
         public string Faction;
+        /// <summary>The act this quest belongs to (the Act I XP audit only counts Act I).</summary>
+        public int Act = 1;
         public bool Major;
         public int Last => StageText.Length - 1;
     }
@@ -103,6 +108,53 @@ namespace DnD.Game
                     new QuestTrigger(QuestEvent.GroupResolved, "mine_egg", FallenStar.Warrens, FallenStar.Egg),
                 },
                 Reward = new QuestReward { Xp = 300, Copper = 5000, Npc = "rhoswen", Friendship = 100 },
+            });
+            Add(new QuestDef
+            {
+                Act = 2, Id = Answers.Id, Title = "Answers", Giver = "rhoswen",
+                StageXp = { [Answers.Academy] = 400, [Answers.Heard] = 600 },
+                StageText = new[] {
+                    "", "Hearths are going cold down the valley. Captain Vale says if anyone has answers, it's the Starfall Academy, up the Lantern Road past Miller's Ford.",
+                    "You've reached the Starfall Academy. Find High Magister Ashby. They say he lives at the top of the Orrery Tower.",
+                    "Ashby's door is open. Go up and hear him out.",
+                    "Ashby has given you a great deal to think about. (The road ahead opens in a later update.)" },
+                Triggers = {
+                    new QuestTrigger(QuestEvent.ZoneEntered, "academy", Answers.Road, Answers.Academy),
+                    new QuestTrigger(QuestEvent.ZoneEntered, "ashby_tower", Answers.Academy, Answers.Tower),
+                    new QuestTrigger(QuestEvent.ZoneEntered, "ashby_tower", Answers.Road, Answers.Tower),
+                    new QuestTrigger(QuestEvent.FlagSet, "ashby_heard", Answers.Road, Answers.Heard),
+                    new QuestTrigger(QuestEvent.FlagSet, "ashby_heard", Answers.Academy, Answers.Heard),
+                    new QuestTrigger(QuestEvent.FlagSet, "ashby_heard", Answers.Tower, Answers.Heard),
+                },
+            });
+            Add(new QuestDef
+            {
+                Act = 2, Id = "overdue", Title = "Overdue", Giver = "thorne",
+                StageText = new[] {
+                    "", "Archivist Thorne will open the Restricted Section to you, if you bring back three very overdue books: one the geese have been sitting on, one Pell 'borrowed', and one lost somewhere in the hedge maze.",
+                    "You have all three books. Return them to Archivist Thorne.",
+                    "Complete. Thorne stamped your pass with great force. The Restricted Section is open to you." },
+                Triggers = { QuestTrigger.AllFlags(1, 2, "book_geese", "book_pell", "book_maze") },
+                Reward = new QuestReward { Xp = 600, Copper = 4000, Npc = "thorne", Friendship = 100 },
+            });
+            Add(new QuestDef
+            {
+                Act = 2, Id = "glasshouse", Title = "The Wilting Glasshouse", Giver = "oakes",
+                StageText = new[] {
+                    "", "Professor Oakes's ember-lilies are turning grey, and something is moving in the far beds of the Glasshouse. Deal with it, kindly if you can.",
+                    "The vines are still. Now find what's wrong at the root.",
+                    "You found it: the glasshouse's heat-stone is cracked, and its fire has gone grey. Tell Professor Oakes.",
+                    "Complete. Oakes is going to try a new heat-stone, from somewhere far from the mountains." },
+                Triggers = { new QuestTrigger(QuestEvent.GroupResolved, "glasshouse_blights", 1, 2) },
+                Reward = new QuestReward { Xp = 700, Npc = "oakes", Friendship = 100, Item = "ember_lily" },
+            });
+            Add(new QuestDef
+            {
+                Act = 2, Id = "measure_wyrm", Title = "The Measure of a Wyrm", Giver = "varrow",
+                StageText = new[] {
+                    "", "Magister Varrow wants to measure your dragon under the stars. Find her at the Observatory's telescopes after dark (eight bells and later).",
+                    "Complete. Varrow has her numbers, or doesn't. Either way, she gave you a star chart." },
+                Reward = new QuestReward { Xp = 500, Npc = "varrow", Friendship = 50, Item = "star_chart" },
             });
             Add(new QuestDef
             {

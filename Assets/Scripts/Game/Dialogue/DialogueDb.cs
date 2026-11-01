@@ -15,8 +15,8 @@ namespace DnD.Game
         public static Dialogue Get(string id)
         {
             if (Cache.TryGetValue(id, out var d)) return d;
-            d = PlacesDialogue(id);
-            if (d != null) { Cache[id] = d; return d; }
+            d = AcademyDialogue(id) ?? PlacesDialogue(id);
+            if (d != null) { AddAcademyLines(id, d); Cache[id] = d; return d; }
             switch (id)
             {
                 case "brannoc": d = Brannoc(); break;
@@ -40,6 +40,7 @@ namespace DnD.Game
                 default: d = new Dialogue(id, c => "start"); d.Node("start", null, c => "...").Bye(); break;
             }
             AddPlacesLines(id, d);
+            AddAcademyLines(id, d);
             Cache[id] = d;
             return d;
         }
@@ -623,7 +624,7 @@ namespace DnD.Game
                       show: c => !beasts && c.Is("bard"), role: "Bard", onSuccess: c => c.G.PacifyGroup(g.Id, c.P))
                 .Roll(Skill.Deception, g.TalkDC + 2, "Careful. The Watch is right behind us. All of them. With dogs.", "fled", "fail",
                       show: c => !beasts, onSuccess: c => c.G.PacifyGroup(g.Id, c.P, fled: true))
-                .Roll(Skill.AnimalHandling, g.TalkDC, "(Slow movements, soft voice) Easy... easy now...", "befriended", "fail",
+                .Roll(g.TalkSkill ?? Skill.AnimalHandling, g.TalkDC, g.TalkSkill == Skill.Nature ? "(Kneel, and listen for what's wrong in the roots)" : "(Slow movements, soft voice) Easy... easy now...", "befriended", "fail",
                       show: c => beasts, onSuccess: c => c.G.PacifyGroup(g.Id, c.P))
                 .Roll(Skill.Intimidation, g.ScareDC, beasts ? "(Make yourself HUGE and roar)" : "Leave. Now. While you still can.", "fled", "fail",
                       onSuccess: c => c.G.PacifyGroup(g.Id, c.P, fled: true))

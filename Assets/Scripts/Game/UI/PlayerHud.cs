@@ -356,7 +356,9 @@ namespace DnD.Game
             _hotHint.text = Slot.Input.UsesMouse ? "Q/R or wheel: select\nX or click: use · 1–0: quick-use" : "LB/RB: select\nX: use";
 
             var zone = Slot.Zone;
-            _tint.color = zone != null && !zone.Def.Indoors && !zone.Def.Dark ? g.Clock.AmbientTint() : new Color(0, 0, 0, 0);
+            var tint = zone != null && !zone.Def.Indoors && !zone.Def.Dark ? g.Clock.AmbientTint() : new Color(0, 0, 0, 0);
+            if (zone != null && zone.Def.MagicLit && tint.a > 0) tint = new Color(0.22f, 0.12f, 0.42f, tint.a * 0.55f); // the wards light the night violet
+            _tint.color = tint;
         }
 
         /// <summary>Everyone fighting beside you: your companions, then other players. Name, HP bar, numbers.</summary>

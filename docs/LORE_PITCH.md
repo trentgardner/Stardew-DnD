@@ -137,6 +137,31 @@ Act I keeps only two light, ominous notes in chests (a miner's scrawl about lamp
   - *Missing Pages*: a parish ledger at Miller's Ford, with the century the legends talk about cut out.
 - The teenage dragon's opinions: it trusts Elowen, Lark, Maddie and Ssark; it's wary of Dunstan, Wick and Mister Thimble; it distrusts Perrin (he's quietly reporting to the Academy).
 
+## Act II, the road and the Academy (names approved in bulk, 2026-10-31)
+- **Places:**
+  - **The Lantern Road**, with **the Halfway Lamp** shrine and a Crown checkpoint.
+  - **The Starfall Academy**: the Grand Orrery, the Starwell, the Thirteen Bells, the Glasshouse, the Observatory and the Orrery Tower.
+  - **The Library of Quiet Stars**, with the Endless Stacks, the Restricted Section and **the Sealing Hall**.
+  - **The Emberhorn** (the volcano) and its **Warden** (the Phase 6 boss).
+- **People:**
+  - High Magister **Corvane Ashby**
+  - Archivist **Mirelle Thorne**
+  - Professor **Bramwell Oakes**
+  - Magister **Isolde Varrow** (she sends a second copy of her notes somewhere every night)
+  - Sergeant **Dace Holloway**
+  - the students **Juniper** and **Pell**
+- **Lore added:**
+  - Rings in the Ash
+  - Checkpoint Orders
+  - The Great Ones
+  - A Primer of the Ashen Age
+  - The Thirteenth Bell
+  - The Starwell
+  - The Warden of the Emberhorn
+  - The Annals, Corrected
+  - Notes from the Sealing Hall
+  - Grey Fire
+
 ## Questions for you
 1. Do you like the **egg → baby dragon companion** hook? (I think your fiance will.)
 2. Names: keep, change or rename anything? (*Sundermere, Thistledown, Ember Pact, Oathbound...*)

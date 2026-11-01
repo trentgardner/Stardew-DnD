@@ -160,6 +160,31 @@ namespace DnD.Rules.Content
                 Attacks = { Melee("Gore", 3, "1d6+1", DamageType.Piercing) },
                 Traits = { "Bad temper" },
             };
+            // ---------------- Act II Phase 3: the blight's beasts, and the Academy's guardians
+            All["ember_eyed_boar"] = new MonsterDef
+            {
+                Id = "ember_eyed_boar", Name = "Ember-Eyed Boar", SpriteId = "mon_ember_boar", AC = 12, HitDice = DiceExpr.Parse("5d10+15"),
+                Scores = new[] { 17, 10, 16, 2, 7, 5 }, CR = 2, XP = 450, Speed = 40,
+                Description = "A giant boar gone wrong: ash in its bristles, a coal-glow where its eyes should be. It doesn't seem to feel pain. (SRD Giant Boar.)",
+                Attacks = { Melee("Tusk", 5, "2d6+3", DamageType.Slashing) },
+                Traits = { "Charge", "Relentless" },
+            };
+            All["vine_blight"] = new MonsterDef
+            {
+                Id = "vine_blight", Name = "Vine Blight", SpriteId = "mon_vine_blight", AC = 12, HitDice = DiceExpr.Parse("4d8+8"),
+                Scores = new[] { 15, 8, 14, 5, 10, 3 }, CR = 0.5, XP = 100, Speed = 10,
+                Description = "A knot of greyed vines that has learned to walk, and is not happy about it. (SRD Vine Blight.)",
+                Attacks = { Melee("Constrict", 4, "2d6+2", DamageType.Bludgeoning, 10) },
+                Traits = { "False Appearance" },
+            };
+            All["rug_of_smothering"] = new MonsterDef
+            {
+                Id = "rug_of_smothering", Name = "Rug of Smothering", SpriteId = "mon_rug", AC = 12, HitDice = DiceExpr.Parse("6d10"),
+                Scores = new[] { 17, 14, 10, 1, 3, 1 }, CR = 2, XP = 450, Speed = 10,
+                Description = "A long red rug with a gold border that is, unmistakably, a guard. It lies very flat until it doesn't. (SRD Rug of Smothering; the grapple is left out.)",
+                Attacks = { Melee("Smother", 5, "2d6+3", DamageType.Bludgeoning) },
+                Traits = { "False Appearance", "Damage Transfer" },
+            };
             // ---------------- Wild Shape forms at druid 8 (CR 1, flying)
             All["dire_wolf"] = new MonsterDef
             {

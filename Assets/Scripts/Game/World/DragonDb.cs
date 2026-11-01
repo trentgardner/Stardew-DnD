@@ -18,6 +18,12 @@ namespace DnD.Game
         public static readonly Dictionary<string, DragonFeeling> Base = new Dictionary<string, DragonFeeling>
         {
             ["elowen"] = DragonFeeling.Trust,    // warm hands, smells of honey cakes
+            // Act II: the road and the Academy
+            ["juniper"] = DragonFeeling.Trust,   // brings it biscuits, asks before petting
+            ["oakes"] = DragonFeeling.Fond,      // the glasshouse is warm and smells green
+            ["varrow"] = DragonFeeling.Wary,     // measuring tapes, and that look
+            ["holloway"] = DragonFeeling.Wary,   // the ledger, the counting
+            ["ashby"] = DragonFeeling.Distrust,  // it can smell the Sealing Hall on him
             ["lark"] = DragonFeeling.Trust,      // flowers to sniff
             ["maddie"] = DragonFeeling.Trust,    // children and dragons
             ["ssark"] = DragonFeeling.Trust,     // the egg-singer: kin

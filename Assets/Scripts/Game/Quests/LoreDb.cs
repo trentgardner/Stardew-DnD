@@ -33,6 +33,29 @@ namespace DnD.Game
             Add("lamp_log", "A Watchman's Lamp Log", Records,
                 "The last page of a watchman's log, the rest long gone to damp: \"Night twelve. Smoke over the Wyrmback again, though nobody lives up there. The wind came down smelling of a cold hearth. Lit an extra lamp. Felt foolish. Lit another.\"", minAct: 1);
 
+            // Act II Phase 3: the Lantern Road.
+            Add("ash_fields", "Rings in the Ash", Places,
+                "On the Lantern Road the ash lies in wide, even rings, as if something very far away breathed out and the wind carried the breath round in circles. The rings are centred somewhere to the north-east. Towards the mountains.");
+            Add("checkpoint_orders", "Checkpoint Orders", Records,
+                "A Crown checkpoint ledger, kept in a neat hand: names, dates, where from, where bound. One column is new this season, ruled in fresh ink: 'Travelling with an animal? (Describe.)' Three entries say 'dog'. One says 'large dog (?)'. The orders pinned inside the cover only say: count them all, and send the count on.");
+            // Act II Phase 3: the Starfall Academy. The legend is everywhere, and everyone believes it.
+            Add("great_ones_statue", "The Great Ones", Legend,
+                "The plaque on the courtyard plinth, polished by a thousand students' thumbs: \"THE GREAT ONES, WHO LAY DOWN SO THE WORLD COULD WAKE.\" Below it, smaller: \"This Academy was founded on the night the star fell, in gratitude, by those who would learn what the Great Ones knew.\"");
+            Add("primer_ashen_age", "A Primer of the Ashen Age", Legend,
+                "A first-year textbook, dropped on the lawn. Chapter One: \"Long ago the Ashen Queen drank the fire of the world and would not give it back. Hearths went cold from the sea to the mountains. Then the Great Ones lay down upon her and slept, and became the Wyrmback.\" QUESTIONS: 1. Why did the hearths go cold? 2. Name three of the Great Ones. 3. Why must they never wake? In the margin someone has drawn a dragon with a speech bubble: \"five more minutes\".");
+            Add("thirteenth_bell", "The Thirteenth Bell", Places,
+                "The Academy rings one bell for every Great One sleeping in the Wyrmback: twelve. The thirteenth bell is older than the tower, and nobody has ever found it. The old porters say it rings so that whatever lies beneath the mountains knows it is still being watched.");
+            Add("starwell", "The Starwell", Places,
+                "The founders built their first tower around the place a star came down, eight hundred years ago. The well never runs dry and never freezes, and on clear nights the water holds more stars than the sky does. Students drop a copper in before exams. The well, by long tradition, keeps them.");
+            // Act II Phase 3: the Restricted Section and the Sealing Hall.
+            Add("emberhorn_warden", "The Warden of the Emberhorn", Records,
+                "From a bestiary chained to its shelf, the page worn soft with reading: \"In the heart of the Emberhorn sleeps a dragon of the old blood, the Warden, set to keep the mountain's fire. Its fire has gone wrong; it burns grey at the edges. The wardens of old wrote this down for whoever must face it: when it draws breath, the plates of its throat part and glow, and a blow struck there as it breathes will make it choke on its own fire.\"");
+            Add("altered_annals", "The Annals, Corrected", Records,
+                "The Academy's annals, one fat volume per year. One year's entries have been written over in a different ink, neat and careful, the original lines scraped away so thoroughly the page has gone thin as skin. Hold it to the light and you can see that something was there. You can't see what.");
+            Add("sealing_work", "Notes from the Sealing Hall", Records,
+                "Notes left on a workbench, in several hands. \"Circle nine of twelve complete.\" \"Test binding held a fire-drake of the third size for one hour, four minutes.\" \"Not enough.\" And, underlined twice, in a hand you'll come to know: \"It must hold forever. Gently, and forever.\"");
+            Add("grey_fire", "Grey Fire", Places,
+                "The glasshouse's heat-stone was quarried from the Emberhorn's slopes a hundred years ago and has burned warm and steady ever since. Now it's cracked, and the fire inside has gone grey: not out, but wrong, like a hearth that gives light and no heat.");
             Add("ashen_queen", "The Ashen Queen", Legend,
                 "The temple mural shows a dragon of grey fire, wings spread over burning fields. Beneath it the priests painted the old hymn: \"When the Ashen Queen rose, the hearths of the world went cold, for she drank every flame. Then the Great Ones lay down upon her, and the mountains were made, and the fire came home to the hearths.\" In the last panel the Dawnmother's sun rises behind the Wyrmback, as if nothing could ever wake what sleeps there.");
             Add("sleeping_mountains", "The Sleeping Mountains", Places,

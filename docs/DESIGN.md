@@ -211,6 +211,69 @@ Eldritch Blast fires two beams at 5 (2024) instead of one bigger one.
   Readable spots add journal entries (Lore page, by category: The Legend, Records, The Pact, Places), 25 XP each, once for the party.
   The legend is told the way the world tells it. **The secret** (who the Queen really is, and who is behind the legend) is guarded by a test that scans the code and lore text for give-away words.
 
+## The road and the Academy (Act II Phase 3)
+
+- **Gated warps** (`WarpDef`): `MinAct` (the Lantern Road is closed in Act I: Act I stays light), `RequiresFlag` / `ForbidFlag` (the warded door; the looping Endless Stacks), `ClosedText`, `Narration`.
+- **`ZoneDef.DragonStays`**: the dragon refuses to follow into the Sealing Hall. It waits upstairs, rejoins you by any route out, and a save made inside the hall loads with it waiting outside.
+- **`ZoneDef.MagicLit`**: the Academy's nights are a soft violet, not dark (the wards). **`BlightWeight` 0.15**: the wards hold the ash back.
+- **`SecretDef.FromHour/ToHour`** (the thirteenth bell, 00:00–01:00) and **`SecretDef.Lore`** (a secret that records lore). **`EnemyGroupDef.TalkSkill`**: beasts calmed by another skill (Nature for the blighted vines).
+- **Map chars** (Academy set dressing):
+
+  | Char | What it is |
+  |---|---|
+  | `z` | bookshelf |
+  | `#` | hedge |
+  | `+` | ward pillar (shimmers) |
+  | `^` | floating stone (bobs) |
+  | `&` | the Grand Orrery (2.6× outdoors, 3×3 footprint) |
+  | `$` | the Starwell (can host a secret) |
+  | `!` | telescope |
+  | `-` | desk |
+  | `<` | rune floor (walkable, shimmers) |
+
+  Arcane props get a soft halo (`ArcaneHalo`) that brightens at night.
+- **Zones:**
+
+  | Zone | Notes |
+  |---|---|
+  | `lantern_road` | |
+  | `academy` | |
+  | `glasshouse` | |
+  | `observatory` | |
+  | `library` | Endless Stacks loop (29,2) → (2,2) until `stacks_unlooped`; warded door (33,2) needs `restricted_pass` |
+  | `restricted` | dark; guardians vouch on `thorne_pass_shown` |
+  | `sealing_hall` | dark, DragonStays |
+  | `ashby_tower` | |
+
+- **Main quest "Answers"** (`Answers` constants), with StageXp 400 at the Academy and 600 once Ashby is heard:
+
+  | Stage | Name |
+  |---|---|
+  | 1 | Road |
+  | 2 | Academy |
+  | 3 | Tower |
+  | 4 | Heard |
+
+  It starts on Begin Act II, on Start at Act II, or on loading an Act II save without it (`ApplyActCap`, which also sets the `act2` world flag for schedules).
+- **Ashby:** every ending choice sets `ashby_heard`. The academy standing changes are:
+
+  | Choice or check | Academy standing |
+  |---|---|
+  | "You could be right." | +10 |
+  | "You're talking about a cage." | −5 |
+  | "Keep away from our dragon." | −5 (and dragon bond +2) |
+  | Arcana DC 15 success | +5 |
+  | Persuasion DC 16 about the hall (only after seeing it) | +5 |
+- **Side quests:**
+
+  | Quest | XP | Other rewards |
+  |---|---|---|
+  | `overdue` | 600 | 40 gp; the pass sets `restricted_pass`, `thorne_pass_shown` and `stacks_unlooped` |
+  | `glasshouse` | 700 | 2 ember-lily petals (heal 3d4+3) |
+  | `measure_wyrm` | 500 | star chart; dragon bond −3 / +2 / −1 by choice |
+
+- **Phase 6 hook:** `World.LoreFound.Contains("emberhorn_warden")` (the Restricted Section's bestiary) unlocks the volcano dragon's weakness check.
+
 ## Buoy (dedication)
 
 Buoy is Thistledown's neighbourhood dog: a black-and-white Australian Shepherd, a tribute to a real dog. He is NOT a companion and never fights.

@@ -12,6 +12,18 @@ namespace DnD.Game
         public string ToZone;
         public Vector2Int ToPos;
         public WarpDef(int x, int y, string zone, int tx, int ty) { At = new Vector2Int(x, y); ToZone = zone; ToPos = new Vector2Int(tx, ty); }
+        /// <summary>Closed before this act (Act I stays light: the Academy road waits for Act II).</summary>
+        public int MinAct = 1;
+        /// <summary>Only open while this world flag is set / not set (a warded door, a looping corridor).</summary>
+        public string RequiresFlag, ForbidFlag;
+        /// <summary>Narrated when you step onto it while it's closed.</summary>
+        public string ClosedText;
+        /// <summary>Narrated when an open warp takes you (e.g. "The shelves go on. And on.").</summary>
+        public string Narration;
+        public bool Open(WorldState w) =>
+            (w == null || w.Act >= MinAct) &&
+            (RequiresFlag == null || (w != null && w.Flag(RequiresFlag))) &&
+            (ForbidFlag == null || w == null || !w.Flag(ForbidFlag));
     }
 
     public class EnemySpawn
@@ -47,6 +59,8 @@ namespace DnD.Game
         public bool Brawl;
         /// <summary>If this world flag is set when they spot you, a friend vouched for you: they stand down (full XP) and VouchText is narrated.</summary>
         public string VouchFlag, VouchText;
+        /// <summary>Beasts only: the skill that calms them (default Animal Handling; e.g. Nature for blighted vines).</summary>
+        public Rules.Skill? TalkSkill;
         public bool InStage(QuestLog q) => QuestId == null || (q.Stage(QuestId) >= MinStage && q.Stage(QuestId) <= MaxStage);
     }
 
@@ -86,6 +100,10 @@ namespace DnD.Game
         public bool IsQuestSpot => QuestId != null;
         /// <summary>Only there after dark (20:00 to 05:00).</summary>
         public bool NightOnly;
+        /// <summary>Only there from FromHour up to (not including) ToHour; wraps past midnight. -1 = any time.</summary>
+        public int FromHour = -1, ToHour = -1;
+        /// <summary>Success also records this lore (LoreDb id) in the journal; its text follows the success line the first time.</summary>
+        public string Lore;
         /// <summary>Success settles this enemy group peacefully (full XP, as if talked down), e.g. returning a lost cub.</summary>
         public string PacifiesGroup;
         /// <summary>A sneak route: success moves the player (and their companions) to this tile in the same zone. Once found, no roll again.</summary>
@@ -108,6 +126,12 @@ namespace DnD.Game
         public bool Dark;
         public bool Indoors;
         public bool SafeForLongRest;
+        /// <summary>The dragon refuses to follow into this place (it waits where it is until you come back).</summary>
+        public bool DragonStays;
+        /// <summary>The act this place opens in (Act II places are behind gated warps; the Act I XP audit skips them).</summary>
+        public int Act = 1;
+        /// <summary>Lit by its own magic: nights here are a soft violet glow, not dark (the Academy's wards).</summary>
+        public bool MagicLit;
         /// <summary>How much the blight shows here (0-1); -1 = the default for the kind of place (see Blight.Weight).</summary>
         public float BlightWeight = -1;
         /// <summary>Murals, carvings and records with lore for the journal (Act II).</summary>
@@ -369,6 +393,11 @@ namespace DnD.Game
             BuildFord();
             BuildCrater();
             BuildWatchtower();
+            BuildLanternRoad();
+            BuildAcademy();
+            BuildLibrary();
+            BuildAshbyTower();
+            BuildProfessorsQuests();
 
             var shop = new ZoneDef { Id = "shop", Name = "Ironkettle General Goods", Map = Maps.Shop, Indoors = true, DefaultSpawn = new Vector2Int(6, 7),
                 EnterNarration = "The shop smells of lamp oil and leather. Every shelf is organized with terrifying dwarven precision.", ShopCounter = new Vector2Int(6, 3) };
@@ -473,7 +502,11 @@ namespace DnD.Game
             ford.Signs[new Vector2Int(3, 13)] = "MILLER'S FORD\n\nWEST: Thistledown\nEAST: Port Varrel (3 days)\n\nScratched underneath: \"bridge is OUT. use the ford. mind the wardens.\"";
             ford.Signs[new Vector2Int(25, 13)] = "The bridge is broken clean through: the spring flood took the middle span. Upstream there's a shallow ford, and smoke from a camp beside it.";
             ford.Signs[new Vector2Int(22, 7)] = "FORD WARDENS\nOFFICIAL TOLL CROSSING\n\n10 silver per party. Very official. Do not ask by whose authority.";
-            ford.Signs[new Vector2Int(42, 13)] = "EAST ROAD\n\nA fallen oak blocks the way to Port Varrel. It's going to take more than one afternoon to clear. (The road continues in a future update.)";
+            ford.Signs[new Vector2Int(42, 13)] = "EAST: THE LANTERN ROAD\nto the Starfall Academy\n\nThe road washes out every summer. The Academy mends it every autumn.";
+            // Act I stays light: the road to the Academy opens with Act II.
+            const string roadClosed = "The east road is washed out past the ford: a river of mud, a fallen oak, and a hand-painted sign. ROAD CLOSED TILL AUTUMN.";
+            ford.Warps.Add(new WarpDef(45, 14, "lantern_road", 1, 14) { MinAct = 2, ClosedText = roadClosed });
+            ford.Warps.Add(new WarpDef(45, 15, "lantern_road", 1, 15) { MinAct = 2, ClosedText = roadClosed });
             ford.Secrets[new Vector2Int(6, 5)] = new SecretDef
             {
                 Id = "ford_waystone", Sprite = "obj_flagstone", Prompt = "Read the old waystone", Skill = Rules.Skill.History, DC = 13,
@@ -622,6 +655,7 @@ namespace DnD.Game
 
             BuildSouthLaneNpcs();
             BuildPlacesNpcs();
+            BuildAcademyNpcs();
         }
 
         /// <summary>The South Lane folk (Phase 4). Names are side content pending lore approval.</summary>

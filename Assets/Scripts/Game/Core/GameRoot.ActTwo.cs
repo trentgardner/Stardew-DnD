@@ -11,6 +11,13 @@ namespace DnD.Game
         void ApplyActCap()
         {
             PlayerCharacter.LevelCap = World.Act >= 2 ? PlayerCharacter.ActTwoLevelCap : PlayerCharacter.ActOneLevelCap;
+            if (World.Act >= 2)
+            {
+                World.SetFlag(WorldDb.ActTwoFlag);
+                // The main quest of Act II begins with it (an Act II save from before it existed picks it up here too).
+                var p1 = Players.FirstOrDefault(p => p.Character != null);
+                if (p1 != null && Quests.Stage(Answers.Id) == 0) Quests.Start(Answers.Id, p1);
+            }
             foreach (var c in Companions) if (c != null && c.Character != null) AutoLevel(c.Character);
         }
 
@@ -46,6 +53,16 @@ namespace DnD.Game
         }
 
         bool _startActTwo;
+        int _bellDay = -1;
+
+        /// <summary>The Thirteen Bells: at midnight everyone on the Academy grounds hears twelve, and then a thirteenth.</summary>
+        void AcademyBells()
+        {
+            if (Clock.Hour != 0 || _bellDay == Clock.Day) return;
+            _bellDay = Clock.Day;
+            foreach (var p in Players.Where(p => p.IsReady && p.Zone != null && p.Zone.Def.Id == "academy"))
+                p.Hud.Narrate("The bells ring midnight. Twelve... and then, a breath late, a thirteenth.");
+        }
 
         /// <summary>
         /// A new game that starts at Act II (level 5 preview): Act I's story counts as told, the dragon has hatched

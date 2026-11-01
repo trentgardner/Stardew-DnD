@@ -395,7 +395,7 @@ namespace DnD.Tests
             Assert.AreEqual(copper2 + 100, p2.Character.Copper);
         }
 
-        [UnityTest]
+        [UnityTest, Timeout(600000)] // ~30 zones at 600 frames each
         public IEnumerator TwoPlayersFuzzEveryZone()
         {
             var g = GameRoot.I;

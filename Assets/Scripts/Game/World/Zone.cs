@@ -143,7 +143,7 @@ namespace DnD.Game
             { ',', (TileShape.Blob, ",bDEM") },   // dirt paths run into bridges, doors and the mine mouth
             { ';', (TileShape.Blob, ";") },       // sand
             { '~', (TileShape.Blob, "~b") },      // water (a bridge has water under it)
-            { 'o', (TileShape.Blob, "oSOmNp") },  // cobbled square around the statue, well, stalls, benches and planters
+            { 'o', (TileShape.Blob, "oSOmNp^&<+$l") },  // cobbled square around the statue, well, stalls, benches, planters, and the Academy's magic
             { 'X', (TileShape.Rect, "XM") },      // cliffs (the mine entrance is cut into them)
             { 'R', (TileShape.Rect, "R") },
             { 'U', (TileShape.Rect, "U") },
@@ -160,8 +160,9 @@ namespace DnD.Game
             string v = TileStyler.Variant(baseId, st.shape, (dx, dy) => st.same.IndexOf(CharAt(new Vector2Int(m.x + dx, m.y + dy))) >= 0, m.x, m.y);
             return ArtRegistry.Resolve(v, baseId);
         }
-        bool NextToCobbles(Vector2Int m) =>
-            CharAt(m + Vector2Int.left) == 'o' || CharAt(m + Vector2Int.right) == 'o' || CharAt(m + Vector2Int.up) == 'o' || CharAt(m + Vector2Int.down) == 'o';
+        bool NextToCobbles(Vector2Int m) => Paving(CharAt(m + Vector2Int.left)) || Paving(CharAt(m + Vector2Int.right)) || Paving(CharAt(m + Vector2Int.up)) || Paving(CharAt(m + Vector2Int.down));
+        /// <summary>Cobbles, or outdoor flagstones (a shrine, a checkpoint).</summary>
+        bool Paving(char c) => c == 'o' || (c == ':' && !Def.Indoors && !Def.Dark);
 
         /// <summary>Puzzle pieces come and go: a block slides, a gate opens. Toggles the invisible blocker on one tile.</summary>
         public void SetSolid(Vector2Int m, bool solid)
@@ -188,7 +189,7 @@ namespace DnD.Game
             {
                 char n = CharAt(m + d);
                 if (n == 'd') return "tile_scorched";
-                if (n == ':') flag = true;
+                if (n == ':' || n == 'o') flag = true; // paving: flagstones or cobbles
             }
             return flag ? "tile_cobbles" : floor;
         }
@@ -196,7 +197,7 @@ namespace DnD.Game
         void BuildCell(Vector2Int m, char c)
         {
             string floor = FloorFor(m);
-            if ("qceiHuxrZJQI/@%Ag".IndexOf(c) >= 0) floor = PropGround(m, floor);
+            if ("qceiHuxrZJQI/@%Agz+^&$!-<".IndexOf(c) >= 0) floor = PropGround(m, floor);
             _base.SetTile(Cell(m), GetTile(floor, false));
             switch (c)
             {
@@ -263,6 +264,41 @@ namespace DnD.Game
                 // puzzle pieces: the puzzle layer dresses these; a closed gate and a push block are solid
                 case 'Z': case 'J': Ground(m, floor); Solid(m); break;
                 case 'Q': case 'I': case '/': case '@': case '%': Ground(m, floor); break;
+                // Act II: the Academy's set dressing (visible magic).
+                case 'z': Ground(m, floor); Solid(m); Prop(m, "obj_bookshelf"); break;
+                case '#': Ground(m, floor); Solid(m); Prop(m, "obj_hedge"); break;
+                case '+': Ground(m, floor); Solid(m); ArcaneGlow(Prop(m, "obj_ward")).AddComponent<WardShimmer>(); break;
+                case '^': Ground(m, floor); Solid(m); ArcaneGlow(Prop(m, "obj_floating_stone")).AddComponent<Floater>(); break;
+                case '&':
+                    Ground(m, floor); Solid(m);
+                    var orrery = ArcaneGlow(Prop(m, "obj_orrery_0"), 4f);
+                    orrery.AddComponent<FrameFlip>().Id = "obj_orrery";
+                    if (!Def.Indoors)
+                    {
+                        // The Grand Orrery: taller than a house, three tiles across.
+                        orrery.transform.localScale = Vector3.one * 2.6f;
+                        foreach (Transform ch in orrery.transform) if (ch.name == "halo") ch.localScale /= 2.6f; // keep the glow the size it was asked to be
+                        orrery.transform.position += new Vector3(0, -0.6f, 0);
+                        for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) if (InBounds(m + new Vector2Int(dx, dy))) Blocked[m.x + dx, m.y + dy] = true;
+                    }
+                    break;
+                case '$':
+                    Ground(m, floor); Solid(m);
+                    var well = Prop(m, "obj_starwell");
+                    if (Def.Secrets.TryGetValue(m, out var wellSecret)) well.AddComponent<SecretInteractable>().Def = wellSecret; // the Starwell can be studied
+                    var spark = ArcaneGlow(Prop(m, "fx_starlight"), 4f);
+                    spark.GetComponent<SpriteRenderer>().sortingOrder += 1;
+                    spark.AddComponent<Floater>().Amplitude = 0.14f;
+                    break;
+                case '!': Ground(m, floor); Solid(m); Prop(m, "obj_telescope"); break;
+                case '-': Ground(m, floor); Solid(m); Prop(m, "obj_desk"); break;
+                case '<':
+                    Ground(m, floor); // paving under the runes (PropGround)
+                    var rune = Prop(m, "obj_rune");
+                    rune.transform.position += new Vector3(0, 0.4f, 0); // a flat floor marking, not a standing prop
+                    rune.GetComponent<SpriteRenderer>().sortingOrder = -900;
+                    rune.AddComponent<WardShimmer>().Min = 0.35f;
+                    break;
                 case 'T': Ground(m, floor); Solid(m); Prop(m, "obj_tree"); break;
                 case 't': Ground(m, floor); Solid(m); Prop(m, "obj_tree"); break;
                 case 'h': Ground(m, floor); Solid(m); Prop(m, "obj_bush"); break;
@@ -296,6 +332,14 @@ namespace DnD.Game
                     break;
                 default: Ground(m, floor); break;
             }
+        }
+
+        /// <summary>A cool arcane light (wards, floating stones, the orrery), seen at night and in the dark.</summary>
+        static GameObject ArcaneGlow(GameObject go, float radius = 2f)
+        {
+            LightSource.Attach(go, radius, new Color(0.6f, 0.8f, 1f, 1f));
+            ArcaneHalo.Attach(go, radius);
+            return go;
         }
 
         GameObject Prop(Vector2Int m, string sprite, bool glow = false)
@@ -354,7 +398,7 @@ namespace DnD.Game
                 float t = i / (float)steps;
                 var p = new Vector2Int(Mathf.RoundToInt(Mathf.Lerp(a.x, b.x, t)), Mathf.RoundToInt(Mathf.Lerp(a.y, b.y, t)));
                 char c = CharAt(p);
-                if (c == 'X' || c == 'W' || c == 'w' || c == 'T' || c == 'U' || c == 'R' || c == 'G' || c == 'S' || c == 'P' || c == 'e' || c == 'H') return false;
+                if (c == 'X' || c == 'W' || c == 'w' || c == 'T' || c == 'U' || c == 'R' || c == 'G' || c == 'S' || c == 'P' || c == 'e' || c == 'H' || c == 'z' || c == '#') return false;
                 if (c == 'Z' && Blocked[p.x, p.y]) return false; // a closed puzzle gate
             }
             return true;
