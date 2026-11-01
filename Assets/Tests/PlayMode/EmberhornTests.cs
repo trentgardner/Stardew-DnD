@@ -77,7 +77,7 @@ namespace DnD.Tests
             int xp = p.Character.XP;
             g.World.SetFlag("banner_fae");
             Assert.AreEqual(Answers.Allies, g.Quests.Stage(Answers.Id));
-            Assert.AreEqual(xp + 500, p.Character.XP);
+            Assert.AreEqual(xp + QuestDb.Get(Answers.Id).StageXp[Answers.Allies], p.Character.XP);
             Assert.IsTrue(g.World.Flag(WorldDb.EmberhornOpen));
             Assert.IsTrue(warp.Open(g.World));
             g.Warp(p, warp.ToZone, warp.ToPos, false);
@@ -147,7 +147,7 @@ namespace DnD.Tests
             SpotNamed("emberhorn_gate").Resolve(p, Rules.CheckOutcome.Success);
             p.Hud.CloseAll();
             Assert.AreEqual(Answers.Gate, g.Quests.Stage(Answers.Id));
-            Assert.AreEqual(xp + 1500, p.Character.XP);
+            Assert.AreEqual(xp + QuestDb.Get(Answers.Id).StageXp[Answers.Gate], p.Character.XP);
             var gate = WorldDb.Zones["emberhorn_road"].Warps.Find(w => w.At == new Vector2Int(59, 14));
             Assert.IsTrue(gate.Open(g.World), "Phase 6: standing at the gate opens the way into the mountain");
             Assert.AreEqual("emberhorn_throat", gate.ToZone);

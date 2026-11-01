@@ -252,9 +252,9 @@ namespace DnD.Tests
             int xp = p.Character.XP;
             Factions.Commit("hunters", p);
             Assert.AreEqual(Answers.Chosen, g.Quests.Stage(Answers.Id));
-            Assert.AreEqual(xp + 1000, p.Character.XP, "stage 5 pays once");
+            Assert.AreEqual(xp + QuestDb.Get(Answers.Id).StageXp[Answers.Chosen], p.Character.XP, "stage 5 pays once");
             g.World.SetFlag("committed");
-            Assert.AreEqual(xp + 1000, p.Character.XP);
+            Assert.AreEqual(xp + QuestDb.Get(Answers.Id).StageXp[Answers.Chosen], p.Character.XP);
         }
 
         [UnityTest]

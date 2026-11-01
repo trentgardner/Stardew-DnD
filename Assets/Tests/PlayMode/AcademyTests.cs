@@ -416,7 +416,7 @@ namespace DnD.Tests
             Assert.IsTrue(g.World.Flag("ashby_heard"));
             Assert.AreEqual(Answers.Heard, g.Quests.Stage(Answers.Id));
             Assert.AreEqual(10, Factions.Standing("academy"));
-            Assert.AreEqual(xp + 600, p.Character.XP, "the milestone pays once");
+            Assert.AreEqual(xp + QuestDb.Get(Answers.Id).StageXp[Answers.Heard], p.Character.XP, "the milestone pays once");
             Assert.AreEqual("again", d.Start(c), "afterwards he greets you as someone he's spoken to");
         }
 
