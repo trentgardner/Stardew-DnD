@@ -63,7 +63,10 @@ namespace DnD.Game
         public Rules.Skill? TalkSkill;
         /// <summary>Dealing with them (fight, talk or scare) also sets this world flag (e.g. a throne accepting your token).</summary>
         public string ResolvedFlag;
-        public bool InStage(QuestLog q) => QuestId == null || (q.Stage(QuestId) >= MinStage && q.Stage(QuestId) <= MaxStage && q.CanStart(QuestId)); // a closed quest (another force chosen) leaves the world
+        /// <summary>Only around once the blight has reached this stage (0 = always): ember-eyed beasts in known places.</summary>
+        public int MinBlight;
+        public bool InStage(QuestLog q) => (MinBlight <= 0 || (GameRoot.I?.World?.BlightStage ?? 0) >= MinBlight) && InQuestStage(q);
+        bool InQuestStage(QuestLog q) => QuestId == null || (q.Stage(QuestId) >= MinStage && q.Stage(QuestId) <= MaxStage && q.CanStart(QuestId)); // a closed quest (another force chosen) leaves the world
     }
 
     public class ChestDef

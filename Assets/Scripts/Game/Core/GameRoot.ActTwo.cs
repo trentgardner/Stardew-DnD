@@ -20,6 +20,8 @@ namespace DnD.Game
                 if (World.Flag("ashby_heard")) Factions.Hear("academy"); // Phase 3 saves heard him before hearing-out existed
             }
             foreach (var c in Companions) if (c != null && c.Character != null) AutoLevel(c.Character);
+            Blight.Sync();
+            foreach (var z in Zones.Values) foreach (var grp in z.Def.EnemyGroups) if (grp.MinBlight > 0) SpawnGroupIfNeeded(z, grp);
         }
 
         /// <summary>

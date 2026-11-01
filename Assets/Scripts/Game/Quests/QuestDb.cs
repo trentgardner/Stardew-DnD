@@ -7,7 +7,7 @@ namespace DnD.Game
     public enum QuestEvent { ZoneEntered, GroupResolved, ItemGained, FlagSet, SecretFound, BrazierLit }
 
     /// <summary>Act II's main quest, "answers".</summary>
-    public static class Answers { public const string Id = "answers"; public const int Road = 1, Academy = 2, Tower = 3, Heard = 4, Chosen = 5; }
+    public static class Answers { public const string Id = "answers"; public const int Road = 1, Academy = 2, Tower = 3, Heard = 4, Chosen = 5, Allies = 6, OnTheRoad = 7, Gate = 8; }
 
     /// <summary>Stages of the main quest, "fallen_star" (save version 2 numbering).</summary>
     public static class FallenStar { public const int Crater = 1, Trail = 2, Warrens = 3, Egg = 4, Hatched = 5, Done = 6; }
@@ -56,6 +56,8 @@ namespace DnD.Game
         /// <summary>The act this quest belongs to (the Act I XP audit only counts Act I).</summary>
         public int Act = 1;
         public bool Major;
+        /// <summary>Reaching a stage sets this world flag (e.g. a road opens).</summary>
+        public Dictionary<int, string> StageFlags = new Dictionary<int, string>();
         public int Last => StageText.Length - 1;
     }
 

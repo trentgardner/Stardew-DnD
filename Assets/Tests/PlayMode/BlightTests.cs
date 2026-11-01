@@ -105,7 +105,10 @@ namespace DnD.Tests
             var g = GameRoot.I;
             var p = g.DebugStart(Still(4), "fighter", "human");
             yield return Frames(2);
-            Blight.SetStage(3);
+            g.ApplyActTwoStart(p); // Phase 5: the stage follows the story, so put the story at stage 3
+            p.Hud.CloseAll();
+            g.Quests.Set(Answers.Id, Answers.OnTheRoad, p);
+            Assert.AreEqual(3, g.World.BlightStage);
             Blight.Ease();
             Assert.AreEqual(2, g.World.BlightStage);
             Assert.IsTrue(g.World.BlightEased);
