@@ -38,7 +38,7 @@ namespace DnD.Game
             var d = new Dialogue("warden_parley", c => "speak");
             const string who = "The Warden of the Emberhorn";
             d.Node("speak", who,
-                c => "Little flames. Go home. The door is shut. I am the lock. I have been the lock for a thousand years, and I am so very tired, and still I hold.",
+                c => "Sparks. Go home. The door is shut. I am the lock. I have been the lock for a thousand years, and I am so very tired, and still I hold.",
                 c => "Its voice is a landslide, slow and deep. Grey ash sifts from its scales when it moves. Its eyes are the colour of a fire that has almost gone out." +
                      (DragonHere(c) ? $" They find {c.G.World.DragonName}, and something in them flickers." : ""));
             ParleyOptions(d.Nodes["speak"]);

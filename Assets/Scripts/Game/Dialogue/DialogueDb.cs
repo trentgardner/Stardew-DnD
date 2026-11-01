@@ -403,7 +403,7 @@ namespace DnD.Game
                 .Roll(Skill.Insight, 10, "(Read Snik) What does he really want?", "insight_yes", "insight_no", social: false)
                 .Roll(Skill.Persuasion, 13, "We've come to honor the Great One, not to harm it.", "peace", "fight_fail",
                       adv: c => c.G.World.Flag("snik_read") ? AdvantageState.Advantage : AdvantageState.Normal)
-                .Roll(Skill.Intimidation, 15, "Stand aside, little warden, or we go through you.", "flee", "fight_fail")
+                .Roll(Skill.Intimidation, 15, "Stand aside, Egg-Warden, or we go through you.", "flee", "fight_fail")
                 .Roll(Skill.Deception, 16, "We ARE dragons. In disguise. Very good disguises.", "peace_lie", "fight_fail", critSuccess: "peace_lie_crit")
                 .Roll(Skill.Religion, 12, "The Dawnmother's light blesses this egg. We are its keepers too.", "peace", "fight_fail",
                       show: c => c.Is("cleric") || c.Bg("acolyte"), role: "Faithful")
