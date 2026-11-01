@@ -100,6 +100,8 @@ namespace DnD.Game
         public bool NightOnly;
         /// <summary>Only there from FromHour up to (not including) ToHour; wraps past midnight. -1 = any time.</summary>
         public int FromHour = -1, ToHour = -1;
+        /// <summary>Success also records this lore (LoreDb id) in the journal; its text follows the success line the first time.</summary>
+        public string Lore;
         /// <summary>Success settles this enemy group peacefully (full XP, as if talked down), e.g. returning a lost cub.</summary>
         public string PacifiesGroup;
         /// <summary>A sneak route: success moves the player (and their companions) to this tile in the same zone. Once found, no roll again.</summary>
@@ -385,6 +387,7 @@ namespace DnD.Game
             BuildFord();
             BuildCrater();
             BuildWatchtower();
+            BuildLanternRoad();
 
             var shop = new ZoneDef { Id = "shop", Name = "Ironkettle General Goods", Map = Maps.Shop, Indoors = true, DefaultSpawn = new Vector2Int(6, 7),
                 EnterNarration = "The shop smells of lamp oil and leather. Every shelf is organized with terrifying dwarven precision.", ShopCounter = new Vector2Int(6, 3) };
@@ -489,7 +492,11 @@ namespace DnD.Game
             ford.Signs[new Vector2Int(3, 13)] = "MILLER'S FORD\n\nWEST: Thistledown\nEAST: Port Varrel (3 days)\n\nScratched underneath: \"bridge is OUT. use the ford. mind the wardens.\"";
             ford.Signs[new Vector2Int(25, 13)] = "The bridge is broken clean through: the spring flood took the middle span. Upstream there's a shallow ford, and smoke from a camp beside it.";
             ford.Signs[new Vector2Int(22, 7)] = "FORD WARDENS\nOFFICIAL TOLL CROSSING\n\n10 silver per party. Very official. Do not ask by whose authority.";
-            ford.Signs[new Vector2Int(42, 13)] = "EAST ROAD\n\nA fallen oak blocks the way to Port Varrel. It's going to take more than one afternoon to clear. (The road continues in a future update.)";
+            ford.Signs[new Vector2Int(42, 13)] = "EAST: THE LANTERN ROAD\nto the Starfall Academy\n\nThe road washes out every summer. The Academy mends it every autumn.";
+            // Act I stays light: the road to the Academy opens with Act II.
+            const string roadClosed = "The east road is washed out past the ford: a river of mud, a fallen oak, and a hand-painted sign. ROAD CLOSED TILL AUTUMN.";
+            ford.Warps.Add(new WarpDef(45, 14, "lantern_road", 1, 14) { MinAct = 2, ClosedText = roadClosed });
+            ford.Warps.Add(new WarpDef(45, 15, "lantern_road", 1, 15) { MinAct = 2, ClosedText = roadClosed });
             ford.Secrets[new Vector2Int(6, 5)] = new SecretDef
             {
                 Id = "ford_waystone", Sprite = "obj_flagstone", Prompt = "Read the old waystone", Skill = Rules.Skill.History, DC = 13,

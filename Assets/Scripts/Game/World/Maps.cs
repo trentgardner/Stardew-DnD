@@ -126,8 +126,8 @@ namespace DnD.Game
             "T...t......t..t.....,t......~~~,............TT",
             "T.r.................,......j~~~,.............T",
             "T..s................,....s.~~~j,..........s..T",
-            ",,,,,,,,,,,,,,,,,,,,,,,,,,,b~~,,,,,,,,,,,,,,TT",
-            ",,,,,,,,,,,,,,,,,,,,,,,,,,,b~~,,,,,,,,,,,,,,TT",
+            ",,,,,,,,,,,,,,,,,,,,,,,,,,,b~~,,,,,,,,,,,,,,,,",
+            ",,,,,,,,,,,,,,,,,,,,,,,,,,,b~~,,,,,,,,,,,,,,,,",
             "TT.........................~~~.......,......TT",
             "TT.....t...................~~.....RRRRRRR...TT",
             "TT.....*......*.....*.....tt~~t...RRRRRRR...TT",
@@ -392,6 +392,41 @@ namespace DnD.Game
             "TT....t........::..*......h....T",
             "T.T.T.T..T.TT.T::.TT.T..TTT....T",
             "TTTTTTTTTTTTTTT,,TTTTTTTTTTTTTTT",
+        };
+
+        // Act II: the Lantern Road, Miller's Ford to the Starfall Academy's gate (north-east).
+        public static readonly string[] LanternRoad =
+        {
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT,,TTTTTT",
+            "TTXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX..TT.TT,,T....T",
+            "TTXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.......,,....TT",
+            "TTXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX......l,,....TT",
+            "TTXXX..X...XXXXX......X.....X.X..XX..XXX..X.........,,....TT",
+            "TTh..t....*..........t.....t....h........~~.........,,....TT",
+            "TT......h...............X........t....h.j~~.......*t,,..h.TT",
+            "TTr............t.t..:::::::::..*.......t.~~........l,,.....T",
+            "T...................:i::q::i:..t.........~~...t.....,,....TT",
+            "TTt.............t...:::::::::t...........~~.:u::u:l.,,....TT",
+            "TT.......t..........:N:::::N:...........~~..:::q:::.,,....TT",
+            "T.....*........t....:::::::::...........~~..:::a:::l,,.....T",
+            "T.....................,,,,,...t......*..~~.hxx:::F:.,,.....T",
+            "T.....l.....l.....l.....,.....l.....l...~~l.:::::::.,,..t.TT",
+            ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,bb,,,,,,,,,,,,....TT",
+            ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,bb,,,,,,,,,,,.t..TT",
+            "T...............................,.......j~~................T",
+            "T...ddddd.dd.dh.dddddddd.dd....,,,,,....j~~............t..TT",
+            "T..rd.d.ddddddd.ddddddd.ddd....,,,,,....j~~....t*t........TT",
+            "T...d.dd..dddddddd.d..dd..d..R.RRRR......~~r..tt.t.t.t.t...T",
+            "T.*.dddddd..dddd*.d.dd..ddd..RRRR.R....j~~...ht*.h....t....T",
+            "TT..dddddddddddd..rddd.ddd..tWWwDWW.....~~..ttthtt...t*...TT",
+            "TT...ddtddddddq.dtd.d.ddd.d.....r....f..~~....ttttt...t....T",
+            "T...ddddddddd.ddddddddddd.d........q.f..~~......ttt..t.....T",
+            "TT...dd.ddd.d.ddddddddddd....xx......f..~~.....t.t.t..t...TT",
+            "T..rdddddddd..dd*dddddddddd..........f..h~~....ht.....ttt..T",
+            "T...dddddddd.dd.dd.dddd..dd.ffff.ffff....~~.....t.t...t....T",
+            "T.......th....t.........................j~~......h.........T",
+            "TTT.TT.T.TTTT..TTTT.T...TT.T..T.T....T.TT~~.T..T.TTTTT...T.T",
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
         };
     }
 }

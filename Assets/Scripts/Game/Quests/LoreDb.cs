@@ -33,6 +33,11 @@ namespace DnD.Game
             Add("lamp_log", "A Watchman's Lamp Log", Records,
                 "The last page of a watchman's log, the rest long gone to damp: \"Night twelve. Smoke over the Wyrmback again, though nobody lives up there. The wind came down smelling of a cold hearth. Lit an extra lamp. Felt foolish. Lit another.\"", minAct: 1);
 
+            // Act II Phase 3: the Lantern Road.
+            Add("ash_fields", "Rings in the Ash", Places,
+                "On the Lantern Road the ash lies in wide, even rings, as if something very far away breathed out and the wind carried the breath round in circles. The rings are centred somewhere to the north-east. Towards the mountains.");
+            Add("checkpoint_orders", "Checkpoint Orders", Records,
+                "A Crown checkpoint ledger, kept in a neat hand: names, dates, where from, where bound. One column is new this season, ruled in fresh ink: 'Travelling with an animal? (Describe.)' Three entries say 'dog'. One says 'large dog (?)'. The orders pinned inside the cover only say: count them all, and send the count on.");
             Add("ashen_queen", "The Ashen Queen", Legend,
                 "The temple mural shows a dragon of grey fire, wings spread over burning fields. Beneath it the priests painted the old hymn: \"When the Ashen Queen rose, the hearths of the world went cold, for she drank every flame. Then the Great Ones lay down upon her, and the mountains were made, and the fire came home to the hearths.\" In the last panel the Dawnmother's sun rises behind the Wyrmback, as if nothing could ever wake what sleeps there.");
             Add("sleeping_mountains", "The Sleeping Mountains", Places,

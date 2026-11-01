@@ -6,6 +6,9 @@ namespace DnD.Game
     /// <summary>Things that happen in the world that can move a quest along.</summary>
     public enum QuestEvent { ZoneEntered, GroupResolved, ItemGained, FlagSet, SecretFound }
 
+    /// <summary>Act II's main quest, "answers".</summary>
+    public static class Answers { public const string Id = "answers"; public const int Road = 1, Academy = 2, Tower = 3, Heard = 4; }
+
     /// <summary>Stages of the main quest, "fallen_star" (save version 2 numbering).</summary>
     public static class FallenStar { public const int Crater = 1, Trail = 2, Warrens = 3, Egg = 4, Hatched = 5, Done = 6; }
 
@@ -103,6 +106,24 @@ namespace DnD.Game
                     new QuestTrigger(QuestEvent.GroupResolved, "mine_egg", FallenStar.Warrens, FallenStar.Egg),
                 },
                 Reward = new QuestReward { Xp = 300, Copper = 5000, Npc = "rhoswen", Friendship = 100 },
+            });
+            Add(new QuestDef
+            {
+                Id = Answers.Id, Title = "Answers", Giver = "rhoswen",
+                StageXp = { [Answers.Academy] = 400, [Answers.Heard] = 600 },
+                StageText = new[] {
+                    "", "Hearths are going cold down the valley. Captain Vale says if anyone has answers, it's the Starfall Academy, up the Lantern Road past Miller's Ford.",
+                    "You've reached the Starfall Academy. Find High Magister Ashby. They say he lives at the top of the Orrery Tower.",
+                    "Ashby's door is open. Go up and hear him out.",
+                    "Ashby has given you a great deal to think about. (The road ahead opens in a later update.)" },
+                Triggers = {
+                    new QuestTrigger(QuestEvent.ZoneEntered, "academy", Answers.Road, Answers.Academy),
+                    new QuestTrigger(QuestEvent.ZoneEntered, "ashby_tower", Answers.Academy, Answers.Tower),
+                    new QuestTrigger(QuestEvent.ZoneEntered, "ashby_tower", Answers.Road, Answers.Tower),
+                    new QuestTrigger(QuestEvent.FlagSet, "ashby_heard", Answers.Road, Answers.Heard),
+                    new QuestTrigger(QuestEvent.FlagSet, "ashby_heard", Answers.Academy, Answers.Heard),
+                    new QuestTrigger(QuestEvent.FlagSet, "ashby_heard", Answers.Tower, Answers.Heard),
+                },
             });
             Add(new QuestDef
             {

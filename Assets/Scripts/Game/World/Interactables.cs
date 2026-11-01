@@ -162,6 +162,7 @@ namespace DnD.Game
                     text += "\n\n" + Def.FirstTimeText;
                 }
                 if (Def.SetsFlag != null) w.SetFlag(Def.SetsFlag);
+                if (Def.Lore != null && LoreDb.Get(Def.Lore) is LoreDef lore && LoreDb.Find(lore.Id, p)) text += "\n\n" + lore.Text;
                 if (Def.PacifiesGroup != null) g.PacifyGroup(Def.PacifiesGroup, p, fled: true);
                 if (Def.IsQuestSpot && Def.AdvanceTo > 0) g.Quests.Set(Def.QuestId, Def.AdvanceTo, p);
                 g.Quests.Notify(QuestEvent.SecretFound, Def.Id, p);

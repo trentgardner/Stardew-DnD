@@ -11,6 +11,13 @@ namespace DnD.Game
         void ApplyActCap()
         {
             PlayerCharacter.LevelCap = World.Act >= 2 ? PlayerCharacter.ActTwoLevelCap : PlayerCharacter.ActOneLevelCap;
+            if (World.Act >= 2)
+            {
+                World.SetFlag(WorldDb.ActTwoFlag);
+                // The main quest of Act II begins with it (an Act II save from before it existed picks it up here too).
+                var p1 = Players.FirstOrDefault(p => p.Character != null);
+                if (p1 != null && Quests.Stage(Answers.Id) == 0) Quests.Start(Answers.Id, p1);
+            }
             foreach (var c in Companions) if (c != null && c.Character != null) AutoLevel(c.Character);
         }
 

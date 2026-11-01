@@ -160,6 +160,15 @@ namespace DnD.Rules.Content
                 Attacks = { Melee("Gore", 3, "1d6+1", DamageType.Piercing) },
                 Traits = { "Bad temper" },
             };
+            // ---------------- Act II Phase 3: the blight's beasts, and the Academy's guardians
+            All["ember_eyed_boar"] = new MonsterDef
+            {
+                Id = "ember_eyed_boar", Name = "Ember-Eyed Boar", SpriteId = "mon_ember_boar", AC = 12, HitDice = DiceExpr.Parse("5d10+15"),
+                Scores = new[] { 17, 10, 16, 2, 7, 5 }, CR = 2, XP = 450, Speed = 40,
+                Description = "A giant boar gone wrong: ash in its bristles, a coal-glow where its eyes should be. It doesn't seem to feel pain. (SRD Giant Boar.)",
+                Attacks = { Melee("Tusk", 5, "2d6+3", DamageType.Slashing) },
+                Traits = { "Charge", "Relentless" },
+            };
             // ---------------- Wild Shape forms at druid 8 (CR 1, flying)
             All["dire_wolf"] = new MonsterDef
             {
