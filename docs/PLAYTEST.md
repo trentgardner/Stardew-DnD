@@ -41,6 +41,26 @@
 **Co-op:** your fiance presses **START** on a second controller at any time. The screen splits and she makes a
 character. You can go anywhere independently; if one of you starts a fight, the other can walk over and join it.
 
+## New: the blight and the Emberhorn Road (Act II)
+The ash now follows the story. It starts when Act II begins, gets thicker once you've chosen a side, and is at its worst on the mountain road.
+- **Home feels it:** every Thistledown regular has something worried to say, and it changes as the ash thickens. Ask Elowen, Tobin,
+  Hesper, Wren or Hobb "You look tired." once the ash is thick: hear the same dream from three of them. Pet Buoy.
+- **Ember-eyed beasts** in the Whisperwood and Miller's Ford (and, later, cinder hounds at Starfall Crater). All of them can be calmed.
+- **Ash on the Doors** (Captain Vale, once the ash is thick): someone is marking doors. Look at the marks, then wait in the square after dark.
+  What you do about the culprit is up to you.
+- **The Emberhorn Road:** finish your side's major quest and the high road east of Cragfoot opens.
+  - Someone your side sent is waiting at **the Last Camp** with a gift.
+  - Find the **Oathbound waystation** (History, or Religion if you read the First Ideal at the Old Watchtower). The Second Ideal gives everyone Heroic Inspiration after a long rest.
+  - Get past **the Grey Vigil**, an Ashsworn camp (talk or fight), and look up at **the Emberhorn's gate**. The mountain itself waits for the next update.
+
+### Blight and road checklist
+- [ ] Walk through Thistledown before and after choosing a side. Does it feel worse, without feeling grim?
+- [ ] Collect the shared dream. Unsettling in a good way?
+- [ ] Ash on the Doors: which ending did you pick, and did it feel like a real choice?
+- [ ] Your dragon's reaction to the ash in the wild places (once a day per place).
+- [ ] Your side's ally at the Last Camp: did they feel like *your* side?
+- [ ] The Second Ideal: did you find it? Did you notice the Inspiration after resting?
+
 ## New: the four forces (Act II)
 Four forces want your dragon, and each of them is right about something. After High Magister Ashby, **"Answers"** asks you to hear out the
 other three, then **choose a side**. Every force has a home, a leader, a scouting quest or two, and a **major quest**.
