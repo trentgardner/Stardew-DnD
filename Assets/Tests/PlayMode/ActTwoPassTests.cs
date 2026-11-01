@@ -52,6 +52,73 @@ namespace DnD.Tests
         [Test] public void ActTwoXpBandHoldsForSolo() => Band(1);
         [Test] public void ActTwoXpBandHoldsForTwoPlayers() => Band(2);
 
+        // ============================================================ Task 2: the End of Act II card
+
+        static IEnumerator WardenDown(GameRoot g, PlayerSlot p, string side)
+        {
+            g.ApplyActTwoStart(p);
+            p.Hud.CloseAll();
+            Factions.Commit(side, p);
+            g.World.SetFlag("banner_" + side);
+            g.Quests.Set(Answers.Id, Answers.Gate, p);
+            yield return Frames(2);
+            g.World.SetFlag(GameRoot.WardenFallen);
+            g.Quests.Set(Answers.Id, Answers.Rest, p);
+        }
+
+        [UnityTest]
+        public IEnumerator EndOfActTwoCardOnce()
+        {
+            var g = GameRoot.I;
+            var p1 = g.DebugStart(Still(10), "fighter", "dwarf");
+            var p2 = g.DebugStart(Still(11), "wizard", "elf");
+            yield return Frames(2);
+            yield return WardenDown(g, p1, "crown");
+            p2.Hud.CloseAll();
+            Assert.IsTrue(g.ShowActTwoEnd());
+            yield return Frames(2);
+            foreach (var p in new[] { p1, p2 })
+            {
+                var card = p.Hud.Top as ActEndScreen;
+                Assert.IsNotNull(card, "both players see it");
+                StringAssert.Contains("End of Act II", card.Text);
+                StringAssert.Contains("Act III", card.Text);
+            }
+            Assert.IsFalse(g.ShowActTwoEnd(), "once per playthrough");
+            p1.Hud.CloseAll(); p2.Hud.CloseAll();
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(240);
+            Assert.IsFalse(g.Players[0].Hud.Top is ActEndScreen, "never again after a reload");
+        }
+
+        [UnityTest]
+        public IEnumerator EndCardForOldSaves()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(12), "fighter", "dwarf");
+            yield return Frames(2);
+            yield return WardenDown(g, p, "fae");
+            Assert.IsFalse(g.World.Flag(GameRoot.ActTwoEndSeen));
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(240);
+            Assert.IsTrue(g.World.Flag(GameRoot.ActTwoEndSeen), "a save from after the Warden but before the card shows it once");
+            Assert.IsTrue(g.Players[0].Hud.Top is ActEndScreen);
+        }
+
+        [UnityTest]
+        public IEnumerator EndCardNamesYourSide([Values("crown", "academy", "fae", "hunters")] string side)
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(13), "fighter", "dwarf");
+            yield return Frames(2);
+            yield return WardenDown(g, p, side);
+            g.ShowActTwoEnd();
+            yield return Frames(2);
+            StringAssert.Contains(ActEndScreen.SideLine(side), ((ActEndScreen)p.Hud.Top).Text);
+        }
+
         [UnityTest]
         public IEnumerator LevelTenIsTheCap()
         {

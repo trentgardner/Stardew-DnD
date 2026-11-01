@@ -740,8 +740,27 @@ namespace DnD.Game
             var p1 = Players.FirstOrDefault(p => p.IsReady && p.Character != null);
             Quests.Set(Answers.Id, Answers.Rest, p1);
             LoreDb.Find("warden_last_words", p1);
+            StartCoroutine(ActTwoEndSoon());
             foreach (var p in Players.Where(x => x.IsReady))
                 p.Hud.Narrate("The Warden lays its great head down on the black stone. \"Hold... the door,\" it breathes, and the light goes out of it. Far below, the lava sinks back into its channels, and for the first time in a year, the mountain is quiet.");
+        }
+
+        public const string ActTwoEndSeen = "act2_end_seen";
+
+        System.Collections.IEnumerator ActTwoEndSoon()
+        {
+            yield return new WaitForSecondsRealtime(3f); // let the fight wind down and the last words land
+            ShowActTwoEnd();
+        }
+
+        /// <summary>"End of Act II: Answers", once per playthrough, on every player's screen.</summary>
+        public bool ShowActTwoEnd()
+        {
+            if (World.Flag(ActTwoEndSeen) || !World.Flag(WardenFallen)) return false;
+            World.SetFlag(ActTwoEndSeen);
+            foreach (var p in Players.Where(x => x.IsReady)) p.Hud.Push(new ActEndScreen(p, 2));
+            SaveSystem.Save(true);
+            return true;
         }
 
         void OnGroupResolved(string groupId)

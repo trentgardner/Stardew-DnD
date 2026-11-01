@@ -22,6 +22,7 @@ namespace DnD.Game
                     Quests.Set(Answers.Id, Answers.Allies, p1); // a Phase 4 save that already finished its side's major quest
                 if (Quests.Stage(Answers.Id) >= Answers.Gate) World.SetFlag(WorldDb.EmberhornGate); // a Phase 5 save that already reached the gate
                 WorldDb.SendAllyAhead(World);
+                if (World.Flag(WardenFallen) && !World.Flag(ActTwoEndSeen)) StartCoroutine(ActTwoEndSoon()); // a save from before the card existed
             }
             foreach (var c in Companions) if (c != null && c.Character != null) AutoLevel(c.Character);
             Blight.Sync();
