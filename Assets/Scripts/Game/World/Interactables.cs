@@ -84,6 +84,7 @@ namespace DnD.Game
         public static bool PresentNow(SecretDef def)
         {
             var g = GameRoot.I;
+            if (def.RequiresFlag != null && !g.World.Flag(def.RequiresFlag)) return false;
             if (def.FromHour >= 0)
             {
                 int h = g.Clock.Hour;

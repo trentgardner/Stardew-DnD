@@ -44,6 +44,28 @@ namespace DnD.Game
             }
         }
 
+        /// <summary>
+        /// Where the story says the blight should be: none in Act I; 1 once Act II begins, 2 once the party has chosen a side,
+        /// 3 on the Emberhorn Road. The volcano's half solution (BlightEased) keeps it one stage lower for good.
+        /// </summary>
+        public static int StoryStage(WorldState w, QuestLog q)
+        {
+            if (w == null || q == null || w.Act < 2) return 0;
+            int a = q.Stage(Answers.Id);
+            int s = a >= Answers.OnTheRoad ? 3 : a >= Answers.Chosen ? 2 : 1;
+            if (w.BlightEased) s--;
+            return Mathf.Clamp(s, 0, MaxStage);
+        }
+
+        /// <summary>Brings the blight in line with the story (after any quest change, on load, at the start of Act II).</summary>
+        public static void Sync()
+        {
+            var g = GameRoot.I;
+            if (g == null || g.World == null) return;
+            int s = StoryStage(g.World, g.Quests);
+            if (s != g.World.BlightStage) SetStage(s);
+        }
+
         public static void SetStage(int stage)
         {
             W.BlightStage = Mathf.Clamp(stage, 0, MaxStage);

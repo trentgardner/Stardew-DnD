@@ -45,6 +45,15 @@ namespace DnD.Game
                 "In the Gloaming Glade's still pond your reflection runs a moment behind you, and for that moment it shows the glade as it was. The courts sit together at one table. There are more of them than three. Then you blink, and it is three again, and the other chairs were never there.");
             Add("trophy_wall", "The Hunters' Tallies", Records,
                 "Beside the Wyrmwatch Lodge door, a board of tallies in many hands, going back further than the lodge itself. Each line is a beast and a village: 'Ember-eyed bear, Lower Sedge, two children saved.' 'Cinder hound pack, the Ford road, no one lost.' The newest lines are close together. Very close together. Above them all, nailed up long ago, one great old dragon's tooth, and no tally beside it at all.");
+            // Act II Phase 5: the blight reaches home.
+            Add("shared_dream", "The Same Dream", Legend,
+                "Half the valley is dreaming the same dream: a great grey door deep under the mountain, warm to the touch, and something on the other side knocking, slow and steady, as if it had all the time in the world. The old folk say their grandparents dreamed it too, once, long ago, and then it stopped.");
+            Add("ashsworn_creed", "What the Ashsworn Say", Records,
+                "As Teodor Brisk heard it from a stranger at the Ford: the hearths are going out because the old fire is waking under the mountain, and when the Queen wakes the cold will end. Those who open the way for her will be warm. Those who stand in the way will not. Teodor didn't ask who the stranger was. He says he wishes he had.");
+            Add("grey_grove", "The Grey Grove", Places,
+                "On the Emberhorn Road stands a grove that didn't burn. It greyed: bark, leaf and root all at once, every tree still standing exactly where it grew, as if something had breathed on it from very far away.");
+            Add("second_ideal", "The Second Ideal", Pact,
+                "Carved at an Oathbound waystation on the Emberhorn Road, in the same hand as the First: \"" + WorldDb.SecondIdeal + "\" The knights who swore it kept watch at the edge of the mountain's shadow. The names of those who stood there are worn away.");
             Add("checkpoint_orders", "Checkpoint Orders", Records,
                 "A Crown checkpoint ledger, kept in a neat hand: names, dates, where from, where bound. One column is new this season, ruled in fresh ink: 'Travelling with an animal? (Describe.)' Three entries say 'dog'. One says 'large dog (?)'. The orders pinned inside the cover only say: count them all, and send the count on.");
             // Act II Phase 3: the Starfall Academy. The legend is everywhere, and everyone believes it.

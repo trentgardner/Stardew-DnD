@@ -305,6 +305,43 @@ Eldritch Blast fires two beams at 5 (2024) instead of one bigger one.
 - **New monsters:** `ashsworn_zealot` (Cult Fanatic, no spells), `ashsworn_keeper` (Veteran), `cinder_bear` (Brown Bear), `thorn_guardian` (Awakened Tree, trimmed), `ember_eyed_wolf` (Dire Wolf), `ashmaw` (Wyvern: the stinger is one 4d6+4 poison roll, since the engine has no damage-plus-save rider).
 - **Zones:** `redoubt`, `glade` (via the forest fairy ring, `ring_open`), `cragfoot`, `ashmaw_lair` (Dark). All `Act = 2` behind `MinAct = 2` warps.
 
+## The blight and the road (Act II Phase 5)
+
+- **Blight follows the story** (`Blight.StoryStage`, synced on every quest change, on load and at the start of Act II):
+
+  | Stage | When |
+  |---|---|
+  | 0 | Act I |
+  | 1 | Act II begins |
+  | 2 | a side is chosen (Answers ≥ 5) |
+  | 3 | on the Emberhorn Road (Answers ≥ 7) |
+
+  `BlightEased` (the volcano, Phase 6) keeps it one lower for good. A hand-set stage is overridden by the story.
+- **`EnemyGroupDef.MinBlight`**: `blight_wolves_forest` (2), `blight_boars_ford` (2), `blight_hounds_crater` (3). All are peaceful-capable wild groups that respawn.
+- **`QuestDef.StageFlags`**: reaching a stage sets a flag. Answers 6 sets `emberhorn_open`.
+- **`SecretDef.RequiresFlag`**: a secret that's only there once you know something (the Second Ideal's Religion route needs `secret:tower_inscription`).
+- **Worried townsfolk:** `DialogueDb.Blight.cs` swaps each regular's usual opening line at stages 1 and 2. Five can tell the shared dream (lore at three tellers). Buoy leans at stage 2. The teenage dragon barks in places with an overlay ≥ 0.15, once a day per place.
+- **Ash on the Doors** (900 XP): three marks → a night stakeout → Teodor, with four endings (redeemed ×2, jailed, fled). His schedule follows his fate.
+- **Answers 6–8:**
+
+  | Stage | Reached by | XP |
+  |---|---|---|
+  | 6 | any `banner_<force>` | 500 |
+  | 7 | entering `emberhorn_road` | |
+  | 8 | the gate spot | 1500 |
+
+  Phase 4 saves with a finished major catch up on load.
+- **Allies at the Last Camp** (one gift for the party, flag `ally_gift`):
+
+  | Side | Ally | Gift |
+  |---|---|---|
+  | Crown | Holloway | 3 Greater Healing |
+  | Academy | Perrin | Ember of Return + 2 Greater Healing |
+  | Fae | Thimble | 3 Bloom Draughts |
+  | Wyrmwatch | Odo | 2 Greater Healing + the road's secrets sparkle |
+
+- **The Second Ideal** (`oath_second`): every long rest grants each player Heroic Inspiration.
+
 ## Buoy (dedication)
 
 Buoy is Thistledown's neighbourhood dog: a black-and-white Australian Shepherd, a tribute to a real dog. He is NOT a companion and never fights.

@@ -1527,3 +1527,7 @@ tint mon_thorn_guardian_1 mon_vine_src_1 180 0.15 1.5
 tint mon_ember_wolf_0 mon_wolf_0 -15 0.3 0.75
 tint mon_ember_wolf_1 mon_wolf_1 -15 0.3 0.75
 tint item_bloom_draught item_potion_healing 110 0.8 1.15
+
+# Act II Phase 5
+actor npc_teodor "Actor/Character/Inspector/SpriteSheet.png"
+audio music_emberhorn "Audio/Musics/10 - Dark Castle.ogg"

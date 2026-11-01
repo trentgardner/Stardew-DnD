@@ -172,6 +172,15 @@ Act I keeps only two light, ominous notes in chests (a miner's scrawl about lamp
 - **Hooks for later phases:** `banner_<force>` (the chosen side's flavour), `fae_clause` (the dragon owes the Courts a favour),
   `wyvern_egg_saved`, `wyrmwatch_belled`, `marsh_asks_ashby`, `lantern_eyes`.
 
+## Act II, the blight and the road (names approved in bulk)
+- **Places:** **the Emberhorn Road**, with **the Last Camp**, **the Oathbound waystation**, **the Grey Vigil** (an Ashsworn camp), **the Grey Grove** and **the Emberhorn's gate**.
+- **People:** **Teodor Brisk**, Thistledown's chandler, who was marking doors with ash.
+- **The Second Ideal:** "I will stand where the dark is deepest, so that none need stand there alone."
+- **The Same Dream:** a great grey door under the mountain, warm to the touch, and something on the other side knocking, slow and steady.
+  (Safe for THE SECRET: no voice, no crying, no size.)
+- **Lore added:** The Same Dream, What the Ashsworn Say, The Grey Grove, The Second Ideal.
+- **Cut, as the spec's cut order allows:** the dragon's mid-act growth.
+
 ## Questions for you
 1. Do you like the **egg → baby dragon companion** hook? (I think your fiance will.)
 2. Names: keep, change or rename anything? (*Sundermere, Thistledown, Ember Pact, Oathbound...*)

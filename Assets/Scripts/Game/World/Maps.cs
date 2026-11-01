@@ -522,8 +522,8 @@ namespace DnD.Game
             "T.t......t.....t......,,...............:::::.T",
             "T............*........,,............t..::::x.T",
             "T...........................h................T",
-            ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.....T",
-            ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.....T",
+            ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,",
+            ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,",
             "T..h........................................fT",
             "T.......*.....t...............*............tfT",
             "T.................N.O....t..................fT",
@@ -564,6 +564,41 @@ namespace DnD.Game
             "XXXXX::::::::::::::::XXXXX",
             "XXXXX::::::::::::::::XXXXX",
             "XXXXXXXXXXXX::XXXXXXXXXXXX",
+        };
+
+        // Act II Phase 5: the Emberhorn Road, east of Cragfoot (0, 15-16) to the mountain's gate (59, 14).
+        public static readonly string[] EmberhornRoad =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XdddXddXXXdXXdddXXdddXXXdddXddXddXdXXdXXXdXXdXdddXXdXdXXXddX",
+            "XddXXXXXddXXddXddddddP:::P:::PdddXdX..dddddddddddXdXXXdXXXXX",
+            "Xddddd.dddddddddddddd::::A::::dddd.....ddddddddddddddddddddX",
+            "Xdddd...ddddddddddddd:::q:q:::ddddd...d:::::::::::dddddddddX",
+            "Xddd.....ddddddddrddd:::::::::dddrdd.dd:u:::::::u:dddddddddX",
+            "Xdddd...ddddddddddddd:::::::::ddddddddd:::::::::::dddddddddX",
+            "Xddddd.ddddddddddddddP:::,:::Pddddddddd:::::F:::::dddddddddX",
+            "Xdddddddddddddddddddddddd,ddddddddddddd:::::::::::ddddXXXXXX",
+            "Xddddddddddddddd,,,,,,,,,,,,,,,,ddddddd:::::::::::ddddXXXXXX",
+            "Xddd...........d,,dddddddddddd,,ddddddd:u::::::x::ddddXXXXXX",
+            "Xddd.u..u..u.xxd,,dddddddddddd,,.dddddd:::::,,::::ddddXPXXXX",
+            "Xddd...........d,,dddddddddddd,,..dddddddddd,,ddddddddX::::W",
+            "Xddd...........d,,dddddddddddd,,...ddddddddd,,,,,,,,,,::,::D",
+            ",,,,...........,,,dddddddddddd,,..dddddddddd,,ddddddddX::::W",
+            ",,,,...........,,ddddddddddddd,,.ddddddddddd,,ddddddddXPXXXX",
+            "Xddd...........ddddddddddddddd,,dddddddddddd,,ddddrdddXXXXXX",
+            "Xddd........FN.ddddddddddddddd,,,,,,,,,,,,,,,,ddddddddXXXXXX",
+            "Xddd.u..u...x..dddddddddddddddddddddddddddddddddddddddXXXXXX",
+            "Xddd...........dddddddddddddddddddddddrdddddddddddddddXXXXXX",
+            "Xddddddddddddd.dddtddddtddtddddddddddddddddddddrdddddddddddX",
+            "Xddddddddddd.....dddtddddddddddddrdddddddddddddd.ddddddddddX",
+            "Xdddddddrddd.....dddddqddtddddddddddddddddddddd...dddddddddX",
+            "Xdddddddddd.......dtdddddddddddddddddddddddddd.....ddddddddX",
+            "Xddddddddddd.....dddddtdtdddddddddddrdddddddddd...dddddddddX",
+            "XXddXdXdddXXXX.XXXXXXddXXXdXdXXddXdddXddXddddddd.XdXXdXXdddX",
+            "XdXddXddddXdXdXdXdXdddXXXXXddXddXdXdddddddddddXXddXXXdXdXddX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
         };
 
         // Act II: the Starfall Academy grounds. Gate (27-28, 43) south; library door (12,11), the Orrery Tower (44,13), the Observatory (48,25), the Glasshouse (8,26).

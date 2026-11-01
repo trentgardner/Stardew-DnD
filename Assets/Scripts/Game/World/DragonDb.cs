@@ -24,6 +24,10 @@ namespace DnD.Game
             ["varrow"] = DragonFeeling.Wary,     // measuring tapes, and that look
             ["holloway"] = DragonFeeling.Wary,   // the ledger, the counting
             ["sorrel"] = DragonFeeling.Fond,
+            ["ally_perrin"] = DragonFeeling.Fond,
+            ["ally_thimble"] = DragonFeeling.Fond,
+            ["ally_holloway"] = DragonFeeling.Wary,
+            ["ally_odo"] = DragonFeeling.Wary,
             ["calloway"] = DragonFeeling.Distrust, // the trophy wall; the tooth
             ["odo"] = DragonFeeling.Wary,     // she smells of warm leaves
             ["marsh"] = DragonFeeling.Wary,      // the registry, the brass tag

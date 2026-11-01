@@ -284,6 +284,23 @@ namespace DnD.Game
             return line;
         }
 
+        /// <summary>
+        /// The teenager feels the blight: entering a place thick with ash, it goes still and presses close. Once a day per place.
+        /// True if it reacted.
+        /// </summary>
+        public bool FeelBlight(Zone z)
+        {
+            if (z == null || G.Dragon == null || !G.Dragon.IsTeen || z.Def.DragonStays) return false;
+            if (Blight.OverlayAlpha(z) < 0.15f) return false;
+            string key = "blightbark:" + z.Def.Id;
+            if (G.World.IsLocked(key)) return false;
+            G.World.Lock(key, 24 * 60 - G.Clock.Minutes);
+            Emote("wary");
+            string line = DragonDb.BlightBark(Name);
+            foreach (var p in G.Players.Where(x => x.IsReady && x.Zone == z)) p.Hud.Narrate(line, false);
+            return true;
+        }
+
         /// <summary>After a fight won together the teenager struts a little.</summary>
         public void ShowOff()
         {

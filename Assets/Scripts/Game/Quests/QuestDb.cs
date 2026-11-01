@@ -7,7 +7,7 @@ namespace DnD.Game
     public enum QuestEvent { ZoneEntered, GroupResolved, ItemGained, FlagSet, SecretFound, BrazierLit }
 
     /// <summary>Act II's main quest, "answers".</summary>
-    public static class Answers { public const string Id = "answers"; public const int Road = 1, Academy = 2, Tower = 3, Heard = 4, Chosen = 5; }
+    public static class Answers { public const string Id = "answers"; public const int Road = 1, Academy = 2, Tower = 3, Heard = 4, Chosen = 5, Allies = 6, OnTheRoad = 7, Gate = 8; }
 
     /// <summary>Stages of the main quest, "fallen_star" (save version 2 numbering).</summary>
     public static class FallenStar { public const int Crater = 1, Trail = 2, Warrens = 3, Egg = 4, Hatched = 5, Done = 6; }
@@ -56,6 +56,8 @@ namespace DnD.Game
         /// <summary>The act this quest belongs to (the Act I XP audit only counts Act I).</summary>
         public int Act = 1;
         public bool Major;
+        /// <summary>Reaching a stage sets this world flag (e.g. a road opens).</summary>
+        public Dictionary<int, string> StageFlags = new Dictionary<int, string>();
         public int Last => StageText.Length - 1;
     }
 
@@ -115,13 +117,17 @@ namespace DnD.Game
             Add(new QuestDef
             {
                 Act = 2, Id = Answers.Id, Title = "Answers", Giver = "rhoswen",
-                StageXp = { [Answers.Academy] = 400, [Answers.Heard] = 600, [Answers.Chosen] = 1000 },
+                StageXp = { [Answers.Academy] = 400, [Answers.Heard] = 600, [Answers.Chosen] = 1000, [Answers.Allies] = 500, [Answers.Gate] = 1500 },
+                StageFlags = { [Answers.Allies] = WorldDb.EmberhornOpen },
                 StageText = new[] {
                     "", "Hearths are going cold down the valley. Captain Vale says if anyone has answers, it's the Starfall Academy, up the Lantern Road past Miller's Ford.",
                     "You've reached the Starfall Academy. Find High Magister Ashby. They say he lives at the top of the Orrery Tower.",
                     "Ashby's door is open. Go up and hear him out.",
                     "Ashby wants your dragon studied and the dragons sealed. He isn't the only one with plans for it. Hear out the Crown, the Fae Courts and the Wyrmwatch, then choose who you stand with.",
-                    "You've chosen a side. (The road to the Emberhorn opens in a later update.)" },
+                    "You've chosen a side. Finish what your allies asked of you.",
+                    "Your allies agree on one thing: the answers are in the Emberhorn, the mountain whose fire has gone grey. The high road east of Cragfoot is open.",
+                    "Cross the Emberhorn Road to the mountain's gate. Someone from your side is waiting at the Last Camp.",
+                    "The Emberhorn's gate. (The mountain waits in a later update.)" },
                 Triggers = {
                     new QuestTrigger(QuestEvent.ZoneEntered, "academy", Answers.Road, Answers.Academy),
                     new QuestTrigger(QuestEvent.ZoneEntered, "ashby_tower", Answers.Academy, Answers.Tower),
@@ -133,8 +139,22 @@ namespace DnD.Game
                     new QuestTrigger(QuestEvent.FlagSet, Factions.CommittedFlag, Answers.Tower, Answers.Chosen),
                     new QuestTrigger(QuestEvent.FlagSet, Factions.CommittedFlag, Answers.Academy, Answers.Chosen),
                     new QuestTrigger(QuestEvent.FlagSet, Factions.CommittedFlag, Answers.Road, Answers.Chosen),
+                    QuestTrigger.FlagsAtLeast(Answers.Chosen, Answers.Allies, 1, "banner_crown", "banner_academy", "banner_fae", "banner_hunters"),
+                    new QuestTrigger(QuestEvent.ZoneEntered, "emberhorn_road", Answers.Allies, Answers.OnTheRoad),
                 },
             });
+            // ------------------------------------------------------------ Act II Phase 5: the blight at home
+            Add(new QuestDef
+            {
+                Act = 2, Id = "ash_on_doors", Title = "Ash on the Doors", Giver = "rhoswen",
+                StageText = new[] {
+                    "", "Someone is marking Thistledown's doors with ash: a hand, pressed flat. Look at the marks (the general store, the Sleeping Drake, and your own front door).",
+                    "Whoever it is comes at night. Wait in the square after dark.",
+                    "Complete. You know who was marking the doors, and why." },
+                Triggers = { QuestTrigger.AllFlags(1, 2, "ash_mark_1", "ash_mark_2", "ash_mark_3") },
+                Reward = new QuestReward { Xp = 900, Npc = "rhoswen", Friendship = 50 },
+            });
+
             // ------------------------------------------------------------ Act II Phase 4: the Crown
             Add(new QuestDef
             {

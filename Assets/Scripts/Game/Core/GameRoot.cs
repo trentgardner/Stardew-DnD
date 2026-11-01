@@ -588,6 +588,7 @@ namespace DnD.Game
             foreach (var n in _npcs) n.UpdateSchedule(false);
 
             AwardOnce(p, "zone:" + zoneId, 15, $"discovering {zone.Def.Name}");
+            DragonAgent?.GetComponent<DragonPet>()?.FeelBlight(zone);
             Quests.Notify(QuestEvent.ZoneEntered, zoneId, p);
             string key = $"entered:{p.Index}:{zoneId}:{Clock.Day}";
             if (!World.IsLocked(key)) { World.Lock(key, 24 * 60); p.Hud.Narrate(zone.Def.EnterNarration, !World.Flag("seen:" + zoneId)); World.SetFlag("seen:" + zoneId); }
@@ -1105,10 +1106,11 @@ namespace DnD.Game
 
         void OnQuestsChanged()
         {
+            Blight.Sync();
             RefreshNpcs();
             foreach (var z in Zones.Values)
                 foreach (var grp in z.Def.EnemyGroups)
-                    if (grp.QuestId != null) SpawnGroupIfNeeded(z, grp);
+                    if (grp.QuestId != null || grp.MinBlight > 0) SpawnGroupIfNeeded(z, grp);
         }
 
         /// <summary>A quest item counts wherever the party keeps it: this player's bag, a partner's, or home storage.</summary>
@@ -1280,6 +1282,11 @@ namespace DnD.Game
                 var log = new List<string>();
                 if (p.Character.IsDead && Settings.Difficulty == Difficulty.Story) p.Character.Revive(0, log);
                 p.Character.LongRest(ate, log);
+                if (World.Flag(WorldDb.OathSecond))
+                {
+                    p.Character.HeroicInspiration = true;
+                    p.Hud.Toast("The Second Ideal steadies you. (Heroic Inspiration)", UIKit.Gold);
+                }
                 foreach (var c in CompanionsOf(p)) if (c.Character != null) { if (c.Character.IsDead && Settings.Difficulty == Difficulty.Story) c.Character.Revive(0, null); c.Character.LongRest(true, null); }
                 _lastLongRest[p.Index] = NowAbs;
                 p.Hud.Narrate($"You wake refreshed. It's {Clock.Weekday}, day {Clock.Day}." + (!ate ? " (You went to bed hungry.)" : "") +

@@ -29,6 +29,7 @@ namespace DnD.Game
                 foreach (var grp in z.EnemyGroups)
                 {
                     if (grp.Brawl) continue; // the bar brawl pays through its quest
+                    if (grp.MinBlight > 0) continue; // ember-eyed beasts only come with the Act II blight
                     int groupXp = grp.Members.Sum(m => MonstersDb.Get(m.MonsterId)?.XP ?? 0);
                     xp += GameRoot.EncounterShare(groupXp, players);
                 }

@@ -90,7 +90,9 @@ namespace DnD.Game
         public void PetHim(PlayerSlot p)
         {
             var g = GameRoot.I;
-            p.Hud.Narrate(PetLines[Random.Range(0, PetLines.Length)], false);
+            p.Hud.Narrate(g.World.Act >= 2 && g.World.BlightStage >= 2
+                ? "Buoy leans his whole weight against your legs and stays there until the ash stops falling."
+                : PetLines[Random.Range(0, PetLines.Length)], false);
             Emote("heart");
             g.AwardOnce(p, "met_buoy", 10, "making friends with Buoy");
             string key = "buoy_pet:" + p.Index;

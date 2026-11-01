@@ -63,7 +63,10 @@ namespace DnD.Game
         public Rules.Skill? TalkSkill;
         /// <summary>Dealing with them (fight, talk or scare) also sets this world flag (e.g. a throne accepting your token).</summary>
         public string ResolvedFlag;
-        public bool InStage(QuestLog q) => QuestId == null || (q.Stage(QuestId) >= MinStage && q.Stage(QuestId) <= MaxStage && q.CanStart(QuestId)); // a closed quest (another force chosen) leaves the world
+        /// <summary>Only around once the blight has reached this stage (0 = always): ember-eyed beasts in known places.</summary>
+        public int MinBlight;
+        public bool InStage(QuestLog q) => (MinBlight <= 0 || (GameRoot.I?.World?.BlightStage ?? 0) >= MinBlight) && InQuestStage(q);
+        bool InQuestStage(QuestLog q) => QuestId == null || (q.Stage(QuestId) >= MinStage && q.Stage(QuestId) <= MaxStage && q.CanStart(QuestId)); // a closed quest (another force chosen) leaves the world
     }
 
     public class ChestDef
@@ -114,6 +117,8 @@ namespace DnD.Game
         public string Dialogue;
         /// <summary>A brazier key (UnlitBrazier.KeyFor): once that brazier is lit, this succeeds without a roll.</summary>
         public string SucceedsIfLit;
+        /// <summary>Only there once this world flag is set (e.g. you know the words to say).</summary>
+        public string RequiresFlag;
     }
 
     /// <summary>The sign hanging beside a building's door: the prompt names the building, reading it gives the text.</summary>
@@ -405,6 +410,7 @@ namespace DnD.Game
             BuildAshbyTower();
             BuildProfessorsQuests();
             BuildForces();
+            BuildEmberhorn();
 
             var shop = new ZoneDef { Id = "shop", Name = "Ironkettle General Goods", Map = Maps.Shop, Indoors = true, DefaultSpawn = new Vector2Int(6, 7),
                 EnterNarration = "The shop smells of lamp oil and leather. Every shelf is organized with terrifying dwarven precision.", ShopCounter = new Vector2Int(6, 3) };

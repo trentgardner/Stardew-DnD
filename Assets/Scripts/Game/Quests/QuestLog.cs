@@ -54,6 +54,8 @@ namespace DnD.Game
             {
                 // Milestones on the way (a jump past several pays each), once per playthrough.
                 for (int s = before + 1; s <= stage; s++)
+                    if (q.StageFlags.TryGetValue(s, out var sf)) g.World.SetFlag(sf);
+                for (int s = before + 1; s <= stage; s++)
                     if (q.StageXp.TryGetValue(s, out int mxp) && Paid.Add($"{id}@{s}"))
                         foreach (var p in g.Players.Where(p => p.IsReady && p.Character != null)) g.GiveXP(p, (int)(mxp * rewardScale), q.Title);
                 string msg = stage == 1 ? $"New quest: {q.Title}" : stage >= q.Last ? $"Quest complete: {q.Title}" : $"Quest updated: {q.Title}";
