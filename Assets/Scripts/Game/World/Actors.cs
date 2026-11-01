@@ -385,6 +385,7 @@ namespace DnD.Game
             var a = Spawn<EnemyAgent>(def.Name, def.SpriteId, false, zone, spawn.Pos);
             a.Monster = new Monster(def);
             a.Creature = a.Monster;
+            if (def.Scale > 0f && def.Scale != 1f && a.Sr != null) a.Sr.transform.localScale *= def.Scale; // a boss is drawn huge (its footprint stays one tile)
             a.Group = group;
             a.Home = spawn.Pos;
             a.gameObject.AddComponent<AmbushInteractable>().Enemy = a;

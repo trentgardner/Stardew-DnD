@@ -57,6 +57,7 @@ namespace RulesTests
             KnockoutTests();
             DragonTests();
             BalanceTests();
+            BossTests();
             WeaponSetTests();
             HotbarMoveTests();
 

@@ -151,8 +151,11 @@ namespace DnD.Game
                 SyncBanished();
                 if (cur.C is Dragonling && cur.Active) RechargeBreath(cur, null);
                 if (cur.C is PlayerCharacter hero && cur.Active) { var hlog = new List<string>(); hero.StartOfTurnInCombat(hlog); hlog.ForEach(Log); }
+                bool breathed = false;
                 if (cur.C is Monster mon && cur.Active)
                 {
+                    mon.ResetLegendary();
+                    if (mon.Charging != null) { yield return ReleaseBreath(cur, mon); breathed = true; }
                     var mlog = new List<string>();
                     mon.RollRecharges(mlog);
                     if (mon.StartTurnRegen(mlog) > 0) cur.A.Popup("Regenerates", UIKit.HealGreen);
@@ -166,11 +169,14 @@ namespace DnD.Game
                     if (cur.C is PlayerCharacter pc && !pc.Stable) yield return DeathSave(cur, pc);
                 }
                 else if (cur.C.IsIncapacitated) Log($"{cur.Name} is {(cur.C.Has(Condition.Paralyzed) ? "paralyzed" : "incapacitated")} and loses the turn.");
+                else if (breathed) { /* letting go of the breath it drew was its whole turn */ }
                 else if (cur.IsHuman) yield return PlayerTurn(cur);
                 else yield return AiTurn(cur);
 
                 if (CheckEnd()) break;
                 TriggerZones(cur); // ending a turn inside Spirit Guardians, a Wall of Fire...
+                if (CheckEnd()) break;
+                yield return LegendaryOpportunities(cur);
                 if (CheckEnd()) break;
                 var endLog = new List<string>();
                 Enc.EndTurn(endLog);

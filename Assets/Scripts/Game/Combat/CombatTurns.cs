@@ -886,10 +886,42 @@ namespace DnD.Game
             int lost = before - (target.C.HP + target.C.TempHP);
             target.A.Popup((res.Critical ? "CRIT " : "") + "-" + Math.Max(0, lost), res.Critical ? UIKit.D20Gold : UIKit.DamageRed);
             OnDamaged(target);
+            TryChoke(me, target);
+        }
+
+        /// <summary>
+        /// The weak spot: a hit on a boss while it draws breath, once the party knows where to strike (WeakSpotFlag), chokes it.
+        /// The breath is lost, it takes 4d10 force, and it has no legendary actions left this round.
+        /// </summary>
+        public bool TryChoke(Unit me, Unit target)
+        {
+            if (!(target.C is Monster m) || m.Charging == null || !target.Active || m.Def.WeakSpotFlag == null || !G.World.Flag(m.Def.WeakSpotFlag)) return false;
+            m.Charging = null;
+            m.LegendaryLeft = 0;
+            var extra = Dice.RollDamage(DiceExpr.Parse("4d10"));
+            var lines = new List<string>();
+            int took = m.TakeDamage(extra.Total, DamageType.Force, false, lines);
+            Ticker($"{me.Name} strikes the glowing throat! {target.Name} chokes on its own fire: {extra.Breakdown()} force");
+            Log($"{target.Name} chokes on its own fire! (+{took} force, the breath is lost)");
+            lines.ForEach(Log);
+            target.A.Popup("CHOKES! -" + took, UIKit.D20Gold);
+            target.A.Sr.color = Color.white;
+            OnDamaged(target);
+            return true;
         }
 
         public void OnDamaged(Unit target)
         {
+            if (target.C is Monster boss && !boss.IsDown)
+            {
+                string phase = boss.CheckPhaseTwo();
+                if (phase != null)
+                {
+                    Log($"{target.Name}: phase two!");
+                    foreach (var h in Humans) h.Hud.Narrate(phase);
+                    target.A.Popup("ENRAGED", UIKit.DamageRed);
+                }
+            }
             if (target.C.IsDead && target.DeathRound < 0) target.DeathRound = Enc.Round;
             if (target.C is PlayerCharacter shaped) WildShapeFx.Sync(target.A, shaped);
             if (target.C is Dragonling && target.C.IsDown) { ScareOffDragon(target); return; }
@@ -1766,6 +1798,96 @@ namespace DnD.Game
         }
 
         /// <summary>A charged area ability (breath, spray) if it would catch at least two foes, or one when it's the only foe left.</summary>
+        /// <summary>A breath it drew last turn goes off now, aimed wherever it catches the most foes.</summary>
+        public IEnumerator ReleaseBreath(Unit u, Monster m)
+        {
+            var ab = m.Charging;
+            m.Charging = null;
+            u.A.Sr.color = Color.white;
+            if (ab == null || !u.Active) yield break;
+            var foes = Units.Where(o => Hostile(u, o) && o.Active).ToList();
+            int tiles = Math.Max(1, ab.AreaFt / 5);
+            Vector2Int best = u.Pos + Vector2Int.down; int bestHits = -1;
+            foreach (var f in foes)
+            {
+                if (Zone.DistanceFt(u.Pos, f.Pos) > ab.AreaFt) continue;
+                var area = AreaTiles(u, new CombatAction { AreaTiles = tiles, AreaFromSelf = true, AreaLine = ab.Shape == TargetShape.Line, RangeFt = ab.AreaFt }, f.Pos);
+                int hits = foes.Count(o => area.Contains(o.Pos));
+                if (hits > bestHits) { bestHits = hits; best = f.Pos; }
+            }
+            u.A.Face(Zone.ToWorld(best));
+            Log($"{u.Name} lets go: {ab.Name}!");
+            Sfx.Play("spell");
+            var zoneTiles = AreaTiles(u, new CombatAction { AreaTiles = tiles, AreaFromSelf = true, AreaLine = ab.Shape == TargetShape.Line, RangeFt = ab.AreaFt }, best);
+            yield return AbilitySaves(u, ab, zoneTiles);
+        }
+
+        /// <summary>Everyone in the area saves against the ability (the dragon's wings shelter friends from fire).</summary>
+        IEnumerator AbilitySaves(Unit u, MonsterAbilityDef ab, List<Vector2Int> zoneTiles)
+        {
+            var dmg = Dice.RollDamage(ab.Dice);
+            Ticker($"{u.Name}: {ab.Name}: {dmg.Breakdown()} · {ab.SaveAbility} save DC {ab.SaveDC}");
+            yield return new WaitForSeconds(0.5f);
+            foreach (var t in Units.Where(o => o != u && o.Active && zoneTiles.Contains(o.Pos)).ToList())
+            {
+                var lines = new List<string>();
+                bool sheltered = ab.DamageType == DamageType.Fire && !(t.C is Dragonling) && Units.Any(o => o != t && o.C is Dragonling && o.Active && !Hostile(o, t) && o.C.Immunities.Contains(DamageType.Fire) && Zone.DistanceFt(o.Pos, t.Pos) <= 5);
+                var save = Checks.Rescue(t.C, ab.SaveAbility, ab.SaveDC, Checks.RollSave(t.C, ab.SaveAbility, sheltered ? AdvantageState.Advantage : AdvantageState.Normal), lines);
+                bool ok = Checks.ResolveSave(save, ab.SaveDC);
+                if (sheltered) Log($"{t.Name} is sheltered by {G.World.DragonName}'s wings (Advantage on the save).");
+                Ticker($"{t.Name} {ab.SaveAbility} save{(sheltered ? $" (sheltered by {G.World.DragonName}'s wings: Advantage)" : "")}: {save.Breakdown()} vs DC {ab.SaveDC} → {(ok ? "SAVED" : "FAILED")}");
+                int lost = t.C.TakeDamage(Checks.AreaDamage(t.C, ab.SaveAbility, dmg.Total, ok, true), ab.DamageType, false, lines);
+                lines.ForEach(Log);
+                t.A.Popup("-" + lost, UIKit.DamageRed);
+                if (lost > 0) AttackResolver.RaiseConcentrationCheck(t.C, lost);
+                OnDamaged(t);
+                yield return new WaitForSeconds(0.3f);
+            }
+        }
+
+        /// <summary>After another creature's turn: each legendary monster may take one legendary action.</summary>
+        public IEnumerator LegendaryOpportunities(Unit justActed)
+        {
+            foreach (var u in Units.ToList())
+            {
+                if (u == justActed || !u.Active || !(u.C is Monster m) || m.Def.LegendaryPerRound <= 0 || m.LegendaryLeft <= 0) continue;
+                var foes = Units.Where(o => Hostile(u, o) && o.Active).ToList();
+                if (foes.Count == 0) yield break;
+                foreach (var la in m.Def.LegendaryActions)
+                {
+                    if (la.Cost > m.LegendaryLeft) continue;
+                    var inRange = foes.Where(f => Zone.DistanceFt(u.Pos, f.Pos) <= la.RangeFt).OrderBy(f => f.C.HP).ToList();
+                    if (inRange.Count == 0) continue;
+                    m.SpendLegendary(la.Cost);
+                    var target = inRange[0];
+                    Log($"Legendary action: {u.Name} uses {la.Name}!");
+                    if (la.Kind == LegendaryKind.Attack)
+                    {
+                        var atk = m.GetAttacks().FirstOrDefault(a => a.Name == la.Attack);
+                        if (atk == null) break;
+                        bool spent = u.Cb.Turn.ActionUsed;
+                        yield return AiAttack(u, target, atk);
+                        u.Cb.Turn.ActionUsed = spent; // a legendary action isn't its Action
+                    }
+                    else
+                    {
+                        var dmg = Dice.RollDamage(la.Dice);
+                        var lines = new List<string>();
+                        var save = Checks.Rescue(target.C, la.SaveAbility, la.SaveDC, Checks.RollSave(target.C, la.SaveAbility, AdvantageState.Normal), lines);
+                        bool ok = Checks.ResolveSave(save, la.SaveDC);
+                        Ticker($"{u.Name}: {la.Name} → {target.Name}: {dmg.Breakdown()} · {la.SaveAbility} save {save.Breakdown()} vs DC {la.SaveDC} → {(ok ? "SAVED" : "FAILED")}");
+                        int lost = target.C.TakeDamage(ok ? dmg.Total / 2 : dmg.Total, la.DamageType, false, lines);
+                        lines.ForEach(Log);
+                        target.A.Popup("-" + lost, UIKit.DamageRed);
+                        if (lost > 0) AttackResolver.RaiseConcentrationCheck(target.C, lost);
+                        OnDamaged(target);
+                        yield return new WaitForSeconds(0.4f);
+                    }
+                    break; // one legendary action per opportunity
+                }
+            }
+        }
+
         IEnumerator TryMonsterAbility(Unit u, Monster m, List<Unit> foes, Action<bool> used)
         {
             used(false);
@@ -1784,26 +1906,22 @@ namespace DnD.Game
                 if (bestHits < Math.Min(2, foes.Count)) continue;
                 m.Spend(ab);
                 u.Cb.Turn.ActionUsed = true;
+                if (ab.Telegraph)
+                {
+                    m.Charging = ab;
+                    u.A.Face(Zone.ToWorld(best));
+                    u.A.Sr.color = new Color(1f, 0.55f, 0.45f);
+                    Log($"{u.Name} rears back, its throat glowing. (It will breathe at the start of its next turn: spread out!)");
+                    Ticker($"{u.Name} draws a great breath. Its throat glows through the plates.");
+                    foreach (var h in Humans) h.Hud.Toast($"{u.Name} is drawing breath! Spread out" + (m.Def.WeakSpotFlag != null && G.World.Flag(m.Def.WeakSpotFlag) ? ", or strike the glowing throat!" : "!"), UIKit.DamageRed);
+                    used(true);
+                    yield break;
+                }
                 u.A.Face(Zone.ToWorld(best));
                 Log($"{u.Name} uses {ab.Name}!");
                 Sfx.Play("spell");
                 var zoneTiles = AreaTiles(u, new CombatAction { AreaTiles = tiles, AreaFromSelf = true, AreaLine = ab.Shape == TargetShape.Line, RangeFt = ab.AreaFt }, best);
-                var dmg = Dice.RollDamage(ab.Dice);
-                Ticker($"{u.Name}: {ab.Name}: {dmg.Breakdown()} · {ab.SaveAbility} save DC {ab.SaveDC}");
-                yield return new WaitForSeconds(0.5f);
-                foreach (var t in Units.Where(o => o != u && o.Active && zoneTiles.Contains(o.Pos)).ToList())
-                {
-                    var lines = new List<string>();
-                    var save = Checks.Rescue(t.C, ab.SaveAbility, ab.SaveDC, Checks.RollSave(t.C, ab.SaveAbility, AdvantageState.Normal), lines);
-                    bool ok = Checks.ResolveSave(save, ab.SaveDC);
-                    Ticker($"{t.Name} {ab.SaveAbility} save: {save.Breakdown()} vs DC {ab.SaveDC} → {(ok ? "SAVED" : "FAILED")}");
-                    int lost = t.C.TakeDamage(Checks.AreaDamage(t.C, ab.SaveAbility, dmg.Total, ok, true), ab.DamageType, false, lines);
-                    lines.ForEach(Log);
-                    t.A.Popup("-" + lost, UIKit.DamageRed);
-                    if (lost > 0) AttackResolver.RaiseConcentrationCheck(t.C, lost);
-                    OnDamaged(t);
-                    yield return new WaitForSeconds(0.3f);
-                }
+                yield return AbilitySaves(u, ab, zoneTiles);
                 used(true);
                 yield break;
             }
