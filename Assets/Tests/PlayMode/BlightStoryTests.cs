@@ -110,6 +110,99 @@ namespace DnD.Tests
             Assert.IsTrue(g.World.Flag("test_stage_flag"), "jumping past a stage still sets its flag");
         }
 
+        // ============================================================ Task 2: known places under the blight
+
+        static readonly (string npc, string node)[] Worried =
+        {
+            ("brannoc", "shop"), ("elowen", "start"), ("rhoswen", "after"), ("tobin", "start"), ("maddie", "start"), ("hesper", "start"),
+            ("dunstan", "start"), ("lark", "start"), ("tamsin", "start"), ("wick", "start"), ("hobb", "start"), ("wren", "start"),
+        };
+
+        [UnityTest]
+        public IEnumerator TownsfolkFearTheAsh()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(10), "bard", "human");
+            yield return Frames(2);
+            var c = new DCtx { P = p };
+            var actOne = Worried.ToDictionary(w => w.npc, w => DialogueDb.Get(w.npc).Nodes[w.node].Text(c));
+            ActTwo(g, p);
+            Assert.AreEqual(1, g.World.BlightStage);
+            var one = Worried.ToDictionary(w => w.npc, w => DialogueDb.Get(w.npc).Nodes[w.node].Text(c));
+            g.Quests.Set(Answers.Id, Answers.Chosen, p);
+            Assert.AreEqual(2, g.World.BlightStage);
+            foreach (var (npc, node) in Worried)
+            {
+                string two = DialogueDb.Get(npc).Nodes[node].Text(c);
+                Assert.AreNotEqual(actOne[npc], one[npc], $"{npc} worries at stage 1");
+                Assert.AreNotEqual(one[npc], two, $"{npc} worries more at stage 2");
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator ThreeTellersMakeTheDream()
+        {
+            var g = GameRoot.I;
+            var p = ActTwo(g, g.DebugStart(Still(11), "bard", "human"));
+            yield return Frames(2);
+            var c = new DCtx { P = p };
+            var tired = DialogueDb.Get("elowen").Nodes["start"].Options.Single(o => o.Text == "You look tired.");
+            Assert.IsFalse(tired.Show(c), "no dream at stage 1");
+            g.Quests.Set(Answers.Id, Answers.Chosen, p);
+            Assert.IsTrue(tired.Show(c));
+            foreach (var npc in new[] { "elowen", "tobin" }) DialogueDb.Get(npc).Nodes["dream"].OnEnter(c);
+            Assert.IsFalse(g.World.LoreFound.Contains(DialogueDb.SharedDreamLore), "two tellers are a coincidence");
+            Assert.IsFalse(tired.Show(c), "Elowen has told hers");
+            DialogueDb.Get("hesper").Nodes["dream"].OnEnter(c);
+            Assert.IsTrue(g.World.LoreFound.Contains(DialogueDb.SharedDreamLore), "three are a pattern");
+        }
+
+        [UnityTest]
+        public IEnumerator BlightBeastsOnlyAtTheirStage()
+        {
+            var g = GameRoot.I;
+            var p = ActTwo(g, g.DebugStart(Still(12), "ranger", "human"));
+            yield return Frames(2);
+            var groups = new[] { ("forest", "blight_wolves_forest", 2), ("ford", "blight_boars_ford", 2), ("crater", "blight_hounds_crater", 3) };
+            foreach (var (zone, id, min) in groups)
+            {
+                var grp = WorldDb.Zones[zone].EnemyGroups.Single(e => e.Id == id);
+                Assert.AreEqual(min, grp.MinBlight);
+                Assert.IsFalse(grp.InStage(g.Quests), $"{id} not at stage 1");
+                var z = g.Zones[zone];
+                foreach (var m in grp.Members)
+                {
+                    Assert.IsTrue(z.IsWalkable(m.Pos), $"{id} at {m.Pos}");
+                    Assert.IsTrue(z.FindPath(z.Def.DefaultSpawn, m.Pos, null, 40000).Count > 0, $"{id} reachable at {m.Pos}");
+                    foreach (var other in z.Def.EnemyGroups.Where(o => o.MinBlight == 0))
+                        foreach (var om in other.Members)
+                            Assert.Greater(Vector2Int.Distance(m.Pos, om.Pos), 6f, $"{id} keeps clear of {other.Id}");
+                }
+            }
+            g.Quests.Set(Answers.Id, Answers.Chosen, p);
+            yield return Frames(2);
+            Assert.IsTrue(WorldDb.Zones["forest"].EnemyGroups.Single(e => e.Id == "blight_wolves_forest").InStage(g.Quests));
+            Assert.IsTrue(WorldDb.Zones["ford"].EnemyGroups.Single(e => e.Id == "blight_boars_ford").InStage(g.Quests));
+            Assert.IsFalse(WorldDb.Zones["crater"].EnemyGroups.Single(e => e.Id == "blight_hounds_crater").InStage(g.Quests));
+            Assert.IsTrue(Object.FindObjectsByType<EnemyAgent>(FindObjectsSortMode.None).Any(e => e.Group != null && e.Group.Id == "blight_wolves_forest"), "the wolves are out in the Whisperwood");
+            g.Quests.Set(Answers.Id, Answers.OnTheRoad, p);
+            Assert.IsTrue(WorldDb.Zones["crater"].EnemyGroups.Single(e => e.Id == "blight_hounds_crater").InStage(g.Quests));
+        }
+
+        [UnityTest]
+        public IEnumerator BuoyLeansAtStageTwo()
+        {
+            var g = GameRoot.I;
+            var p = ActTwo(g, g.DebugStart(Still(13), "bard", "human"));
+            yield return Frames(2);
+            var buoy = Object.FindObjectsByType<TownDog>(FindObjectsSortMode.None).Single();
+            buoy.PetHim(p);
+            Assert.AreEqual(0, Count(p, "until the ash stops falling"), "not at stage 1");
+            g.Quests.Set(Answers.Id, Answers.Chosen, p);
+            buoy.PetHim(p);
+            Assert.AreEqual(1, Count(p, "until the ash stops falling"));
+        }
+
         [UnityTest]
         public IEnumerator DragonFeelsTheBlight()
         {
