@@ -14,6 +14,71 @@ namespace DnD.Game
             BuildBlightBeasts();
             BuildTeodor();
             BuildEmberhornRoad();
+            BuildEmberhornInside();
+        }
+
+        // =================================================================== Inside the Emberhorn: the Throat, the Ring Chamber, the Heart
+
+        static void BuildEmberhornInside()
+        {
+            var throat = new ZoneDef
+            {
+                Act = 2,
+                Id = "emberhorn_throat", Name = "The Throat of the Emberhorn", Map = Maps.EmberhornThroat, Dark = true, DefaultSpawn = new Vector2Int(1, 11), Music = "music_throat",
+                BlightWeight = 0f,
+                EnterNarration = "Inside, the mountain is a furnace. Rivers of lava run in channels older than any road, lighting the stone from below in red and gold. The air shimmers. Somewhere ahead, deep and slow, something breathes, and the whole mountain breathes with it.",
+            };
+            throat.Warps.Add(new WarpDef(0, 11, "emberhorn_road", 58, 14));
+            throat.Warps.Add(new WarpDef(0, 12, "emberhorn_road", 58, 14));
+            throat.Warps.Add(new WarpDef(39, 11, "emberhorn_heart", 1, 10));
+            throat.Warps.Add(new WarpDef(39, 12, "emberhorn_heart", 1, 11));
+            throat.Lore.Add(new LoreSpotDef { Id = "iron_ring", Pos = new Vector2Int(18, 4), Prompt = "Look at the great iron ring in the rock", Sprite = "obj_inscription" });
+            throat.Secrets[new Vector2Int(26, 19)] = new SecretDef
+            {
+                Id = "oathbound_cache", Sprite = "obj_crate", Prompt = "Search the fallen knight's cairn", Skill = Rules.Skill.Perception, DC = 15,
+                Items = { new KeyValuePair<string, int>("potion_greater_healing", 3) },
+                Success = "Under a cairn of black stones, a knight's pack, wrapped in oilcloth that hasn't rotted because nothing rots here: three potions, and a sword-and-lantern badge. Someone stood here before you.",
+                Failure = "Black stones, black dust, heat. You'll look again when your eyes stop watering.",
+                AlreadyFound = "The cairn, rebuilt. You left the badge on top.",
+            };
+            var sal = new EnemyGroupDef
+            {
+                Id = "throat_salamanders", Style = EncounterStyle.Talk, TalkDC = 16, ScareDC = 16, Label = "the salamanders", Unique = true,
+                Spotted = "Two salamanders rise out of the lava channel, spears glowing, coils hissing on the hot stone. \"Turn back, warm-blood. The Keeper sleeps badly.\"",
+                Befriended = "You speak to them as guests in their home. The salamanders exchange a long look, then slide back into the lava. \"Go softly,\" one says. \"It does not know friend from fire any more.\"",
+            };
+            sal.Members.Add(new EnemySpawn("salamander", 15, 14));
+            sal.Members.Add(new EnemySpawn("salamander", 17, 16));
+            throat.EnemyGroups.Add(sal);
+            var elem = new EnemyGroupDef
+            {
+                Id = "throat_elemental", Style = EncounterStyle.Beasts, TalkSkill = Rules.Skill.Arcana, TalkDC = 17, ScareDC = 17, Label = "the fire elemental", Unique = true,
+                Spotted = "The lava ahead stands up. A living bonfire in the rough shape of a person turns toward you, crackling.",
+                Befriended = "You find the thread of magic that holds it together and ease it, gently, the way you'd bank a fire for the night. The elemental sinks back into the lava with a long, contented sigh.",
+            };
+            elem.Members.Add(new EnemySpawn("fire_elemental", 28, 11));
+            throat.EnemyGroups.Add(elem);
+            Zones[throat.Id] = throat;
+
+            var heart = new ZoneDef
+            {
+                Act = 2,
+                Id = "emberhorn_heart", Name = "The Heart of the Emberhorn", Map = Maps.EmberhornHeart, Dark = true, DefaultSpawn = new Vector2Int(2, 10), Music = "music_heart",
+                BlightWeight = 0f, DragonStays = false,
+                EnterNarration = "The tunnel opens into the mountain's heart: a caldera of black glass, ringed with lava, open to a sky of smoke far above. In the middle, coiled around nothing, is a dragon. It is enormous. It is grey at the edges, like paper held too close to a candle. And it is awake.",
+            };
+            heart.Warps.Add(new WarpDef(0, 10, "emberhorn_throat", 38, 11));
+            heart.Warps.Add(new WarpDef(0, 11, "emberhorn_throat", 38, 12));
+            var warden = new EnemyGroupDef
+            {
+                Id = "warden", Style = EncounterStyle.Talk, ParleyDialogue = "warden_parley", Label = "the Warden of the Emberhorn", Unique = true, SightTiles = 9,
+                TalkDC = 99, ScareDC = 99, // it can't be talked or scared off: the parley always ends in a fight
+                Spotted = "The Warden's head rises. Its eyes find you.",
+                Befriended = "",
+            };
+            warden.Members.Add(new EnemySpawn("warden", 15, 8));
+            heart.EnemyGroups.Add(warden);
+            Zones[heart.Id] = heart;
         }
 
         // =================================================================== The Emberhorn Road
@@ -22,6 +87,20 @@ namespace DnD.Game
         public const string EmberhornOpen = "emberhorn_open";
         /// <summary>World flag: your side's ally has given the party their gift (once for the whole party).</summary>
         public const string AllyGift = "ally_gift";
+
+        /// <summary>World flag: the party has stood at the Emberhorn's gate (Answers 8): the way in is open.</summary>
+        public const string EmberhornGate = "emberhorn_gate";
+
+        /// <summary>World flag: your side's ally has gone ahead to the Heart (set once the gate is open; only your side's).</summary>
+        public static string AllyAtHeart(string banner) => "at_heart:" + banner;
+
+        /// <summary>Once the gate is open, the ally of the side you stand with goes ahead to wait at the Heart.</summary>
+        public static void SendAllyAhead(WorldState w)
+        {
+            if (w == null || !w.Flag(EmberhornGate) || w.CommittedFaction == null) return;
+            string banner = "banner_" + w.CommittedFaction;
+            if (w.Flag(banner)) w.SetFlag(AllyAtHeart(banner));
+        }
 
         static void BuildEmberhornRoad()
         {
@@ -39,7 +118,7 @@ namespace DnD.Game
             };
             z.Warps.Add(new WarpDef(0, 15, "cragfoot", 44, 15));
             z.Warps.Add(new WarpDef(0, 16, "cragfoot", 44, 16));
-            z.Warps.Add(new WarpDef(59, 14, "emberhorn_road", 56, 14) { MinAct = 3, ClosedText = "The way into the mountain is open, and hot, and waiting. (Act II's finale arrives in a later update.)" });
+            z.Warps.Add(new WarpDef(59, 14, "emberhorn_throat", 1, 11) { RequiresFlag = EmberhornGate, ClosedText = "The great door breathes hot air in your face. Look up at the mountain first: you should know what you're walking into." });
             z.DoorSigns[new Vector2Int(59, 14)] = new BuildingSign("The Emberhorn's Gate", "A door carved into the mountain's flank, taller than a tower, its edges glowing faintly like the rim of a cooling pot. It stands open. The air that comes out of it is hot, and slow, like breath.");
             z.Signs[new Vector2Int(12, 18)] = "The Last Camp's fire. Someone keeps it fed day and night. Nobody says why, and nobody lets it go out.";
             z.Signs[new Vector2Int(44, 8)] = "The Grey Vigil's fire burns without smoke, and gives no warmth at all when you hold out your hands.";
@@ -110,8 +189,11 @@ namespace DnD.Game
             })
             {
                 var n = new NpcDef { Id = id, Name = name, Title = title, Look = look, Dialogue = id };
-                n.Schedule.Add(new ScheduleEntry(0, "emberhorn_road", 10, 17, "keeping the Last Camp's fire fed") { RequiresFlag = banner });
-                n.Schedule.Add(new ScheduleEntry(0, "emberhorn_road", 11, 18, "sitting up late by the fire, watching the mountain", Hearthday) { RequiresFlag = banner });
+                n.Schedule.Add(new ScheduleEntry(0, "emberhorn_road", 10, 17, "keeping the Last Camp's fire fed") { RequiresFlag = banner, ForbidFlag = EmberhornGate });
+                n.Schedule.Add(new ScheduleEntry(0, "emberhorn_road", 11, 18, "sitting up late by the fire, watching the mountain", Hearthday) { RequiresFlag = banner, ForbidFlag = EmberhornGate });
+                // Once the gate is open they go ahead of you, to wait at the Heart's threshold.
+                n.Schedule.Add(new ScheduleEntry(0, "emberhorn_heart", 3, 12, "waiting at the edge of the Heart, very still") { RequiresFlag = AllyAtHeart(banner) });
+                n.Schedule.Add(new ScheduleEntry(0, "emberhorn_heart", 3, 12, "waiting at the edge of the Heart, very still", Hearthday) { RequiresFlag = AllyAtHeart(banner) });
                 Npcs[id] = n;
             }
         }

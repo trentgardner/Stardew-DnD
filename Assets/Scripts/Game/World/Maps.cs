@@ -13,6 +13,7 @@
 //          Academy (Act II): z bookshelf  # hedge  + ward pillar  ^ floating stone  & the Grand Orrery  $ the Starwell
 //                            ! telescope  - desk  < rune floor (walkable)
 //          Act II Phase 4: ) cold lantern post (lit by the dragon or a torch)
+//          Act II Phase 6: 9 lava (solid, glowing)
 namespace DnD.Game
 {
     public static class Maps
@@ -599,6 +600,62 @@ namespace DnD.Game
             "XdXddXddddXdXdXdXdXdddXXXXXddXddXdXdddddddddddXXddXXXdXdXddX",
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        };
+
+        // Act II Phase 6: the Emberhorn. The Throat (Dark): in from the road at (0, 11-12), on to the Heart at (39, 11-12); the Ring Chamber to the north.
+        public static readonly string[] EmberhornThroat =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXr:::::::rXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXX::::P::::XXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXX:::::::::XXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXX:::::::::XXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXX:::::::::XXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXX::XXXXXXXXXXXXXXXXXXXXX",
+            "X::::::::99::::::::::99::::::::9:::::::X",
+            "X:::r::::99:::::r::::99::::e:::9:::r:::X",
+            "X::::::::99::::::::::99::::::::9:::::::X",
+            ":::::::::::::::::::::99:::::::::::::::::",
+            "::::::::::::::::::e::99:::::::::::::::::",
+            "X::::::::99::::::::::99::::::::9:::::::X",
+            "X::::::::99::r:::::::99:::::r::9:::::e:X",
+            "X::e:::::99::::::::::99::::::::9:::::::X",
+            "X::::::::99::::::::::::::::::::9:::::::X",
+            "X::::::::99::::::::::::::::::::9:::::::X",
+            "X:::::r::99:::99999::99::::::::9::e::::X",
+            "X::::::::99:::99999::99:::q::::9:::::::X",
+            "X::::::::99:::99999::99::::::::9:::::::X",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        };
+
+        // Act II Phase 6: the Heart of the Emberhorn, the Warden's caldera. In from the Throat at (0, 10-11).
+        public static readonly string[] EmberhornHeart =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "X9999999999999999999999999999X",
+            "X9999999999:::::::::999999999X",
+            "X9999999:::::::i:::::::999999X",
+            "X99999:99::::r::::::99:::9999X",
+            "X9999::99:::::::::::::::::999X",
+            "X999::i:::::::::::::::::i::99X",
+            "X99:::::::P:::::::::::::::::9X",
+            "X99:::::::::::::::::P:::::::9X",
+            "X9:::::::::::::::::::::::::::X",
+            "::::::::::::::::::::::::P::::X",
+            "::::::P::::::::::::::::::::::X",
+            "X9:::::::::::::::::::::::::::X",
+            "X9:::::::::::::::::P:::::::::X",
+            "X99:::::::::::::::::::::::::9X",
+            "X99::::::P:::::::::::99:::::9X",
+            "X999::i::::::::::::::99:i::99X",
+            "X9999:::::::::::::::::::::999X",
+            "X99999:::::::::::r:::::::9999X",
+            "X9999999:::::::i:::::::999999X",
+            "X9999999999:::::::::999999999X",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
         };
 
         // Act II: the Starfall Academy grounds. Gate (27-28, 43) south; library door (12,11), the Orrery Tower (44,13), the Observatory (48,25), the Glasshouse (8,26).

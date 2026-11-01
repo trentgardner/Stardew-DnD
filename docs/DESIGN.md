@@ -342,6 +342,41 @@ Eldritch Blast fires two beams at 5 (2024) instead of one bigger one.
 
 - **The Second Ideal** (`oath_second`): every long rest grants each player Heroic Inspiration.
 
+## The volcano (Act II Phase 6)
+
+- **Boss engine** (rules layer, RulesTests `BossTests`):
+  - `MonsterDef.LegendaryActions` / `LegendaryPerRound`: taken right after another creature's turn via `CombatInstance.LegendaryOpportunities`, one per opportunity, refilled on its own turn. Kinds: an Attack (one of its attacks) or a SaveBurst on one creature.
+  - `MonsterAbilityDef.Telegraph`: it spends a turn drawing breath (red tint, a warning to everyone). It breathes at the start of its next turn (`ReleaseBreath`), and that is its whole turn.
+  - `MonsterDef.WeakSpotFlag`: with that world flag set, a hit while it draws breath chokes it (`TryChoke`). The breath is lost, it takes 4d10 force, and it has no legendary actions left that round.
+  - `PhaseTwoAt` / `PhaseTwoText` / `PhaseTwoRechargeMin` / `LairEruptions`: at half HP it narrates, recharges faster, and the floor erupts at the start of each round (`PickEruptionTiles`/`Erupt`: DEX DC 15, 2d10 fire, walkable tiles near heroes).
+  - `Scale`: the sprite is drawn bigger; the footprint stays one tile.
+  - Dragon's wings: allies within 5 ft of the fire-immune party dragon get Advantage on fire-breath saves. **The party dragon is now immune to fire** (SRD red dragon).
+- **The Warden** (`warden`): SRD Young Red Dragon base.
+
+  | Stat | Value |
+  |---|---|
+  | AC / HP | 18 / ~220 |
+  | Rend | ×3, +10, 2d6+6, reach 10 |
+  | Tail | +10, 2d8+6, reach 15 |
+  | Grey Breath | 30 ft cone, 10d6 fire, DC 17, telegraphed |
+  | Legendary actions | 2 (Tail Sweep, Searing Glare 3d6 DC 15) |
+  | Phase two | at 50%: Recharge 4–6, 3 eruptions/round |
+
+  Balance check: a level-9 party of four needs a median of 5.4 rounds of at-will damage (slowest 8.0). It deals about 39/round before its breath.
+- **The talk** (`warden_parley`): each approach once (Persuasion 18 / Animal Handling 15 with the dragon / Insight 14 only with the `emberhorn_warden` lore). After two, or "draw your weapon", it's the fight.
+  - Boons: `warden_hesitated` (enemies surprised), `warden_spares_dragon` (phase one only), `warden_weakness` (kept after a wipe).
+  - A wipe resets the boons and the tries.
+- **Ally boons** at the Heart (`ally_boon`, once): Holloway +15 temp HP, Perrin fire resistance for the fight (removed when it ends), Thimble Heroic Inspiration, Odo a "Marked" effect (Advantage on the first attack).
+- **Victory** (`WardenFalls`): `warden_fallen`, `Blight.Ease()` once, Answers 9 (`Answers.Rest`, 3000 XP), lore `warden_last_words`.
+- **Zones:**
+
+  | Zone | Notes |
+  |---|---|
+  | `emberhorn_throat` | Dark |
+  | `emberhorn_heart` | Dark, lava-lit, braziers |
+
+  Lava is map char `9`.
+
 ## Buoy (dedication)
 
 Buoy is Thistledown's neighbourhood dog: a black-and-white Australian Shepherd, a tribute to a real dog. He is NOT a companion and never fights.

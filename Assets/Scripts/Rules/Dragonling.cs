@@ -51,6 +51,7 @@ namespace DnD.Rules
         public Dragonling(int partyLevel) : base(MonstersDb.Get("dragonling"), false)
         {
             Team = Team.Players;
+            Immunities.Add(DamageType.Fire); // a red dragon (SRD: red dragons are immune to fire, wyrmlings too)
             SetPartyLevel(partyLevel);
             HP = MaxHP;
         }

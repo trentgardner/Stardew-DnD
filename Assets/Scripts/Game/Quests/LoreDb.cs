@@ -54,6 +54,11 @@ namespace DnD.Game
                 "On the Emberhorn Road stands a grove that didn't burn. It greyed: bark, leaf and root all at once, every tree still standing exactly where it grew, as if something had breathed on it from very far away.");
             Add("second_ideal", "The Second Ideal", Pact,
                 "Carved at an Oathbound waystation on the Emberhorn Road, in the same hand as the First: \"" + WorldDb.SecondIdeal + "\" The knights who swore it kept watch at the edge of the mountain's shadow. The names of those who stood there are worn away.");
+            // Act II Phase 6: the Emberhorn.
+            Add("iron_ring", "The Iron Ring", Records,
+                "Deep in the Emberhorn, set into the living rock: an iron ring as wide as a cartwheel, old beyond reckoning. The chain that hung from it is long gone, melted away link by link. Someone, once, wanted something to stay here.");
+            Add("warden_last_words", "The Warden's Last Words", Legend,
+                "The Warden of the Emberhorn, one of the Great Ones who lie down around the mountain's fire, laid its head on the stone and said only: \"Hold... the door.\" Then the light went out of it, and the mountain went quiet.");
             Add("checkpoint_orders", "Checkpoint Orders", Records,
                 "A Crown checkpoint ledger, kept in a neat hand: names, dates, where from, where bound. One column is new this season, ruled in fresh ink: 'Travelling with an animal? (Describe.)' Three entries say 'dog'. One says 'large dog (?)'. The orders pinned inside the cover only say: count them all, and send the count on.");
             // Act II Phase 3: the Starfall Academy. The legend is everywhere, and everyone believes it.

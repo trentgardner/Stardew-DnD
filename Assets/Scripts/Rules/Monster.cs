@@ -31,6 +31,26 @@ namespace DnD.Rules
         public int SaveDC = 12;
         /// <summary>Recharges on a d6 roll of at least this at the start of the monster's turn (5 = "Recharge 5-6").</summary>
         public int RechargeMin = 5;
+        /// <summary>A boss's breath: it spends a turn drawing breath (visible to everyone), and lets go at the start of its next turn.</summary>
+        public bool Telegraph;
+    }
+
+    public enum LegendaryKind { Attack, SaveBurst }
+
+    /// <summary>A legendary action (SRD): taken right after another creature's turn, from a budget that refills on its own turn.</summary>
+    public class LegendaryActionDef
+    {
+        public string Name;
+        public int Cost = 1;
+        public LegendaryKind Kind;
+        /// <summary>Attack: the name of one of the monster's Attacks.</summary>
+        public string Attack;
+        public int RangeFt = 5;
+        /// <summary>SaveBurst: one creature in range makes a save against this damage (half on a success).</summary>
+        public DiceExpr Dice;
+        public DamageType DamageType;
+        public Ability SaveAbility = Ability.DEX;
+        public int SaveDC = 15;
     }
 
     public class MonsterDef
@@ -63,6 +83,19 @@ namespace DnD.Rules
         /// <summary>Attack names used by one Attack action (Multiattack), e.g. Bite, Claw, Claw. Empty = its first attack, once.</summary>
         public List<string> Multiattack = new List<string>();
         public List<MonsterAbilityDef> Abilities = new List<MonsterAbilityDef>();
+        /// <summary>Legendary actions and how many it gets per round (0 = none).</summary>
+        public List<LegendaryActionDef> LegendaryActions = new List<LegendaryActionDef>();
+        public int LegendaryPerRound;
+        /// <summary>A world flag that, once set, lets a hit while it draws breath choke it (the party knows the weak spot).</summary>
+        public string WeakSpotFlag;
+        /// <summary>How big the sprite is drawn (the footprint stays one tile).</summary>
+        public float Scale = 1f;
+        /// <summary>Phase two: at or under this fraction of max HP (0 = no phase two). Then breath recharges on PhaseTwoRechargeMin and the lair erupts.</summary>
+        public double PhaseTwoAt;
+        public string PhaseTwoText;
+        public int PhaseTwoRechargeMin;
+        /// <summary>Phase two: tiles of the floor that erupt at the start of each round.</summary>
+        public int LairEruptions;
         /// <summary>HP regained at the start of each of its turns (Troll), unless it took one of RegenBlockedBy since its last turn.</summary>
         public int Regeneration;
         public List<DamageType> RegenBlockedBy = new List<DamageType>();
@@ -90,9 +123,34 @@ namespace DnD.Rules
             foreach (var r in def.Immunities) Immunities.Add(r);
             foreach (var r in def.Vulnerabilities) Vulnerabilities.Add(r);
             foreach (var a in def.Abilities) _charged.Add(a);
+            LegendaryLeft = def.LegendaryPerRound;
         }
 
         readonly HashSet<MonsterAbilityDef> _charged = new HashSet<MonsterAbilityDef>();
+
+        /// <summary>Legendary actions left this round.</summary>
+        public int LegendaryLeft;
+        public void ResetLegendary() => LegendaryLeft = Def.LegendaryPerRound;
+        public bool SpendLegendary(int cost)
+        {
+            if (cost <= 0 || LegendaryLeft < cost) return false;
+            LegendaryLeft -= cost;
+            return true;
+        }
+
+        /// <summary>The breath it is drawing right now (a Telegraph ability), or null.</summary>
+        public MonsterAbilityDef Charging;
+        public bool PhaseTwo { get; private set; }
+
+        /// <summary>Returns PhaseTwoText the first time its HP is at or under PhaseTwoAt of max (and switches to phase two); else null.</summary>
+        public string CheckPhaseTwo()
+        {
+            if (PhaseTwo || Def.PhaseTwoAt <= 0 || HP > Def.PhaseTwoAt * MaxHP) return null;
+            PhaseTwo = true;
+            return Def.PhaseTwoText ?? $"{Name} grows desperate.";
+        }
+
+        public int RechargeMinFor(MonsterAbilityDef a) => PhaseTwo && Def.PhaseTwoRechargeMin > 0 ? Def.PhaseTwoRechargeMin : a.RechargeMin;
         bool _regenBlocked;
 
         public bool IsCharged(MonsterAbilityDef a) => _charged.Contains(a);
@@ -105,7 +163,7 @@ namespace DnD.Rules
             {
                 if (_charged.Contains(a)) continue;
                 int d = Dice.Roll(6);
-                if (d >= a.RechargeMin) { _charged.Add(a); log?.Add($"{Name}'s {a.Name} recharges! (d6: {d})"); }
+                if (d >= RechargeMinFor(a)) { _charged.Add(a); log?.Add($"{Name}'s {a.Name} recharges! (d6: {d})"); }
             }
         }
 

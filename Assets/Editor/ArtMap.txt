@@ -1531,3 +1531,10 @@ tint item_bloom_draught item_potion_healing 110 0.8 1.15
 # Act II Phase 5
 actor npc_teodor "Actor/Character/Inspector/SpriteSheet.png"
 audio music_emberhorn "Audio/Musics/10 - Dark Castle.ogg"
+
+# Act II Phase 6: the Emberhorn
+tint tile_lava tile_water 180 1.7 1.35
+audio music_throat "Audio/Musics/40 - Crypt.ogg"
+audio music_heart "Audio/Musics/24 - Final Area.ogg"
+tint mon_warden_0 mon_ashmaw_src_0 -12 0.5 0.62
+tint mon_warden_1 mon_ashmaw_src_1 -12 0.5 0.62

@@ -7,7 +7,7 @@ namespace DnD.Game
     public enum QuestEvent { ZoneEntered, GroupResolved, ItemGained, FlagSet, SecretFound, BrazierLit }
 
     /// <summary>Act II's main quest, "answers".</summary>
-    public static class Answers { public const string Id = "answers"; public const int Road = 1, Academy = 2, Tower = 3, Heard = 4, Chosen = 5, Allies = 6, OnTheRoad = 7, Gate = 8; }
+    public static class Answers { public const string Id = "answers"; public const int Road = 1, Academy = 2, Tower = 3, Heard = 4, Chosen = 5, Allies = 6, OnTheRoad = 7, Gate = 8, Rest = 9; }
 
     /// <summary>Stages of the main quest, "fallen_star" (save version 2 numbering).</summary>
     public static class FallenStar { public const int Crater = 1, Trail = 2, Warrens = 3, Egg = 4, Hatched = 5, Done = 6; }
@@ -117,8 +117,8 @@ namespace DnD.Game
             Add(new QuestDef
             {
                 Act = 2, Id = Answers.Id, Title = "Answers", Giver = "rhoswen",
-                StageXp = { [Answers.Academy] = 400, [Answers.Heard] = 600, [Answers.Chosen] = 1000, [Answers.Allies] = 500, [Answers.Gate] = 1500 },
-                StageFlags = { [Answers.Allies] = WorldDb.EmberhornOpen },
+                StageXp = { [Answers.Academy] = 400, [Answers.Heard] = 600, [Answers.Chosen] = 1000, [Answers.Allies] = 500, [Answers.Gate] = 1500, [Answers.Rest] = 3000 },
+                StageFlags = { [Answers.Allies] = WorldDb.EmberhornOpen, [Answers.Gate] = WorldDb.EmberhornGate },
                 StageText = new[] {
                     "", "Hearths are going cold down the valley. Captain Vale says if anyone has answers, it's the Starfall Academy, up the Lantern Road past Miller's Ford.",
                     "You've reached the Starfall Academy. Find High Magister Ashby. They say he lives at the top of the Orrery Tower.",
@@ -127,7 +127,8 @@ namespace DnD.Game
                     "You've chosen a side. Finish what your allies asked of you.",
                     "Your allies agree on one thing: the answers are in the Emberhorn, the mountain whose fire has gone grey. The high road east of Cragfoot is open.",
                     "Cross the Emberhorn Road to the mountain's gate. Someone from your side is waiting at the Last Camp.",
-                    "The Emberhorn's gate. (The mountain waits in a later update.)" },
+                    "The Emberhorn's gate stands open. The Warden of the Emberhorn waits in the mountain's heart.",
+                    "The Warden of the Emberhorn is at rest, and the mountain sleeps. The ash will thin. But something beneath the Wyrmback is still waking." },
                 Triggers = {
                     new QuestTrigger(QuestEvent.ZoneEntered, "academy", Answers.Road, Answers.Academy),
                     new QuestTrigger(QuestEvent.ZoneEntered, "ashby_tower", Answers.Academy, Answers.Tower),

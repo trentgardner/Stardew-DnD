@@ -40,7 +40,7 @@ namespace RulesTests
             Eq(e.HP, 12, "dragonling: keeps the 3 damage it took");
 
             // It never dies: at 0 it's down (and retreats, in the game layer).
-            e.TakeDamage(500, DamageType.Fire, true, new List<string>());
+            e.TakeDamage(500, DamageType.Piercing, true, new List<string>());
             Check(e.IsDown && !e.IsDead, "dragonling: dropped to 0 it is down, not dead");
             Eq(e.Heal(5), 5, "dragonling: can be healed back up");
         }

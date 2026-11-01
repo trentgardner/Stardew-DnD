@@ -62,6 +62,15 @@ namespace DnD.Game
 
         public CombatInstance(GameRoot g, Zone zone, string groupId) { G = g; Zone = zone; GroupId = groupId; }
 
+        /// <summary>Creatures given fire resistance for this fight only (Ashby's ward).</summary>
+        public readonly List<Creature> WardResisted = new List<Creature>();
+        /// <summary>The fight started with the enemies surprised (an ambush, or a Warden that hesitated).</summary>
+        public bool EnemiesSurprised => _enemiesSurprised;
+
+        /// <summary>A Warden shown the young dragon won't turn on it while it's still itself (phase one).</summary>
+        bool Spares(Unit attacker, Unit target) =>
+            target.C is Dragonling && attacker.C is Monster m && m.Def.Id == "warden" && !m.PhaseTwo && G.World.Flag(DialogueDb.WardenSparesDragon);
+
         // ================================================================== setup
 
         public Unit AddUnit(Creature c, Actor a, PlayerSlot owner = null, EnemyAgent enemy = null, CompanionAgent comp = null)
@@ -140,10 +149,18 @@ namespace DnD.Game
                     Log($"{m.Name}'s Uncanny Metabolism: Focus restored, +{h} HP.");
                 }
 
+            int lairRound = 0;
             while (!Finished)
             {
                 var cur = Current;
                 if (cur == null) { Enc.Advance(); continue; }
+                if (Enc.Round != lairRound)
+                {
+                    // Lair actions (initiative count 20): the floor erupts at the start of each round in a boss's second phase.
+                    lairRound = Enc.Round;
+                    var erupt = PickEruptionTiles(new System.Random());
+                    if (erupt.Count > 0) { yield return Erupt(erupt); if (CheckEnd()) break; }
+                }
                 var log = new List<string>();
                 Enc.StartTurn(log);
                 foreach (var l in log) Log(l);
@@ -151,8 +168,11 @@ namespace DnD.Game
                 SyncBanished();
                 if (cur.C is Dragonling && cur.Active) RechargeBreath(cur, null);
                 if (cur.C is PlayerCharacter hero && cur.Active) { var hlog = new List<string>(); hero.StartOfTurnInCombat(hlog); hlog.ForEach(Log); }
+                bool breathed = false;
                 if (cur.C is Monster mon && cur.Active)
                 {
+                    mon.ResetLegendary();
+                    if (mon.Charging != null) { yield return ReleaseBreath(cur, mon); breathed = true; }
                     var mlog = new List<string>();
                     mon.RollRecharges(mlog);
                     if (mon.StartTurnRegen(mlog) > 0) cur.A.Popup("Regenerates", UIKit.HealGreen);
@@ -166,11 +186,14 @@ namespace DnD.Game
                     if (cur.C is PlayerCharacter pc && !pc.Stable) yield return DeathSave(cur, pc);
                 }
                 else if (cur.C.IsIncapacitated) Log($"{cur.Name} is {(cur.C.Has(Condition.Paralyzed) ? "paralyzed" : "incapacitated")} and loses the turn.");
+                else if (breathed) { /* letting go of the breath it drew was its whole turn */ }
                 else if (cur.IsHuman) yield return PlayerTurn(cur);
                 else yield return AiTurn(cur);
 
                 if (CheckEnd()) break;
                 TriggerZones(cur); // ending a turn inside Spirit Guardians, a Wall of Fire...
+                if (CheckEnd()) break;
+                yield return LegendaryOpportunities(cur);
                 if (CheckEnd()) break;
                 var endLog = new List<string>();
                 Enc.EndTurn(endLog);
