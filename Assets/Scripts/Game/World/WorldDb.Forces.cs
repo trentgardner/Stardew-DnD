@@ -53,6 +53,13 @@ namespace DnD.Game
                 Failure = "Stones, moss, a very annoyed lizard. Look again another day.",
                 AlreadyFound = "The cache, and the note. Somebody has put back a single sock.",
             };
+            z.Secrets[new Vector2Int(20, 19)] = new SecretDef
+            {
+                Id = "cragfoot_well", Sprite = "obj_well", Prompt = "Haul up the well bucket", Skill = Rules.Skill.Athletics, DC = 12, Copper = 500,
+                Success = "The rope fights you all the way up. In the bucket, with the water: a tarnished silver button, a child's marble, and a few coins somebody wished on and the well has decided to give back.",
+                Failure = "The rope burns your palms and the bucket thumps back down into the dark. Tomorrow.",
+                AlreadyFound = "Just water now. Very cold, very clean.",
+            };
             z.Secrets[new Vector2Int(38, 5)] = new SecretDef
             {
                 Id = "lodge_carving", Sprite = "obj_crate", Prompt = "Search the woodpile behind the lodge", Skill = Rules.Skill.Investigation, DC = 13, Copper = 2000,

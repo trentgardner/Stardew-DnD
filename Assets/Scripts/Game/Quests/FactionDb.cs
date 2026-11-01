@@ -90,7 +90,7 @@ namespace DnD.Game
         public static ChoiceScreen OfferCommit(PlayerSlot by, string faction, Action onYes)
         {
             var others = FactionDb.All.Keys.Where(k => k != faction).Select(FactionDb.NameOf).ToList();
-            string body = $"This is the moment you choose a side. Standing with {FactionDb.NameOf(faction)} closes {string.Join(", ", others.Take(others.Count - 1))} and {others.Last()}'s paths for good. Are you sure?";
+            string body = $"This is the moment you choose a side. Standing with {FactionDb.NameOf(faction)} closes the paths of {string.Join(", ", others.Take(others.Count - 1))} and {others.Last()} for good. Are you sure?";
             var screen = new ChoiceScreen("Choose a side", body, new List<(string, Action)>
             {
                 ($"Stand with {FactionDb.NameOf(faction)}", () => { if (Commit(faction, by)) onYes?.Invoke(); }),

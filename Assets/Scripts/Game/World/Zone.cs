@@ -197,7 +197,7 @@ namespace DnD.Game
         void BuildCell(Vector2Int m, char c)
         {
             string floor = FloorFor(m);
-            if ("qceiHuxrZJQI/@%Agz+^&$!-<".IndexOf(c) >= 0) floor = PropGround(m, floor);
+            if ("qceiHuxrZJQI/@%Agz+^&$!-<PaFKy)".IndexOf(c) >= 0) floor = PropGround(m, floor);
             _base.SetTile(Cell(m), GetTile(floor, false));
             switch (c)
             {

@@ -274,6 +274,37 @@ Eldritch Blast fires two beams at 5 (2024) instead of one bigger one.
 
 - **Phase 6 hook:** `World.LoreFound.Contains("emberhorn_warden")` (the Restricted Section's bestiary) unlocks the volcano dragon's weakness check.
 
+## The four forces (Act II Phase 4)
+
+- **Hearing them out:** `Factions.Hear(f)` sets `heard:<f>` the first time each leader is properly met (Marsh, Ashby when you've heard him out, Sorrel, Calloway). The journal shows "Heard out: n/4" and each heard force's belief.
+- **The choice:** `Factions.MajorOpen(f)` = uncommitted, `HeardAll()`, and one of f's non-major quests done. Each leader's "We'll stand with…" option calls `Factions.StartMajor(by, questId)`, which shows the `OfferCommit` prompt; yes → `Commit` (once only: a second yes from another prompt is refused with a toast) → the `committed` flag → the major starts. `QuestLog.CanStart` closes every other force's quest, in progress or not.
+- **"Answers"** stage 4 now reads "hear out the four forces"; stage 5 (`Answers.Chosen`, 1000 XP) fires on the `committed` flag.
+- **Engine bits:**
+  - `QuestEvent.BrazierLit` + `QuestTrigger.LitAtLeast(zone, from, to, n)` (Cold Lanterns).
+  - `UnlitBrazier.MarkLit` (a lit torch lights it too); map char `)` = a cold road lantern post.
+  - `SecretDef.SucceedsIfLit` (the Ember throne) and `EnemyGroupDef.ResolvedFlag` (the Frost guardians win the Frost throne).
+  - A quest spot whose `SetsFlag` is already set disappears (alternate routes close once one works).
+  - `ZoneDef.Dusk` (the glade's fixed gold-and-violet tint, `PlayerHud.DuskTint`).
+  - Props on outdoor flagstones (`P a F K y )`) get paving under them.
+- **Quests and XP** (each player):
+
+  | Quest | Force | Kind | XP | Standing |
+  |---|---|---|---|---|
+  | Counted | Crown | scouting | 1200 | +10 |
+  | Two Copies | Crown | scouting | 1000 | ±5/10 (your call) |
+  | Under the Crown's Banner | Crown | major | 3000 | +30 |
+  | Cold Lanterns | Academy | scouting | 1000 | +10 |
+  | The Ninth Circle | Academy | major | 3000 | +30 |
+  | A Quarrel of Courts | Fae | scouting | 1100 | +5 / +15 |
+  | The Green Bargain | Fae | major | 3000 | +30 (−5 if you strike the clause) |
+  | Ember Eyes | Wyrmwatch | scouting | 1200 | +10 |
+  | The Long Hunt | Wyrmwatch | major | 3000 | +30, egg and bell ±5–10 |
+  | Answers stage 5 (choosing) | | | 1000 | |
+
+  Plus group XP (every fight can be talked down for the same XP): wagon hounds 2100, the beacon 2500, the cinder bear 200, the thorn guardians 900, the Cragfoot wolves 600, the Ashmaw 2300.
+- **New monsters:** `ashsworn_zealot` (Cult Fanatic, no spells), `ashsworn_keeper` (Veteran), `cinder_bear` (Brown Bear), `thorn_guardian` (Awakened Tree, trimmed), `ember_eyed_wolf` (Dire Wolf), `ashmaw` (Wyvern: the stinger is one 4d6+4 poison roll, since the engine has no damage-plus-save rider).
+- **Zones:** `redoubt`, `glade` (via the forest fairy ring, `ring_open`), `cragfoot`, `ashmaw_lair` (Dark). All `Act = 2` behind `MinAct = 2` warps.
+
 ## Buoy (dedication)
 
 Buoy is Thistledown's neighbourhood dog: a black-and-white Australian Shepherd, a tribute to a real dog. He is NOT a companion and never fights.

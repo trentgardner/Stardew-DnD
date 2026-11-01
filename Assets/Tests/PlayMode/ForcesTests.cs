@@ -735,6 +735,142 @@ namespace DnD.Tests
             Assert.IsTrue(SpotNamed("ashmaw_nest").Available(p));
         }
 
+        // ============================================================ Task 6: acceptance
+
+        /// <summary>Each force's leader, the start node that offers its major quest, the commit option's text, its scouting and major quests.</summary>
+        static readonly (string faction, string leader, string node, string commit, string scout, string major)[] Forces =
+        {
+            ("crown", "marsh", "start", "We'll stand with the Crown", "counted", "crowns_banner"),
+            ("academy", "ashby", "again", "We'll help you finish", "cold_lanterns", "ninth_circle"),
+            ("fae", "sorrel", "start", "We'll stand with the Courts", "court_quarrel", "green_bargain"),
+            ("hunters", "calloway", "start", "We'll stand with the Wyrmwatch", "ember_eyes", "long_hunt"),
+        };
+
+        [UnityTest, Timeout(600000)]
+        public IEnumerator ForcesGoldenPath([Values("crown", "academy", "fae", "hunters")] string side)
+        {
+            var g = GameRoot.I;
+            var p = ActTwo(g, g.DebugStart(Still(50), "cleric", "dwarf"));
+            yield return Frames(2);
+            var c = new DCtx { P = p };
+            g.Quests.Set(Answers.Id, Answers.Tower, p);
+            // Hear all four out, through their own first conversations.
+            DialogueDb.Get("marsh").Nodes["intro"].OnEnter(c);
+            DialogueDb.Get("ashby").Nodes["plan"].Options.Single(o => o.Text == "You could be right.").Do(c);
+            DialogueDb.Get("sorrel").Nodes["intro"].OnEnter(c);
+            DialogueDb.Get("calloway").Nodes["intro"].OnEnter(c);
+            Assert.IsTrue(Factions.HeardAll(), "all four forces heard out");
+            Assert.AreEqual(Answers.Heard, g.Quests.Stage(Answers.Id));
+            var f = Forces.Single(x => x.faction == side);
+            g.Quests.Start(f.scout, p);
+            g.Quests.Set(f.scout, QuestDb.Get(f.scout).Last, p);
+            foreach (var o in Forces) Assert.AreEqual(o.faction == side, Factions.MajorOpen(o.faction), $"{o.faction}'s major is open only after its own scouting");
+
+            var leader = DialogueDb.Get(f.leader);
+            var commit = Opt(leader.Nodes[f.node], f.commit);
+            Assert.IsTrue(commit.Show(c));
+            commit.Do(c);
+            yield return ConfirmCommit(p);
+            Assert.AreEqual(side, g.World.CommittedFaction);
+            Assert.AreEqual(1, g.Quests.Stage(f.major));
+            Assert.AreEqual(Answers.Chosen, g.Quests.Stage(Answers.Id), "Answers: you've chosen a side");
+
+            foreach (var o in Forces.Where(x => x.faction != side))
+            {
+                Assert.IsFalse(g.Quests.CanStart(o.scout) || g.Quests.CanStart(o.major), $"{o.faction}'s quests close");
+                var other = DialogueDb.Get(o.leader);
+                Assert.IsFalse(other.Nodes[o.node].Options.Any(x => x.Text.StartsWith(o.commit) && x.Show(c)), $"{o.leader} offers no commit");
+                Assert.IsNotNull(g.Quests.ClosedBy(o.major));
+            }
+            var journal = new JournalScreen();
+            p.Hud.Push(journal);
+            yield return Frames(2);
+            StringAssert.Contains("you stand with them", journal.Text);
+            p.Hud.CloseAll();
+
+            g.Quests.Set(f.major, QuestDb.Get(f.major).Last, p);
+            Assert.IsTrue(g.World.Flag("banner_" + side), "the major's reward flag for Phase 5");
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(3);
+            Assert.AreEqual(side, g.World.CommittedFaction);
+            Assert.IsTrue(g.Quests.Done(f.major));
+            Assert.AreEqual(Answers.Chosen, g.Quests.Stage(Answers.Id));
+            Assert.IsTrue(g.World.Flag("banner_" + side));
+        }
+
+        [UnityTest]
+        public IEnumerator EveryForceFightHasAPeacefulPath()
+        {
+            var g = GameRoot.I;
+            g.DebugStart(Still(51), "cleric", "dwarf");
+            yield return Frames(2);
+            var groups = new[] { "redoubt", "glade", "cragfoot", "ashmaw_lair" }.SelectMany(z => WorldDb.Zones[z].EnemyGroups)
+                .Concat(WorldDb.Zones["lantern_road"].EnemyGroups.Where(e => e.Id == "wagon_hounds"))
+                .Concat(WorldDb.Zones["sealing_hall"].EnemyGroups.Where(e => e.Id == "circle_bear")).ToList();
+            Assert.AreEqual(6, groups.Count);
+            foreach (var grp in groups)
+                Assert.IsTrue(grp.Style != EncounterStyle.None || grp.VouchFlag != null || grp.ParleyDialogue != null, $"{grp.Id} can be dealt with peacefully");
+            foreach (var q in new[] { "counted", "two_copies", "crowns_banner", "cold_lanterns", "ninth_circle", "court_quarrel", "green_bargain", "ember_eyes", "long_hunt" })
+            {
+                var d = QuestDb.Get(q);
+                Assert.IsNotNull(d, q);
+                Assert.AreEqual(2, d.Act, $"{q} is an Act II quest");
+                Assert.IsNotNull(d.Faction, $"{q} belongs to a force");
+            }
+            foreach (var z in new[] { "redoubt", "glade", "cragfoot", "ashmaw_lair" }) Assert.AreEqual(2, WorldDb.Zones[z].Act, $"{z} opens in Act II");
+        }
+
+        [UnityTest]
+        public IEnumerator CaptureForces()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(52), "paladin", "human");
+            yield return Frames(2);
+            g.ApplyActTwoStart(p);
+            p.Hud.CloseAll();
+            IEnumerator At(string zone, int x, int y, string shot, int hour = 11)
+            {
+                g.Clock.Minutes = hour * 60;
+                g.Warp(p, zone, new Vector2Int(x, y), false);
+                yield return Frames(40);
+                p.Hud.CloseAll();
+                p.Hud.HideNarration();
+                yield return Frames(5);
+                Shot(shot);
+            }
+            yield return At("redoubt", 15, 17, "act2_forces_redoubt");
+            g.Quests.Set("crowns_banner", 1, p);
+            yield return At("redoubt", 33, 14, "act2_forces_beacon");
+            yield return At("glade", 20, 13, "act2_forces_glade");
+            yield return At("glade", 29, 6, "act2_forces_glade_embers", 2);
+            g.Quests.Set("ember_eyes", 2, p);
+            yield return At("cragfoot", 30, 18, "act2_forces_cragfoot_night", 22);
+            yield return At("cragfoot", 30, 14, "act2_forces_cragfoot_day");
+            yield return At("ashmaw_lair", 12, 14, "act2_forces_lair");
+            Factions.OfferCommit(p, "hunters", null);
+            yield return Frames(10);
+            Shot("act2_forces_commit");
+            p.Hud.CloseAll();
+        }
+
+        static void Shot(string name)
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "embers_screenshots");
+            Directory.CreateDirectory(dir);
+            var rt = new RenderTexture(1280, 720, 24);
+            var cams = Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
+            System.Array.Sort(cams, (a, b) => a.depth.CompareTo(b.depth));
+            foreach (var cam in cams) { if (!cam.isActiveAndEnabled) continue; var old = cam.targetTexture; cam.targetTexture = rt; cam.Render(); cam.targetTexture = old; }
+            RenderTexture.active = rt;
+            var tex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
+            tex.Apply();
+            RenderTexture.active = null;
+            File.WriteAllBytes(Path.Combine(dir, name + ".png"), tex.EncodeToPNG());
+            Object.Destroy(rt);
+        }
+
         [UnityTest]
         public IEnumerator CrownsBannerSurvivesSaveLoad()
         {

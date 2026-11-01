@@ -162,6 +162,16 @@ Act I keeps only two light, ominous notes in chests (a miner's scrawl about lamp
   - Notes from the Sealing Hall
   - Grey Fire
 
+## Act II, the four forces (names approved in bulk)
+- **Places:** **Greywater Redoubt** (the Crown outpost, with its ruined beacon), **the Gloaming Glade** (the Fae Courts, always dusk;
+  the Thrones of Blossoms, Embers and Frost), **Cragfoot** and **the Wyrmwatch Lodge**, **the Ashmaw's lair**.
+- **People:** Lady-Commander **Isaine Marsh**; **Herald Sorrel** of the Three Courts, with the **Speakers of Blossoms and Frost**;
+  Huntmaster **Bryn Calloway**, hunter **Odo Fenn**, **Mother Hale** (and her lost dog Bramble). **Mister Thimble** returns. **Perrin** is Keeper of the Road Lamps.
+- **Others:** **the Ashsworn** (the few who secretly serve the Queen: they speak of her waking and her fire, nothing more); **the Ashmaw**, an ember-eyed wyvern.
+- **Lore added:** The Ashsworn's Notes, The Lamps That Watch, The Late Reflection, The Hunters' Tallies.
+- **Hooks for later phases:** `banner_<force>` (the chosen side's flavour), `fae_clause` (the dragon owes the Courts a favour),
+  `wyvern_egg_saved`, `wyrmwatch_belled`, `marsh_asks_ashby`, `lantern_eyes`.
+
 ## Questions for you
 1. Do you like the **egg → baby dragon companion** hook? (I think your fiance will.)
 2. Names: keep, change or rename anything? (*Sundermere, Thistledown, Ember Pact, Oathbound...*)
