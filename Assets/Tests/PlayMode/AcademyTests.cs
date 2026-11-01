@@ -391,5 +391,48 @@ namespace DnD.Tests
             Assert.IsTrue(WorldDb.Zones["restricted"].Lore.Exists(l => l.Id == "emberhorn_warden"));
             Assert.AreEqual(2, LoreDb.Get("emberhorn_warden").MinAct, "Act II only");
         }
+
+        // ============================================================ Task 5: the Orrery Tower and Ashby
+
+        [UnityTest]
+        public IEnumerator HearingAshbyOutAdvancesAnswers()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(40), "paladin", "human");
+            yield return Frames(2);
+            ActTwoAt(g, p, "academy", new Vector2Int(44, 15));
+            yield return Frames(2);
+            Assert.AreEqual(Answers.Academy, g.Quests.Stage(Answers.Id));
+            TakeWarp(g, p, "academy", 44, 13);
+            yield return Frames(2);
+            Assert.AreEqual("ashby_tower", p.Zone.Def.Id);
+            Assert.AreEqual(Answers.Tower, g.Quests.Stage(Answers.Id), "his door is open");
+            int xp = p.Character.XP;
+            var d = DialogueDb.Get("ashby");
+            var c = new DCtx { P = p };
+            Assert.AreEqual("intro", d.Start(c));
+            var agree = d.Nodes["plan"].Options.Single(o => o.Text == "You could be right.");
+            agree.Do(c);
+            Assert.IsTrue(g.World.Flag("ashby_heard"));
+            Assert.AreEqual(Answers.Heard, g.Quests.Stage(Answers.Id));
+            Assert.AreEqual(10, Factions.Standing("academy"));
+            Assert.AreEqual(xp + 600, p.Character.XP, "the milestone pays once");
+            Assert.AreEqual("again", d.Start(c), "afterwards he greets you as someone he's spoken to");
+        }
+
+        [UnityTest]
+        public IEnumerator ConfrontingAboutTheHallNeedsToHaveSeenIt()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(41), "bard", "half_elf");
+            yield return Frames(2);
+            g.ApplyActTwoStart(p);
+            var d = DialogueDb.Get("ashby");
+            var c = new DCtx { P = p };
+            var confront = d.Nodes["plan"].Options.Single(o => o.Check == Rules.Skill.Persuasion);
+            Assert.IsFalse(confront.Show(c), "not offered before you've seen the hall");
+            g.World.SetFlag("seen:sealing_hall");
+            Assert.IsTrue(confront.Show(c));
+        }
     }
 }

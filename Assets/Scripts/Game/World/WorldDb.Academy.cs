@@ -272,5 +272,23 @@ namespace DnD.Game
             thorne.Schedule.Add(new ScheduleEntry(22, null, 0, 0, "asleep (with a book)"));
             Npcs[thorne.Id] = thorne;
         }
+
+        static void BuildAshbyTower()
+        {
+            Zones["academy"].Warps.Add(new WarpDef(44, 13, "ashby_tower", 8, 12));
+            var z = new ZoneDef
+            {
+                Id = "ashby_tower", Name = "The Orrery Tower", Map = Maps.AshbyTower, Indoors = true, DefaultSpawn = new Vector2Int(8, 12), Music = "music_ashby",
+                EnterNarration = "The stairs climb, and climb. You count three hundred and twelve. From outside, the tower has four windows. At the top is a round study full of star charts and books and quiet, with a great window looking north, at the mountains.",
+            };
+            z.Warps.Add(new WarpDef(8, 13, "academy", 44, 14));
+            Zones[z.Id] = z;
+
+            var ashby = new NpcDef { Id = "ashby", Name = "High Magister Corvane Ashby", Title = "High Magister of the Starfall Academy", Look = "npc_ashby", Dialogue = "ashby" };
+            ashby.Schedule.Add(new ScheduleEntry(0, "ashby_tower", 8, 2, "at the great window, watching the mountains"));
+            ashby.Schedule.Add(new ScheduleEntry(8, "ashby_tower", 8, 7, "at his desk, writing very small"));
+            ashby.Schedule.Add(new ScheduleEntry(22, "ashby_tower", 8, 2, "at the great window, watching the mountains"));
+            Npcs[ashby.Id] = ashby;
+        }
     }
 }

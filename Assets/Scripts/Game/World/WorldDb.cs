@@ -390,6 +390,7 @@ namespace DnD.Game
             BuildLanternRoad();
             BuildAcademy();
             BuildLibrary();
+            BuildAshbyTower();
 
             var shop = new ZoneDef { Id = "shop", Name = "Ironkettle General Goods", Map = Maps.Shop, Indoors = true, DefaultSpawn = new Vector2Int(6, 7),
                 EnterNarration = "The shop smells of lamp oil and leather. Every shelf is organized with terrifying dwarven precision.", ShopCounter = new Vector2Int(6, 3) };

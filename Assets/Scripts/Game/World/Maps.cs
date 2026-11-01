@@ -589,5 +589,24 @@ namespace DnD.Game
             "X:::::::::::E::::::::::::X",
             "XXXXXXXXXXXXXXXXXXXXXXXXXX",
         };
+
+        // Act II: the Orrery Tower, High Magister Ashby's study at the top of three hundred and twelve stairs. Door (8,13).
+        public static readonly string[] AshbyTower =
+        {
+            "WWWWWWwwwwwwWWWWWW",
+            "Wzz:::::!:::::::zW",
+            "Wz::::::::::::::zW",
+            "W::-::::::::::-::W",
+            "W:::::______:::::W",
+            "W:::::__&___:::::W",
+            "W:::::______:::::W",
+            "W::^::::::::::^::W",
+            "W::::::a:::a:::::W",
+            "W:::::::::::::::zW",
+            "Wzz:::::::::::::zW",
+            "W::+:::::::::+:::W",
+            "W::::::::::::::::W",
+            "WWWWWWWWDWWWWWWWWW",
+        };
     }
 }

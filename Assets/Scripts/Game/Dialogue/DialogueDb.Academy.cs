@@ -19,6 +19,7 @@ namespace DnD.Game
                 case "oakes": return Oakes();
                 case "varrow": return Varrow();
                 case "thorne": return Thorne();
+                case "ashby": return Ashby();
                 default: return null;
             }
         }
@@ -114,6 +115,76 @@ namespace DnD.Game
                 c => c.G.World.SetFlag("met_oakes"))
                 .Bye("I hope they recover.");
             d.Node("start", who, c => "Grey at the edges. Grey! As if the fire in them is going out.").Bye("Good luck, Professor.");
+            return d;
+        }
+
+        // =================================================================== High Magister Corvane Ashby
+        // Brilliant, beloved, frightened and half right. Never a villain. He says "the Queen" and "the tyrant", nothing more.
+
+        /// <summary>Hearing him out, whichever way it goes, moves "Answers" on (the FlagSet trigger).</summary>
+        static void Heard(DCtx c) => c.G.World.SetFlag("ashby_heard");
+
+        static Dialogue Ashby()
+        {
+            var d = new Dialogue("ashby", c => c.G.World.Flag("ashby_heard") ? "again" : c.G.World.Flag("met_ashby") ? "plan" : "intro");
+            const string who = "High Magister Corvane Ashby";
+            d.Node("intro", who,
+                c => "Come in, come in. You'll have counted the stairs. Everyone counts the stairs. Sit. Tea? It pours itself. It's the only spell I've ever been vain about.",
+                c => $"A tall, thin man with grey at his temples and ink on his cuffs, kinder-looking than you expected. The teapot rises, pours, and settles. He doesn't look at it. He looks at {c.G.World.DragonName}, for a long moment, with an expression you can't read.",
+                c => c.G.World.SetFlag("met_ashby"))
+                .Say("The hearths are going cold. We came for answers.", "legend");
+            d.Node("legend", who,
+                c => "Then you'll have heard the story. Everyone has. Long ago the Ashen Queen drank the fire of the world, and the Great Ones lay down upon her, and the mountains were made. Every first-year here can recite it. I could recite it before I could read.")
+                .Say("And now?", "waking");
+            d.Node("waking", who,
+                c => "Now they're waking. Your star. Your egg. One by one the Great Ones stir in their sleep, and every time one stirs, the hold loosens a little. The cold hearths, the grey ash, the beasts with coals for eyes: that's her, breathing through the cracks.",
+                c => "He says it simply, the way a doctor gives bad news.")
+                .Say("What do you mean to do about it?", "plan");
+            d.Node("plan", who,
+                c => "Understand the waking dragons. Then seal them, gently and forever, before she wakes with them. I don't hate dragons. I've loved them my whole life. That is exactly why I know what one can do.",
+                c => $"His eyes go back to {c.G.World.DragonName}. \"I'd like to study yours, one day. Not now. Not without your leave. But think on it.\"")
+                .Roll(Skill.Insight, 14, "(Insight) Read him.", "plan_insight", "plan_insight_no")
+                .Roll(Skill.Arcana, 15, "(Arcana) A sealing on that scale... how would it even hold?", "plan_arcana", "plan_arcana_no",
+                    onSuccess: c => Factions.Adjust("academy", 5, c.P))
+                .Roll(Skill.Persuasion, 16, "We've seen the Sealing Hall. Tell us about it, to our faces.", "hall_yes", "hall_no",
+                    onSuccess: c => { Factions.Adjust("academy", 5, c.P); c.G.World.SetFlag("ashby_hall_confronted"); },
+                    onFailure: c => c.G.World.SetFlag("ashby_hall_confronted"),
+                    show: c => c.G.World.Flag("seen:sealing_hall"))
+                .Say("You could be right.", "agree", doIt: c => { Factions.Adjust("academy", 10, c.P); Heard(c); })
+                .Say("You're talking about a cage.", "cage", doIt: c => { Factions.Adjust("academy", -5, c.P); Heard(c); })
+                .Say("Keep away from our dragon.", "keep_away", doIt: c => { Factions.Adjust("academy", -5, c.P); DragonPet.AddBond(c.P, 2, "standing up for it"); Heard(c); });
+            d.Node("plan_insight", who, c => "...",
+                c => "He hasn't slept properly in a long time. There are ink stains on both hands, as if he writes until one gives out and then switches. And he's frightened. Not of you.")
+                .Say("(Back)", "plan");
+            d.Node("plan_insight_no", who, c => "...", c => "A scholar's face: patient, warm, giving nothing away.").Say("(Back)", "plan");
+            d.Node("plan_arcana", who,
+                c => "Oh, you KNOW the theory. Nested circles, yes, twelve anchors, the binding drawn from the bound creature's own fire so it can never burn its way out... You've read Velloran. No one reads Velloran. Come back any time. I mean that.",
+                c => "For a moment he forgets to be High Magister and is simply delighted.")
+                .Say("(Back)", "plan");
+            d.Node("plan_arcana_no", who, c => "It's complicated. It's VERY complicated. I'll lend you a book.", c => "He doesn't lend you a book.").Say("(Back)", "plan");
+            d.Node("hall_yes", who,
+                c => "...Yes. You have. Good. I'd rather you asked me than whispered about me. It isn't finished. It may never be. It's the most careful thing I have ever built, and I pray every night I never have to use it.",
+                c => "He is quiet a long time. When he speaks again his voice is lower. \"If you think I'm wrong, tell me. Someone should.\"")
+                .Say("(Back)", "plan");
+            d.Node("hall_no", who, c => "The Academy has many rooms. Some are not mine to show. Some are not yours to see.", c => "The warmth goes out of the room, just for a moment, like a cloud over the sun.")
+                .Say("(Back)", "plan");
+            d.Node("agree", who,
+                c => "Thank you. You don't know how rare it is, to be heard and not humoured. Go carefully. Come back. We'll speak again.",
+                c => $"{c.G.World.DragonName} watches him the whole time, and doesn't blink.")
+                .Bye("We'll come back.");
+            d.Node("cage", who,
+                c => "Yes. I am. A kind one, I hope. Would you rather the alternative? I would truly like to know. I've had no better idea in thirty years, and I have been looking.",
+                c => "He doesn't argue. He just looks tired.")
+                .Bye("We'll find another way.");
+            d.Node("keep_away", who,
+                c => "Of course. Of course. I meant no harm. I never do. That has never once been the problem.",
+                c => $"{c.G.World.DragonName} presses against your legs. You can feel it trembling, or growling, or both.")
+                .Bye("Good day, High Magister.");
+            d.Node("again", who,
+                c => c.G.Clock.Hour >= 22 || c.G.Clock.Hour < 8
+                    ? "Forgive me. I was watching the mountains. They look the same as ever, don't they? That's the frightening part."
+                    : "Ah. You came back. More tea? It's still vain.")
+                .Bye("Goodbye, High Magister.");
             return d;
         }
 
