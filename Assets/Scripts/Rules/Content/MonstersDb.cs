@@ -261,6 +261,63 @@ namespace DnD.Rules.Content
                 Abilities = { new MonsterAbilityDef { Name = "Acid Spray", Shape = TargetShape.Line, AreaFt = 30, Dice = DiceExpr.Parse("3d6"), DamageType = DamageType.Acid, SaveAbility = Ability.DEX, SaveDC = 13, RechargeMin = 6 } },
             };
 
+            // Act II Phase 4: the Ashsworn, the few who secretly serve the Queen.
+            All["ashsworn_zealot"] = new MonsterDef
+            {
+                Id = "ashsworn_zealot", Name = "Ashsworn Zealot", SpriteId = "mon_ashsworn_zealot", AC = 13, HitDice = DiceExpr.Parse("6d8+6"),
+                Scores = new[] { 11, 14, 12, 10, 13, 14 }, CR = 2, XP = 450, Speed = 30,
+                Description = "A grey-robed believer with ash on their hands and a terrible calm. (SRD Cult Fanatic, without spells.)",
+                Attacks = { Melee("Dagger", 4, "1d4+2", DamageType.Piercing), Melee("Ember Touch", 4, "1d6+2", DamageType.Fire) },
+                Multiattack = { "Dagger", "Ember Touch" },
+                CopperMin = 100, CopperMax = 800,
+            };
+            All["ashsworn_keeper"] = new MonsterDef
+            {
+                Id = "ashsworn_keeper", Name = "Ashsworn Keeper", SpriteId = "mon_ashsworn_keeper", AC = 17, HitDice = DiceExpr.Parse("9d8+18"),
+                Scores = new[] { 16, 13, 14, 10, 11, 10 }, CR = 3, XP = 700, Speed = 30,
+                Description = "An old soldier in grey over chainmail, who once kept a beacon and now keeps a vigil. (SRD Veteran.)",
+                Attacks = { Melee("Longsword", 5, "1d8+3", DamageType.Slashing) },
+                Multiattack = { "Longsword", "Longsword" },
+                CopperMin = 500, CopperMax = 2000,
+            };
+
+            All["cinder_bear"] = new MonsterDef
+            {
+                Id = "cinder_bear", Name = "Cinder Bear", SpriteId = "mon_cinder_bear", AC = 11, HitDice = DiceExpr.Parse("4d10+12"),
+                Scores = new[] { 19, 10, 16, 2, 13, 7 }, Darkvision = 60, CR = 1, XP = 200, Speed = 40,
+                Description = "A brown bear with ash in its fur and a coal-glow for eyes, caught on the Emberhorn's slopes. (SRD Brown Bear.)",
+                Attacks = { Melee("Bite", 6, "1d8+4", DamageType.Piercing), Melee("Claws", 6, "2d6+4", DamageType.Slashing) },
+                Multiattack = { "Bite", "Claws" },
+                ProficientSkills = { Skill.Perception },
+            };
+
+            All["thorn_guardian"] = new MonsterDef
+            {
+                Id = "thorn_guardian", Name = "Thorn Guardian", SpriteId = "mon_thorn_guardian", AC = 13, HitDice = DiceExpr.Parse("6d10+12"),
+                Scores = new[] { 19, 6, 15, 10, 10, 7 }, CR = 2, XP = 450, Speed = 20,
+                Description = "A white winter tree that has agreed, for the Frost court's sake, to walk. (SRD Awakened Tree, trimmed.)",
+                Attacks = { Melee("Slam", 6, "2d6+4", DamageType.Bludgeoning, 10) },
+                Resistances = { DamageType.Bludgeoning, DamageType.Piercing }, Vulnerabilities = { DamageType.Fire },
+            };
+
+            All["ember_eyed_wolf"] = new MonsterDef
+            {
+                Id = "ember_eyed_wolf", Name = "Ember-Eyed Wolf", SpriteId = "mon_ember_wolf", AC = 14, HitDice = DiceExpr.Parse("5d10+10"),
+                Scores = new[] { 17, 15, 15, 3, 12, 7 }, Darkvision = 60, CR = 1, XP = 200, Speed = 50, PackTactics = true,
+                Description = "A wolf the size of a pony, grey with ash, eyes burning like coals. Some of them used to be somebody's dog. (SRD Dire Wolf.)",
+                Attacks = { new MonsterAttackDef { Name = "Bite", ToHit = 5, Damage = DiceExpr.Parse("2d6+3"), DamageType = DamageType.Piercing, OnHitEffect = "prone", OnHitSave = Ability.STR, OnHitSaveDC = 13 } },
+                ProficientSkills = { Skill.Perception, Skill.Stealth },
+            };
+            All["ashmaw"] = new MonsterDef
+            {
+                Id = "ashmaw", Name = "The Ashmaw", SpriteId = "mon_ashmaw", AC = 14, HitDice = DiceExpr.Parse("13d10+39"),
+                Scores = new[] { 19, 10, 16, 5, 12, 6 }, Darkvision = 60, CR = 6, XP = 2300, Speed = 20, ProficiencyBonus = 3,
+                Description = "An ember-eyed wyvern that has been taking Cragfoot's goats: leather wings, a hooked tail, and fire gone grey in its throat. (SRD Wyvern; the stinger's poison is folded into one roll.)",
+                Attacks = { Melee("Bite", 7, "2d6+4", DamageType.Piercing, 10), Melee("Stinger", 7, "4d6+4", DamageType.Poison, 10) },
+                Multiattack = { "Bite", "Stinger" },
+                ProficientSkills = { Skill.Perception }, CopperMin = 2000, CopperMax = 6000,
+            };
+
             // The party's hatchling (see Dragonling): HP comes from the party's level, not from hit dice.
             All["dragonling"] = new MonsterDef
             {

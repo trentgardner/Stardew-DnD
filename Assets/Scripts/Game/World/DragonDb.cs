@@ -23,6 +23,10 @@ namespace DnD.Game
             ["oakes"] = DragonFeeling.Fond,      // the glasshouse is warm and smells green
             ["varrow"] = DragonFeeling.Wary,     // measuring tapes, and that look
             ["holloway"] = DragonFeeling.Wary,   // the ledger, the counting
+            ["sorrel"] = DragonFeeling.Fond,
+            ["calloway"] = DragonFeeling.Distrust, // the trophy wall; the tooth
+            ["odo"] = DragonFeeling.Wary,     // she smells of warm leaves
+            ["marsh"] = DragonFeeling.Wary,      // the registry, the brass tag
             ["ashby"] = DragonFeeling.Distrust,  // it can smell the Sealing Hall on him
             ["lark"] = DragonFeeling.Trust,      // flowers to sniff
             ["maddie"] = DragonFeeling.Trust,    // children and dragons

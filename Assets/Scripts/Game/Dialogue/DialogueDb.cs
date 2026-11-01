@@ -15,8 +15,8 @@ namespace DnD.Game
         public static Dialogue Get(string id)
         {
             if (Cache.TryGetValue(id, out var d)) return d;
-            d = AcademyDialogue(id) ?? PlacesDialogue(id);
-            if (d != null) { AddAcademyLines(id, d); Cache[id] = d; return d; }
+            d = AcademyDialogue(id) ?? ForcesDialogue(id) ?? PlacesDialogue(id);
+            if (d != null) { AddAcademyLines(id, d); AddForceLines(id, d); Cache[id] = d; return d; }
             switch (id)
             {
                 case "brannoc": d = Brannoc(); break;
@@ -41,6 +41,7 @@ namespace DnD.Game
             }
             AddPlacesLines(id, d);
             AddAcademyLines(id, d);
+            AddForceLines(id, d);
             Cache[id] = d;
             return d;
         }

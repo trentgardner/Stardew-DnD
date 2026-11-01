@@ -33,6 +33,48 @@ namespace DnD.Game
         /// <summary>The last "the party has chosen" message sent to the other players (tests read it).</summary>
         public static string LastNotice;
 
+        /// <summary>World flag set when the party has heard a force out (met its leader properly).</summary>
+        public static string HeardFlag(string f) => "heard:" + f;
+
+        public static bool Heard(string f) => W.Flag(HeardFlag(f));
+        public static int HeardCount => FactionDb.All.Keys.Count(Heard);
+        public static bool HeardAll() => HeardCount == FactionDb.All.Count;
+
+        /// <summary>The party has heard this force out. Idempotent; toasts the first time.</summary>
+        public static void Hear(string f)
+        {
+            if (!FactionDb.All.ContainsKey(f) || Heard(f)) return;
+            W.SetFlag(HeardFlag(f));
+            string msg = $"You've heard out {FactionDb.NameOf(f)}. ({HeardCount}/{FactionDb.All.Count})";
+            foreach (var p in GameRoot.I.Players.Where(p => p.IsReady)) p.Hud?.Toast(msg, UIKit.UtilityBlue);
+        }
+
+        /// <summary>A force's major quest is offered once the party has heard everyone out and done one of that force's scouting quests.</summary>
+        public static bool MajorOpen(string faction)
+        {
+            if (W.CommittedFaction != null || !HeardAll()) return false;
+            var q = GameRoot.I.Quests;
+            return QuestDb.All.Values.Any(d => d.Faction == faction && !d.Major && q.Done(d.Id));
+        }
+
+        /// <summary>
+        /// Starts a force's major quest: the point of no return. Uncommitted: asks first (OfferCommit) and starts it on yes.
+        /// Already committed to this force: just starts it. Committed elsewhere: refuses. Returns false if nothing happens.
+        /// </summary>
+        public static bool StartMajor(PlayerSlot by, string questId)
+        {
+            var d = QuestDb.Get(questId);
+            if (d == null || d.Faction == null) return false;
+            if (W.CommittedFaction == d.Faction) { GameRoot.I.Quests.Start(questId, by); return true; }
+            if (W.CommittedFaction != null)
+            {
+                by?.Hud?.Toast($"You already stand with {FactionDb.NameOf(W.CommittedFaction)}.", UIKit.Bad);
+                return false;
+            }
+            OfferCommit(by, d.Faction, () => GameRoot.I.Quests.Start(questId, by));
+            return true;
+        }
+
         public static int Standing(string faction) => W.Standing.TryGetValue(faction, out var s) ? s : 0;
 
         /// <summary>-100..100. Helping one force usually costs you with another: the content decides by calling this twice.</summary>
@@ -48,10 +90,10 @@ namespace DnD.Game
         public static ChoiceScreen OfferCommit(PlayerSlot by, string faction, Action onYes)
         {
             var others = FactionDb.All.Keys.Where(k => k != faction).Select(FactionDb.NameOf).ToList();
-            string body = $"This is the moment you choose a side. Standing with {FactionDb.NameOf(faction)} closes {string.Join(", ", others.Take(others.Count - 1))} and {others.Last()}'s paths for good. Are you sure?";
+            string body = $"This is the moment you choose a side. Standing with {FactionDb.NameOf(faction)} closes the paths of {string.Join(", ", others.Take(others.Count - 1))} and {others.Last()} for good. Are you sure?";
             var screen = new ChoiceScreen("Choose a side", body, new List<(string, Action)>
             {
-                ($"Stand with {FactionDb.NameOf(faction)}", () => { Commit(faction, by); onYes?.Invoke(); }),
+                ($"Stand with {FactionDb.NameOf(faction)}", () => { if (Commit(faction, by)) onYes?.Invoke(); }),
                 ("Not yet", null),
             });
             by.Hud.Push(screen);
@@ -59,9 +101,14 @@ namespace DnD.Game
         }
 
         /// <summary>The party stands with this force: every other force's quests close (in progress or not). Once only.</summary>
-        public static void Commit(string faction, PlayerSlot by)
+        public static bool Commit(string faction, PlayerSlot by)
         {
-            if (W.CommittedFaction != null || !FactionDb.All.ContainsKey(faction)) return;
+            if (!FactionDb.All.ContainsKey(faction)) return false;
+            if (W.CommittedFaction != null)
+            {
+                by?.Hud?.Toast($"You already stand with {FactionDb.NameOf(W.CommittedFaction)}.", UIKit.Bad);
+                return false;
+            }
             W.CommittedFaction = faction;
             LastNotice = $"{by?.Character?.Name ?? "The party"} has chosen to stand with {FactionDb.NameOf(faction)}.";
             foreach (var p in GameRoot.I.Players.Where(p => p.IsReady))
@@ -69,7 +116,12 @@ namespace DnD.Game
                 if (p == by) p.Hud?.Toast($"You stand with {FactionDb.NameOf(faction)}.", UIKit.Gold);
                 else p.Hud?.Narrate(LastNotice);
             }
+            W.SetFlag(CommittedFlag);
             SaveSystem.Save(true);
+            return true;
         }
+
+        /// <summary>World flag set once the party has chosen a side (Answers moves to stage 5 on it).</summary>
+        public const string CommittedFlag = "committed";
     }
 }

@@ -358,8 +358,13 @@ namespace DnD.Game
             var zone = Slot.Zone;
             var tint = zone != null && !zone.Def.Indoors && !zone.Def.Dark ? g.Clock.AmbientTint() : new Color(0, 0, 0, 0);
             if (zone != null && zone.Def.MagicLit && tint.a > 0) tint = new Color(0.22f, 0.12f, 0.42f, tint.a * 0.55f); // the wards light the night violet
+            if (zone != null && zone.Def.Dusk) tint = DuskTint; // the Fae glade: always gold-and-violet dusk
             _tint.color = tint;
         }
+
+        public static readonly Color DuskTint = new Color(0.42f, 0.2f, 0.4f, 0.26f);
+        /// <summary>The ambient overlay's colour right now (tests read it).</summary>
+        public Color AmbientTint => _tint != null ? _tint.color : Color.clear;
 
         /// <summary>Everyone fighting beside you: your companions, then other players. Name, HP bar, numbers.</summary>
         void RefreshParty(float statusH)

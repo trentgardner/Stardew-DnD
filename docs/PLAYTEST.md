@@ -41,6 +41,33 @@
 **Co-op:** your fiance presses **START** on a second controller at any time. The screen splits and she makes a
 character. You can go anywhere independently; if one of you starts a fight, the other can walk over and join it.
 
+## New: the four forces (Act II)
+Four forces want your dragon, and each of them is right about something. After High Magister Ashby, **"Answers"** asks you to hear out the
+other three, then **choose a side**. Every force has a home, a leader, a scouting quest or two, and a **major quest**.
+Starting a major quest is the point of no return: a plain-words prompt asks first, and saying yes closes the other three forces' quests for
+this playthrough (your journal shows them as "Closed"). A force's major quest is offered once you've **heard out all four leaders** and done
+one of that force's own scouting quests. In co-op, either of you can choose; the other is told.
+- **The Crown: Greywater Redoubt** (the track north from Holloway's checkpoint). **Lady-Commander Marsh**.
+  - *Counted* (Holloway): his supply wagon is late. Hounds in the ash fields, two hungry drivers hiding in the farmhouse.
+  - *Two Copies*: once you've noticed Magister Varrow's second copies (Insight with her at night), follow the evening post. Who reads the Academy's notes?
+  - **Major: Under the Crown's Banner.** The Ashsworn hold the old beacon. Then your dragon gets a brass registry tag.
+- **The Academy** (Ashby and Perrin).
+  - *Cold Lanterns* (Perrin): relight six lantern posts on the Lantern Road. Your dragon can do it, or a lit torch. Look closer at the last one (Arcana).
+  - **Major: The Ninth Circle.** Three focus stones (Varrow, Oakes, the Starwell), then down to the Sealing Hall, alone.
+- **The Fae Courts: the Gloaming Glade.** Mister Thimble waits at the Whisperwood fairy ring in the evenings (18:00–23:00) and opens the way. It's always dusk there.
+  - *A Quarrel of Courts* (Herald Sorrel): hear the Blossom and Frost speakers, then judge.
+  - **Major: The Green Bargain.** A token for each throne (the Ember throne likes a fire it can believe in), then a bargain. Read the small writing.
+- **The Wyrmwatch: Cragfoot** (the Lantern Road's east end). **Huntmaster Calloway** (your dragon doesn't trust her).
+  - *Ember Eyes*: keep watch over the empty goat pen after dark. Odo gets hurt. One of the wolves wore a collar.
+  - **Major: The Long Hunt.** Track the Ashmaw up the goat track, deal with it in its lair, decide about its egg, decide about the bell.
+
+### Four forces checklist
+- [ ] Hear out all four leaders. Did any of them feel like "the good one"? (They shouldn't.)
+- [ ] Get to the "Choose a side" prompt. Was it clear what you were giving up?
+- [ ] In co-op, let the other player choose. Did both of you understand what happened?
+- [ ] Every fight here can be talked down (Talk/Nature/Animal Handling) for the same XP. Try one each way.
+- [ ] On a second run, pick a different side.
+
 ## New: the Lantern Road and the Starfall Academy (Act II)
 Start an Act II game (title screen, or finish Act I), then follow **"Answers"** in your journal: Captain Vale sends you east.
 - **The Lantern Road** (Miller's Ford's east edge, closed in Act I): grey ash fields, ember-eyed boars, cinder hounds, an ankheg

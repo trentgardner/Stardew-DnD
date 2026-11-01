@@ -714,6 +714,8 @@ namespace DnD.Game
         void OnGroupResolved(string groupId)
         {
             Quests.Notify(QuestEvent.GroupResolved, groupId);
+            var def = Zones.Values.SelectMany(z => z.Def.EnemyGroups).FirstOrDefault(g => g.Id == groupId);
+            if (def?.ResolvedFlag != null) World.SetFlag(def.ResolvedFlag);
         }
 
         /// <summary>Paid off: the group lets you be (no XP, they're still there, and you can still deal with them later).</summary>

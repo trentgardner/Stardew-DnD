@@ -149,7 +149,7 @@ namespace DnD.Game
         // Brilliant, beloved, frightened and half right. Never a villain. He says "the Queen" and "the tyrant", nothing more.
 
         /// <summary>Hearing him out, whichever way it goes, moves "Answers" on (the FlagSet trigger).</summary>
-        static void Heard(DCtx c) => c.G.World.SetFlag("ashby_heard");
+        static void Heard(DCtx c) { c.G.World.SetFlag("ashby_heard"); Factions.Hear("academy"); }
 
         static Dialogue Ashby()
         {
@@ -295,6 +295,7 @@ namespace DnD.Game
             d.Node("post", who, c => "...",
                 c => "She writes every note twice. The first copy goes in her own book. The second she folds, seals with plain, unmarked wax, and gives to the evening post, every evening, without fail. She doesn't know you've noticed.",
                 c => c.G.World.SetFlag("varrow_post"))
+                .Say("(Follow the evening post.)", doIt: c => c.G.Quests.Start("two_copies", c.P), end: true, show: c => c.G.Quests.Stage("two_copies") == 0 && c.G.Quests.CanStart("two_copies"))
                 .Bye("Goodnight, Magister.");
             d.Node("post_no", who, c => "...", c => "Just a scholar, scribbling.").Bye("Goodnight, Magister.");
             return d;
@@ -325,7 +326,7 @@ namespace DnD.Game
 
         static Dialogue Holloway()
         {
-            var d = new Dialogue("holloway", c => c.G.World.Flag("met_holloway") ? "start" : "intro");
+            var d = new Dialogue("holloway", c => !c.G.World.Flag("met_holloway") ? "intro" : c.G.Quests.Stage("counted") == 3 && c.G.Quests.CanStart("counted") ? "counted_done" : "start");
             const string who = "Sergeant Dace Holloway";
             d.Node("intro", who,
                 c => "Halt. Well. Halt-ish. Crown checkpoint. Names, where from, where bound, and anything with you that has more than two legs.",
@@ -352,7 +353,17 @@ namespace DnD.Game
                     : "Road's quiet. Too quiet, my sergeant used to say. I never knew what he meant till this year.")
                 .Say("Why a checkpoint on a scholars' road?", "why")
                 .Say("Where are you from?", "home")
+                .Say("You look like a man waiting for something.", "counted", show: c => c.G.Quests.Stage("counted") == 0 && c.G.Quests.CanStart("counted"))
                 .Bye("Take care, Sergeant.");
+            d.Node("counted", who,
+                c => "Supper. Specifically, the wagon bringing it. Weekly supply run from the Redoubt, up the north track: it should've been here two days ago. Two drivers, Pim and Abbot, good lads, can't read a map. If you're heading through the ash fields, keep an eye out. I'd go myself, but somebody has to count the dogs.",
+                onEnter: c => c.G.Quests.Start("counted", c.P))
+                .Bye("We'll look.");
+            d.Node("counted_done", who,
+                c => "Pim! Abbot! ...They walked in an hour ago, ate everything, and went to sleep under the cart. Thank you. Truly. Here: the Redoubt sent medicine with the flour, and you've earned it more than the flour has.",
+                c => "He presses a potion into your hands and, while he's at it, writes your names in the ledger under a new heading: FRIENDS OF THE ROAD.",
+                c => { if (!c.G.Quests.Done("counted")) { Factions.Adjust("crown", 10, c.P); c.G.GiveItem(c.P, "potion_greater_healing"); c.G.Quests.Set("counted", 4, c.P); } })
+                .Bye("Glad they're safe.");
             d.Node("home", who, c => "Port Varrel. Salt and gulls and my mother's fish stew. I put in for a transfer back. They sent me further inland. That's the army for you: every request answered, none of them granted.")
                 .Bye("I hope you get home.");
             return d;

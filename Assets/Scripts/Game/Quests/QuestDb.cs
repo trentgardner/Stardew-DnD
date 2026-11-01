@@ -4,10 +4,10 @@ using System.Collections.Generic;
 namespace DnD.Game
 {
     /// <summary>Things that happen in the world that can move a quest along.</summary>
-    public enum QuestEvent { ZoneEntered, GroupResolved, ItemGained, FlagSet, SecretFound }
+    public enum QuestEvent { ZoneEntered, GroupResolved, ItemGained, FlagSet, SecretFound, BrazierLit }
 
     /// <summary>Act II's main quest, "answers".</summary>
-    public static class Answers { public const string Id = "answers"; public const int Road = 1, Academy = 2, Tower = 3, Heard = 4; }
+    public static class Answers { public const string Id = "answers"; public const int Road = 1, Academy = 2, Tower = 3, Heard = 4, Chosen = 5; }
 
     /// <summary>Stages of the main quest, "fallen_star" (save version 2 numbering).</summary>
     public static class FallenStar { public const int Crater = 1, Trail = 2, Warrens = 3, Egg = 4, Hatched = 5, Done = 6; }
@@ -24,6 +24,9 @@ namespace DnD.Game
         public static QuestTrigger AllFlags(int from, int to, params string[] flags) => new QuestTrigger(QuestEvent.FlagSet, null, from, to) { AllOf = flags };
         /// <summary>FlagSet only: with AllOf, fires once at least this many of them are set (0 = all of them).</summary>
         public int AtLeast;
+        /// <summary>BrazierLit only: fires once at least n braziers in this zone are lit.</summary>
+        public string LitZone;
+        public static QuestTrigger LitAtLeast(string zone, int from, int to, int n) => new QuestTrigger(QuestEvent.BrazierLit, zone, from, to) { LitZone = zone, AtLeast = n };
         public static QuestTrigger FlagsAtLeast(int from, int to, int n, params string[] flags) => new QuestTrigger(QuestEvent.FlagSet, null, from, to) { AllOf = flags, AtLeast = n };
     }
 
@@ -112,12 +115,13 @@ namespace DnD.Game
             Add(new QuestDef
             {
                 Act = 2, Id = Answers.Id, Title = "Answers", Giver = "rhoswen",
-                StageXp = { [Answers.Academy] = 400, [Answers.Heard] = 600 },
+                StageXp = { [Answers.Academy] = 400, [Answers.Heard] = 600, [Answers.Chosen] = 1000 },
                 StageText = new[] {
                     "", "Hearths are going cold down the valley. Captain Vale says if anyone has answers, it's the Starfall Academy, up the Lantern Road past Miller's Ford.",
                     "You've reached the Starfall Academy. Find High Magister Ashby. They say he lives at the top of the Orrery Tower.",
                     "Ashby's door is open. Go up and hear him out.",
-                    "Ashby has given you a great deal to think about. (The road ahead opens in a later update.)" },
+                    "Ashby wants your dragon studied and the dragons sealed. He isn't the only one with plans for it. Hear out the Crown, the Fae Courts and the Wyrmwatch, then choose who you stand with.",
+                    "You've chosen a side. (The road to the Emberhorn opens in a later update.)" },
                 Triggers = {
                     new QuestTrigger(QuestEvent.ZoneEntered, "academy", Answers.Road, Answers.Academy),
                     new QuestTrigger(QuestEvent.ZoneEntered, "ashby_tower", Answers.Academy, Answers.Tower),
@@ -125,8 +129,123 @@ namespace DnD.Game
                     new QuestTrigger(QuestEvent.FlagSet, "ashby_heard", Answers.Road, Answers.Heard),
                     new QuestTrigger(QuestEvent.FlagSet, "ashby_heard", Answers.Academy, Answers.Heard),
                     new QuestTrigger(QuestEvent.FlagSet, "ashby_heard", Answers.Tower, Answers.Heard),
+                    new QuestTrigger(QuestEvent.FlagSet, Factions.CommittedFlag, Answers.Heard, Answers.Chosen),
+                    new QuestTrigger(QuestEvent.FlagSet, Factions.CommittedFlag, Answers.Tower, Answers.Chosen),
+                    new QuestTrigger(QuestEvent.FlagSet, Factions.CommittedFlag, Answers.Academy, Answers.Chosen),
+                    new QuestTrigger(QuestEvent.FlagSet, Factions.CommittedFlag, Answers.Road, Answers.Chosen),
                 },
             });
+            // ------------------------------------------------------------ Act II Phase 4: the Crown
+            Add(new QuestDef
+            {
+                Act = 2, Id = "counted", Title = "Counted", Giver = "holloway", Faction = "crown",
+                StageText = new[] {
+                    "", "Sergeant Holloway's supply wagon from Greywater Redoubt is two days late. Look for it in the ash fields south of the Lantern Road.",
+                    "The hounds are gone from the wagon. The drivers cut the horses loose and ran: their tracks lead to the abandoned farmhouse.",
+                    "The drivers are safe and on their way. Tell Holloway.",
+                    "Complete. The Crown keeps this road fed, one late wagon at a time." },
+                Triggers = { new QuestTrigger(QuestEvent.GroupResolved, "wagon_hounds", 1, 2) },
+                Reward = new QuestReward { Xp = 1200, Item = "potion_greater_healing", Npc = "holloway", Friendship = 50 },
+            });
+            Add(new QuestDef
+            {
+                Act = 2, Id = "two_copies", Title = "Two Copies", Giver = "varrow", Faction = "crown",
+                StageText = new[] {
+                    "", "Magister Varrow's second copies go out with the evening post. The post rider takes the Lantern Road north, to Greywater Redoubt. Ask whoever reads them.",
+                    "Complete. You know who reads the Academy's notes, and you decided what to do about it." },
+                Reward = new QuestReward { Xp = 1000 },
+            });
+            Add(new QuestDef
+            {
+                Act = 2, Id = "crowns_banner", Title = "Under the Crown's Banner", Giver = "marsh", Faction = "crown", Major = true,
+                StageText = new[] {
+                    "", "You stand with the Crown. Lady-Commander Marsh wants the Ashsworn out of the old beacon tower in the Redoubt's north-east corner.",
+                    "The beacon is clear. Search what the Ashsworn left behind.",
+                    "You have the Ashsworn's notes. Report to Lady-Commander Marsh.",
+                    "Complete. Your dragon wears the realm's brass tag, and the realm stands behind you." },
+                Triggers = { new QuestTrigger(QuestEvent.GroupResolved, "beacon_ashsworn", 1, 2) },
+                Reward = new QuestReward { Xp = 3000, Item = "crown_writ", Npc = "marsh", Friendship = 100, Flag = "banner_crown" },
+            });
+
+            // ------------------------------------------------------------ Act II Phase 4: the Academy
+            Add(new QuestDef
+            {
+                Act = 2, Id = "cold_lanterns", Title = "Cold Lanterns", Giver = "perrin", Faction = "academy",
+                StageText = new[] {
+                    "", "Perrin is Keeper of the Road Lamps now, and six of the Lantern Road's lanterns have gone cold. Relight them: a torch will do, and so will a dragon.",
+                    "The road is lit again. Tell Perrin.",
+                    "Complete. The Academy lights the road for everyone who travels it." },
+                Triggers = { QuestTrigger.LitAtLeast("lantern_road", 1, 2, 6) },
+                Reward = new QuestReward { Xp = 1000, Npc = "perrin", Friendship = 50 },
+            });
+            Add(new QuestDef
+            {
+                Act = 2, Id = "ninth_circle", Title = "The Ninth Circle", Giver = "ashby", Faction = "academy", Major = true,
+                StageText = new[] {
+                    "", "You stand with the Academy. Ashby's ninth circle needs three focus stones: ask Magister Varrow and Professor Oakes for theirs, and draw the third from the Starwell.",
+                    "You have all three stones. Take them down to the Sealing Hall and set them in the circle.",
+                    "The circle has caught something, and it isn't holding.",
+                    "The circle held for a breath. Tell Ashby what happened.",
+                    "Complete. The ninth circle is finished, and the Academy stands behind you." },
+                Triggers = {
+                    QuestTrigger.AllFlags(1, 2, "stone_varrow", "stone_oakes", "stone_starwell"),
+                    new QuestTrigger(QuestEvent.GroupResolved, "circle_bear", 3, 4),
+                },
+                Reward = new QuestReward { Xp = 3000, Item = "ward_charm", Npc = "ashby", Friendship = 100, Flag = "banner_academy" },
+            });
+
+            // ------------------------------------------------------------ Act II Phase 4: the Fae Courts
+            Add(new QuestDef
+            {
+                Act = 2, Id = "court_quarrel", Title = "A Quarrel of Courts", Giver = "sorrel", Faction = "fae",
+                StageText = new[] {
+                    "", "The Courts of Blossoms and Frost both claim the Gloaming Glade's last warm spring. Hear each court's speaker out.",
+                    "You've heard both sides. Give Herald Sorrel your judgement at the stone table.",
+                    "Complete. The Courts have your judgement, and the Fae never forget a judgement." },
+                Triggers = { QuestTrigger.AllFlags(1, 2, "heard_blossom", "heard_frost") },
+                Reward = new QuestReward { Xp = 1100, Npc = "sorrel", Friendship = 50 },
+            });
+            Add(new QuestDef
+            {
+                Act = 2, Id = "green_bargain", Title = "The Green Bargain", Giver = "sorrel", Faction = "fae", Major = true,
+                StageText = new[] {
+                    "", "You stand with the Fae Courts. Carry a token to each of the three thrones (Blossoms, Embers and Frost) so the Courts will renew their part of the Pact.",
+                    "Every throne has accepted its token. Sign the bargain with Herald Sorrel.",
+                    "Complete. The bargain is signed, and the Courts stand behind you." },
+                Triggers = { QuestTrigger.AllFlags(1, 2, "throne_blossom", "throne_ember", "throne_frost") },
+                Reward = new QuestReward { Xp = 3000, Npc = "sorrel", Friendship = 100, Flag = "banner_fae" },
+            });
+
+            // ------------------------------------------------------------ Act II Phase 4: the Wyrmwatch
+            Add(new QuestDef
+            {
+                Act = 2, Id = "ember_eyes", Title = "Ember Eyes", Giver = "calloway", Faction = "hunters",
+                StageText = new[] {
+                    "", "Something has been taking Cragfoot's goats at night. Keep watch over the empty pen after dark.",
+                    "Wolves over the palisade! Deal with them.",
+                    "The wolves are gone, but Odo Fenn is hurt. Help him.",
+                    "Odo will live. Search where the wolves came through the palisade.",
+                    "You found a dog's collar on one of them. Tell Huntmaster Calloway.",
+                    "Complete. The danger is real, and the beasts were someone's, once." },
+                Triggers = { new QuestTrigger(QuestEvent.GroupResolved, "cragfoot_wolves", 2, 3) },
+                Reward = new QuestReward { Xp = 1200, Npc = "calloway", Friendship = 50 },
+            });
+            Add(new QuestDef
+            {
+                Act = 2, Id = "long_hunt", Title = "The Long Hunt", Giver = "calloway", Faction = "hunters", Major = true,
+                StageText = new[] {
+                    "", "You stand with the Wyrmwatch. Track the Ashmaw, the wyvern taking Cragfoot's goats, up the goat track north of the hamlet.",
+                    "The trail leads into the cliffs. Find the Ashmaw's lair.",
+                    "The Ashmaw is dealt with. Search its nest.",
+                    "Report to Huntmaster Calloway.",
+                    "Complete. The hunt is over, and the Wyrmwatch stands behind you." },
+                Triggers = {
+                    QuestTrigger.AllFlags(1, 2, "ashmaw_track_a", "ashmaw_track_b"),
+                    new QuestTrigger(QuestEvent.GroupResolved, "ashmaw_den", 2, 3),
+                },
+                Reward = new QuestReward { Xp = 3000, Item = "wyrmwatch_cloak", Npc = "calloway", Friendship = 100, Flag = "banner_hunters" },
+            });
+
             Add(new QuestDef
             {
                 Act = 2, Id = "overdue", Title = "Overdue", Giver = "thorne",

@@ -124,8 +124,7 @@ namespace DnD.Game
         {
             if (b == null || b.Lit) return false;
             if (_agent.Actor.Zone != p.Zone) { p.Hud.Toast($"{Name} isn't here.", UIKit.Bad); return false; }
-            G.World.LitBraziers.Add(b.Key);
-            b.SetLit();
+            b.MarkLit(p);
             _agent.Actor.Face(b.transform.position);
             Emote("spark");
             Sfx.Play("spell");
