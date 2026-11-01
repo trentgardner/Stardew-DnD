@@ -128,6 +128,8 @@ namespace DnD.Game
         public bool SafeForLongRest;
         /// <summary>The dragon refuses to follow into this place (it waits where it is until you come back).</summary>
         public bool DragonStays;
+        /// <summary>Lit by its own magic: nights here are a soft violet glow, not dark (the Academy's wards).</summary>
+        public bool MagicLit;
         /// <summary>How much the blight shows here (0-1); -1 = the default for the kind of place (see Blight.Weight).</summary>
         public float BlightWeight = -1;
         /// <summary>Murals, carvings and records with lore for the journal (Act II).</summary>

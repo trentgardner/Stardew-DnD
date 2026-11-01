@@ -95,6 +95,7 @@ namespace DnD.Game
             {
                 Id = "academy", Name = "The Starfall Academy", Map = Maps.Academy, DefaultSpawn = new Vector2Int(27, 40), Music = "music_academy",
                 BlightWeight = 0.15f, // the wards hold the ash back
+                MagicLit = true,
                 EnterNarration = "The gate opens onto another world. Stone floats here, turning slowly in the air. Wards glimmer along the walls like heat over a road, and in the great courtyard a brass orrery taller than a house turns all by itself. Somewhere a bell is ringing, and you can't tell which one.",
             };
             // The road's gate (the road side is added here because this zone is built after it).

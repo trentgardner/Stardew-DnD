@@ -533,5 +533,113 @@ namespace DnD.Tests
             Assert.AreEqual(2, g.Quests.Stage("measure_wyrm"));
             Assert.AreEqual(49, g.World.DragonBond); Assert.AreEqual(0, Factions.Standing("academy"));
         }
+
+        // ============================================================ Task 7: acceptance
+
+        [UnityTest]
+        public IEnumerator AcademyGoldenPath()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(60), "fighter", "human");
+            yield return Frames(2);
+            g.ApplyActTwoStart(p);
+            p.Hud.CloseAll();
+            Assert.AreEqual(Answers.Road, g.Quests.Stage(Answers.Id));
+            // The Ford's east road, the Lantern Road, the Academy gate.
+            g.Warp(p, "ford", new Vector2Int(44, 14), false);
+            yield return Frames(2);
+            TakeWarp(g, p, "ford", 45, 14);
+            yield return Frames(2);
+            Assert.AreEqual("lantern_road", p.Zone.Def.Id);
+            Assert.IsTrue(p.Zone.FindPath(p.MapPos, new Vector2Int(52, 0), null, 40000).Count > 0, "the road can be walked end to end");
+            TakeWarp(g, p, "lantern_road", 52, 0);
+            yield return Frames(2);
+            Assert.AreEqual(Answers.Academy, g.Quests.Stage(Answers.Id));
+            // The library: see through the Stacks, get the pass the honest way.
+            TakeWarp(g, p, "academy", 12, 11);
+            yield return Frames(2);
+            Assert.AreEqual("library", p.Zone.Def.Id);
+            SpotNamed("stacks_illusion").Resolve(p, Rules.CheckOutcome.Success);
+            p.Hud.CloseAll();
+            g.World.SetFlag(WorldDb.RestrictedPass); g.World.SetFlag(WorldDb.ThornePassShown);
+            TakeWarp(g, p, "library", 33, 2);
+            yield return Frames(2);
+            Assert.AreEqual("restricted", p.Zone.Def.Id);
+            Object.FindObjectsByType<LoreSpot>(FindObjectsSortMode.None).Single(s => s.Def.Id == "emberhorn_warden").Interact(p);
+            p.Hud.CloseAll();
+            Assert.IsTrue(g.World.LoreFound.Contains("emberhorn_warden"), "the weakness lore, for Phase 6");
+            // The Sealing Hall: the dragon stops at the stairs.
+            yield return Frames(10);
+            TakeWarp(g, p, "restricted", 21, 15);
+            yield return Frames(10);
+            Assert.AreEqual("sealing_hall", p.Zone.Def.Id);
+            Assert.AreEqual("restricted", g.DragonAgent.Actor.Zone.Def.Id);
+            // Up the tower; hear Ashby out (and confront him about the hall).
+            g.Warp(p, "academy", new Vector2Int(44, 15), false);
+            yield return Frames(5);
+            TakeWarp(g, p, "academy", 44, 13);
+            yield return Frames(2);
+            Assert.AreEqual(Answers.Tower, g.Quests.Stage(Answers.Id));
+            var d = DialogueDb.Get("ashby");
+            var c = new DCtx { P = p };
+            var confront = d.Nodes["plan"].Options.Single(o => o.Check == Rules.Skill.Persuasion);
+            Assert.IsTrue(confront.Show(c), "having seen the hall, you can ask him about it");
+            confront.OnSuccess(c);
+            d.Nodes["plan"].Options.Single(o => o.Text == "You could be right.").Do(c);
+            Assert.AreEqual(Answers.Heard, g.Quests.Stage(Answers.Id));
+            // Save and load: everything holds.
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(5);
+            Assert.AreEqual(Answers.Heard, g.Quests.Stage(Answers.Id));
+            foreach (var f in new[] { WorldDb.StacksUnlooped, WorldDb.RestrictedPass, "ashby_heard", "ashby_hall_confronted", "seen:sealing_hall" }) Assert.IsTrue(g.World.Flag(f), f);
+            Assert.IsTrue(g.World.LoreFound.Contains("emberhorn_warden"));
+            Assert.AreEqual(15, Factions.Standing("academy"));
+        }
+
+        [UnityTest]
+        public IEnumerator CaptureAcademy()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(61), "wizard", "elf");
+            yield return Frames(2);
+            g.ApplyActTwoStart(p);
+            p.Hud.CloseAll();
+            g.Clock.Minutes = 11 * 60;
+            IEnumerator At(string zone, int x, int y, string shot, int hour = 11)
+            {
+                g.Clock.Minutes = hour * 60;
+                g.Warp(p, zone, new Vector2Int(x, y), false);
+                yield return Frames(40);
+                p.Hud.CloseAll();
+                p.Hud.HideNarration();
+                yield return Frames(5);
+                Shot(shot);
+            }
+            yield return At("lantern_road", 23, 13, "act2_lantern_road");
+            yield return At("academy", 27, 25, "act2_academy_day");
+            yield return At("academy", 27, 25, "act2_academy_night", 22);
+            yield return At("library", 14, 6, "act2_library");
+            yield return At("library", 12, 2, "act2_endless_stacks");
+            yield return At("sealing_hall", 12, 15, "act2_sealing_hall");
+            yield return At("ashby_tower", 8, 10, "act2_ashby_study");
+        }
+
+        static void Shot(string name)
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "embers_screenshots");
+            Directory.CreateDirectory(dir);
+            var rt = new RenderTexture(1280, 720, 24);
+            var cams = Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
+            System.Array.Sort(cams, (a, b) => a.depth.CompareTo(b.depth));
+            foreach (var cam in cams) { if (!cam.isActiveAndEnabled) continue; var old = cam.targetTexture; cam.targetTexture = rt; cam.Render(); cam.targetTexture = old; }
+            RenderTexture.active = rt;
+            var tex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
+            tex.Apply();
+            RenderTexture.active = null;
+            File.WriteAllBytes(Path.Combine(dir, name + ".png"), tex.EncodeToPNG());
+            Object.Destroy(rt);
+        }
     }
 }

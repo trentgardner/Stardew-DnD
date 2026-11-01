@@ -41,6 +41,31 @@
 **Co-op:** your fiance presses **START** on a second controller at any time. The screen splits and she makes a
 character. You can go anywhere independently; if one of you starts a fight, the other can walk over and join it.
 
+## New: the Lantern Road and the Starfall Academy (Act II)
+Start an Act II game (title screen, or finish Act I), then follow **"Answers"** in your journal: Captain Vale sends you east.
+- **The Lantern Road** (Miller's Ford's east edge, closed in Act I): grey ash fields, ember-eyed boars, cinder hounds, an ankheg
+  by the stream, a ruined farm, the **Halfway Lamp** shrine (a daily blessing), and a **Crown checkpoint** run by Sergeant Holloway.
+- **The Starfall Academy:** floating stones, shimmering wards, the **Grand Orrery** turning in the courtyard, the **Starwell** (look in, daily),
+  and the **Thirteen Bells**. Be on the bell green between midnight and one. Nights there glow violet: the wards light the place.
+- **The Library of Quiet Stars:** the long corridor at the top **loops** until you see through it (Arcana or Investigation).
+  Beyond it, the warded **Restricted Section**: earn Archivist Thorne's pass, unweave the ward (Arcana), or pick the lock (Sleight of Hand).
+  Its guardians stand down for Thorne's pass and fight anyone else. Something is **below** the Restricted Section. Your dragon won't go down there.
+- **High Magister Ashby** at the top of the Orrery Tower: sit down and hear him out. He's not a villain. Agree, push back, or confront him about what you found.
+- **Professors' quests:**
+  - **Overdue** (Thorne): three lost books. The geese are sitting on one.
+  - **The Wilting Glasshouse** (Oakes): calm the vines with Nature, or fight them.
+  - **The Measure of a Wyrm** (Varrow, after dark): your dragon gets a say.
+- Students **Juniper** (loves your dragon) and **Pell** (sneaks out at night), and **Perrin** is back.
+
+### Academy checklist
+- [ ] Walk the Lantern Road end to end. Do the ash fields feel wrong (in a good way)?
+- [ ] First look at the Academy courtyard: does it feel powerful and mysterious?
+- [ ] Get lost in the Endless Stacks, then see through them.
+- [ ] Find a way into the Restricted Section (try more than one way on a second run).
+- [ ] Take the dragon to the stairs below the Restricted Section. Go down alone.
+- [ ] Hear Ashby out. Was his case reasonable? Did you trust him?
+- [ ] Midnight on the bell green: count the bells.
+
 ## New: Into Act II (preview)
 **How to get there:** either finish Act I (the hatching) and pick **"Begin Act II (preview: a season passes)"** on the end-of-act card, or pick
 **"Act II (level 5, preview: the dragon has hatched)"** on the title screen's new-game menu (it asks you to name the dragon).
