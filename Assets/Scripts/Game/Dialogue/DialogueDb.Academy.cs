@@ -164,7 +164,7 @@ namespace DnD.Game
                 c => "Then you'll have heard the story. Everyone has. Long ago the Ashen Queen drank the fire of the world, and the Great Ones lay down upon her, and the mountains were made. Every first-year here can recite it. I could recite it before I could read.")
                 .Say("And now?", "waking");
             d.Node("waking", who,
-                c => "Now they're waking. Your star. Your egg. One by one the Great Ones stir in their sleep, and every time one stirs, the hold loosens a little. The cold hearths, the grey ash, the beasts with coals for eyes: that's her, breathing through the cracks.",
+                c => "Now they're waking. Your star. Your egg. One by one the Great Ones stir in their sleep, and every time one stirs, the hold loosens. The cold hearths, the grey ash, the beasts with coals for eyes: that's her, breathing through the cracks.",
                 c => "He says it simply, the way a doctor gives bad news.")
                 .Say("What do you mean to do about it?", "plan");
             d.Node("plan", who,

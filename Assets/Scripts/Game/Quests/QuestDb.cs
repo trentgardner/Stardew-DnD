@@ -117,7 +117,8 @@ namespace DnD.Game
             Add(new QuestDef
             {
                 Act = 2, Id = Answers.Id, Title = "Answers", Giver = "rhoswen",
-                StageXp = { [Answers.Academy] = 400, [Answers.Heard] = 600, [Answers.Chosen] = 1000, [Answers.Allies] = 500, [Answers.Gate] = 1500, [Answers.Rest] = 3000 },
+                // Act II's spine carries most of the act's XP (Phase 7 audit: level 9 on the main path by the gate, 10 when the Warden falls, in co-op too).
+                StageXp = { [Answers.Academy] = 3000, [Answers.Tower] = 2000, [Answers.Heard] = 6000, [Answers.Chosen] = 8000, [Answers.Allies] = 6000, [Answers.OnTheRoad] = 4000, [Answers.Gate] = 6000, [Answers.Rest] = 6000 },
                 StageFlags = { [Answers.Allies] = WorldDb.EmberhornOpen, [Answers.Gate] = WorldDb.EmberhornGate },
                 StageText = new[] {
                     "", "Hearths are going cold down the valley. Captain Vale says if anyone has answers, it's the Starfall Academy, up the Lantern Road past Miller's Ford.",

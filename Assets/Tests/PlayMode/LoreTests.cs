@@ -137,30 +137,45 @@ namespace DnD.Tests
         }
 
         /// <summary>A banned word at the start of a word ("child" catches "children"; "mother" doesn't catch "Dawnmother").</summary>
-        static bool Leaks(string lower, string word) => Regex.IsMatch(lower, @"" + Regex.Escape(word.Trim()));
+        static bool Leaks(string lower, string word) => Regex.IsMatch(lower, @"\b" + Regex.Escape(word.Trim()));
 
         /// <summary>
         /// THE SECRET (spec): nothing may hint that the Ashen Queen is a child, or that the Crown is behind it. Every line of
         /// game text that names the Queen is checked against words that would give it away.
         /// </summary>
+        static readonly string[] Banned = { "child", "young", "little", "small", "baby", "hatchling", "daughter", " son", "girl", "crying", "cries", "afraid",
+            "frightened", "scared", "innocent", "mother", "orphan", "kid", "crown did", "the king did", "royal order", "by order of the crown" };
+        /// <summary>Lines that talk about her, her servants, her waking, the Warden who keeps her in, or the door (Phase 7: every Act II voice).</summary>
+        const string Topic = @"\bqueen\b|\bashen\b|\bashsworn\b|(?<!egg-)\bwarden\b|\bwaking\b|\bthe door\b";
+
+        /// <summary>The guard itself works: a planted leak is caught (Phase 7 found its word matcher had never matched anything).</summary>
+        [Test]
+        public void SecretGuardCatchesALeak()
+        {
+            string planted = "the warden was only a child when the crown did it".ToLowerInvariant();
+            Assert.IsTrue(Regex.IsMatch(planted, Topic), "the topic is recognised");
+            Assert.IsTrue(Banned.Any(b => Leaks(planted, b)), "and the leak is caught");
+            Assert.IsFalse(Leaks("the dawnmother's temple", "mother"), "a banned word only counts at the start of a word");
+        }
+
         [Test]
         public void NoActTwoTextHintsAtTheSecret()
         {
-            string[] banned = { "child", "young", "little", "small", "baby", "hatchling", "daughter", " son", "girl", "crying", "cries", "afraid",
-                "frightened", "scared", "innocent", "mother", "orphan", "kid", "crown did", "the king did", "royal order", "by order of the crown" };
+            string[] banned = Banned;
             var root = Path.Combine(Application.dataPath, "Scripts");
             var offenders = new System.Collections.Generic.List<string>();
             foreach (var file in Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories))
                 foreach (var line in File.ReadAllLines(file))
                 {
-                    var l = line.ToLowerInvariant();
-                    if (!Regex.IsMatch(l, @"\bqueen\b|\bashen\b")) continue;
-                    if (l.TrimStart().StartsWith("//") || l.TrimStart().StartsWith("///")) continue; // code comments aren't game text
+                    if (line.TrimStart().StartsWith("//")) continue; // code comments aren't game text
+                    // Only the text the player reads: the string literals on the line (not identifiers like ScareDC).
+                    var l = string.Join(" ", Regex.Matches(line, @"""[^""]*""").Cast<Match>().Select(m => m.Value)).ToLowerInvariant();
+                    if (!Regex.IsMatch(l, Topic)) continue;
                     foreach (var b in banned)
                         if (Leaks(l, b)) offenders.Add($"{Path.GetFileName(file)}: '{b}' in: {line.Trim()}");
                 }
             foreach (var lore in LoreDb.All.Values)
-                if (Regex.IsMatch(lore.Text.ToLowerInvariant(), @"\bqueen\b"))
+                if (Regex.IsMatch(lore.Text.ToLowerInvariant(), Topic))
                     foreach (var b in banned) if (Leaks(lore.Text.ToLowerInvariant(), b)) offenders.Add($"lore {lore.Id}: '{b}'");
             Assert.IsEmpty(offenders, "secret leak:\n" + string.Join("\n", offenders));
         }

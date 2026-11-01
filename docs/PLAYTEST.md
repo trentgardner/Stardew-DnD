@@ -41,6 +41,28 @@
 **Co-op:** your fiance presses **START** on a second controller at any time. The screen splits and she makes a
 character. You can go anywhere independently; if one of you starts a fight, the other can walk over and join it.
 
+## Act II is complete
+From "Start at Act II" (or the end of Act I) to the Warden's fall is the whole act. Its main story ("Answers"):
+1. The Lantern Road to the Starfall Academy.
+2. Hear Ashby out.
+3. Hear out the Crown, the Fae Courts and the Wyrmwatch.
+4. Do one of a side's jobs.
+5. Choose that side.
+6. Finish its big quest.
+7. The Emberhorn Road.
+8. The gate.
+9. The Warden.
+
+Then the End of Act II card. You keep playing afterwards.
+- **Pacing:** the main path alone reaches level 9 by the gate and level 10 when the Warden falls, solo and in co-op. Side content gets you to 10 a little sooner.
+- **A second run:** pick a different side. The quests, the ally who waits for you, their help at the Heart and the end card all change.
+
+### Whole-act checklist
+- [ ] Did the act feel like a story with a big bad you never meet, but can see everywhere?
+- [ ] Did any side feel like "the right one"? (It shouldn't.)
+- [ ] Were you level 9 or 10 at the Warden? Did it feel like a fair boss fight?
+- [ ] The End of Act II card: did it make you want Act III?
+
 ## New: the Emberhorn (Act II finale)
 Look up at the mountain at the end of the Emberhorn Road, and the great door opens.
 - **The Throat:** lava channels, narrow bridges, two salamanders and a fire elemental (all can be talked down or calmed),
