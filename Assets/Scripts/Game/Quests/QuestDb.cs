@@ -117,13 +117,17 @@ namespace DnD.Game
             Add(new QuestDef
             {
                 Act = 2, Id = Answers.Id, Title = "Answers", Giver = "rhoswen",
-                StageXp = { [Answers.Academy] = 400, [Answers.Heard] = 600, [Answers.Chosen] = 1000 },
+                StageXp = { [Answers.Academy] = 400, [Answers.Heard] = 600, [Answers.Chosen] = 1000, [Answers.Allies] = 500, [Answers.Gate] = 1500 },
+                StageFlags = { [Answers.Allies] = WorldDb.EmberhornOpen },
                 StageText = new[] {
                     "", "Hearths are going cold down the valley. Captain Vale says if anyone has answers, it's the Starfall Academy, up the Lantern Road past Miller's Ford.",
                     "You've reached the Starfall Academy. Find High Magister Ashby. They say he lives at the top of the Orrery Tower.",
                     "Ashby's door is open. Go up and hear him out.",
                     "Ashby wants your dragon studied and the dragons sealed. He isn't the only one with plans for it. Hear out the Crown, the Fae Courts and the Wyrmwatch, then choose who you stand with.",
-                    "You've chosen a side. (The road to the Emberhorn opens in a later update.)" },
+                    "You've chosen a side. Finish what your allies asked of you.",
+                    "Your allies agree on one thing: the answers are in the Emberhorn, the mountain whose fire has gone grey. The high road east of Cragfoot is open.",
+                    "Cross the Emberhorn Road to the mountain's gate. Someone from your side is waiting at the Last Camp.",
+                    "The Emberhorn's gate. (The mountain waits in a later update.)" },
                 Triggers = {
                     new QuestTrigger(QuestEvent.ZoneEntered, "academy", Answers.Road, Answers.Academy),
                     new QuestTrigger(QuestEvent.ZoneEntered, "ashby_tower", Answers.Academy, Answers.Tower),
@@ -135,6 +139,8 @@ namespace DnD.Game
                     new QuestTrigger(QuestEvent.FlagSet, Factions.CommittedFlag, Answers.Tower, Answers.Chosen),
                     new QuestTrigger(QuestEvent.FlagSet, Factions.CommittedFlag, Answers.Academy, Answers.Chosen),
                     new QuestTrigger(QuestEvent.FlagSet, Factions.CommittedFlag, Answers.Road, Answers.Chosen),
+                    QuestTrigger.FlagsAtLeast(Answers.Chosen, Answers.Allies, 1, "banner_crown", "banner_academy", "banner_fae", "banner_hunters"),
+                    new QuestTrigger(QuestEvent.ZoneEntered, "emberhorn_road", Answers.Allies, Answers.OnTheRoad),
                 },
             });
             // ------------------------------------------------------------ Act II Phase 5: the blight at home

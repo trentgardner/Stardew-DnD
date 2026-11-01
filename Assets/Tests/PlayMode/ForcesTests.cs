@@ -795,7 +795,7 @@ namespace DnD.Tests
             yield return Frames(3);
             Assert.AreEqual(side, g.World.CommittedFaction);
             Assert.IsTrue(g.Quests.Done(f.major));
-            Assert.AreEqual(Answers.Chosen, g.Quests.Stage(Answers.Id));
+            Assert.AreEqual(Answers.Allies, g.Quests.Stage(Answers.Id), "Phase 5: finishing the major points the party at the Emberhorn");
             Assert.IsTrue(g.World.Flag("banner_" + side));
         }
 

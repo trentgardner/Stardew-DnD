@@ -18,6 +18,8 @@ namespace DnD.Game
                 var p1 = Players.FirstOrDefault(p => p.Character != null);
                 if (p1 != null && Quests.Stage(Answers.Id) == 0) Quests.Start(Answers.Id, p1);
                 if (World.Flag("ashby_heard")) Factions.Hear("academy"); // Phase 3 saves heard him before hearing-out existed
+                if (p1 != null && Quests.Stage(Answers.Id) == Answers.Chosen && new[] { "banner_crown", "banner_academy", "banner_fae", "banner_hunters" }.Any(World.Flag))
+                    Quests.Set(Answers.Id, Answers.Allies, p1); // a Phase 4 save that already finished its side's major quest
             }
             foreach (var c in Companions) if (c != null && c.Character != null) AutoLevel(c.Character);
             Blight.Sync();

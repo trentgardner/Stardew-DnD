@@ -117,6 +117,8 @@ namespace DnD.Game
         public string Dialogue;
         /// <summary>A brazier key (UnlitBrazier.KeyFor): once that brazier is lit, this succeeds without a roll.</summary>
         public string SucceedsIfLit;
+        /// <summary>Only there once this world flag is set (e.g. you know the words to say).</summary>
+        public string RequiresFlag;
     }
 
     /// <summary>The sign hanging beside a building's door: the prompt names the building, reading it gives the text.</summary>

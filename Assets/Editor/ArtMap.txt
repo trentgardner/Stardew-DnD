@@ -1530,3 +1530,4 @@ tint item_bloom_draught item_potion_healing 110 0.8 1.15
 
 # Act II Phase 5
 actor npc_teodor "Actor/Character/Inspector/SpriteSheet.png"
+audio music_emberhorn "Audio/Musics/10 - Dark Castle.ogg"

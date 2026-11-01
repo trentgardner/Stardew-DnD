@@ -13,6 +13,106 @@ namespace DnD.Game
         {
             BuildBlightBeasts();
             BuildTeodor();
+            BuildEmberhornRoad();
+        }
+
+        // =================================================================== The Emberhorn Road
+
+        /// <summary>World flag: the high road east of Cragfoot is open (Answers stage 6).</summary>
+        public const string EmberhornOpen = "emberhorn_open";
+        /// <summary>World flag: your side's ally has given the party their gift (once for the whole party).</summary>
+        public const string AllyGift = "ally_gift";
+
+        static void BuildEmberhornRoad()
+        {
+            var crag = Zones["cragfoot"];
+            const string closed = "The high road east is buried under a fresh rockslide, still smoking. The hunters say it'll take a reason, and a crew, to clear it.";
+            crag.Warps.Add(new WarpDef(45, 15, "emberhorn_road", 1, 15) { MinAct = 2, RequiresFlag = EmberhornOpen, ClosedText = closed });
+            crag.Warps.Add(new WarpDef(45, 16, "emberhorn_road", 1, 16) { MinAct = 2, RequiresFlag = EmberhornOpen, ClosedText = closed });
+
+            var z = new ZoneDef
+            {
+                Act = 2,
+                Id = "emberhorn_road", Name = "The Emberhorn Road", Map = Maps.EmberhornRoad, DefaultSpawn = new Vector2Int(2, 15), Music = "music_emberhorn",
+                BlightWeight = 0.8f,
+                EnterNarration = "The high road climbs east into the Wyrmback, switchbacking over slopes of grey ash. Ahead, filling half the sky, is the Emberhorn: a mountain with a crown of smoke and a glow at its peak like a coal someone forgot to bank. It's warm here. Too warm, for autumn.",
+            };
+            z.Warps.Add(new WarpDef(0, 15, "cragfoot", 44, 15));
+            z.Warps.Add(new WarpDef(0, 16, "cragfoot", 44, 16));
+            z.Warps.Add(new WarpDef(59, 14, "emberhorn_road", 56, 14) { MinAct = 3, ClosedText = "The way into the mountain is open, and hot, and waiting. (Act II's finale arrives in a later update.)" });
+            z.Signs[new Vector2Int(12, 18)] = "The Last Camp's fire. Someone keeps it fed day and night. Nobody says why, and nobody lets it go out.";
+            z.Signs[new Vector2Int(44, 8)] = "The Grey Vigil's fire burns without smoke, and gives no warmth at all when you hold out your hands.";
+
+            // The Oathbound waystation: the Second Ideal.
+            string ideal = "Under the ash, carved deep into the altar stone in the same old letters as the watchtower's:\n\n\"" + SecondIdeal + "\"\n\nBelow it, the sword and lantern of the Oathbound, and a line of names, too worn to read, of those who stood here.";
+            z.Secrets[new Vector2Int(24, 5)] = new SecretDef
+            {
+                Id = "second_ideal_history", Sprite = "obj_inscription", Prompt = "Read the worn carving (History)", Skill = Rules.Skill.History, DC = 14,
+                SetsFlag = OathSecond, Lore = "second_ideal", Success = ideal,
+                Failure = "Ash has filled the letters. You can't make them out today.",
+                AlreadyFound = "\"" + SecondIdeal + "\"",
+            };
+            z.Secrets[new Vector2Int(26, 5)] = new SecretDef
+            {
+                Id = "second_ideal_religion", Sprite = "obj_altar", Prompt = "Kneel and say the First Ideal (Religion)", Skill = Rules.Skill.Religion, DC = 10,
+                RequiresFlag = "secret:tower_inscription", SetsFlag = OathSecond, Lore = "second_ideal",
+                Success = "You kneel and say the old words: \"" + FirstIdeal + "\" The ash on the altar stirs, as if something breathed out, and the carving beneath it is clear. " + ideal,
+                Failure = "The words catch in your throat. Not today.",
+                AlreadyFound = "\"" + SecondIdeal + "\"",
+            };
+            z.Secrets[new Vector2Int(22, 23)] = new SecretDef
+            {
+                Id = "grey_grove", Sprite = "obj_rock", Prompt = "Look at the scorched trees", Skill = Rules.Skill.Nature, DC = 14, Lore = "grey_grove",
+                Success = "The trees didn't burn. They greyed: bark, leaf and root, all at once, standing exactly where they grew, as if something had breathed on them from very far away.",
+                Failure = "Dead trees on a dead slope. You can't read more than that today.",
+                AlreadyFound = "The grey grove, standing as if nothing happened.",
+            };
+            z.Secrets[new Vector2Int(57, 13)] = new SecretDef
+            {
+                Id = "emberhorn_gate", Sprite = "obj_inscription", Prompt = "Look up at the mountain", Skill = Rules.Skill.Perception, DC = 5,
+                QuestId = Answers.Id, QuestStage = Answers.OnTheRoad, AdvanceTo = Answers.Gate,
+                Success = "A door, carved into the mountain's flank, taller than a tower, its edges glowing faintly like the rim of a cooling pot. It stands open. Hot air breathes out of it, slow, and in, slow. Somewhere deep inside, something very large is asleep.",
+                Failure = "Smoke stings your eyes. You'll look again.",
+                AlreadyFound = "The great door, open, breathing.",
+            };
+
+            var vigil = new EnemyGroupDef
+            {
+                Id = "grey_vigil", Style = EncounterStyle.Talk, TalkDC = 17, ScareDC = 16, Label = "the Grey Vigil", Unique = true,
+                Spotted = "Ashsworn in grey sit around a smokeless fire on the slope, facing the mountain. One stands as you come near. \"You're on the road to the waking,\" she says. \"Turn back, or walk it with us.\"",
+                Befriended = "You talk until the fire burns low. They don't change their minds, not all the way. But they put down their knives, and they let you pass, and one of them, very quietly, says good luck.",
+            };
+            vigil.Members.Add(new EnemySpawn("ashsworn_keeper", 44, 10));
+            vigil.Members.Add(new EnemySpawn("ashsworn_zealot", 42, 9));
+            vigil.Members.Add(new EnemySpawn("ashsworn_zealot", 46, 9));
+            vigil.Members.Add(new EnemySpawn("ashsworn_zealot", 43, 7));
+            z.EnemyGroups.Add(vigil);
+            var hounds = new EnemyGroupDef
+            {
+                Id = "road_cinder_hounds", Style = EncounterStyle.Beasts, TalkDC = 15, ScareDC = 14, Label = "the cinder hounds",
+                Spotted = "Three hounds lope down the ash slope toward the road, smoke curling from their jaws.",
+                Befriended = "You stand still and speak to them low and steady. The hounds circle once, sniffing, then turn uphill toward the mountain as if called.",
+            };
+            hounds.Members.Add(new EnemySpawn("cinder_hound", 33, 23));
+            hounds.Members.Add(new EnemySpawn("cinder_hound", 35, 24));
+            hounds.Members.Add(new EnemySpawn("cinder_hound", 37, 22));
+            z.EnemyGroups.Add(hounds);
+            Zones[z.Id] = z;
+
+            // Your side's ally waits at the Last Camp (only the one you stand with).
+            foreach (var (id, name, title, look, banner) in new[]
+            {
+                ("ally_holloway", "Sergeant Dace Holloway", "Sent by the Crown", "npc_holloway", "banner_crown"),
+                ("ally_perrin", "Perrin Quillby", "Sent by the Academy", "npc_perrin", "banner_academy"),
+                ("ally_thimble", "Mister Thimble", "Sent by the Fae Courts", "npc_thimble", "banner_fae"),
+                ("ally_odo", "Odo Fenn", "Sent by the Wyrmwatch", "npc_odo", "banner_hunters"),
+            })
+            {
+                var n = new NpcDef { Id = id, Name = name, Title = title, Look = look, Dialogue = id };
+                n.Schedule.Add(new ScheduleEntry(0, "emberhorn_road", 10, 17, "keeping the Last Camp's fire fed") { RequiresFlag = banner });
+                n.Schedule.Add(new ScheduleEntry(0, "emberhorn_road", 11, 18, "sitting up late by the fire, watching the mountain", Hearthday) { RequiresFlag = banner });
+                Npcs[id] = n;
+            }
         }
 
         // =================================================================== Ash on the Doors: Teodor Brisk, the chandler

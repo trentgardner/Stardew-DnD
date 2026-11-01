@@ -1282,6 +1282,11 @@ namespace DnD.Game
                 var log = new List<string>();
                 if (p.Character.IsDead && Settings.Difficulty == Difficulty.Story) p.Character.Revive(0, log);
                 p.Character.LongRest(ate, log);
+                if (World.Flag(WorldDb.OathSecond))
+                {
+                    p.Character.HeroicInspiration = true;
+                    p.Hud.Toast("The Second Ideal steadies you. (Heroic Inspiration)", UIKit.Gold);
+                }
                 foreach (var c in CompanionsOf(p)) if (c.Character != null) { if (c.Character.IsDead && Settings.Difficulty == Difficulty.Story) c.Character.Revive(0, null); c.Character.LongRest(true, null); }
                 _lastLongRest[p.Index] = NowAbs;
                 p.Hud.Narrate($"You wake refreshed. It's {Clock.Weekday}, day {Clock.Day}." + (!ate ? " (You went to bed hungry.)" : "") +

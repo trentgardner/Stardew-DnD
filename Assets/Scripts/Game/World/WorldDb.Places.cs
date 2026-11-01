@@ -8,6 +8,9 @@ namespace DnD.Game
     {
         /// <summary>The First Ideal of the Oathbound, carved at the top of the Old Watchtower. Wording pending lore approval.</summary>
         public const string FirstIdeal = "Light before rest. The watch keeps the light so others may sleep.";
+        /// <summary>The Second Ideal, carved at the Oathbound waystation on the Emberhorn Road (Act II).</summary>
+        public const string SecondIdeal = "I will stand where the dark is deepest, so that none need stand there alone.";
+        public const string OathSecond = "oath_second";
 
         static void BuildWatchtower()
         {

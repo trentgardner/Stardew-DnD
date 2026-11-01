@@ -93,8 +93,48 @@ namespace DnD.Game
             {
                 case "teodor": return Teodor();
                 case "teodor_caught": return TeodorCaught();
+                case "ally_holloway": return Ally(id, "Sergeant Dace Holloway",
+                    c => "Marsh sent me. Said I'd been asking to get out of that checkpoint, so here I am, out of it. Careful what you wish for, my mother used to say. She also said wear a scarf. I'm wearing the scarf.",
+                    "He's brought a crate of the Redoubt's best medicine, and a list, in Marsh's handwriting, of things he's not allowed to let you do. It's a long list.",
+                    c => c.G.GiveItem(c.P, "potion_greater_healing", 3));
+                case "ally_perrin": return Ally(id, "Perrin Quillby",
+                    c => "Ashby sent me. With NOTES. Forty pages. I read them on the road and now I'm frightened of the mountain in a much more informed way. Here, he said to give you these. He said, and I quote, 'tell them to come back'.",
+                    "Perrin is terrified, and determined, and has ink on his face.",
+                    c => { c.G.GiveItem(c.P, "ember_of_return"); c.G.GiveItem(c.P, "potion_greater_healing", 2); });
+                case "ally_thimble": return Ally(id, "Mister Thimble",
+                    c => "The Courts want their bargain kept, and I want to see a volcano! Everyone wins. Here: dew from the Blossom throne. Drink it when things get hot. They will get hot."
+                        + (c.G.World.Flag("fae_clause") ? " And remember, clever-boots: the little flame owes us one." : ""),
+                    "He's sitting on a pebble that's floating slightly above the ash, so his waistcoat doesn't get dirty.",
+                    c => c.G.GiveItem(c.P, "bloom_draught", 3));
+                case "ally_odo": return Ally(id, "Odo Fenn",
+                    c => "Calloway said, and I quote, 'Don't die, Odo.' So I won't. I scouted the road while I waited: anything worth finding round here, I've marked it for you. Look for the sparkles. That's a hunter's joke. They're scratches on rocks.",
+                    "Odo has a crossbow, a new hood that fits, and a very serious face he keeps forgetting to make.",
+                    c =>
+                    {
+                        c.G.GiveItem(c.P, "potion_greater_healing", 2);
+                        foreach (var s in UnityEngine.Object.FindObjectsByType<SecretInteractable>(UnityEngine.FindObjectsSortMode.None))
+                            if (s.Def != null && c.P.Zone != null && c.P.Zone.Objects.Contains(s.gameObject) && !c.G.World.Flag("secret:" + s.Def.Id)) s.MarkSniffed();
+                    });
                 default: return null;
             }
+        }
+
+        // =================================================================== Your side's ally at the Last Camp
+
+        /// <summary>The ally your side sent: their greeting gives the party one gift, once (World flag ally_gift).</summary>
+        static Dialogue Ally(string id, string who, System.Func<DCtx, string> greeting, string look, System.Action<DCtx> gift)
+        {
+            var d = new Dialogue(id, c => c.G.World.Flag(WorldDb.AllyGift) ? "again" : "greet");
+            d.Node("greet", who, greeting, c => look, c =>
+            {
+                if (c.G.World.Flag(WorldDb.AllyGift)) return;
+                c.G.World.SetFlag(WorldDb.AllyGift);
+                gift(c);
+            }).Bye("Thank you.");
+            d.Node("again", who,
+                c => c.G.Quests.Stage(Answers.Id) >= Answers.Gate ? "You've seen the gate? Then you know. Rest first. The mountain isn't going anywhere. That's rather the problem." : "The camp's yours whenever you need it. The fire stays lit. Somebody has to keep it lit.")
+                .Bye("See you by the fire.");
+            return d;
         }
 
         // =================================================================== Teodor Brisk: frightened and wrong, not evil
