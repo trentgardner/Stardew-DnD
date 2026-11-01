@@ -181,6 +181,14 @@ Act I keeps only two light, ominous notes in chests (a miner's scrawl about lamp
 - **Lore added:** The Same Dream, What the Ashsworn Say, The Grey Grove, The Second Ideal.
 - **Cut, as the spec's cut order allows:** the dragon's mid-act growth.
 
+## Act II, the Emberhorn (names approved in bulk)
+- **Places:** the Emberhorn's **Throat**, the **Ring Chamber**, the **Heart**.
+- **The Warden of the Emberhorn:** one of the Great Ones who lie down around the mountain's fire, burned grey by keeping it.
+  It calls itself "the lock". Its last words: **"Hold... the door."** These echo the shared dream; this is the Act III seed.
+- **The Iron Ring:** an iron ring as wide as a cartwheel set in the rock, its chain long melted away. "Someone, once, wanted something to stay here."
+  It reads as the legend's prison in Act II; it is evidence in hindsight. No culprit is named.
+- **THE SECRET check:** the Warden calls the party's dragon "kin" (a first draft mused on being small and was cut).
+
 ## Questions for you
 1. Do you like the **egg → baby dragon companion** hook? (I think your fiance will.)
 2. Names: keep, change or rename anything? (*Sundermere, Thistledown, Ember Pact, Oathbound...*)

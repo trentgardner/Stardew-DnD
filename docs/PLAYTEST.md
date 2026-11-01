@@ -41,6 +41,39 @@
 **Co-op:** your fiance presses **START** on a second controller at any time. The screen splits and she makes a
 character. You can go anywhere independently; if one of you starts a fight, the other can walk over and join it.
 
+## New: the Emberhorn (Act II finale)
+Look up at the mountain at the end of the Emberhorn Road, and the great door opens.
+- **The Throat:** lava channels, narrow bridges, two salamanders and a fire elemental (all can be talked down or calmed),
+  a fallen knight's cache, and a side passage north to an old iron ring in the rock.
+- **The Heart:** your side's ally waits at the edge with one last piece of help:
+
+  | Ally | Help |
+  |---|---|
+  | Holloway | temporary HP |
+  | Perrin | fire resistance for the fight |
+  | Thimble | Heroic Inspiration |
+  | Odo | Advantage on your first attack against the Warden |
+
+- **The Warden of the Emberhorn:** it will talk. Try to reach it:
+  - Persuasion: it hesitates, and you get the first move.
+  - Show it your dragon: it won't attack your dragon while it's still itself.
+  - If you read the bestiary in the Academy's Restricted Section, an **Insight** check shows you its weak spot.
+
+  It always ends in a fight. That's the point.
+- **The fight:**
+  - **legendary actions** after your turns (a tail sweep, a searing glare);
+  - a **breath it draws first** (spread out, or strike the glowing throat if you know the weak spot);
+  - a **second phase** at half health, when the floor starts erupting.
+  - Stand next to your dragon when it breathes: its wings shelter you (it's immune to fire).
+- **Winning:** the mountain goes quiet, the ash thins (one blight stage lower), and "Answers" ends. The End of Act II card comes in the next update.
+
+### Emberhorn checklist
+- [ ] The talk: did it feel like it *might* work? Did a good roll feel worth it?
+- [ ] The breath: did the warning give you time to react? Did striking the throat feel great?
+- [ ] Phase two: exciting, or too much?
+- [ ] How many rounds did it take, and how close did it get? (Target: 5–9 rounds, scary but winnable.)
+- [ ] Your dragon: did its wings matter?
+
 ## New: the blight and the Emberhorn Road (Act II)
 The ash now follows the story. It starts when Act II begins, gets thicker once you've chosen a side, and is at its worst on the mountain road.
 - **Home feels it:** every Thistledown regular has something worried to say, and it changes as the ash thickens. Ask Elowen, Tobin,
