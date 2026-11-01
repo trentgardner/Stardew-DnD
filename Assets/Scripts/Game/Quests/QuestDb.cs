@@ -194,6 +194,28 @@ namespace DnD.Game
                 Reward = new QuestReward { Xp = 3000, Item = "ward_charm", Npc = "ashby", Friendship = 100, Flag = "banner_academy" },
             });
 
+            // ------------------------------------------------------------ Act II Phase 4: the Fae Courts
+            Add(new QuestDef
+            {
+                Act = 2, Id = "court_quarrel", Title = "A Quarrel of Courts", Giver = "sorrel", Faction = "fae",
+                StageText = new[] {
+                    "", "The Courts of Blossoms and Frost both claim the Gloaming Glade's last warm spring. Hear each court's speaker out.",
+                    "You've heard both sides. Give Herald Sorrel your judgement at the stone table.",
+                    "Complete. The Courts have your judgement, and the Fae never forget a judgement." },
+                Triggers = { QuestTrigger.AllFlags(1, 2, "heard_blossom", "heard_frost") },
+                Reward = new QuestReward { Xp = 1100, Npc = "sorrel", Friendship = 50 },
+            });
+            Add(new QuestDef
+            {
+                Act = 2, Id = "green_bargain", Title = "The Green Bargain", Giver = "sorrel", Faction = "fae", Major = true,
+                StageText = new[] {
+                    "", "You stand with the Fae Courts. Carry a token to each of the three thrones (Blossoms, Embers and Frost) so the Courts will renew their part of the Pact.",
+                    "Every throne has accepted its token. Sign the bargain with Herald Sorrel.",
+                    "Complete. The bargain is signed, and the Courts stand behind you." },
+                Triggers = { QuestTrigger.AllFlags(1, 2, "throne_blossom", "throne_ember", "throne_frost") },
+                Reward = new QuestReward { Xp = 3000, Npc = "sorrel", Friendship = 100, Flag = "banner_fae" },
+            });
+
             Add(new QuestDef
             {
                 Act = 2, Id = "overdue", Title = "Overdue", Giver = "thorne",

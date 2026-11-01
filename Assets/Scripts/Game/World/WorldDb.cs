@@ -61,6 +61,8 @@ namespace DnD.Game
         public string VouchFlag, VouchText;
         /// <summary>Beasts only: the skill that calms them (default Animal Handling; e.g. Nature for blighted vines).</summary>
         public Rules.Skill? TalkSkill;
+        /// <summary>Dealing with them (fight, talk or scare) also sets this world flag (e.g. a throne accepting your token).</summary>
+        public string ResolvedFlag;
         public bool InStage(QuestLog q) => QuestId == null || (q.Stage(QuestId) >= MinStage && q.Stage(QuestId) <= MaxStage);
     }
 
@@ -110,6 +112,8 @@ namespace DnD.Game
         public Vector2Int? PassageTo;
         /// <summary>Success opens this conversation instead of the result message (e.g. catching a thief in the act).</summary>
         public string Dialogue;
+        /// <summary>A brazier key (UnlitBrazier.KeyFor): once that brazier is lit, this succeeds without a roll.</summary>
+        public string SucceedsIfLit;
     }
 
     /// <summary>The sign hanging beside a building's door: the prompt names the building, reading it gives the text.</summary>
@@ -132,6 +136,8 @@ namespace DnD.Game
         public int Act = 1;
         /// <summary>Lit by its own magic: nights here are a soft violet glow, not dark (the Academy's wards).</summary>
         public bool MagicLit;
+        /// <summary>Always dusk here, whatever the clock says (the Fae glade).</summary>
+        public bool Dusk;
         /// <summary>How much the blight shows here (0-1); -1 = the default for the kind of place (see Blight.Weight).</summary>
         public float BlightWeight = -1;
         /// <summary>Murals, carvings and records with lore for the journal (Act II).</summary>
@@ -738,6 +744,8 @@ namespace DnD.Game
             thimble.Schedule.Add(new ScheduleEntry(18, "forest", 6, 9, "sitting on a lily pad that isn't there"));
             thimble.Schedule.Add(new ScheduleEntry(23, null, 0, 0, "somewhere else entirely"));
             thimble.Schedule.Add(new ScheduleEntry(18, null, 0, 0, "away at Court (it's Hearthday)", Hearthday));
+            // Act II Phase 4: he waits at the fairy ring in the evenings, to open the way to the Gloaming Glade.
+            thimble.Schedule.Add(new ScheduleEntry(18, "forest", 13, 19, "sitting on the fairy ring's edge, humming") { RequiresFlag = ActTwoFlag });
             Npcs[thimble.Id] = thimble;
         }
 

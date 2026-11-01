@@ -291,6 +291,15 @@ namespace DnD.Rules.Content
                 ProficientSkills = { Skill.Perception },
             };
 
+            All["thorn_guardian"] = new MonsterDef
+            {
+                Id = "thorn_guardian", Name = "Thorn Guardian", SpriteId = "mon_thorn_guardian", AC = 13, HitDice = DiceExpr.Parse("6d10+12"),
+                Scores = new[] { 19, 6, 15, 10, 10, 7 }, CR = 2, XP = 450, Speed = 20,
+                Description = "A white winter tree that has agreed, for the Frost court's sake, to walk. (SRD Awakened Tree, trimmed.)",
+                Attacks = { Melee("Slam", 6, "2d6+4", DamageType.Bludgeoning, 10) },
+                Resistances = { DamageType.Bludgeoning, DamageType.Piercing }, Vulnerabilities = { DamageType.Fire },
+            };
+
             // The party's hatchling (see Dragonling): HP comes from the party's level, not from hit dice.
             All["dragonling"] = new MonsterDef
             {

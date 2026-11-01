@@ -467,6 +467,43 @@ namespace DnD.Game
             "TTTTTTTTTTTTTTTTTTTTT,,TTTTTTTTTTTTTTTTTTTTT",
         };
 
+        // Act II Phase 4: the Gloaming Glade, where the Fae Courts meet. Always dusk. The way home is the mushroom ring (19-20, 29).
+        public static readonly string[] Glade =
+        {
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+            "TT.TTTTT....TTT..T.TT.T...TTT.....TT..TT",
+            "TT....................................TT",
+            "TT.*****t******...........h..k....h....T",
+            "TT.*t********t*.............h.yAi.....TT",
+            "T..****pAp*****.....................h..T",
+            "T..t****.******............k...........T",
+            "TT.************.............~~~~.k..k.TT",
+            "TT.*t*******t**....,,....h..~~~~...h...T",
+            "T..************....,,.........h.......TT",
+            "TT.................,,.................TT",
+            "TT....,,,,,,,,,,,,,,,,,,,,,,,,,,,,....TT",
+            "T...t..............,,...............t.TT",
+            "TT............t....,,.................TT",
+            "TT....e.........e::::::e......t........T",
+            "T.......t.......:::aa:::.........e.....T",
+            "T...............:N::::N:.t.............T",
+            "T.........~~~...::::::::..............TT",
+            "T.........~~~q..e::::::e...............T",
+            "T....e....~~~......,,.....e............T",
+            "TT.................,,............t.e..TT",
+            "TT......t..........,,..................T",
+            "TT........,,,,,,,,,,,,,,,,,,,,........TT",
+            "TT.r...............,,.................TT",
+            "TT..~~~~~~r........,,......r......r...TT",
+            "TT..~~~~~~....e....,,.................TT",
+            "TT..~~~~~~..r......,,........rAr......TT",
+            "TT..~~~~~~........k,,.k................T",
+            "T...~~~~~~r......k.,,..k...r.....r....TT",
+            "TT....r...........k,,.k...............TT",
+            "TTT.TT.T.TTTT..TTTT.T...TT.T..T.T....TTT",
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        };
+
         // Act II: the Starfall Academy grounds. Gate (27-28, 43) south; library door (12,11), the Orrery Tower (44,13), the Observatory (48,25), the Glasshouse (8,26).
         public static readonly string[] Academy =
         {

@@ -1459,6 +1459,10 @@ still mon_ashsworn_ksrc "Actor/Character/NinjaDark/SpriteSheet.png"
 tint mon_ashsworn_keeper_0 mon_ashsworn_ksrc_0 0 0.3 1.1
 tint mon_ashsworn_keeper_1 mon_ashsworn_ksrc_1 0 0.3 1.1
 tint obj_lantern_cold obj_lantern 0 0.2 0.55
+audio music_glade "Audio/Musics/6 - Story.ogg"
+actor npc_sorrel "Actor/Character/Spirit/SpriteSheet.png"
+actor npc_blossom_speaker "Actor/Character/MaskGoldRacoon/SpriteSheet.png"
+actor npc_frost_speaker "Actor/Character/MaskRacoon/SpriteSheet.png"
 tint mon_cinder_bear_0 mon_bear_0 -20 1.2 0.7
 tint mon_cinder_bear_1 mon_bear_1 -20 1.2 0.7
 # ---------------------------------------------------------------- Act II Phase 3: the Restricted Section's rug
@@ -1508,3 +1512,7 @@ icon  item_overdue_book "Items/Object/Book.png"
 icon  item_star_chart "Items/Scroll/ScrollEmpty.png"
 icon  item_ember_lily_src "Items/Resource/Grass.png"
 tint  item_ember_lily item_ember_lily_src -95 1.4 1.1
+
+# Act II Phase 4: the Frost court's thorn guardians (after mon_vine_src)
+tint mon_thorn_guardian_0 mon_vine_src_0 180 0.15 1.5
+tint mon_thorn_guardian_1 mon_vine_src_1 180 0.15 1.5

@@ -13,6 +13,99 @@ namespace DnD.Game
         {
             BuildRedoubt();
             BuildAcademyForce();
+            BuildGlade();
+        }
+
+        // =================================================================== The Fae Courts: the Gloaming Glade
+
+        /// <summary>World flag: Mister Thimble has opened the fairy ring (Act II).</summary>
+        public const string RingOpen = "ring_open";
+
+        static void BuildGlade()
+        {
+            var forest = Zones["forest"];
+            forest.Warps.Add(new WarpDef(10, 19, "glade", 20, 27) { MinAct = 2, RequiresFlag = RingOpen });
+
+            var z = new ZoneDef
+            {
+                Act = 2,
+                Id = "glade", Name = "The Gloaming Glade", Map = Maps.Glade, DefaultSpawn = new Vector2Int(20, 27), Music = "music_glade",
+                Dusk = true, BlightWeight = 0.3f,
+                EnterNarration = "You step through the ring and the light changes. It's dusk here, gold and violet, and it has been dusk here for a very long time. Three courts share the glade: blossom to the north-west, falling leaves to the north-east, frost to the south. At its heart, a stone table, and someone waiting at it.",
+            };
+            z.Warps.Add(new WarpDef(19, 29, "forest", 11, 19));
+            z.Warps.Add(new WarpDef(20, 29, "forest", 11, 19));
+            z.Signs[new Vector2Int(8, 5)] = "The Throne of Blossoms: a living chair of white hawthorn, flowering out of season. Petals fall from it constantly and never pile up.";
+            z.Signs[new Vector2Int(31, 4)] = "The Throne of Embers: a seat of red-gold leaves that are always just about to fall. The air around it should be warm. It's barely tepid, and the leaves at its edges have gone grey.";
+            z.Signs[new Vector2Int(30, 26)] = "The Throne of Frost: carved ice that doesn't melt, with a hoarfrost cushion. Beautiful, and very hard to sit on.";
+
+            z.Secrets[new Vector2Int(13, 18)] = new SecretDef
+            {
+                Id = "glade_mirror", Sprite = "obj_inscription", Prompt = "Look into the still pond", Skill = Rules.Skill.Insight, DC = 14, Lore = "glade_mirror",
+                Success = "Your reflection is a moment late. When you blink, it blinks after. When you look away, it doesn't, not at once.",
+                Failure = "Water, sky, your own face, perfectly on time. Today.",
+                AlreadyFound = "Your reflection waits politely for you to finish looking.",
+            };
+
+            // The Green Bargain: a token for each throne.
+            const string q = "green_bargain";
+            z.Secrets[new Vector2Int(8, 6)] = new SecretDef
+            {
+                Id = "throne_blossom_song", Sprite = "obj_inscription", Prompt = "Offer the Blossom token with a performance", Skill = Rules.Skill.Performance, DC = 14,
+                QuestId = q, QuestStage = 1, SetsFlag = "throne_blossom",
+                Success = "You sing, or recite, or dance, and the hawthorn listens. When you finish, the token in your hand has become a flower, and the throne takes it.",
+                Failure = "The hawthorn is unmoved. A petal lands on your nose, which feels like criticism. Tomorrow.",
+                AlreadyFound = "The Blossom throne wears your flower.",
+            };
+            z.Secrets[new Vector2Int(9, 6)] = new SecretDef
+            {
+                Id = "throne_blossom_nature", Sprite = "obj_bush", Prompt = "Plant the Blossom token properly (Nature)", Skill = Rules.Skill.Nature, DC = 14,
+                QuestId = q, QuestStage = 1, SetsFlag = "throne_blossom",
+                Success = "You find the right soil, the right depth, the right side of the light. The token sprouts before you've stood up.",
+                Failure = "The token sits in the soil and sulks. Wrong spot. Tomorrow.",
+                AlreadyFound = "The Blossom throne wears your flower.",
+            };
+            z.Secrets[new Vector2Int(31, 5)] = new SecretDef
+            {
+                Id = "throne_ember", Sprite = "obj_inscription", Prompt = "Offer the Ember token (Arcana)", Skill = Rules.Skill.Arcana, DC = 14,
+                QuestId = q, QuestStage = 1, SetsFlag = "throne_ember", SucceedsIfLit = UnlitBrazier.KeyFor("glade", new Vector2Int(30, 4)),
+                Success = "The token catches like a coal and glows, and the leaves of the throne warm to red-gold around it, all the way to their grey edges.",
+                Failure = "The token stays cold. The court needs a fire it can believe in. (Light the brazier by the throne, or try again tomorrow.)",
+                AlreadyFound = "The Ember throne glows, a little warmer than before.",
+            };
+            z.Secrets[new Vector2Int(30, 25)] = new SecretDef
+            {
+                Id = "throne_frost", Sprite = "obj_inscription", Prompt = "Ask the Frost court to accept the token", Skill = Rules.Skill.Persuasion, DC = 15,
+                QuestId = q, QuestStage = 1, SetsFlag = "throne_frost",
+                Success = "You speak to the throne the way you would to an old, proud queen. Frost creeps over the token, delicately, and it is accepted.",
+                Failure = "The cold deepens until your breath crackles. Not today.",
+                AlreadyFound = "The Frost throne holds your token in a fist of ice.",
+            };
+            var thorns = new EnemyGroupDef
+            {
+                Id = "frost_thorns", Style = EncounterStyle.Beasts, TalkSkill = Rules.Skill.Nature, TalkDC = 15, ScareDC = 16, Label = "the thorn guardians", SightTiles = 5,
+                QuestId = q, MinStage = 1, MaxStage = 1, Unique = true, ResolvedFlag = "throne_frost",
+                Spotted = "Two white trees beside the Frost throne straighten up, shake the snow from their branches, and step toward you on roots like frozen ropes.",
+                Befriended = "You speak to them as you would to an old orchard in winter, gently, about spring. The guardians creak, consider, and kneel. The Frost throne accepts your token without a word.",
+            };
+            thorns.Members.Add(new EnemySpawn("thorn_guardian", 28, 24));
+            thorns.Members.Add(new EnemySpawn("thorn_guardian", 32, 25));
+            z.EnemyGroups.Add(thorns);
+            Zones[z.Id] = z;
+
+            var sorrel = new NpcDef { Id = "sorrel", Name = "Herald Sorrel", Title = "Herald of the Three Courts", Look = "npc_sorrel", Dialogue = "sorrel" };
+            sorrel.Schedule.Add(new ScheduleEntry(0, "glade", 20, 17, "at the stone table, waiting, as she always is"));
+            sorrel.Schedule.Add(new ScheduleEntry(0, "glade", 32, 9, "at the last warm spring, trailing her fingers in it", Hearthday));
+            Npcs[sorrel.Id] = sorrel;
+            var blossom = new NpcDef { Id = "blossom_speaker", Name = "Speaker of Blossoms", Title = "The Court of Blossoms", Look = "npc_blossom_speaker", Dialogue = "blossom_speaker" };
+            blossom.Schedule.Add(new ScheduleEntry(0, "glade", 10, 10, "arranging petals that rearrange themselves"));
+            blossom.Schedule.Add(new ScheduleEntry(0, "glade", 7, 7, "sulking by the throne", Stormday));
+            Npcs[blossom.Id] = blossom;
+            var frost = new NpcDef { Id = "frost_speaker", Name = "Speaker of Frost", Title = "The Court of Frost", Look = "npc_frost_speaker", Dialogue = "frost_speaker" };
+            frost.Schedule.Add(new ScheduleEntry(0, "glade", 25, 27, "watching the ice grow"));
+            frost.Schedule.Add(new ScheduleEntry(0, "glade", 26, 23, "pacing, very slowly", Leafday));
+            Npcs[frost.Id] = frost;
+
         }
 
         // =================================================================== The Academy: Cold Lanterns and the Ninth Circle

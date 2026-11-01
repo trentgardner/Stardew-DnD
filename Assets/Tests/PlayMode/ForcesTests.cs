@@ -404,6 +404,170 @@ namespace DnD.Tests
             Assert.AreEqual(4, g.Quests.Stage("ninth_circle"));
         }
 
+        // ============================================================ Task 4: the Fae Courts
+
+        [UnityTest]
+        public IEnumerator FairyRingStaysAnActOneSecret()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(30), "bard", "human");
+            yield return Frames(2);
+            g.World.SetFlag(WorldDb.RingOpen);
+            g.Warp(p, "forest", new Vector2Int(11, 19), false);
+            yield return Frames(3);
+            int lines = p.Hud.LogLines.Count;
+            p.Avatar.PlaceAt(p.Zone, new Vector2Int(10, 19));
+            yield return Frames(5);
+            Assert.AreEqual("forest", p.Zone.Def.Id, "the glade stays shut in Act I");
+            Assert.AreEqual(lines, p.Hud.LogLines.Count, "and nothing is narrated on the ring tile");
+            var ring = SpotNamed("fairy_ring");
+            Assert.IsTrue(ring.Available(p), "the Act I fairy-ring secret still works");
+        }
+
+        [UnityTest]
+        public IEnumerator ThimbleOpensTheRingInActTwo()
+        {
+            var g = GameRoot.I;
+            var p = ActTwo(g, g.DebugStart(Still(31), "bard", "human"));
+            yield return Frames(2);
+            var c = new DCtx { P = p };
+            var thimble = DialogueDb.Get("thimble");
+            Assert.AreEqual("a2_ring", thimble.Start(c));
+            Assert.IsNotNull(WorldDb.Current(WorldDb.Npcs["thimble"], 19, 0, g.World), "he waits at the ring in the evenings");
+            Assert.AreEqual("forest", WorldDb.Current(WorldDb.Npcs["thimble"], 19, 1, g.World).Zone);
+            var warp = WorldDb.Zones["forest"].Warps.Find(w => w.ToZone == "glade");
+            Assert.IsFalse(warp.Open(g.World), "closed until he opens it");
+            Opt(thimble.Nodes["a2_ring"], "Open it").Do(c);
+            Assert.IsTrue(g.World.Flag(WorldDb.RingOpen));
+            Assert.AreEqual("a2_again", thimble.Start(c));
+            TakeWarp(g, p, "forest", 10, 19);
+            yield return Frames(3);
+            Assert.AreEqual("glade", p.Zone.Def.Id);
+            AssertAllReachable(g, p.Zone, p.Avatar.MapPos);
+            foreach (var hour in new[] { 12, 0 })
+            {
+                g.Clock.Minutes = hour * 60;
+                yield return Frames(2);
+                Assert.AreEqual(PlayerHud.DuskTint, p.Hud.AmbientTint, $"always dusk in the glade ({hour}:00)");
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator CourtQuarrelEveryJudgementCompletes()
+        {
+            var g = GameRoot.I;
+            var p = ActTwo(g, g.DebugStart(Still(32), "bard", "human"));
+            yield return Frames(2);
+            var c = new DCtx { P = p };
+            var sorrel = DialogueDb.Get("sorrel");
+            sorrel.Nodes["intro"].OnEnter(c);
+            Assert.IsTrue(Factions.Heard("fae"));
+            sorrel.Nodes["quarrel"].OnEnter(c);
+            Assert.AreEqual(1, g.Quests.Stage("court_quarrel"));
+            DialogueDb.Get("blossom_speaker").Nodes["start"].OnEnter(c);
+            Assert.AreEqual(1, g.Quests.Stage("court_quarrel"), "one side isn't a hearing");
+            DialogueDb.Get("frost_speaker").Nodes["start"].OnEnter(c);
+            Assert.AreEqual(2, g.Quests.Stage("court_quarrel"));
+            Assert.AreEqual("judge", sorrel.Start(c));
+            var judge = sorrel.Nodes["judge"];
+            void Reset() { g.Quests.Stages["court_quarrel"] = 2; g.Quests.Paid.Remove("court_quarrel"); g.World.Standing["fae"] = 0; }
+            Reset(); Opt(judge, "The Blossoms").Do(c);
+            Assert.IsTrue(g.Quests.Done("court_quarrel")); Assert.AreEqual(5, Factions.Standing("fae")); Assert.IsTrue(g.World.Flag("fae_judged_blossom"));
+            Reset(); Opt(judge, "The Frost").Do(c);
+            Assert.IsTrue(g.Quests.Done("court_quarrel")); Assert.AreEqual(5, Factions.Standing("fae"));
+            var share = judge.Options.Single(o => o.Check == Rules.Skill.Persuasion);
+            Reset(); share.OnSuccess(c);
+            Assert.IsTrue(g.Quests.Done("court_quarrel")); Assert.AreEqual(15, Factions.Standing("fae"));
+            Reset(); share.OnFailure(c);
+            Assert.IsTrue(g.Quests.Done("court_quarrel")); Assert.AreEqual(0, Factions.Standing("fae"));
+        }
+
+        [UnityTest]
+        public IEnumerator GreenBargainEveryRoute()
+        {
+            foreach (bool calm in new[] { true, false })
+            {
+                var g = GameRoot.I;
+                var p = ActTwo(g, g.DebugStart(Still(calm ? 33 : 34), "druid", "elf"));
+                yield return Frames(2);
+                var c = new DCtx { P = p };
+                var sorrel = DialogueDb.Get("sorrel");
+                g.World.SetFlag("met_sorrel");
+                HearAll();
+                g.Quests.Set("court_quarrel", 3, p);
+                var commit = Opt(sorrel.Nodes["start"], "We'll stand with the Courts");
+                Assert.IsTrue(commit.Show(c));
+                commit.Do(c);
+                yield return ConfirmCommit(p);
+                Assert.AreEqual("fae", g.World.CommittedFaction);
+                Assert.AreEqual(1, g.Quests.Stage("green_bargain"));
+
+                g.World.SetFlag(WorldDb.RingOpen);
+                g.Warp(p, "glade", new Vector2Int(20, 27), false);
+                yield return Frames(3);
+                SpotNamed("throne_blossom_nature").Resolve(p, Rules.CheckOutcome.Success);
+                p.Hud.CloseAll();
+                Assert.IsFalse(SpotNamed("throne_blossom_song").Available(p), "one route is enough");
+                // The Ember throne: the dragon lights the brazier, and the throne takes the token without a roll.
+                g.Warp(p, "glade", new Vector2Int(31, 6), false);
+                yield return Frames(3);
+                var brazier = UnlitBrazier.All.Single(b => b.ZoneId == "glade");
+                g.DragonAgent.Actor.PlaceAt(p.Zone, p.Avatar.MapPos);
+                Assert.IsTrue(g.DragonAgent.GetComponent<DragonPet>().Light(p, brazier));
+                SpotNamed("throne_ember").Interact(p);
+                yield return Frames(2);
+                p.Hud.CloseAll();
+                Assert.IsTrue(g.World.Flag("throne_ember"), "the fire did the work");
+                int xp = p.Character.XP;
+                g.Warp(p, "glade", new Vector2Int(30, 23), false);
+                yield return Frames(3);
+                if (calm) g.PacifyGroup("frost_thorns", p);
+                else yield return WinFight(g, p, "frost_thorns");
+                p.Hud.CloseAll();
+                Assert.AreEqual(xp + 2 * 450, p.Character.XP, "calm or fight, the same XP");
+                Assert.IsTrue(g.World.Flag("throne_frost"), "dealing with the guardians wins the Frost throne");
+                Assert.AreEqual(2, g.Quests.Stage("green_bargain"));
+
+                Assert.AreEqual("bargain", sorrel.Start(c));
+                var bargain = sorrel.Nodes["bargain"];
+                bargain.Options.First(o => o.Check == Rules.Skill.Investigation).OnSuccess?.Invoke(c);
+                sorrel.Nodes["clause"].OnEnter(c);
+                Assert.IsTrue(g.World.Flag("fae_clause_found"));
+                xp = p.Character.XP;
+                Opt(bargain, "We'll sign it as written").Do(c);
+                Assert.IsTrue(g.Quests.Done("green_bargain"));
+                Assert.AreEqual(xp + 3000, p.Character.XP);
+                Assert.IsTrue(g.World.Flag("fae_clause"), "signed as written: the dragon owes the Courts a favour");
+                Assert.IsTrue(g.World.Flag("banner_fae"));
+                Assert.AreEqual(3, p.Character.CountOf("bloom_draught"));
+                g.QuitToTitle();
+                yield return Frames(2);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator GreenBargainSurvivesSaveLoad()
+        {
+            var g = GameRoot.I;
+            var p = ActTwo(g, g.DebugStart(Still(35), "druid", "elf"));
+            yield return Frames(2);
+            Factions.Commit("fae", p);
+            g.Quests.Start("green_bargain", p);
+            g.Warp(p, "glade", new Vector2Int(30, 23), false);
+            yield return Frames(3);
+            g.PacifyGroup("frost_thorns", p);
+            g.World.SetFlag("throne_blossom");
+            Assert.AreEqual(1, g.Quests.Stage("green_bargain"));
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(3);
+            Assert.AreEqual(1, g.Quests.Stage("green_bargain"));
+            Assert.IsTrue(g.World.Flag("throne_blossom") && g.World.Flag("throne_frost"));
+            Assert.IsTrue(g.World.PacifiedGroups.Contains("frost_thorns"), "the guardians stay calmed");
+            g.World.SetFlag("throne_ember");
+            Assert.AreEqual(2, g.Quests.Stage("green_bargain"), "the last token finishes it after a reload");
+        }
+
         [UnityTest]
         public IEnumerator CrownsBannerSurvivesSaveLoad()
         {

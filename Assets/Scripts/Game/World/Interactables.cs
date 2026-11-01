@@ -93,6 +93,7 @@ namespace DnD.Game
             if (!def.IsQuestSpot) return true;
             if (g.Quests.Stage(def.QuestId) != def.QuestStage) return false;
             if (!def.Daily && g.World.Flag("secret:" + def.Id)) return false; // done: the goat went home, the herb is picked
+            if (!def.Daily && def.SetsFlag != null && g.World.Flag(def.SetsFlag)) return false; // another route to the same thing already worked
             if (def.NightOnly && g.Clock.Hour >= 5 && g.Clock.Hour < 20) return false;
             return true;
         }
@@ -120,6 +121,7 @@ namespace DnD.Game
                 return;
             }
 
+            if (Def.SucceedsIfLit != null && w.LitBraziers.Contains(Def.SucceedsIfLit)) { Resolve(p, CheckOutcome.Success); return; } // the fire did the work
             var pc = p.Character;
             var adv = CheckAdvantage;
             string sub = $"{SkillUtil.Name(Def.Skill)} ({SkillUtil.AbilityOf(Def.Skill)}) {AbilityUtil.Fmt(pc.SkillBonus(Def.Skill))} · DC hidden" + (Sniffed ? $" · Advantage (Sniff)" : "");

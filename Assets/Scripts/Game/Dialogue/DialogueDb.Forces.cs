@@ -13,6 +13,13 @@ namespace DnD.Game
             switch (id)
             {
                 case "marsh": return Marsh();
+                case "sorrel": return Sorrel();
+                case "blossom_speaker": return CourtSpeaker("blossom_speaker", "Speaker of Blossoms", "heard_blossom",
+                    "The spring belongs to whoever makes the most of it, and that is us. Every flower in this glade drinks from it. Frost would sit on it, and keep it pretty, and let nothing grow.",
+                    "A slim figure in a gold mask shaped like a sleepy fox, petals caught in their hair. They speak in a hurry, as if spring might end while they're talking.");
+                case "frost_speaker": return CourtSpeaker("frost_speaker", "Speaker of Frost", "heard_frost",
+                    "The Embers are failing, and someone must keep the spring safe until they recover. Blossoms would drink it dry by midsummer. We keep things. That is what winter is for.",
+                    "A tall figure in a silver mask, breath smoking in the warm air. They speak slowly, as if every word had to be carried a long way.");
                 default: return null;
             }
         }
@@ -50,6 +57,7 @@ namespace DnD.Game
                 case "ashby": AshbyCircle(d); break;
                 case "varrow": StoneFrom(d, "varrow", "Magister Isolde Varrow"); break;
                 case "oakes": StoneFrom(d, "oakes", "Professor Bramwell Oakes"); break;
+                case "thimble": ThimbleOpensTheRing(d); break;
             }
         }
 
@@ -239,6 +247,146 @@ namespace DnD.Game
                 c => $"{c.G.World.DragonName} scratches at the tag for a while, then forgets it, mostly.")
                 .Bye("Thank you, Commander.");
             return d;
+        }
+
+        // =================================================================== The Fae Courts: Thimble, Herald Sorrel, the court speakers
+        // Charming, exact, older than they look. Every word true, and chosen. The bargains are beautiful and they have clauses.
+
+        static void ThimbleOpensTheRing(Dialogue d)
+        {
+            const string who = "Mister Thimble";
+            var inner = d.Start;
+            d.Start = c => c.G.World.Act >= 2 ? (c.G.World.Flag(WorldDb.RingOpen) ? "a2_again" : "a2_ring") : inner(c);
+            void open(DCtx c)
+            {
+                if (c.G.World.Flag(WorldDb.RingOpen)) return;
+                c.G.World.SetFlag(WorldDb.RingOpen);
+                foreach (var p in c.G.Players) if (p.IsReady) p.Hud.Narrate("The fairy ring brightens, mushroom by mushroom, until the air in its middle shimmers like a heat haze. Step into it, and you'll be somewhere else.");
+            }
+            d.Node("a2_ring", who,
+                c => "THERE you are. The Courts have been asking and asking. 'Where are the little flame's people? Bring us the little flame's people, Thimble!' Well, here you are, and here's me, and there's the ring. Shall I open it? It's very rude to keep a Court waiting. They do it to everyone else, of course.",
+                c => $"He tips his hat to {c.G.World.DragonName}, which sneezes at him.")
+                .Say("Open it. We'll go.", "a2_open", doIt: open)
+                .Roll(Skill.Performance, 13, "(Dance in the ring first, for luck)", "a2_danced", "a2_flop", onSuccess: c => { c.G.World.AddFriendship("thimble", 30); open(c); })
+                .Say("Who are the Courts, exactly?", "a2_courts")
+                .Bye("Not yet.");
+            d.Node("a2_courts", who,
+                c => "Three, these days. Blossoms, Embers and Frost. There used to be more chairs at the table. Don't ask about the chairs. Herald Sorrel speaks for all of them, and she is very, very old, and very good at promises.")
+                .Say("Open it. We'll go.", "a2_open", doIt: open)
+                .Bye("Not yet.");
+            d.Node("a2_danced", who, c => "Oh, BRAVO. The mushrooms will be talking about that for a century. In you go, then!").Bye("Thank you, Mister Thimble.");
+            d.Node("a2_flop", who, c => "That was... a dance. Of a kind. Never mind! I'll open it anyway, I just won't tell anyone you did that.")
+                .Say("Open it. We'll go.", "a2_open", doIt: open)
+                .Bye("Not yet.");
+            d.Node("a2_open", who, c => "Mind your manners, don't eat anything, and if anyone offers you a deal, read it twice. Go on!").Bye("Thank you, Mister Thimble.");
+            d.Node("a2_again", who, c => "The ring is open for you, clever-boots. Sorrel is waiting. Sorrel is always waiting. It's her best trick.")
+                .Say("Fancy a game, for old times' sake?", "start")
+                .Bye("Thank you, Mister Thimble.");
+        }
+
+        static Dialogue CourtSpeaker(string id, string who, string heardFlag, string claim, string look)
+        {
+            var d = new Dialogue(id, c => "start");
+            d.Node("start", who,
+                c => c.G.Quests.Stage("court_quarrel") == 1 && !c.G.World.Flag(heardFlag) ? claim : "The Herald will judge. Or you will. The Courts will remember either way.",
+                c => look,
+                c => { if (c.G.Quests.Stage("court_quarrel") == 1) c.G.World.SetFlag(heardFlag); })
+                .Bye("We'll remember.");
+            return d;
+        }
+
+        static Dialogue Sorrel()
+        {
+            var d = new Dialogue("sorrel", c =>
+                !c.G.World.Flag("met_sorrel") ? "intro"
+                : c.G.Quests.Stage("court_quarrel") == 2 && c.G.Quests.CanStart("court_quarrel") ? "judge"
+                : c.G.Quests.Stage("green_bargain") == 2 ? "bargain"
+                : c.G.Quests.Stage("green_bargain") == 1 ? "bargain_task"
+                : "start");
+            const string who = "Herald Sorrel";
+            d.Node("intro", who,
+                c => "The little flame's people. Welcome to the Gloaming. Sit, sit. Eat nothing, drink nothing, and you'll go home exactly as you came, I promise you. You see? Promises are easy. It's keeping them that takes a thousand years.",
+                c => $"A tall woman in a gown of falling leaves, with a face that is young until she smiles. Her eyes rest on {c.G.World.DragonName} with something like hunger and something like grief.",
+                c => { c.G.World.SetFlag("met_sorrel"); Factions.Hear("fae"); })
+                .Say("What do the Courts want with our dragon?", "want")
+                .Say("What happened to the Pact?", "pact");
+            d.Node("want", who,
+                c => "What we have always wanted: the Pact, kept. Once, dragons and Courts and the little short-lived peoples shared the fire of the world, fairly, by season and by promise. Then the Pact broke, and the world has been running cold ever since. Your little flame is the first new fire in a thousand years. Bring it into the Courts' keeping, and the Pact can be renewed. On the right terms.")
+                .Roll(Skill.Insight, 15, "(Insight) What are 'the right terms'?", "want_ins", "want_ins_no")
+                .Say("(Back)", "start");
+            d.Node("want_ins", who, c => "...",
+                c => "Every word she says is true, and every word was chosen. 'The right terms' means the Courts' terms. She believes, with her whole ancient heart, that they would be the right ones.")
+                .Say("(Back)", "start");
+            d.Node("want_ins_no", who, c => "...", c => "She smiles. You learn nothing from it, which you suspect is the point.").Say("(Back)", "start");
+            d.Node("pact", who,
+                c => "It broke. That is all anyone remembers truly, and the Courts remember everything. The rest is stories, and stories are told by whoever is left. Ask the Academy. They have so many books.")
+                .Say("(Back)", "start");
+
+            d.Node("start", who,
+                c => c.G.World.CommittedFaction == "fae" ? "The Courts remember their friends. Always."
+                    : c.G.World.CommittedFaction != null ? $"You chose {FactionDb.NameOf(c.G.World.CommittedFaction)}. A promise is a promise. We'll see how they keep theirs."
+                    : "Back again. You've the look of someone weighing promises. Good. Weigh ours too.")
+                .Say("What do the Courts want with our dragon?", "want")
+                .Say("Is there anything we can do for the Courts?", "quarrel", show: c => c.G.Quests.Stage("court_quarrel") == 0 && c.G.Quests.CanStart("court_quarrel"))
+                .Say("Is there anything more we can do?", "fae_job", show: c => Uncommitted(c) && c.G.Quests.Stage("court_quarrel") > 0 && !Factions.MajorOpen("fae"))
+                .CommitOption("We'll stand with the Courts.", "fae", "green_bargain")
+                .Bye("Farewell, Herald.");
+            d.Node("fae_job", who, c => NotYet(c, "fae", "Settle our little quarrel first. Then we'll talk of bigger things."))
+                .Say("(Back)", "start");
+            d.Node("quarrel", who,
+                c => "A small thing. A family thing. The Embers are cold this year, and the last warm spring in the glade is theirs no longer. Now the Blossoms and the Frost both claim it. Speak to their speakers. Then judge between them. A mortal judgement is a fresh one: the Courts are tired of their own.",
+                onEnter: c => c.G.Quests.Start("court_quarrel", c.P))
+                .Bye("We'll hear them out.");
+
+            void judged(DCtx c, int fae, string flag) { if (c.G.Quests.Done("court_quarrel")) return; if (fae != 0) Factions.Adjust("fae", fae, c.P); if (flag != null) c.G.World.SetFlag(flag); c.G.Quests.Set("court_quarrel", 3, c.P); }
+            d.Node("judge", who, c => "Well, judge? Who keeps the spring?")
+                .Say("The Blossoms. Let it be used.", "judged", doIt: c => judged(c, 5, "fae_judged_blossom"))
+                .Say("The Frost. Let it be kept safe.", "judged", doIt: c => judged(c, 5, "fae_judged_frost"))
+                .Roll(Skill.Persuasion, 15, "Share it by season, as the Pact did.", "judged_wise", "judged_badly",
+                    onSuccess: c => judged(c, 15, "fae_judged_seasons"), onFailure: c => judged(c, 0, "fae_judged_seasons"));
+            d.Node("judged", who, c => "So be it. One court is pleased, and one will remember. That is how judgements go.").Say("(Back)", "start");
+            d.Node("judged_wise", who, c => "...By season. As it was. Oh, that was well said. The Courts have not heard that said in a very long time.",
+                c => "Somewhere in the glade, both courts' leaves stir at once.").Say("(Back)", "start");
+            d.Node("judged_badly", who, c => "A good answer, badly argued. They'll share it, grudgingly. It's a start.").Say("(Back)", "start");
+
+            d.Node("bargain_task", who,
+                c => "A token for each throne: Blossoms, Embers, Frost. Each court must accept what you bring. The Embers will want a fire they can believe in. The Frost will want to be asked nicely, or shown you're strong enough to ask rudely.")
+                .Bye("We'll carry them.");
+            d.Node("bargain", who,
+                c => "Every throne has accepted. Then here is the bargain, written fair. The Courts renew their part of the Pact in this valley: the frosts come on time, the blossoms come on time, the hearths of your people stay lit. Sign, and it is done.",
+                c => "The scroll is green and gold and smells of rain. The writing is lovely, and very, very small.")
+                .Roll(Skill.Investigation, 15, "(Investigation) Read the small writing.", "clause", "no_clause", social: false, show: c => !c.G.World.Flag("fae_clause_found"))
+                .Roll(Skill.Insight, 16, "(Insight) Watch her while we read.", "clause", "no_clause", show: c => !c.G.World.Flag("fae_clause_found"))
+                .Roll(Skill.Persuasion, 18, "Strike the clause about our dragon, and we'll sign.", "struck", "not_struck", show: c => c.G.World.Flag("fae_clause_found") && !c.G.World.Flag("fae_clause_tried"),
+                    onSuccess: c => { c.G.World.SetFlag("fae_clause_tried"); c.G.World.SetFlag("fae_clause_struck"); Factions.Adjust("fae", -5, c.P); },
+                    onFailure: c => c.G.World.SetFlag("fae_clause_tried"))
+                .Say("We'll sign it as written.", "signed", doIt: c => Signed(c, struck: false))
+                .Bye("Not today.");
+            d.Node("clause", who, c => "...",
+                c => "Tucked into the curl of a capital letter: \"And the little flame shall owe the Courts one favour, to be asked when the stars ask it.\" Sorrel watches you find it, and doesn't look sorry.",
+                c => c.G.World.SetFlag("fae_clause_found"))
+                .Say("(Back)", "bargain");
+            d.Node("no_clause", who, c => "...", c => "Lovely writing. Very small. You can't make out half of it.").Say("(Back)", "bargain");
+            d.Node("struck", who, c => "...Struck, then. You bargain like a Court. I find I don't mind.",
+                c => "She draws one long fingernail through the line, and the ink unwrites itself.")
+                .Say("Then we'll sign.", "signed", doIt: c => Signed(c, struck: true));
+            d.Node("not_struck", who, c => "No. That clause is the price of the rest. Sign it as it is, or come back when you're ready.")
+                .Say("We'll sign it as written.", "signed", doIt: c => Signed(c, struck: false))
+                .Bye("Not today.");
+            d.Node("signed", who,
+                c => "And so it is renewed, a little, here. Take this, from the Blossom throne: dew in a cup. It will mend you when you need mending.",
+                c => "Your name shines on the scroll for a moment, then sinks into the paper like water into soil.")
+                .Bye("Farewell, Herald.");
+            return d;
+        }
+
+        static void Signed(DCtx c, bool struck)
+        {
+            if (c.G.Quests.Done("green_bargain")) return;
+            if (!struck) c.G.World.SetFlag("fae_clause");
+            Factions.Adjust("fae", 30, c.P);
+            c.G.GiveItem(c.P, "bloom_draught", 3);
+            c.G.Quests.Set("green_bargain", 3, c.P);
         }
 
         static void BannerDone(DCtx c)
