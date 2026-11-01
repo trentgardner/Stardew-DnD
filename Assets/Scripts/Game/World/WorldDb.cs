@@ -63,7 +63,7 @@ namespace DnD.Game
         public Rules.Skill? TalkSkill;
         /// <summary>Dealing with them (fight, talk or scare) also sets this world flag (e.g. a throne accepting your token).</summary>
         public string ResolvedFlag;
-        public bool InStage(QuestLog q) => QuestId == null || (q.Stage(QuestId) >= MinStage && q.Stage(QuestId) <= MaxStage);
+        public bool InStage(QuestLog q) => QuestId == null || (q.Stage(QuestId) >= MinStage && q.Stage(QuestId) <= MaxStage && q.CanStart(QuestId)); // a closed quest (another force chosen) leaves the world
     }
 
     public class ChestDef

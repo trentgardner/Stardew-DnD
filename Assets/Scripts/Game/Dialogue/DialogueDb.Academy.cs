@@ -326,7 +326,7 @@ namespace DnD.Game
 
         static Dialogue Holloway()
         {
-            var d = new Dialogue("holloway", c => !c.G.World.Flag("met_holloway") ? "intro" : c.G.Quests.Stage("counted") == 3 ? "counted_done" : "start");
+            var d = new Dialogue("holloway", c => !c.G.World.Flag("met_holloway") ? "intro" : c.G.Quests.Stage("counted") == 3 && c.G.Quests.CanStart("counted") ? "counted_done" : "start");
             const string who = "Sergeant Dace Holloway";
             d.Node("intro", who,
                 c => "Halt. Well. Halt-ish. Crown checkpoint. Names, where from, where bound, and anything with you that has more than two legs.",

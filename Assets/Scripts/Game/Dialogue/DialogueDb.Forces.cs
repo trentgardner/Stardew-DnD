@@ -400,7 +400,7 @@ namespace DnD.Game
         {
             var d = new Dialogue("calloway", c =>
                 !c.G.World.Flag("met_calloway") ? "intro"
-                : c.G.Quests.Stage("ember_eyes") == 5 ? "eyes_done"
+                : c.G.Quests.Stage("ember_eyes") == 5 && c.G.Quests.CanStart("ember_eyes") ? "eyes_done"
                 : c.G.Quests.Stage("long_hunt") == 4 ? "hunt_report"
                 : c.G.Quests.Stage("long_hunt") is int s && s >= 1 && s < 4 ? "hunt_task"
                 : "start");
@@ -477,7 +477,7 @@ namespace DnD.Game
 
         static Dialogue Odo()
         {
-            var d = new Dialogue("odo", c => c.G.Quests.Stage("ember_eyes") == 3 ? "hurt" : "start");
+            var d = new Dialogue("odo", c => c.G.Quests.Stage("ember_eyes") == 3 && c.G.Quests.CanStart("ember_eyes") ? "hurt" : "start");
             const string who = "Odo Fenn";
             void healed(DCtx c) { if (c.G.Quests.Stage("ember_eyes") == 3) c.G.Quests.Set("ember_eyes", 4, c.P); }
             d.Node("start", who,

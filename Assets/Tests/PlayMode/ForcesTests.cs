@@ -800,6 +800,32 @@ namespace DnD.Tests
         }
 
         [UnityTest]
+        public IEnumerator ClosedQuestsLeaveTheWorld()
+        {
+            var g = GameRoot.I;
+            var p = ActTwo(g, g.DebugStart(Still(53), "fighter", "human"));
+            yield return Frames(2);
+            var c = new DCtx { P = p };
+            g.Quests.Start("counted", p);
+            var hounds = WorldDb.Zones["lantern_road"].EnemyGroups.Single(e => e.Id == "wagon_hounds");
+            Assert.IsTrue(hounds.InStage(g.Quests));
+            Factions.Commit("fae", p);
+            Assert.IsFalse(hounds.InStage(g.Quests), "a closed quest's gated enemies are gone");
+            g.Quests.Stages["counted"] = 2;
+            g.Warp(p, "lantern_road", new Vector2Int(33, 23), false);
+            yield return Frames(3);
+            Assert.IsFalse(SpotNamed("counted_drivers").Available(p), "and so are its quest spots");
+
+            // A turn-in for a closed quest never pays (no endless potions or standing).
+            g.Quests.Stages["counted"] = 3;
+            g.World.SetFlag("met_holloway");
+            Assert.AreNotEqual("counted_done", DialogueDb.Get("holloway").Start(c));
+            g.Quests.Stages["ember_eyes"] = 5;
+            g.World.SetFlag("met_calloway");
+            Assert.AreNotEqual("eyes_done", DialogueDb.Get("calloway").Start(c));
+        }
+
+        [UnityTest]
         public IEnumerator EveryForceFightHasAPeacefulPath()
         {
             var g = GameRoot.I;

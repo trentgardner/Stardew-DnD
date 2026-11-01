@@ -462,7 +462,7 @@ namespace DnD.Tests
             int count = 0;
             foreach (var z in WorldDb.Zones.Values)
                 foreach (var row in z.Map)
-                    if (row.Contains('y')) { count++; Assert.IsTrue(z.Dark, $"{z.Id} has a cold brazier but isn't dark"); }
+                    if (row.Contains('y')) { count++; Assert.IsTrue(z.Dark || z.Dusk, $"{z.Id} has a cold brazier but isn't dark (or always dusk)"); }
             Assert.Greater(count, 0, "some dark places have cold braziers to light");
         }
 
