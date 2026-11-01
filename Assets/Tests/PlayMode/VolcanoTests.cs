@@ -144,6 +144,57 @@ namespace DnD.Tests
             Assert.IsTrue(c.LogLines.Any(l => l.Contains("sheltered by")), "the dragon's wings give Advantage on the save");
         }
 
+        // ============================================================ Task 2: phase two and lair eruptions
+
+        [UnityTest]
+        public IEnumerator PhaseTwoAtHalf()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(10), "fighter", "dwarf");
+            yield return Frames(3);
+            var c = BossFight(g, p, out var boss, out var hero);
+            var m = (Monster)boss.C;
+            m.HP = m.MaxHP / 2 + 5;
+            c.OnDamaged(boss);
+            Assert.IsFalse(m.PhaseTwo);
+            m.HP = m.MaxHP / 2;
+            c.OnDamaged(boss);
+            Assert.IsTrue(m.PhaseTwo);
+            c.OnDamaged(boss);
+            Assert.AreEqual(1, p.Hud.LogLines.Count(l => l.Contains("test phase two")), "narrated once");
+            Assert.AreEqual(4, m.RechargeMinFor(m.Def.Abilities[0]));
+        }
+
+        [UnityTest]
+        public IEnumerator EruptionsOnlyOnFloor()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(11), "fighter", "dwarf");
+            yield return Frames(3);
+            g.ApplyActTwoStart(p);
+            p.Hud.CloseAll();
+            g.Warp(p, Arena, HeroAt, false);
+            yield return Frames(2);
+            g.DragonAgent.Actor.PlaceAt(p.Zone, HeroAt + Vector2Int.right);
+            var c = BossFight(g, p, out var boss, out var hero);
+            var m = (Monster)boss.C;
+            Assert.AreEqual(0, c.PickEruptionTiles(new System.Random(1)).Count, "no eruptions in phase one");
+            m.HP = m.MaxHP / 2;
+            c.OnDamaged(boss);
+            for (int seed = 0; seed < 50; seed++)
+            {
+                var tiles = c.PickEruptionTiles(new System.Random(seed));
+                Assert.AreEqual(3, tiles.Count, $"seed {seed}: three eruptions");
+                foreach (var t in tiles) Assert.IsTrue(c.Zone.InBounds(t) && c.Zone.IsWalkable(t), $"seed {seed}: {t} is floor");
+            }
+            var dragon = c.Units.Single(u => u.C is Dragonling);
+            dragon.A.PlaceAt(c.Zone, HeroAt + Vector2Int.right);
+            int dhp = dragon.C.HP;
+            yield return c.Erupt(new System.Collections.Generic.List<Vector2Int> { dragon.Pos });
+            Assert.AreEqual(dhp, dragon.C.HP, "the red dragon shrugs off the lava");
+            Assert.IsTrue(c.LogLines.Any(l => l.Contains("The floor erupts")));
+        }
+
         [UnityTest]
         public IEnumerator NoBreathOrLegendaryFromTheFallen()
         {

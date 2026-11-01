@@ -1845,6 +1845,74 @@ namespace DnD.Game
             }
         }
 
+        public const int EruptionDC = 15;
+
+        /// <summary>
+        /// Lair eruptions this round: for each boss in its second phase, LairEruptions walkable tiles near the party (within
+        /// 2 tiles of a hero, preferring tiles someone stands on). Empty when no boss is in phase two.
+        /// </summary>
+        public List<Vector2Int> PickEruptionTiles(System.Random rng)
+        {
+            var tiles = new List<Vector2Int>();
+            foreach (var bu in Units)
+            {
+                if (!(bu.C is Monster m) || !bu.Active || !m.PhaseTwo || m.Def.LairEruptions <= 0) continue;
+                var near = new List<Vector2Int>();
+                foreach (var h in Units.Where(o => o.Active && Hostile(bu, o)))
+                    for (int dx = -2; dx <= 2; dx++)
+                        for (int dy = -2; dy <= 2; dy++)
+                        {
+                            var t = h.Pos + new Vector2Int(dx, dy);
+                            if (Zone.InBounds(t) && Zone.IsWalkable(t) && t != bu.Pos && !near.Contains(t) && !tiles.Contains(t)) near.Add(t);
+                        }
+                var occupied = near.Where(t => Units.Any(o => o.Active && Hostile(bu, o) && o.Pos == t)).ToList();
+                for (int i = 0; i < m.Def.LairEruptions && near.Count > 0; i++)
+                {
+                    var pool = i == 0 && occupied.Count > 0 ? occupied : near;
+                    var pick = pool[rng.Next(pool.Count)];
+                    tiles.Add(pick);
+                    near.Remove(pick);
+                    occupied.Remove(pick);
+                }
+            }
+            return tiles;
+        }
+
+        /// <summary>The floor bursts on these tiles: whoever stands there makes a DEX save, 2d10 fire, half on a success.</summary>
+        public IEnumerator Erupt(List<Vector2Int> tiles)
+        {
+            Log("The floor erupts! Lava bursts up through the cracks.");
+            foreach (var h in Humans) h.Hud.Toast("The floor erupts!", UIKit.DamageRed);
+            Sfx.Play("spell");
+            foreach (var t in tiles) EruptionFx(t);
+            yield return new WaitForSeconds(0.4f);
+            foreach (var u in Units.Where(o => o.Active && tiles.Contains(o.Pos)).ToList())
+            {
+                var dmg = Dice.RollDamage(DiceExpr.Parse("2d10"));
+                var lines = new List<string>();
+                var save = Checks.Rescue(u.C, Ability.DEX, EruptionDC, Checks.RollSave(u.C, Ability.DEX, AdvantageState.Normal), lines);
+                bool ok = Checks.ResolveSave(save, EruptionDC);
+                Ticker($"Eruption under {u.Name}: {dmg.Breakdown()} fire · DEX save {save.Breakdown()} vs DC {EruptionDC} → {(ok ? "SAVED" : "FAILED")}");
+                int lost = u.C.TakeDamage(Checks.AreaDamage(u.C, Ability.DEX, dmg.Total, ok, true), DamageType.Fire, false, lines);
+                lines.ForEach(Log);
+                u.A.Popup(lost > 0 ? "-" + lost : "Immune", lost > 0 ? UIKit.DamageRed : UIKit.UtilityBlue);
+                if (lost > 0) AttackResolver.RaiseConcentrationCheck(u.C, lost);
+                OnDamaged(u);
+                yield return new WaitForSeconds(0.25f);
+            }
+        }
+
+        void EruptionFx(Vector2Int t)
+        {
+            var go = new GameObject("Eruption");
+            go.transform.position = Zone.ToWorld(t);
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = ArtRegistry.Get("fx_smoke");
+            sr.color = new Color(1f, 0.45f, 0.15f, 0.9f);
+            sr.sortingOrder = 25000;
+            UnityEngine.Object.Destroy(go, 1.2f);
+        }
+
         /// <summary>After another creature's turn: each legendary monster may take one legendary action.</summary>
         public IEnumerator LegendaryOpportunities(Unit justActed)
         {

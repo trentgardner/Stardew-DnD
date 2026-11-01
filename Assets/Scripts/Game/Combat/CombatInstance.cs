@@ -140,10 +140,18 @@ namespace DnD.Game
                     Log($"{m.Name}'s Uncanny Metabolism: Focus restored, +{h} HP.");
                 }
 
+            int lairRound = 0;
             while (!Finished)
             {
                 var cur = Current;
                 if (cur == null) { Enc.Advance(); continue; }
+                if (Enc.Round != lairRound)
+                {
+                    // Lair actions (initiative count 20): the floor erupts at the start of each round in a boss's second phase.
+                    lairRound = Enc.Round;
+                    var erupt = PickEruptionTiles(new System.Random());
+                    if (erupt.Count > 0) { yield return Erupt(erupt); if (CheckEnd()) break; }
+                }
                 var log = new List<string>();
                 Enc.StartTurn(log);
                 foreach (var l in log) Log(l);
