@@ -122,9 +122,43 @@ namespace DnD.Game
         // =================================================================== Your side's ally at the Last Camp
 
         /// <summary>The ally your side sent: their greeting gives the party one gift, once (World flag ally_gift).</summary>
+        /// <summary>World flag: your side's ally has given their last help at the Heart (once for the party).</summary>
+        public const string AllyBoonFlag = "ally_boon";
+
+        /// <summary>What each side's ally does for you at the Heart's threshold, before the Warden.</summary>
+        static readonly System.Collections.Generic.Dictionary<string, (System.Func<DCtx, string> line, string look, string toast, System.Action<DCtx> apply)> Boons =
+            new System.Collections.Generic.Dictionary<string, (System.Func<DCtx, string>, string, string, System.Action<DCtx>)>
+            {
+                ["ally_holloway"] = (c => "This is as far as I go. Somebody's got to hold the tunnel, and I've got a scarf. Here: the Redoubt's last trick. Drink it, it's horrible, it'll keep you standing.",
+                    "He hands round a flask of something that tastes like boiled boots and makes your ribs feel armoured.", "Holloway's tonic: +15 temporary HP each.",
+                    c => { foreach (var p in c.G.Players.Where(x => x.IsReady && x.Character != null)) p.Character.TempHP = System.Math.Max(p.Character.TempHP, 15); }),
+                ["ally_perrin"] = (c => "Ashby gave me this. A ward. He said, and I quote, 'it will hold for one fight, Perrin, and not one minute more, so do not waste it on a staircase.' Hold still. This tingles.",
+                    "Perrin traces a circle in the air around each of you. It hangs there for a moment, shining, then sinks into your skin.", "Ashby's ward: you resist fire for the fight with the Warden.",
+                    c => c.G.World.SetFlag(WardActiveFlag)),
+                ["ally_thimble"] = (c => "Oh, I'm not going in THERE. But I'll do you a little luck. The Courts' kind. It always comes back to us in the end, but you won't mind that today.",
+                    "He blows on his fingers and flicks each of you on the nose. It feels like the first warm day of spring.", "The Courts' luck: Heroic Inspiration.",
+                    c => { foreach (var p in c.G.Players.Where(x => x.IsReady && x.Character != null)) p.Character.HeroicInspiration = true; }),
+                ["ally_odo"] = (c => "I watched it from the ledge for an hour. It favours its left side. It looks at the biggest one of you first. Calloway says: first blow's the one it never forgets. Make it count.",
+                    "Odo draws you a quick map in the ash with his crossbow bolt, and taps the Warden's left flank twice.", "Odo's eye: your first attack on the Warden has Advantage.",
+                    c => c.G.World.SetFlag(WardenMarkedFlag)),
+            };
+
+        public const string WardActiveFlag = "ward_active", WardenMarkedFlag = "warden_marked";
+
         static Dialogue Ally(string id, string who, System.Func<DCtx, string> greeting, string look, System.Action<DCtx> gift)
         {
-            var d = new Dialogue(id, c => c.G.World.Flag(WorldDb.AllyGift) ? "again" : "greet");
+            var d = new Dialogue(id, c => In(c, "emberhorn_heart") ? (c.G.World.Flag(AllyBoonFlag) ? "heart_again" : "boon") : c.G.World.Flag(WorldDb.AllyGift) ? "again" : "greet");
+            if (Boons.TryGetValue(id, out var b))
+            {
+                d.Node("boon", who, b.line, c => b.look, c =>
+                {
+                    if (c.G.World.Flag(AllyBoonFlag)) return;
+                    c.G.World.SetFlag(AllyBoonFlag);
+                    b.apply(c);
+                    foreach (var p in c.G.Players.Where(x => x.IsReady)) p.Hud.Toast(b.toast, UIKit.Gold);
+                }).Bye("Thank you.");
+                d.Node("heart_again", who, c => "Go on. We'll be right here. Somebody has to be.").Bye("Thank you.");
+            }
             d.Node("greet", who, greeting, c => look, c =>
             {
                 if (c.G.World.Flag(WorldDb.AllyGift)) return;

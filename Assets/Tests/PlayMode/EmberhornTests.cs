@@ -149,8 +149,8 @@ namespace DnD.Tests
             Assert.AreEqual(Answers.Gate, g.Quests.Stage(Answers.Id));
             Assert.AreEqual(xp + 1500, p.Character.XP);
             var gate = WorldDb.Zones["emberhorn_road"].Warps.Find(w => w.At == new Vector2Int(59, 14));
-            Assert.IsFalse(gate.Open(g.World), "the mountain waits for Act II's finale");
-            StringAssert.Contains("later update", gate.ClosedText);
+            Assert.IsTrue(gate.Open(g.World), "Phase 6: standing at the gate opens the way into the mountain");
+            Assert.AreEqual("emberhorn_throat", gate.ToZone);
         }
 
         [UnityTest]

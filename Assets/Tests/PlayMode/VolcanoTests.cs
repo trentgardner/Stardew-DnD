@@ -195,6 +195,109 @@ namespace DnD.Tests
             Assert.IsTrue(c.LogLines.Any(l => l.Contains("The floor erupts")));
         }
 
+        // ============================================================ Task 3: the Emberhorn
+
+        static PlayerSlot AtTheGate(GameRoot g, PlayerSlot p, string side)
+        {
+            g.ApplyActTwoStart(p);
+            p.Hud.CloseAll();
+            Factions.Commit(side, p);
+            g.World.SetFlag("banner_" + side);
+            g.Quests.Set(Answers.Id, Answers.OnTheRoad, p);
+            return p;
+        }
+
+        static bool CanReachBeside(Zone z, Vector2Int from, Vector2Int m)
+        {
+            if (z.IsWalkable(m) && (m == from || z.FindPath(from, m, null, 40000).Count > 0)) return true;
+            foreach (var d in new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right })
+            {
+                var t = m + d;
+                if (z.IsWalkable(t) && (t == from || z.FindPath(from, t, null, 40000).Count > 0)) return true;
+            }
+            return false;
+        }
+
+        [UnityTest]
+        public IEnumerator GateOpensAtAnswersEight()
+        {
+            var g = GameRoot.I;
+            var p = AtTheGate(g, g.DebugStart(Still(20), "fighter", "dwarf"), "crown");
+            yield return Frames(2);
+            var gate = WorldDb.Zones["emberhorn_road"].Warps.Find(w => w.At == new Vector2Int(59, 14));
+            Assert.IsFalse(gate.Open(g.World), "look up at the mountain first");
+            g.Quests.Set(Answers.Id, Answers.Gate, p);
+            Assert.IsTrue(g.World.Flag(WorldDb.EmberhornGate));
+            Assert.IsTrue(gate.Open(g.World));
+            Assert.AreEqual("emberhorn_throat", gate.ToZone);
+            Assert.IsTrue(WorldDb.Zones["emberhorn_throat"].Warps.Any(w => w.ToZone == "emberhorn_heart"));
+        }
+
+        [UnityTest]
+        public IEnumerator EmberhornIsReachable()
+        {
+            var g = GameRoot.I;
+            var p = AtTheGate(g, g.DebugStart(Still(21), "fighter", "dwarf"), "crown");
+            yield return Frames(2);
+            foreach (var id in new[] { "emberhorn_throat", "emberhorn_heart" })
+            {
+                var z = g.Zones[id];
+                var from = z.Def.DefaultSpawn;
+                foreach (var kv in z.Def.Secrets) Assert.IsTrue(CanReachBeside(z, from, kv.Key), $"{id}: secret {kv.Value.Id}");
+                foreach (var l in z.Def.Lore) Assert.IsTrue(CanReachBeside(z, from, l.Pos), $"{id}: lore {l.Id}");
+                foreach (var w in z.Def.Warps) Assert.IsTrue(CanReachBeside(z, from, w.At), $"{id}: warp at {w.At}");
+                foreach (var grp in z.Def.EnemyGroups) foreach (var m in grp.Members) Assert.IsTrue(CanReachBeside(z, from, m.Pos), $"{id}: {grp.Id} at {m.Pos}");
+            }
+            Assert.IsTrue(CanReachBeside(g.Zones["emberhorn_heart"], g.Zones["emberhorn_heart"].Def.DefaultSpawn, new Vector2Int(3, 12)), "the ally's spot");
+        }
+
+        [Test]
+        public void WardenStatBlock()
+        {
+            var w = MonstersDb.Get("warden");
+            Assert.AreEqual(18, w.AC);
+            CollectionAssert.AreEqual(new[] { "Rend", "Rend", "Rend" }, w.Multiattack);
+            Assert.IsTrue(w.Abilities.Single().Telegraph, "the breath is drawn first");
+            Assert.AreEqual(2, w.LegendaryPerRound);
+            Assert.AreEqual(2, w.LegendaryActions.Count);
+            Assert.AreEqual(0.5, w.PhaseTwoAt);
+            Assert.AreEqual("warden_weakness", w.WeakSpotFlag);
+            Assert.Contains(DamageType.Fire, w.Immunities);
+            Assert.IsNotNull(w.Attacks.SingleOrDefault(a => a.Name == "Tail"), "the tail sweep has an attack to use");
+        }
+
+        [UnityTest]
+        public IEnumerator AllyBoonOncePerSide([Values("crown", "academy", "fae", "hunters")] string side)
+        {
+            var g = GameRoot.I;
+            var p = AtTheGate(g, g.DebugStart(Still(22), "fighter", "dwarf"), side);
+            yield return Frames(2);
+            g.Quests.Set(Answers.Id, Answers.Gate, p);
+            string ally = new System.Collections.Generic.Dictionary<string, string> { ["crown"] = "ally_holloway", ["academy"] = "ally_perrin", ["fae"] = "ally_thimble", ["hunters"] = "ally_odo" }[side];
+            Assert.AreEqual("emberhorn_heart", WorldDb.Current(WorldDb.Npcs[ally], 12, 1, g.World)?.Zone, "the ally went ahead to the Heart");
+            g.Warp(p, "emberhorn_heart", new Vector2Int(2, 10), false);
+            yield return Frames(4);
+            p.Hud.CloseAll();
+            var agent = Object.FindObjectsByType<NpcAgent>(FindObjectsSortMode.None).Single(n => n.Def.Id == ally);
+            var c = new DCtx { P = p, Npc = agent };
+            var d = DialogueDb.Get(ally);
+            Assert.AreEqual("boon", d.Start(c));
+            p.Character.TempHP = 0; p.Character.HeroicInspiration = false;
+            d.Nodes["boon"].OnEnter(c);
+            switch (side)
+            {
+                case "crown": Assert.GreaterOrEqual(p.Character.TempHP, 15); break;
+                case "academy": Assert.IsTrue(g.World.Flag(DialogueDb.WardActiveFlag)); break;
+                case "fae": Assert.IsTrue(p.Character.HeroicInspiration); break;
+                case "hunters": Assert.IsTrue(g.World.Flag(DialogueDb.WardenMarkedFlag)); break;
+            }
+            p.Character.TempHP = 0; p.Character.HeroicInspiration = false;
+            d.Nodes["boon"].OnEnter(c);
+            Assert.AreEqual(0, p.Character.TempHP, "once");
+            Assert.IsFalse(p.Character.HeroicInspiration, "once");
+            Assert.AreEqual("heart_again", d.Start(c));
+        }
+
         [UnityTest]
         public IEnumerator NoBreathOrLegendaryFromTheFallen()
         {

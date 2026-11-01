@@ -118,7 +118,7 @@ namespace DnD.Game
             {
                 Act = 2, Id = Answers.Id, Title = "Answers", Giver = "rhoswen",
                 StageXp = { [Answers.Academy] = 400, [Answers.Heard] = 600, [Answers.Chosen] = 1000, [Answers.Allies] = 500, [Answers.Gate] = 1500 },
-                StageFlags = { [Answers.Allies] = WorldDb.EmberhornOpen },
+                StageFlags = { [Answers.Allies] = WorldDb.EmberhornOpen, [Answers.Gate] = WorldDb.EmberhornGate },
                 StageText = new[] {
                     "", "Hearths are going cold down the valley. Captain Vale says if anyone has answers, it's the Starfall Academy, up the Lantern Road past Miller's Ford.",
                     "You've reached the Starfall Academy. Find High Magister Ashby. They say he lives at the top of the Orrery Tower.",

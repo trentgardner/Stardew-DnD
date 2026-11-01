@@ -318,6 +318,30 @@ namespace DnD.Rules.Content
                 ProficientSkills = { Skill.Perception }, CopperMin = 2000, CopperMax = 6000,
             };
 
+            // Act II Phase 6: the Warden of the Emberhorn, the finale. SRD Young Red Dragon at heart, with a boss's tools.
+            All["warden"] = new MonsterDef
+            {
+                Id = "warden", Name = "The Warden of the Emberhorn", SpriteId = "mon_warden", AC = 18, HitDice = DiceExpr.Parse("20d12+90"),
+                Scores = new[] { 23, 10, 21, 14, 11, 19 }, Darkvision = 120, CR = 10, XP = 5900, Speed = 40, FlySpeed = 80, ProficiencyBonus = 4, Scale = 2.2f,
+                Description = "One of the Great Ones who lie down around the mountain's fire, set to keep it. It has kept it too long. Its scales have gone grey at the edges and its eyes are the colour of old ash. (SRD Young Red Dragon, tuned as a boss.)",
+                Attacks = { Melee("Rend", 10, "2d6+6", DamageType.Slashing, 10) },
+                Multiattack = { "Rend", "Rend", "Rend" },
+                Immunities = { DamageType.Fire },
+                ProficientSaves = { Ability.DEX, Ability.CON, Ability.WIS, Ability.CHA },
+                ProficientSkills = { Skill.Perception, Skill.Stealth },
+                Abilities = { new MonsterAbilityDef { Name = "Grey Breath", Shape = TargetShape.Cone, AreaFt = 30, Dice = DiceExpr.Parse("10d6"), DamageType = DamageType.Fire, SaveAbility = Ability.DEX, SaveDC = 17, RechargeMin = 5, Telegraph = true } },
+                LegendaryPerRound = 2,
+                LegendaryActions =
+                {
+                    new LegendaryActionDef { Name = "Tail Sweep", Cost = 1, Kind = LegendaryKind.Attack, Attack = "Tail", RangeFt = 15 },
+                    new LegendaryActionDef { Name = "Searing Glare", Cost = 1, Kind = LegendaryKind.SaveBurst, RangeFt = 60, Dice = DiceExpr.Parse("3d6"), DamageType = DamageType.Fire, SaveAbility = Ability.DEX, SaveDC = 15 },
+                },
+                WeakSpotFlag = "warden_weakness",
+                PhaseTwoAt = 0.5, PhaseTwoRechargeMin = 4, LairEruptions = 3,
+                PhaseTwoText = "The grey fire takes it back completely. The Warden's eyes go dull as ash, and the mountain answers: the floor splits, and the lava rises.",
+            };
+            All["warden"].Attacks.Add(Melee("Tail", 10, "2d8+6", DamageType.Bludgeoning, 15));
+
             // The party's hatchling (see Dragonling): HP comes from the party's level, not from hit dice.
             All["dragonling"] = new MonsterDef
             {

@@ -20,6 +20,7 @@ namespace DnD.Game
                 if (World.Flag("ashby_heard")) Factions.Hear("academy"); // Phase 3 saves heard him before hearing-out existed
                 if (p1 != null && Quests.Stage(Answers.Id) == Answers.Chosen && new[] { "banner_crown", "banner_academy", "banner_fae", "banner_hunters" }.Any(World.Flag))
                     Quests.Set(Answers.Id, Answers.Allies, p1); // a Phase 4 save that already finished its side's major quest
+                if (Quests.Stage(Answers.Id) >= Answers.Gate) World.SetFlag(WorldDb.EmberhornGate); // a Phase 5 save that already reached the gate
             }
             foreach (var c in Companions) if (c != null && c.Character != null) AutoLevel(c.Character);
             Blight.Sync();
