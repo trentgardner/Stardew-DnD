@@ -30,6 +30,139 @@ namespace DnD.Game
 
         static bool Uncommitted(DCtx c) => c.G.World.CommittedFaction == null;
 
+        /// <summary>Puts the options an `add` call appends in front of the node's goodbye options.</summary>
+        static void BeforeBye(DNode n, System.Action<DNode> add)
+        {
+            int before = n.Options.Count;
+            add(n);
+            var added = n.Options.GetRange(before, n.Options.Count - before);
+            n.Options.RemoveRange(before, added.Count);
+            int at = n.Options.FindIndex(o => o.End);
+            n.Options.InsertRange(at < 0 ? n.Options.Count : at, added);
+        }
+
+        /// <summary>Phase 4 lines bolted onto older dialogues.</summary>
+        static void AddForceLines(string id, Dialogue d)
+        {
+            switch (id)
+            {
+                case "perrin": PerrinLamps(d); break;
+                case "ashby": AshbyCircle(d); break;
+                case "varrow": StoneFrom(d, "varrow", "Magister Isolde Varrow"); break;
+                case "oakes": StoneFrom(d, "oakes", "Professor Bramwell Oakes"); break;
+            }
+        }
+
+        // =================================================================== The Academy: Perrin's lamps, Ashby's circle
+
+        static void PerrinLamps(Dialogue d)
+        {
+            const string who = "Perrin Quillby";
+            var inner = d.Start;
+            d.Start = c => c.G.World.Act >= 2 && c.G.Quests.Stage("cold_lanterns") == 2 && c.G.Quests.CanStart("cold_lanterns") ? "lamps_done" : inner(c);
+            if (d.Nodes.TryGetValue("a2_start", out var start))
+                BeforeBye(start, n => n.Say("You look harried, Perrin.", "lamps", show: c => c.G.Quests.Stage("cold_lanterns") == 0 && c.G.Quests.CanStart("cold_lanterns")));
+            d.Node("lamps", who,
+                c => "Harried! Yes! That's the word! They've made me Keeper of the Road Lamps, which sounds grand and means I'm the one who gets shouted at. Six of the lanterns on the Lantern Road have gone out and won't relight. The oil's fine. The wicks are fine. They just... give up. A good honest torch might do it. Or, um. Someone who breathes fire. If they were willing.",
+                c => $"He looks at {c.G.World.DragonName} with enormous hope.",
+                c => { c.G.Quests.Start("cold_lanterns", c.P); c.G.Quests.Notify(QuestEvent.BrazierLit, "lantern_road", c.P); })
+                .Bye("We'll light them.");
+            d.Node("lamps_done", who,
+                c => c.G.World.Flag("lantern_eyes")
+                    ? "All six! The road's lit end to end, I saw it from the wall- wait. They WATCH? With little eyes? For what? ...Oh. Oh, I see. For dragon fire. I didn't know. I swear I didn't know. I'm going to have a very polite word with somebody."
+                    : "All six! The road's lit end to end, I saw it from the wall. Travellers will see their way again. That's the Academy's oldest promise, you know: a light on the road for anyone who walks it.",
+                c => c.G.World.Flag("lantern_eyes") ? $"{c.G.World.DragonName} tilts its head at the nearest lamp, suspicious." : "He beams like one of his own lanterns.",
+                c => { if (!c.G.Quests.Done("cold_lanterns")) { Factions.Adjust("academy", 10, c.P); c.G.Quests.Set("cold_lanterns", 3, c.P); } })
+                .Bye("Glad to help, Perrin.");
+        }
+
+        static void AshbyCircle(Dialogue d)
+        {
+            const string who = "High Magister Corvane Ashby";
+            var inner = d.Start;
+            d.Start = c =>
+            {
+                int s = c.G.Quests.Stage("ninth_circle");
+                if (s == 4) return "circle_report";
+                if (s >= 1 && s < 4) return "circle_task";
+                return inner(c);
+            };
+            if (d.Nodes.TryGetValue("again", out var again))
+                BeforeBye(again, n => n
+                    .Say("Is there anything we can do for the Academy?", "circle_job", show: c => Uncommitted(c) && !Factions.MajorOpen("academy"))
+                    .CommitOption("We'll help you finish the ninth circle.", "academy", "ninth_circle"));
+            d.Node("circle_job", who, c => NotYet(c, "academy", "Young Perrin is drowning in lamps, I'm told. Help him, and then come and talk to me about circles."))
+                .Bye("We'll come back.");
+            d.Node("circle_task", who,
+                c => c.G.Quests.Stage("ninth_circle") == 1
+                    ? "Three focus stones. Isolde has one in the Observatory; Bramwell keeps one in the Glasshouse, though he'll pretend he doesn't; and the Starwell will give a third to anyone with the wit to ask it properly."
+                    : c.G.Quests.Stage("ninth_circle") == 2
+                        ? "You have them? Then down to the hall. Set them at the circle's points. Your dragon won't follow you down there. I'm sorry for that. It's the right instinct."
+                        : "Something is in the circle? Then deal with it, gently if you can, and quickly either way.")
+                .Bye("On our way.");
+            d.Node("circle_report", who,
+                c => "It held. For a breath, it held. And then it didn't. ...Thank you. I need it to hold forever, and now I know how far I am from that, which is worth more than I can say.",
+                c => "He takes the stones back from you one by one, very carefully, as if they were eggs.")
+                .Roll(Skill.Insight, 14, "(Insight) What's he not saying?", "circle_ins", "circle_ins_no")
+                .Say("It'll hold next time.", "circle_done", doIt: CircleDone);
+            d.Node("circle_ins", who, c => "...",
+                c => "He would rather it hadn't been you down there. He would rather it had been anyone else. He's grateful, and ashamed of asking, and he will ask again.")
+                .Say("It'll hold next time.", "circle_done", doIt: CircleDone);
+            d.Node("circle_ins_no", who, c => "...", c => "Tired eyes, a steady voice. He gives nothing else away.")
+                .Say("It'll hold next time.", "circle_done", doIt: CircleDone);
+            d.Node("circle_done", who,
+                c => "Then let it be next time. Here. I made this last night, when I couldn't sleep. A small ward, for you. Something that holds.",
+                c => "A silver ring with a ward-circle engraved inside the band, so fine you need to tilt it to the light.")
+                .Bye("Thank you, High Magister.");
+        }
+
+        static void CircleDone(DCtx c)
+        {
+            if (c.G.Quests.Done("ninth_circle")) return;
+            foreach (var p in c.G.Players) if (p.Character != null) while (p.Character.CountOf("focus_stone") > 0 && c.G.TakeQuestItem(p, "focus_stone")) { }
+            Factions.Adjust("academy", 30, c.P);
+            c.G.Quests.Set("ninth_circle", 5, c.P);
+        }
+
+        /// <summary>Varrow and Oakes each hold one of the ninth circle's focus stones.</summary>
+        static void StoneFrom(Dialogue d, string npc, string who)
+        {
+            string flag = "stone_" + npc;
+            bool wants(DCtx c) => c.G.Quests.Stage("ninth_circle") == 1 && !c.G.World.Flag(flag);
+            void give(DCtx c) { if (!c.G.World.Flag(flag)) { c.G.GiveItem(c.P, "focus_stone"); c.G.World.SetFlag(flag); } }
+            if (!d.Nodes.TryGetValue("start", out var start)) return;
+            if (npc == "varrow")
+            {
+                BeforeBye(start, n => n.Say("Ashby needs your focus stone for the ninth circle.", "stone", show: wants));
+                d.Node("stone", who,
+                    c => "Of course he does. Here. Take it, take it. The sooner that circle is finished, the better I'll sleep.",
+                    c => "She hands it over without a moment's hesitation, which is somehow more unsettling than if she'd argued.",
+                    give)
+                    .Roll(Skill.Insight, 15, "(Insight) Why the hurry?", "stone_ins", "stone_ins_no")
+                    .Bye("Thank you, Magister.");
+                d.Node("stone_ins", who, c => "...",
+                    c => "She wants the circle finished before anyone else comes asking for it. Anyone at all. She's frightened of what happens if somebody else holds the key.")
+                    .Bye("Thank you, Magister.");
+                d.Node("stone_ins_no", who, c => "...", c => "A scholar in a hurry. Scholars are always in a hurry.").Bye("Thank you, Magister.");
+            }
+            else
+            {
+                BeforeBye(start, n => n
+                    .Say("Ashby needs your focus stone for the ninth circle.", "stone_free", show: c => wants(c) && c.G.Quests.Done("glasshouse"))
+                    .Roll(Skill.Persuasion, 13, "Ashby needs your focus stone for the ninth circle.", "stone_yes", "stone_no", show: c => wants(c) && !c.G.Quests.Done("glasshouse")));
+                d.Node("stone_free", who,
+                    c => "For you? After the lilies? Take it. I don't like what he's building down there, I'll tell you that for free. But I like you.",
+                    c => "He digs it out of a pot of soil, where it was keeping a fern warm.", give)
+                    .Bye("Thank you, Professor.");
+                d.Node("stone_yes", who,
+                    c => "Hmph. It warms my seedlings, you know. But Corvane's never once asked me for anything he didn't need. Go on.",
+                    c => "He digs it out of a pot of soil, where it was keeping a fern warm.", give)
+                    .Bye("Thank you, Professor.");
+                d.Node("stone_no", who, c => "No. Not today. I've seen what that circle is for, and my ferns need it more. Ask me again when I've had my tea.")
+                    .Bye("Another time.");
+            }
+        }
+
         // =================================================================== The Crown: Lady-Commander Isaine Marsh
         // Crisp, fair, tired of being the villain in other people's stories. Means every word.
 

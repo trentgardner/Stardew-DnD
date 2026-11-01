@@ -281,6 +281,16 @@ namespace DnD.Rules.Content
                 CopperMin = 500, CopperMax = 2000,
             };
 
+            All["cinder_bear"] = new MonsterDef
+            {
+                Id = "cinder_bear", Name = "Cinder Bear", SpriteId = "mon_cinder_bear", AC = 11, HitDice = DiceExpr.Parse("4d10+12"),
+                Scores = new[] { 19, 10, 16, 2, 13, 7 }, Darkvision = 60, CR = 1, XP = 200, Speed = 40,
+                Description = "A brown bear with ash in its fur and a coal-glow for eyes, caught on the Emberhorn's slopes. (SRD Brown Bear.)",
+                Attacks = { Melee("Bite", 6, "1d8+4", DamageType.Piercing), Melee("Claws", 6, "2d6+4", DamageType.Slashing) },
+                Multiattack = { "Bite", "Claws" },
+                ProficientSkills = { Skill.Perception },
+            };
+
             // The party's hatchling (see Dragonling): HP comes from the party's level, not from hit dice.
             All["dragonling"] = new MonsterDef
             {

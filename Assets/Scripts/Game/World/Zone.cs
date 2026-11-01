@@ -261,6 +261,7 @@ namespace DnD.Game
                 case 'u': Ground(m, floor); Solid(m); Prop(m, "obj_tent"); break;
                 case 'i': Ground(m, floor); Solid(m); Prop(m, "obj_brazier", true); break;
                 case 'y': Ground(m, floor); Solid(m); Prop(m, "obj_brazier_unlit").AddComponent<UnlitBrazier>().Init(Def.Id, m); break; // a cold brazier the dragon can light
+                case ')': Ground(m, floor); Solid(m); Prop(m, "obj_lantern_cold", true).AddComponent<UnlitBrazier>().Init(Def.Id, m, "obj_lantern", "lantern post"); break; // a cold road lantern
                 // puzzle pieces: the puzzle layer dresses these; a closed gate and a push block are solid
                 case 'Z': case 'J': Ground(m, floor); Solid(m); break;
                 case 'Q': case 'I': case '/': case '@': case '%': Ground(m, floor); break;

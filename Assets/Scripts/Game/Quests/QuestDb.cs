@@ -167,6 +167,33 @@ namespace DnD.Game
                 Reward = new QuestReward { Xp = 3000, Item = "crown_writ", Npc = "marsh", Friendship = 100, Flag = "banner_crown" },
             });
 
+            // ------------------------------------------------------------ Act II Phase 4: the Academy
+            Add(new QuestDef
+            {
+                Act = 2, Id = "cold_lanterns", Title = "Cold Lanterns", Giver = "perrin", Faction = "academy",
+                StageText = new[] {
+                    "", "Perrin is Keeper of the Road Lamps now, and six of the Lantern Road's lanterns have gone cold. Relight them: a torch will do, and so will a dragon.",
+                    "The road is lit again. Tell Perrin.",
+                    "Complete. The Academy lights the road for everyone who travels it." },
+                Triggers = { QuestTrigger.LitAtLeast("lantern_road", 1, 2, 6) },
+                Reward = new QuestReward { Xp = 1000, Npc = "perrin", Friendship = 50 },
+            });
+            Add(new QuestDef
+            {
+                Act = 2, Id = "ninth_circle", Title = "The Ninth Circle", Giver = "ashby", Faction = "academy", Major = true,
+                StageText = new[] {
+                    "", "You stand with the Academy. Ashby's ninth circle needs three focus stones: ask Magister Varrow and Professor Oakes for theirs, and draw the third from the Starwell.",
+                    "You have all three stones. Take them down to the Sealing Hall and set them in the circle.",
+                    "The circle has caught something, and it isn't holding.",
+                    "The circle held for a breath. Tell Ashby what happened.",
+                    "Complete. The ninth circle is finished, and the Academy stands behind you." },
+                Triggers = {
+                    QuestTrigger.AllFlags(1, 2, "stone_varrow", "stone_oakes", "stone_starwell"),
+                    new QuestTrigger(QuestEvent.GroupResolved, "circle_bear", 3, 4),
+                },
+                Reward = new QuestReward { Xp = 3000, Item = "ward_charm", Npc = "ashby", Friendship = 100, Flag = "banner_academy" },
+            });
+
             Add(new QuestDef
             {
                 Act = 2, Id = "overdue", Title = "Overdue", Giver = "thorne",

@@ -12,6 +12,7 @@
 //          puzzle pieces (see ZoneDef.Puzzle): Q plate  I lever  J push block  Z gate  / mirror  @ light source  % light crystal
 //          Academy (Act II): z bookshelf  # hedge  + ward pillar  ^ floating stone  & the Grand Orrery  $ the Starwell
 //                            ! telescope  - desk  < rune floor (walkable)
+//          Act II Phase 4: ) cold lantern post (lit by the dragon or a torch)
 namespace DnD.Game
 {
     public static class Maps
@@ -408,9 +409,9 @@ namespace DnD.Game
             "T...................:i::q::i:..t.........~~...t.....,,....TT",
             "TTt.............t...:::::::::t...........~~.:u::u:l.,,....TT",
             "TT.......t..........:N:::::N:...........~~..:::q:::.,,....TT",
-            "T.....*........t....:::::::::...........~~..:::a:::l,,.....T",
+            "T.....*........t....:::::::::...........~~..:::a:::),,.....T",
             "T.....................,,,,,...t......*..~~.hxx:::F:.,,.....T",
-            "T.....l.....l.....l.....,.....l.....l...~~l.:::::::.,,..t.TT",
+            "T.....l.....).....).....,.....).....)...~~).:::::::.,,..t.TT",
             ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,bb,,,,,,,,,,,,,,,,,,",
             ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,bb,,,,,,,,,,,,,,,,,",
             "T...............................,.......j~~................T",

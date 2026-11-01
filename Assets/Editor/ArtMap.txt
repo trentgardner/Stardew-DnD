@@ -1458,6 +1458,9 @@ tint mon_ashsworn_zealot_1 mon_ashsworn_src_1 0 0.25 0.85
 still mon_ashsworn_ksrc "Actor/Character/NinjaDark/SpriteSheet.png"
 tint mon_ashsworn_keeper_0 mon_ashsworn_ksrc_0 0 0.3 1.1
 tint mon_ashsworn_keeper_1 mon_ashsworn_ksrc_1 0 0.3 1.1
+tint obj_lantern_cold obj_lantern 0 0.2 0.55
+tint mon_cinder_bear_0 mon_bear_0 -20 1.2 0.7
+tint mon_cinder_bear_1 mon_bear_1 -20 1.2 0.7
 # ---------------------------------------------------------------- Act II Phase 3: the Restricted Section's rug
 pattern a2_rug0
 ................

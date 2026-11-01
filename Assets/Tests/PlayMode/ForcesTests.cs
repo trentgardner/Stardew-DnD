@@ -260,6 +260,150 @@ namespace DnD.Tests
             }
         }
 
+        // ============================================================ Task 3: the Academy
+
+        [UnityTest]
+        public IEnumerator ColdLanternsLitByDragonOrTorch()
+        {
+            var g = GameRoot.I;
+            var p = ActTwo(g, g.DebugStart(Still(20), "wizard", "elf"));
+            yield return Frames(2);
+            var c = new DCtx { P = p };
+            var perrin = DialogueDb.Get("perrin");
+            perrin.Nodes["lamps"].OnEnter(c);
+            Assert.AreEqual(1, g.Quests.Stage("cold_lanterns"));
+            g.Warp(p, "lantern_road", new Vector2Int(12, 14), false);
+            yield return Frames(4);
+            var lamps = UnlitBrazier.All.Where(b => b.ZoneId == "lantern_road").ToList();
+            Assert.AreEqual(6, lamps.Count, "six cold lanterns on the road");
+            var pet = g.DragonAgent.GetComponent<DragonPet>();
+            foreach (var b in lamps.Take(4))
+            {
+                g.DragonAgent.Actor.PlaceAt(p.Zone, p.Avatar.MapPos);
+                Assert.IsTrue(pet.Light(p, b), "the dragon lights it");
+            }
+            Assert.AreEqual(1, g.Quests.Stage("cold_lanterns"), "four isn't six");
+            g.DragonAgent.gameObject.SetActive(false); // the dragon wanders off: a torch does the rest
+            g.GiveItem(p, "torch");
+            p.Avatar.LightTorch();
+            foreach (var b in lamps.Skip(4)) b.Interact(p);
+            g.DragonAgent.gameObject.SetActive(true);
+            Assert.AreEqual(2, g.Quests.Stage("cold_lanterns"), "all six lit");
+            Assert.IsTrue(lamps.All(b => b.Lit));
+            var eyes = SpotNamed("lantern_eyes");
+            Assert.IsTrue(eyes.Available(p));
+            eyes.Resolve(p, Rules.CheckOutcome.Success);
+            p.Hud.CloseAll();
+            Assert.IsTrue(g.World.Flag("lantern_eyes"));
+            Assert.IsTrue(g.World.LoreFound.Contains("lantern_eyes"));
+            Assert.AreEqual("lamps_done", perrin.Start(c));
+            int xp = p.Character.XP;
+            perrin.Nodes["lamps_done"].OnEnter(c);
+            perrin.Nodes["lamps_done"].OnEnter(c);
+            Assert.IsTrue(g.Quests.Done("cold_lanterns"));
+            Assert.AreEqual(xp + 1000, p.Character.XP, "paid once");
+            Assert.AreEqual(10, Factions.Standing("academy"));
+        }
+
+        [UnityTest]
+        public IEnumerator LanternsLitBeforeTheQuestStillCount()
+        {
+            var g = GameRoot.I;
+            var p = ActTwo(g, g.DebugStart(Still(21), "wizard", "elf"));
+            yield return Frames(2);
+            foreach (var (x, y) in new[] { (12, 13), (18, 13), (30, 13), (36, 13), (42, 13), (51, 11) })
+                g.World.LitBraziers.Add(UnlitBrazier.KeyFor("lantern_road", new Vector2Int(x, y)));
+            DialogueDb.Get("perrin").Nodes["lamps"].OnEnter(new DCtx { P = p });
+            Assert.AreEqual(2, g.Quests.Stage("cold_lanterns"), "already lit: straight to the turn-in");
+        }
+
+        [UnityTest]
+        public IEnumerator NinthCircleFullRun()
+        {
+            foreach (bool calm in new[] { true, false })
+            {
+                var g = GameRoot.I;
+                var p = ActTwo(g, g.DebugStart(Still(calm ? 22 : 23), "wizard", "elf"));
+                yield return Frames(2);
+                var c = new DCtx { P = p };
+                var ashby = DialogueDb.Get("ashby");
+                g.World.SetFlag("met_ashby"); g.World.SetFlag("ashby_heard");
+                var commit = Opt(ashby.Nodes["again"], "We'll help you finish");
+                Assert.IsFalse(commit.Show(c));
+                HearAll();
+                g.Quests.Set("cold_lanterns", 3, p);
+                Assert.IsTrue(commit.Show(c));
+                commit.Do(c);
+                yield return ConfirmCommit(p);
+                Assert.AreEqual("academy", g.World.CommittedFaction);
+                Assert.AreEqual(1, g.Quests.Stage("ninth_circle"));
+                Assert.AreEqual("circle_task", ashby.Start(c));
+
+                var varrow = DialogueDb.Get("varrow");
+                Assert.IsTrue(Opt(varrow.Nodes["start"], "Ashby needs your focus stone").Show(c));
+                varrow.Nodes["stone"].OnEnter(c);
+                var oakes = DialogueDb.Get("oakes");
+                var ask = oakes.Nodes["start"].Options.Single(o => o.Check == Rules.Skill.Persuasion);
+                Assert.IsTrue(ask.Show(c), "Oakes needs persuading unless you saved his lilies");
+                oakes.Nodes["stone_yes"].OnEnter(c);
+                Assert.AreEqual(1, g.Quests.Stage("ninth_circle"));
+                g.Warp(p, "academy", new Vector2Int(13, 32), false);
+                yield return Frames(3);
+                SpotNamed("starwell_stone").Resolve(p, Rules.CheckOutcome.Success);
+                p.Hud.CloseAll();
+                Assert.AreEqual(3, p.Character.CountOf("focus_stone"));
+                Assert.AreEqual(2, g.Quests.Stage("ninth_circle"));
+
+                g.Warp(p, "sealing_hall", new Vector2Int(12, 19), false);
+                yield return Frames(3);
+                SpotNamed("set_the_stones").Resolve(p, Rules.CheckOutcome.Success);
+                p.Hud.CloseAll();
+                Assert.AreEqual(3, g.Quests.Stage("ninth_circle"));
+                yield return Frames(3);
+                Assert.IsTrue(Object.FindObjectsByType<EnemyAgent>(FindObjectsSortMode.None).Any(e => e.Group != null && e.Group.Id == "circle_bear"), "something is in the circle");
+                int xp = p.Character.XP;
+                if (calm) g.PacifyGroup("circle_bear", p);
+                else yield return WinFight(g, p, "circle_bear");
+                Assert.AreEqual(4, g.Quests.Stage("ninth_circle"));
+                Assert.AreEqual(xp + 200, p.Character.XP, "calm or fight, the same XP");
+
+                Assert.AreEqual("circle_report", ashby.Start(c));
+                xp = p.Character.XP;
+                Opt(ashby.Nodes["circle_report"], "It'll hold").Do(c);
+                Assert.IsTrue(g.Quests.Done("ninth_circle"));
+                Assert.AreEqual(xp + 3000, p.Character.XP);
+                Assert.AreEqual(0, p.Character.CountOf("focus_stone"), "the stones go back to Ashby");
+                Assert.AreEqual(1, p.Character.CountOf("ward_charm"));
+                Assert.IsTrue(g.World.Flag("banner_academy"));
+                Assert.AreEqual(30, Factions.Standing("academy"), "the major pays +30 (the lanterns were set directly here)");
+                g.QuitToTitle();
+                yield return Frames(2);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator NinthCircleSurvivesSaveLoad()
+        {
+            var g = GameRoot.I;
+            var p = ActTwo(g, g.DebugStart(Still(24), "fighter", "human"));
+            yield return Frames(2);
+            Factions.Commit("academy", p);
+            g.Quests.Start("ninth_circle", p);
+            g.Quests.Set("ninth_circle", 3, p);
+            g.Warp(p, "sealing_hall", new Vector2Int(12, 19), false);
+            yield return Frames(3);
+            g.PacifyGroup("circle_bear", p);
+            Assert.AreEqual(4, g.Quests.Stage("ninth_circle"));
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(3);
+            p = g.Players[0];
+            g.Warp(p, "sealing_hall", new Vector2Int(12, 19), false);
+            yield return Frames(3);
+            Assert.IsFalse(Object.FindObjectsByType<EnemyAgent>(FindObjectsSortMode.None).Any(e => e.Group != null && e.Group.Id == "circle_bear" && e.Monster.Team == DnD.Rules.Team.Enemies), "no bear on load");
+            Assert.AreEqual(4, g.Quests.Stage("ninth_circle"));
+        }
+
         [UnityTest]
         public IEnumerator CrownsBannerSurvivesSaveLoad()
         {

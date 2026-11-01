@@ -12,6 +12,51 @@ namespace DnD.Game
         static void BuildForces()
         {
             BuildRedoubt();
+            BuildAcademyForce();
+        }
+
+        // =================================================================== The Academy: Cold Lanterns and the Ninth Circle
+
+        static void BuildAcademyForce()
+        {
+            var road = Zones["lantern_road"];
+            road.Secrets[new Vector2Int(51, 12)] = new SecretDef
+            {
+                Id = "lantern_eyes", Sprite = "obj_inscription", Prompt = "Look closer at the lantern's glass (Arcana)", Skill = Rules.Skill.Arcana, DC = 14,
+                QuestId = "cold_lanterns", QuestStage = 2, SetsFlag = "lantern_eyes", Lore = "lantern_eyes",
+                Success = "The flame isn't the only thing in there. Behind the wick, scratched into the iron, is a tiny glyph: an eye. It was shut while the lamp was cold. It's open now, and it's looking up the road.",
+                Failure = "Glass, flame, a moth with poor judgement. Whatever caught your eye, it's gone. Tomorrow.",
+                AlreadyFound = "The little iron eye behind the flame, wide awake.",
+            };
+
+            var academy = Zones["academy"];
+            academy.Secrets[new Vector2Int(12, 33)] = new SecretDef
+            {
+                Id = "starwell_stone", Sprite = "obj_inscription", Prompt = "Draw a focus stone from the Starwell (Arcana)", Skill = Rules.Skill.Arcana, DC = 15,
+                QuestId = "ninth_circle", QuestStage = 1, SetsFlag = "stone_starwell", Items = { new KeyValuePair<string, int>("focus_stone", 1) },
+                Success = "You reach into the light, past the water, and your fingers close on something smooth and cold. It comes up dripping starlight: a grey focus stone, humming like a struck bell.",
+                Failure = "The light slides away from your hand like a fish. Steady yourself and try again tomorrow.",
+                AlreadyFound = "The Starwell's light has a small, stone-shaped gap in it.",
+            };
+
+            var hall = Zones["sealing_hall"];
+            hall.Secrets[new Vector2Int(12, 10)] = new SecretDef
+            {
+                Id = "set_the_stones", Sprite = "obj_inscription", Prompt = "Set the focus stones in the circle", Skill = Rules.Skill.Arcana, DC = 10,
+                QuestId = "ninth_circle", QuestStage = 2, AdvanceTo = 3,
+                Success = "You set the three stones at the circle's points. The runes wake one ring at a time, inward, until the whole floor is light. And something that was standing in the middle of the dais all along, held so still you never saw it, opens its eyes.",
+                Failure = "The stones won't sit right; the runes flicker and fade. Ashby's diagrams are very precise. Try again tomorrow.",
+                AlreadyFound = "Three stones in the circle, humming together.",
+            };
+            var bear = new EnemyGroupDef
+            {
+                Id = "circle_bear", Style = EncounterStyle.Beasts, TalkDC = 16, ScareDC = 15, Label = "the cinder bear", SightTiles = 8,
+                QuestId = "ninth_circle", MinStage = 3, MaxStage = 3, Unique = true,
+                Spotted = "The circle flares. Something the Academy caught on the Emberhorn's slopes is in it: a bear with a coal-glow for eyes. The binding holds for a breath, and then it doesn't.",
+                Befriended = "You stand very still and talk to it the way you'd talk to a frightened horse. The coal in its eyes dims. It sits down heavily on the runes, and lets the scholars lead it away to somewhere with trees.",
+            };
+            bear.Members.Add(new EnemySpawn("cinder_bear", 12, 8));
+            hall.EnemyGroups.Add(bear);
         }
 
         // =================================================================== The Crown: Greywater Redoubt
