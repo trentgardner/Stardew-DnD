@@ -365,7 +365,7 @@ namespace DnD.Tests
                 if (calm) g.PacifyGroup("circle_bear", p);
                 else yield return WinFight(g, p, "circle_bear");
                 Assert.AreEqual(4, g.Quests.Stage("ninth_circle"));
-                Assert.AreEqual(xp + 200, p.Character.XP, "calm or fight, the same XP");
+                Assert.AreEqual(xp + 3 * 200, p.Character.XP, "calm or fight, the same XP");
 
                 Assert.AreEqual("circle_report", ashby.Start(c));
                 xp = p.Character.XP;

@@ -290,12 +290,14 @@ namespace DnD.Game
             };
             var bear = new EnemyGroupDef
             {
-                Id = "circle_bear", Style = EncounterStyle.Beasts, TalkDC = 16, ScareDC = 15, Label = "the cinder bear", SightTiles = 8,
+                Id = "circle_bear", Style = EncounterStyle.Beasts, TalkDC = 16, ScareDC = 15, Label = "the cinder bears", SightTiles = 8,
                 QuestId = "ninth_circle", MinStage = 3, MaxStage = 3, Unique = true,
-                Spotted = "The circle flares. Something the Academy caught on the Emberhorn's slopes is in it: a bear with a coal-glow for eyes. The binding holds for a breath, and then it doesn't.",
-                Befriended = "You stand very still and talk to it the way you'd talk to a frightened horse. The coal in its eyes dims. It sits down heavily on the runes, and lets the scholars lead it away to somewhere with trees.",
+                Spotted = "The circle flares. Something the Academy caught on the Emberhorn's slopes is in it: three bears with coal-glow eyes, pacing the rune-lines. The binding holds for a breath, and then it doesn't.",
+                Befriended = "You stand very still and talk to them the way you'd talk to frightened horses. The coals in their eyes dim. One by one they sit down heavily on the runes, and let the scholars lead them away to somewhere with trees.",
             };
             bear.Members.Add(new EnemySpawn("cinder_bear", 12, 8));
+            bear.Members.Add(new EnemySpawn("cinder_bear", 10, 9));
+            bear.Members.Add(new EnemySpawn("cinder_bear", 14, 9));
             hall.EnemyGroups.Add(bear);
         }
 

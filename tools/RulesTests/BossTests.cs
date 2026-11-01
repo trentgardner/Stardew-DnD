@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using DnD.Rules;
@@ -40,6 +41,45 @@ namespace RulesTests
             Eq(new Monster(TestBoss(), false).RechargeMinFor(TestBoss().Abilities[0]), 5, "phase one: the normal recharge");
 
             WardenIsABossNotAWall();
+            ActTwoBalanceTable();
+        }
+
+        /// <summary>
+        /// Act II's set-piece fights at the level a party should be when it meets them: the median 4-class party needs more
+        /// than a round and no more than 8 rounds of at-will damage (talking them down pays the same, but fighting must be fair).
+        /// </summary>
+        static void ActTwoBalanceTable()
+        {
+            var fights = new (string name, int level, (string id, int n)[] members)[]
+            {
+                ("Lantern Road boars", 5, new[] { ("ember_eyed_boar", 3) }),
+                ("Restricted Section guardians", 6, new[] { ("animated_armor", 2), ("rug_of_smothering", 1) }),
+                ("Cragfoot wolves", 6, new[] { ("ember_eyed_wolf", 3) }),
+                ("The beacon's Ashsworn", 7, new[] { ("ashsworn_zealot", 4), ("ashsworn_keeper", 1) }),
+                ("The circle's bears", 7, new[] { ("cinder_bear", 3) }),
+                ("The Frost guardians", 7, new[] { ("thorn_guardian", 2) }),
+                ("The Ashmaw", 7, new[] { ("ashmaw", 1) }),
+                ("The Grey Vigil", 8, new[] { ("ashsworn_zealot", 3), ("ashsworn_keeper", 1) }),
+                ("Throat salamanders", 9, new[] { ("salamander", 2) }),
+                ("Throat elemental", 9, new[] { ("fire_elemental", 1) }),
+            };
+            string[] pool = { "fighter", "rogue", "cleric", "wizard", "ranger", "paladin", "bard", "druid" };
+            PlayerCharacter.LevelCap = PlayerCharacter.ActTwoLevelCap;
+            foreach (var f in fights)
+            {
+                double hp = 0, acSum = 0; int count = 0;
+                foreach (var (id, n) in f.members) { var m = MonstersDb.Get(id); hp += m.HitDice.Average * n; acSum += m.AC * n; count += n; }
+                int ac = (int)Math.Round(acSum / count);
+                var dpr = pool.ToDictionary(c => c, c => DamagePerRound(AtLevel(c, f.level), ac));
+                var rounds = new List<double>();
+                for (int a = 0; a < pool.Length; a++) for (int b = a + 1; b < pool.Length; b++) for (int c = b + 1; c < pool.Length; c++) for (int d = c + 1; d < pool.Length; d++)
+                    rounds.Add(hp / (dpr[pool[a]] + dpr[pool[b]] + dpr[pool[c]] + dpr[pool[d]]));
+                rounds.Sort();
+                double median = rounds[rounds.Count / 2];
+                Console.WriteLine($"  {f.name,-30} L{f.level}: {hp,5:0} HP, AC {ac}: median {median:0.0} rounds");
+                Check(median >= 1.0 && median <= 8.0, $"Act II balance: {f.name} takes {median:0.0} rounds at level {f.level}");
+            }
+            PlayerCharacter.LevelCap = PlayerCharacter.ActOneLevelCap;
         }
 
         /// <summary>
