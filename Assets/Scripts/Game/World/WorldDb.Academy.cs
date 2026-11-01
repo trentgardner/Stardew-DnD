@@ -191,5 +191,86 @@ namespace DnD.Game
                 Npcs[guard.Id] = guard;
             }
         }
+
+        /// <summary>World flags for the library's ways in.</summary>
+        public const string StacksUnlooped = "stacks_unlooped", RestrictedPass = "restricted_pass", ThornePassShown = "thorne_pass_shown";
+
+        static void BuildLibrary()
+        {
+            var academy = Zones["academy"];
+            academy.Warps.Add(new WarpDef(12, 11, "library", 17, 22));
+
+            var lib = new ZoneDef
+            {
+                Id = "library", Name = "The Library of Quiet Stars", Map = Maps.Library, Indoors = true, DefaultSpawn = new Vector2Int(17, 22), Music = "music_library",
+                EnterNarration = "Shelves climb into a dark that might be a ceiling and might be sky. Lanterns drift between the stacks on their own, turning their light toward whoever is reading. It is so quiet you can hear the books breathing. You're almost sure that's a figure of speech.",
+            };
+            lib.Warps.Add(new WarpDef(17, 23, "academy", 12, 12));
+            // The Endless Stacks: until you see through the illusion, the corridor's end is its beginning.
+            lib.Warps.Add(new WarpDef(29, 2, "library", 2, 2) { ForbidFlag = StacksUnlooped, Narration = "The shelves go on. And on. That reading lamp looks familiar." });
+            lib.Warps.Add(new WarpDef(33, 2, "restricted", 1, 9) { RequiresFlag = RestrictedPass, ClosedText = "Runes crawl across the door like ink in water. It does not open for you." });
+            const string seeThrough = "You stop looking at the shelves and look at the gaps between them. The corridor folds up like a paper fan, and the door at its end was three steps away all along.";
+            lib.Secrets[new Vector2Int(15, 1)] = new SecretDef
+            {
+                Id = "stacks_illusion", Sprite = "obj_bookshelf", Prompt = "Something about these shelves is wrong (Arcana)", Skill = Rules.Skill.Arcana, DC = 15, SetsFlag = StacksUnlooped,
+                Success = seeThrough, Failure = "The shelves are shelves. Probably. Your head hurts. Try again tomorrow.", AlreadyFound = "Just shelves now. Honest ones.",
+            };
+            lib.Secrets[new Vector2Int(17, 1)] = new SecretDef
+            {
+                Id = "stacks_illusion_inv", Sprite = "obj_bookshelf", Prompt = "Count the books on this shelf (Investigation)", Skill = Rules.Skill.Investigation, DC = 15, SetsFlag = StacksUnlooped,
+                Success = "The same green book, the same chipped spine, every forty paces. " + seeThrough, Failure = "You lose count. You start again. You lose count again. Tomorrow.", AlreadyFound = "Just shelves now. Honest ones.",
+            };
+            lib.Secrets[new Vector2Int(31, 1)] = new SecretDef
+            {
+                Id = "unweave_ward", Sprite = "obj_ward", Prompt = "Unweave the ward on the door (Arcana)", Skill = Rules.Skill.Arcana, DC = 16, SetsFlag = RestrictedPass,
+                Success = "You find the loose thread in the spell and pull, gently. The runes on the door blink, confused, and let you through.",
+                Failure = "The ward notices you. It doesn't do anything. It just notices. Come back when it's forgotten you.",
+                AlreadyFound = "The ward still recognises you as a friend. It's wrong, but it's polite.",
+            };
+            lib.Secrets[new Vector2Int(31, 3)] = new SecretDef
+            {
+                Id = "pick_ward_lock", Sprite = "obj_inscription", Prompt = "Pick the lock under the runes (Sleight of Hand)", Skill = Rules.Skill.SleightOfHand, DC = 16, SetsFlag = RestrictedPass,
+                Success = "Under all that magic is a perfectly ordinary lock, because somebody had to have a key. Click.",
+                Failure = "A pin slips. Somewhere behind the door, something heavy shifts in its sleep. Leave it for today.",
+                AlreadyFound = "The lock remembers your picks.",
+            };
+            Zones[lib.Id] = lib;
+
+            var res = new ZoneDef
+            {
+                Id = "restricted", Name = "The Restricted Section", Map = Maps.Restricted, Indoors = true, Dark = true, DefaultSpawn = new Vector2Int(1, 9), Music = "music_restricted",
+                EnterNarration = "The books in here are chained to their shelves, and some of the chains are new. Suits of armour stand in the alcoves. One of them turns its helm, very slowly, to follow you.",
+            };
+            res.Warps.Add(new WarpDef(0, 9, "library", 32, 2));
+            res.Warps.Add(new WarpDef(21, 15, "sealing_hall", 12, 19));
+            var guardians = new EnemyGroupDef
+            {
+                Id = "restricted_guardians", Style = EncounterStyle.None, Unique = true, SightTiles = 5, Label = "the guardians",
+                VouchFlag = ThornePassShown, VouchText = "The armours turn their helms to the Archivist's seal on your pass, and settle back into their alcoves. The rug, grudgingly, lies flat.",
+                Spotted = "The armours step out of their alcoves in perfect step. On the floor, the long red rug ripples, though there's no wind.",
+            };
+            guardians.Members.Add(new EnemySpawn("animated_armor", 8, 8));
+            guardians.Members.Add(new EnemySpawn("animated_armor", 14, 8));
+            guardians.Members.Add(new EnemySpawn("rug_of_smothering", 11, 12));
+            res.EnemyGroups.Add(guardians);
+            res.Lore.Add(new LoreSpotDef { Id = "emberhorn_warden", Pos = new Vector2Int(12, 4), Prompt = "Read the chained bestiary", Sprite = "item_scroll_revivify" });
+            res.Lore.Add(new LoreSpotDef { Id = "altered_annals", Pos = new Vector2Int(20, 12), Prompt = "Leaf through the Academy annals", Sprite = "item_scroll_revivify" });
+            Zones[res.Id] = res;
+
+            var hall = new ZoneDef
+            {
+                Id = "sealing_hall", Name = "The Sealing Hall", Map = Maps.SealingHall, Indoors = true, Dark = true, DragonStays = true, DefaultSpawn = new Vector2Int(12, 19), Music = "music_sealing",
+                EnterNarration = "Someone has been building something down here, for a long time, with great care. A circle of runes, ring inside ring, wide as a barn. Pillars stand around it like teeth. In the middle, an empty dais. The circle is big enough to hold a dragon. Not a small one.",
+            };
+            hall.Warps.Add(new WarpDef(12, 20, "restricted", 21, 14));
+            hall.Lore.Add(new LoreSpotDef { Id = "sealing_work", Pos = new Vector2Int(5, 17), Prompt = "Read the notes on the workbench", Sprite = "item_scroll_revivify" });
+            Zones[hall.Id] = hall;
+
+            var thorne = new NpcDef { Id = "thorne", Name = "Archivist Mirelle Thorne", Title = "Keeper of the Library of Quiet Stars", Look = "npc_thorne", Dialogue = "thorne" };
+            thorne.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep (with a book)"));
+            thorne.Schedule.Add(new ScheduleEntry(7, "library", 17, 18, "at the long desk, stamping returns with great force"));
+            thorne.Schedule.Add(new ScheduleEntry(22, null, 0, 0, "asleep (with a book)"));
+            Npcs[thorne.Id] = thorne;
+        }
     }
 }

@@ -169,6 +169,14 @@ namespace DnD.Rules.Content
                 Attacks = { Melee("Tusk", 5, "2d6+3", DamageType.Slashing) },
                 Traits = { "Charge", "Relentless" },
             };
+            All["rug_of_smothering"] = new MonsterDef
+            {
+                Id = "rug_of_smothering", Name = "Rug of Smothering", SpriteId = "mon_rug", AC = 12, HitDice = DiceExpr.Parse("6d10"),
+                Scores = new[] { 17, 14, 10, 1, 3, 1 }, CR = 2, XP = 450, Speed = 10,
+                Description = "A long red rug with a gold border that is, unmistakably, a guard. It lies very flat until it doesn't. (SRD Rug of Smothering; the grapple is left out.)",
+                Attacks = { Melee("Smother", 5, "2d6+3", DamageType.Bludgeoning) },
+                Traits = { "False Appearance", "Damage Transfer" },
+            };
             // ---------------- Wild Shape forms at druid 8 (CR 1, flying)
             All["dire_wolf"] = new MonsterDef
             {

@@ -1448,3 +1448,42 @@ audio music_library "Audio/Musics/9 - Quiet.ogg"
 audio music_restricted "Audio/Musics/28 - Tension.ogg"
 audio music_sealing "Audio/Musics/14 - Curse.ogg"
 audio music_ashby "Audio/Musics/16 - Melancholia.ogg"
+# ---------------------------------------------------------------- Act II Phase 3: the Restricted Section's rug
+pattern a2_rug0
+................
+................
+................
+..kkkkkkkkkkkk..
+.krrrrrrrrrrrrk.
+.krggggggggggrk.
+.krgyyyrryyygrk.
+.krgyrryyrrygrk.
+.krgyrryyrrygrk.
+.krgyyyrryyygrk.
+.krggggggggggrk.
+.krrrrrrrrrrrrk.
+..kkkkkkkkkkkk..
+..f.f.f..f.f.f..
+................
+................
+end
+pattern a2_rug1
+................
+................
+..kkkkkkkkkkkk..
+.krrrrrrrrrrrrk.
+.krggggggggggrk.
+.krgyyyrryyygrk.
+..krgyrryyrrygrk
+..krgyrryyrrygrk
+.krgyyyrryyygrk.
+.krggggggggggrk.
+.krrrrrrrrrrrrk.
+..kkkkkkkkkkkk..
+.f.f.f..f.f.f...
+................
+................
+................
+end
+paint mon_rug_0 a2_rug0 k=2a1418 r=7a2a35 g=b8893a y=e0c070 f=c9b48a
+paint mon_rug_1 a2_rug1 k=2a1418 r=7a2a35 g=b8893a y=e0c070 f=c9b48a

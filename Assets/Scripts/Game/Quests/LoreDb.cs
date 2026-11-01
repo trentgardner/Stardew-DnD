@@ -47,6 +47,13 @@ namespace DnD.Game
                 "The Academy rings one bell for every Great One sleeping in the Wyrmback: twelve. The thirteenth bell is older than the tower, and nobody has ever found it. The old porters say it rings so that whatever lies beneath the mountains knows it is still being watched.");
             Add("starwell", "The Starwell", Places,
                 "The founders built their first tower around the place a star came down, eight hundred years ago. The well never runs dry and never freezes, and on clear nights the water holds more stars than the sky does. Students drop a copper in before exams. The well, by long tradition, keeps them.");
+            // Act II Phase 3: the Restricted Section and the Sealing Hall.
+            Add("emberhorn_warden", "The Warden of the Emberhorn", Records,
+                "From a bestiary chained to its shelf, the page worn soft with reading: \"In the heart of the Emberhorn sleeps a dragon of the old blood, the Warden, set to keep the mountain's fire. Its fire has gone wrong; it burns grey at the edges. The wardens of old wrote this down for whoever must face it: when it draws breath, the plates of its throat part and glow, and a blow struck there as it breathes will make it choke on its own fire.\"");
+            Add("altered_annals", "The Annals, Corrected", Records,
+                "The Academy's annals, one fat volume per year. One year's entries have been written over in a different ink, neat and careful, the original lines scraped away so thoroughly the page has gone thin as skin. Hold it to the light and you can see that something was there. You can't see what.");
+            Add("sealing_work", "Notes from the Sealing Hall", Records,
+                "Notes left on a workbench, in several hands. \"Circle nine of twelve complete.\" \"Test binding held a fire-drake of the third size for one hour, four minutes.\" \"Not enough.\" And, underlined twice, in a hand you'll come to know: \"It must hold forever. Gently, and forever.\"");
             Add("ashen_queen", "The Ashen Queen", Legend,
                 "The temple mural shows a dragon of grey fire, wings spread over burning fields. Beneath it the priests painted the old hymn: \"When the Ashen Queen rose, the hearths of the world went cold, for she drank every flame. Then the Great Ones lay down upon her, and the mountains were made, and the fire came home to the hearths.\" In the last panel the Dawnmother's sun rises behind the Wyrmback, as if nothing could ever wake what sleeps there.");
             Add("sleeping_mountains", "The Sleeping Mountains", Places,

@@ -441,7 +441,7 @@ namespace DnD.Game
             "TW+.UUUUUUUUUUUUUUUUU.....t.....RRRRR....GGGGGGG.....+WT",
             "TW..UUUUUUUUUUUUUUUUU........t..RRRRR....GGGGGGG......WT",
             "TW..UUUUUUUUUUUUUUUUU........t..WWWWW....GGGGGGG......WT",
-            "TW..UUUUUUUUUUUUUUUUU...*.......WWDWW....GGGGGGG......WT",
+            "TW..UUUUUUUUUUUUUUUUU...*.......WWWWW....GGGGGGG......WT",
             "TW..WWwWWwWWWWWwWWwWW.......t.....q..s...GGGGGGG......WT",
             "TW..WWWWWWWWDWWWWWWWW....................GGGGGGG...t..WT",
             "TW+........l..l........................h.WWwWwWW.h...+WT",
@@ -509,6 +509,85 @@ namespace DnD.Game
             "W::::::::::::::W",
             "Wzz::::::::::zzW",
             "WWWWWWWDWWWWWWWW",
+        };
+
+        // Act II: the Library of Quiet Stars. Row 2 is the Endless Stacks (loop warp at 29,2); the warded door is (33,2); the way out (17,23).
+        public static readonly string[] Library =
+        {
+            "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+            "WzzzzzzzzzzzzzzqzqzzzzzzzzzzzzzqzW",
+            "W::::::::::::::::::::::::::::::::D",
+            "W::zzzzzzzzzzzzzzzzzzzzzzzzzzzzqzW",
+            "W::::::::::::::::::::::::::::::::W",
+            "W:zz::zz::zz::zz::zz::zz::zz::zz:W",
+            "W:zz::zz::zz::zz::zz^:zz::zz::zz:W",
+            "W:zz^:zz::zz::zz::zz::zz::zz::zz:W",
+            "W:zz::zz::zz::zz::zz::zz::zz::zz:W",
+            "W::::::::::::::::::::::::::::::::W",
+            "W:zz::zz::zz::zz::zz::zz::zz^:zz:W",
+            "W:zz::zz::zz^:zz::zz::zz::zz::zz:W",
+            "W:zz::zz::zz::zz::zz::zz::zz::zz:W",
+            "W::::::::::::::::::::::::::::::::W",
+            "W::::::::^:::::::::::::::^:::::::W",
+            "W::::________________________::::W",
+            "W::::__a___a__-_____-__a___a_::::W",
+            "W::::__________CCCCC_________::::W",
+            "W::^:________________________:^::W",
+            "W::::__a___a___________a___a_::::W",
+            "W::::________________________::::W",
+            "W::::::::::::::::::::::::::::::::W",
+            "W::::::::::::::::::::::::::::::::W",
+            "WWWWWWWWWWWWWWWWWDWWWWWWWWWWWWWWWW",
+        };
+
+        // Act II: the Restricted Section (dark). Door back (0,9); stairs down to the Sealing Hall (21,15).
+        public static readonly string[] Restricted =
+        {
+            "WWWWWWWWWWWWWWWWWWWWWWWW",
+            "W::::::::::::::::::::::W",
+            "W:zzzz:zzzz:zzzz:zzzz::W",
+            "W:zzzz:zzzz:zzzz:zzzz::W",
+            "W::::::::::::::::::::::W",
+            "W::::::::::::::::::::::W",
+            "W:::zz:zzzz:zzzz:zzz:::W",
+            "W:::zz:zzzz:zzzz:zzz:::W",
+            "W::::::::::::::::::::::W",
+            "D:::::^::::::::::^:::::W",
+            "W::::::::::::::::::::::W",
+            "W::zz::::::::::::::zz::W",
+            "W::zz::::::::::::::zz::W",
+            "W::zz::::::::::::::zz::W",
+            "W::::::::::^:::::::::::W",
+            "W::::::::::::::::::::V:W",
+            "W::::::::::::::::::::::W",
+            "WWWWWWWWWWWWWWWWWWWWWWWW",
+        };
+
+        // Act II: the Sealing Hall (dark). A dragon-sized rune circle around an empty dais; stairs up (12,20).
+        public static readonly string[] SealingHall =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "X::::::::::::::::::::::::X",
+            "X:^:::::+:<<<<<:+:::::^::X",
+            "X:::::::<<<<<<<<<::::::::X",
+            "X::::::<<<:::::<<<:::::::X",
+            "X::::+<<<:::::::<<<+::x::X",
+            "X:::::<<:::::::::<<:::xx:X",
+            "X::::<<:::<<<<<:::<<:::::X",
+            "X::::<<:::<:::<:::<<:::::X",
+            "X::+:<<:::<:A:<:::<<:+:::X",
+            "X::::<<:::<:::<:::<<:::::X",
+            "X::::<<:::<<<<<:::<<:::::X",
+            "X:::::<<:::::::::<<::::::X",
+            "X::::+<<<:::::::<<<+:::::X",
+            "X::::::<<<:::::<<<:::::::X",
+            "X:::::::<<<<<<<<<::::::^:X",
+            "X:^:::::+:<<<<<:+::::::::X",
+            "X::::::::::::::::::::::::X",
+            "X::--:::::::::::::::--:::X",
+            "X::::::::::::::::::::::::X",
+            "X:::::::::::E::::::::::::X",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXX",
         };
     }
 }

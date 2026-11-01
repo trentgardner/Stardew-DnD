@@ -283,5 +283,113 @@ namespace DnD.Tests
             Assert.GreaterOrEqual(z.GetComponentsInChildren<WardShimmer>(true).Length, 8, "wards");
             Assert.AreEqual(1, z.GetComponentsInChildren<FrameFlip>(true).Count(f => f.Id == "obj_orrery"), "the Grand Orrery");
         }
+
+        // ============================================================ Task 4: the library, the Restricted Section, the Sealing Hall
+
+        /// <summary>Stands the player on a tile the way walking there would, so warps fire.</summary>
+        static IEnumerator StepOn(PlayerSlot p, Vector2Int from, Vector2Int to)
+        {
+            p.Avatar.PlaceAt(p.Zone, from);
+            yield return Frames(2);
+            p.Avatar.PlaceAt(p.Zone, to);
+            yield return Frames(3);
+        }
+
+        static SecretInteractable SpotNamed(string id) => Object.FindObjectsByType<SecretInteractable>(FindObjectsSortMode.None).Single(s => s.Def.Id == id);
+
+        [UnityTest]
+        public IEnumerator StacksLoopUntilSeenThrough()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(30), "wizard", "elf");
+            yield return Frames(2);
+            ActTwoAt(g, p, "library", new Vector2Int(26, 2));
+            yield return Frames(2);
+            yield return StepOn(p, new Vector2Int(28, 2), new Vector2Int(29, 2));
+            Assert.AreEqual("library", p.Zone.Def.Id);
+            Assert.AreEqual(new Vector2Int(2, 2), p.MapPos, "the end of the corridor is its beginning");
+            SpotNamed("stacks_illusion").Resolve(p, Rules.CheckOutcome.Success);
+            p.Hud.CloseAll();
+            Assert.IsTrue(g.World.Flag(WorldDb.StacksUnlooped));
+            yield return StepOn(p, new Vector2Int(28, 2), new Vector2Int(29, 2));
+            Assert.AreEqual(new Vector2Int(29, 2), p.MapPos, "seen through: the corridor ends where it should");
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(2);
+            Assert.IsTrue(g.World.Flag(WorldDb.StacksUnlooped), "saved");
+        }
+
+        [UnityTest]
+        public IEnumerator RestrictedSectionOpensEveryWay()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(31), "rogue", "elf");
+            yield return Frames(2);
+            ActTwoAt(g, p, "library", new Vector2Int(31, 2));
+            g.World.SetFlag(WorldDb.StacksUnlooped);
+            yield return Frames(2);
+            yield return StepOn(p, new Vector2Int(32, 2), new Vector2Int(33, 2));
+            Assert.AreEqual("library", p.Zone.Def.Id, "warded shut without a way in");
+            Assert.AreEqual(1, Count(p, "Runes crawl across the door"));
+            foreach (var way in new[] { "pass", "unweave_ward", "pick_ward_lock" })
+            {
+                g.World.Flags.Remove(WorldDb.RestrictedPass);
+                g.World.Flags.Remove("secret:unweave_ward"); g.World.Flags.Remove("secret:pick_ward_lock");
+                if (way == "pass") g.World.SetFlag(WorldDb.RestrictedPass);
+                else SpotNamed(way).Resolve(p, Rules.CheckOutcome.Success);
+                p.Hud.CloseAll();
+                if (p.Zone.Def.Id != "library") g.Warp(p, "library", new Vector2Int(31, 2), false);
+                yield return Frames(2);
+                yield return StepOn(p, new Vector2Int(32, 2), new Vector2Int(33, 2));
+                Assert.AreEqual("restricted", p.Zone.Def.Id, $"the door opens by way of: {way}");
+                g.Warp(p, "library", new Vector2Int(31, 2), false);
+                yield return Frames(2);
+            }
+            // The Archivist's pass, shown: the guardians stand down (full XP), the existing vouch path.
+            var group = WorldDb.Zones["restricted"].EnemyGroups.Single(e => e.Id == "restricted_guardians");
+            Assert.AreEqual(WorldDb.ThornePassShown, group.VouchFlag);
+        }
+
+        [UnityTest]
+        public IEnumerator DragonWaitsOutsideTheSealingHallAndRejoins()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(32), "fighter", "human");
+            yield return Frames(2);
+            ActTwoAt(g, p, "restricted", new Vector2Int(20, 15));
+            yield return Frames(15);
+            var dragon = g.DragonAgent;
+            Assert.IsNotNull(dragon);
+            Assert.AreEqual("restricted", dragon.Actor.Zone.Def.Id, "the dragon came this far");
+            g.Warp(p, "sealing_hall", new Vector2Int(12, 19), false);
+            yield return Frames(15);
+            Assert.AreEqual("restricted", dragon.Actor.Zone.Def.Id, "it won't go down");
+            Assert.GreaterOrEqual(Count(p, "won't come down the stairs"), 1, "and it says so");
+            g.Warp(p, "restricted", new Vector2Int(21, 14), false);
+            yield return Frames(15);
+            Assert.AreEqual("restricted", dragon.Actor.Zone.Def.Id);
+            Assert.Less(Vector2.Distance(dragon.Actor.MapPos, p.MapPos), 6f, "it rejoins you");
+            // Saved in the hall: it waits upstairs, and finds you again once you come up.
+            g.Warp(p, "sealing_hall", new Vector2Int(12, 19), false);
+            yield return Frames(5);
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(15);
+            Assert.AreEqual("sealing_hall", g.Players[0].Zone.Def.Id);
+            Assert.AreEqual("restricted", g.DragonAgent.Actor.Zone.Def.Id, "loaded in the hall: the dragon is waiting upstairs");
+            g.Warp(g.Players[0], "library", new Vector2Int(17, 22), false);
+            yield return Frames(15);
+            Assert.AreEqual("library", g.DragonAgent.Actor.Zone.Def.Id, "and catches up once you leave by any route");
+        }
+
+        [UnityTest]
+        public IEnumerator WardenLoreIsInTheRestrictedSection()
+        {
+            var g = GameRoot.I;
+            g.DebugStart(Still(33), "cleric", "dwarf");
+            yield return Frames(2);
+            Assert.IsTrue(WorldDb.Zones["restricted"].Lore.Exists(l => l.Id == "emberhorn_warden"));
+            Assert.AreEqual(2, LoreDb.Get("emberhorn_warden").MinAct, "Act II only");
+        }
     }
 }

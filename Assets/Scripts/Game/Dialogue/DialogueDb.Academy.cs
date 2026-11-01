@@ -18,6 +18,7 @@ namespace DnD.Game
                 case "pell": return Pell();
                 case "oakes": return Oakes();
                 case "varrow": return Varrow();
+                case "thorne": return Thorne();
                 default: return null;
             }
         }
@@ -113,6 +114,28 @@ namespace DnD.Game
                 c => c.G.World.SetFlag("met_oakes"))
                 .Bye("I hope they recover.");
             d.Node("start", who, c => "Grey at the edges. Grey! As if the fire in them is going out.").Bye("Good luck, Professor.");
+            return d;
+        }
+
+        static Dialogue Thorne()
+        {
+            var d = new Dialogue("thorne", c => c.G.World.Flag("met_thorne") ? "start" : "intro");
+            const string who = "Archivist Mirelle Thorne";
+            d.Node("intro", who,
+                c => "Visitors. Wonderful. Lower your voices: the books are listening, and some of them are rude. Mirelle Thorne, Archivist. If you've come to borrow, you'll need a reason. If you've come to return, you'll need a better one, because I KNOW how late it is.",
+                c => "A narrow, upright woman with half-moon spectacles and a ring of keys that never jingles. Every stamp she makes on a returns card sounds like a verdict.",
+                c => c.G.World.SetFlag("met_thorne"))
+                .Say("What's beyond the long corridor?", "corridor")
+                .Bye("We'll be quiet.");
+            d.Node("corridor", who,
+                c => "The Restricted Section. Restricted, as in: not for you. The corridor makes sure of that. It's a very old joke and it still works.")
+                .Roll(Skill.Insight, 14, "(Insight) She's hiding something. What?", "corridor_insight", "corridor_insight_no")
+                .Bye("Understood.");
+            d.Node("corridor_insight", who, c => "...",
+                c => "Her eyes flick to the floor, as if she can see through it. Whatever is below the Restricted Section, she knows about it, and she hates it, and she has been told not to say so.")
+                .Bye("We'll leave it there. For now.");
+            d.Node("corridor_insight_no", who, c => "...", c => "She stamps a card. The verdict is: none of your business.").Bye("Fair enough.");
+            d.Node("start", who, c => "Quietly, please.").Say("What's beyond the long corridor?", "corridor").Bye("Sorry.");
             return d;
         }
 
