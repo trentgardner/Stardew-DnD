@@ -261,6 +261,26 @@ namespace DnD.Rules.Content
                 Abilities = { new MonsterAbilityDef { Name = "Acid Spray", Shape = TargetShape.Line, AreaFt = 30, Dice = DiceExpr.Parse("3d6"), DamageType = DamageType.Acid, SaveAbility = Ability.DEX, SaveDC = 13, RechargeMin = 6 } },
             };
 
+            // Act II Phase 4: the Ashsworn, the few who secretly serve the Queen.
+            All["ashsworn_zealot"] = new MonsterDef
+            {
+                Id = "ashsworn_zealot", Name = "Ashsworn Zealot", SpriteId = "mon_ashsworn_zealot", AC = 13, HitDice = DiceExpr.Parse("6d8+6"),
+                Scores = new[] { 11, 14, 12, 10, 13, 14 }, CR = 2, XP = 450, Speed = 30,
+                Description = "A grey-robed believer with ash on their hands and a terrible calm. (SRD Cult Fanatic, without spells.)",
+                Attacks = { Melee("Dagger", 4, "1d4+2", DamageType.Piercing), Melee("Ember Touch", 4, "1d6+2", DamageType.Fire) },
+                Multiattack = { "Dagger", "Ember Touch" },
+                CopperMin = 100, CopperMax = 800,
+            };
+            All["ashsworn_keeper"] = new MonsterDef
+            {
+                Id = "ashsworn_keeper", Name = "Ashsworn Keeper", SpriteId = "mon_ashsworn_keeper", AC = 17, HitDice = DiceExpr.Parse("9d8+18"),
+                Scores = new[] { 16, 13, 14, 10, 11, 10 }, CR = 3, XP = 700, Speed = 30,
+                Description = "An old soldier in grey over chainmail, who once kept a beacon and now keeps a vigil. (SRD Veteran.)",
+                Attacks = { Melee("Longsword", 5, "1d8+3", DamageType.Slashing) },
+                Multiattack = { "Longsword", "Longsword" },
+                CopperMin = 500, CopperMax = 2000,
+            };
+
             // The party's hatchling (see Dragonling): HP comes from the party's level, not from hit dice.
             All["dragonling"] = new MonsterDef
             {

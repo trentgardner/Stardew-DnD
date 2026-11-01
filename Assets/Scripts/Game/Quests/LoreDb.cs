@@ -36,6 +36,9 @@ namespace DnD.Game
             // Act II Phase 3: the Lantern Road.
             Add("ash_fields", "Rings in the Ash", Places,
                 "On the Lantern Road the ash lies in wide, even rings, as if something very far away breathed out and the wind carried the breath round in circles. The rings are centred somewhere to the north-east. Towards the mountains.");
+            // Act II Phase 4: the four forces.
+            Add("beacon_orders", "The Ashsworn's Notes", Records,
+                "A sheaf of notes from the old beacon, in a dozen different hands, passed from one keeper to the next. They light no fires of their own. They gather where the ash falls thickest. They wait for the waking, and they write down every hearth that goes cold, as if keeping count for someone. The last page says only: \"Soon. Be ready to open the door.\"");
             Add("checkpoint_orders", "Checkpoint Orders", Records,
                 "A Crown checkpoint ledger, kept in a neat hand: names, dates, where from, where bound. One column is new this season, ruled in fresh ink: 'Travelling with an animal? (Describe.)' Three entries say 'dog'. One says 'large dog (?)'. The orders pinned inside the cover only say: count them all, and send the count on.");
             // Act II Phase 3: the Starfall Academy. The legend is everywhere, and everyone believes it.

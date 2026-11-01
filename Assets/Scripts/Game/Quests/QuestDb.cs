@@ -130,8 +130,43 @@ namespace DnD.Game
                     new QuestTrigger(QuestEvent.FlagSet, "ashby_heard", Answers.Academy, Answers.Heard),
                     new QuestTrigger(QuestEvent.FlagSet, "ashby_heard", Answers.Tower, Answers.Heard),
                     new QuestTrigger(QuestEvent.FlagSet, Factions.CommittedFlag, Answers.Heard, Answers.Chosen),
+                    new QuestTrigger(QuestEvent.FlagSet, Factions.CommittedFlag, Answers.Tower, Answers.Chosen),
+                    new QuestTrigger(QuestEvent.FlagSet, Factions.CommittedFlag, Answers.Academy, Answers.Chosen),
+                    new QuestTrigger(QuestEvent.FlagSet, Factions.CommittedFlag, Answers.Road, Answers.Chosen),
                 },
             });
+            // ------------------------------------------------------------ Act II Phase 4: the Crown
+            Add(new QuestDef
+            {
+                Act = 2, Id = "counted", Title = "Counted", Giver = "holloway", Faction = "crown",
+                StageText = new[] {
+                    "", "Sergeant Holloway's supply wagon from Greywater Redoubt is two days late. Look for it in the ash fields south of the Lantern Road.",
+                    "The hounds are gone from the wagon. The drivers cut the horses loose and ran: their tracks lead to the abandoned farmhouse.",
+                    "The drivers are safe and on their way. Tell Holloway.",
+                    "Complete. The Crown keeps this road fed, one late wagon at a time." },
+                Triggers = { new QuestTrigger(QuestEvent.GroupResolved, "wagon_hounds", 1, 2) },
+                Reward = new QuestReward { Xp = 1200, Item = "potion_greater_healing", Npc = "holloway", Friendship = 50 },
+            });
+            Add(new QuestDef
+            {
+                Act = 2, Id = "two_copies", Title = "Two Copies", Giver = "varrow", Faction = "crown",
+                StageText = new[] {
+                    "", "Magister Varrow's second copies go out with the evening post. The post rider takes the Lantern Road north, to Greywater Redoubt. Ask whoever reads them.",
+                    "Complete. You know who reads the Academy's notes, and you decided what to do about it." },
+                Reward = new QuestReward { Xp = 1000 },
+            });
+            Add(new QuestDef
+            {
+                Act = 2, Id = "crowns_banner", Title = "Under the Crown's Banner", Giver = "marsh", Faction = "crown", Major = true,
+                StageText = new[] {
+                    "", "You stand with the Crown. Lady-Commander Marsh wants the Ashsworn out of the old beacon tower in the Redoubt's north-east corner.",
+                    "The beacon is clear. Search what the Ashsworn left behind.",
+                    "You have the Ashsworn's notes. Report to Lady-Commander Marsh.",
+                    "Complete. Your dragon wears the realm's brass tag, and the realm stands behind you." },
+                Triggers = { new QuestTrigger(QuestEvent.GroupResolved, "beacon_ashsworn", 1, 2) },
+                Reward = new QuestReward { Xp = 3000, Item = "crown_writ", Npc = "marsh", Friendship = 100, Flag = "banner_crown" },
+            });
+
             Add(new QuestDef
             {
                 Act = 2, Id = "overdue", Title = "Overdue", Giver = "thorne",

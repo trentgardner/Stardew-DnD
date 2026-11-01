@@ -1448,6 +1448,16 @@ audio music_library "Audio/Musics/9 - Quiet.ogg"
 audio music_restricted "Audio/Musics/28 - Tension.ogg"
 audio music_sealing "Audio/Musics/14 - Curse.ogg"
 audio music_ashby "Audio/Musics/16 - Melancholia.ogg"
+
+# ================================================================ Act II Phase 4: the four forces
+audio music_redoubt "Audio/Musics/1 - Adventure Begin.ogg"
+actor npc_marsh "Actor/Character/SamuraiRed/redsamurai.png"
+still mon_ashsworn_src "Actor/Character/NinjaGray/SpriteSheet.png"
+tint mon_ashsworn_zealot_0 mon_ashsworn_src_0 0 0.25 0.85
+tint mon_ashsworn_zealot_1 mon_ashsworn_src_1 0 0.25 0.85
+still mon_ashsworn_ksrc "Actor/Character/NinjaDark/SpriteSheet.png"
+tint mon_ashsworn_keeper_0 mon_ashsworn_ksrc_0 0 0.3 1.1
+tint mon_ashsworn_keeper_1 mon_ashsworn_ksrc_1 0 0.3 1.1
 # ---------------------------------------------------------------- Act II Phase 3: the Restricted Section's rug
 pattern a2_rug0
 ................
