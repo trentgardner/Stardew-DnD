@@ -377,6 +377,41 @@ Eldritch Blast fires two beams at 5 (2024) instead of one bigger one.
 
   Lava is map char `9`.
 
+## The Act II pass (Act II Phase 7)
+
+- **XP audit** (`ActTwoXp`, held by `ActTwoPassTests`). Per player, on top of the 6500 you start Act II with:
+
+  | | Solo | Co-op |
+  |---|---|---|
+  | Main path to the gate | 57655 | 48980 |
+  | + the Warden | 69555 | 57930 |
+  | Everything to the gate | 69681 | 58631 |
+
+  Targets: level 9 (48000) by the gate on the main path; level 10 (64000) when the Warden falls; completionists ≤ 64000 × 1.3. Co-op is the binding case, since fights split XP.
+  The single tuning knob is "Answers" StageXp:
+
+  | Stage | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+  |---|---|---|---|---|---|---|---|---|
+  | XP | 3000 | 2000 | 6000 | 8000 | 6000 | 4000 | 6000 | 6000 |
+
+- **The End of Act II card:** `ActEndScreen(p, 2)`, once per playthrough (`act2_end_seen`), 3 s after the Warden falls, on every player's screen. It also shows on loading an older save past the Warden. It has a line for the side you stood with.
+- **The secret guard** (`LoreTests`): it scans the player-facing strings of every line about the Queen, the Ashsworn, the Warden, the waking or the door (Snik the Egg-Warden excepted). `SecretGuardCatchesALeak` proves the matcher works: before Phase 7 it held a literal backspace and never matched anything.
+- **Balance table** (RulesTests `ActTwoBalanceTable`): median rounds for a 4-class party at the expected level.
+
+  | Fight | Level | Rounds |
+  |---|---|---|
+  | road boars | 5 | 3.0 |
+  | Restricted guardians | 6 | 2.8 |
+  | Cragfoot wolves | 6 | 2.8 |
+  | beacon Ashsworn | 7 | 4.5 |
+  | the circle's bears (now three) | 7 | 2.0 |
+  | Frost guardians | 7 | 2.0 |
+  | Ashmaw | 7 | 2.6 |
+  | Grey Vigil | 8 | 3.4 |
+  | salamanders | 9 | 3.7 |
+  | elemental | 9 | 1.9 |
+  | Warden | 9 | 5.4 |
+
 ## Buoy (dedication)
 
 Buoy is Thistledown's neighbourhood dog: a black-and-white Australian Shepherd, a tribute to a real dog. He is NOT a companion and never fights.
