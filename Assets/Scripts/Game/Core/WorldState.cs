@@ -39,6 +39,8 @@ namespace DnD.Game
         public int Act = 1;
         /// <summary>The day Act II began (0 = not yet).</summary>
         public int ActTwoDay;
+        /// <summary>The day Act III began (two weeks after the Warden), 0 before.</summary>
+        public int ActThreeDay;
         /// <summary>The dragon's growth stage (DragonStage as int): Hatchling in Act I, Wyrmling ("teenager") in Act II.</summary>
         public int DragonStage;
         /// <summary>How far events have moved the dragon's opinion of someone from its starting feeling (DragonDb).</summary>
