@@ -38,6 +38,7 @@ namespace RulesTests
             ContentTests();
             LevelUpTests();
             LevelTenTests();
+            LevelThirteenTests();
             SpellTests5();
             MonsterTests();
             MartialTests10();

@@ -47,6 +47,8 @@ namespace DnD.Rules
         public Ability? AdvantageOnSaveAbility; // Beacon of Hope (WIS), Haste (DEX)
         public bool MaxHealing;           // Beacon of Hope
         public int AttackPenaltyDie;      // Synaptic Static: -1d6 to attack rolls
+        public bool ResistsPhysical;      // Stoneskin: resistance to bludgeoning, piercing and slashing
+        public bool FreeMovement;         // Freedom of Movement: no Paralyzed/Restrained, no Speed reductions
         /// <summary>Generic number for the effect's owner (e.g. the slot level Call Lightning was cast with).</summary>
         public int Power;
 
@@ -76,6 +78,9 @@ namespace DnD.Rules
                 case "sap": return new ActiveEffect { Id = id, Name = "Sapped", Source = source, RoundsLeft = 1, DisadvantageOnNextAttack = true };
                 case "slow": return new ActiveEffect { Id = id, Name = "Slowed", Source = source, RoundsLeft = 1, SpeedPenalty = 10 };
                 case "ray_of_frost": return new ActiveEffect { Id = id, Name = "Chilled", Source = source, RoundsLeft = 1, SpeedPenalty = 10 };
+                case "studied": return new ActiveEffect { Id = id, Name = "Studied", Source = source, RoundsLeft = 2, AdvantageForAttacker = source, ConsumedWhenAttacked = true };
+                case "staggering_blow": return new ActiveEffect { Id = id, Name = "Staggering Blow", Source = source, RoundsLeft = 1 };
+                case "sundered": return new ActiveEffect { Id = id, Name = "Sundered", Source = source, RoundsLeft = 1 };
                 case "vex": return new ActiveEffect { Id = id, Name = "Vexed", Source = source, RoundsLeft = 2, AdvantageForAttacker = source, ConsumedWhenAttacked = true };
                 case "prone": return new ActiveEffect { Id = id, Name = "Prone", Source = source, RoundsLeft = -1, Condition = Rules.Condition.Prone };
                 case "hold_person": return new ActiveEffect { Id = id, Name = "Paralyzed", Source = source, RoundsLeft = 10, Concentration = true, Condition = Rules.Condition.Paralyzed, RepeatSave = Ability.WIS, RepeatSaveDC = saveDC };
@@ -99,6 +104,9 @@ namespace DnD.Rules
                 case "steady_aim": return new ActiveEffect { Id = id, Name = "Steady Aim", Source = source, RoundsLeft = 1, AdvantageOnNextAttack = true };
                 case "brutal_ready": return new ActiveEffect { Id = id, Name = "Brutal Strike ready", Source = source, RoundsLeft = 1 };
                 case "cunning_ready": return new ActiveEffect { Id = id, Name = "Cunning Strike ready", Source = source, RoundsLeft = 1 };
+                case "cunning_ready2": return new ActiveEffect { Id = id, Name = "Second Cunning Strike ready", Source = source, RoundsLeft = 1 };
+                case "stoneskin": return new ActiveEffect { Id = id, Name = "Stoneskin", Source = source, RoundsLeft = 600, Concentration = true, ResistsPhysical = true };
+                case "freedom_of_movement": return new ActiveEffect { Id = id, Name = "Freedom of Movement", Source = source, RoundsLeft = 600, FreeMovement = true };
                 case "haste": return new ActiveEffect { Id = id, Name = "Hasted", Source = source, RoundsLeft = 10, Concentration = true, AcBonus = 2, SpeedDoubled = true, AdvantageOnSaveAbility = Ability.DEX };
                 case "lethargic": return new ActiveEffect { Id = id, Name = "Lethargic", Source = source, RoundsLeft = 2, Condition = Rules.Condition.Incapacitated };
                 case "slowed_spell": return new ActiveEffect { Id = id, Name = "Slowed", Source = source, RoundsLeft = 10, Concentration = true, AcBonus = -2, SpeedHalved = true, NoReactions = true, RepeatSave = Ability.WIS, RepeatSaveDC = saveDC };

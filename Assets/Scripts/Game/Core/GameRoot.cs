@@ -154,7 +154,7 @@ namespace DnD.Game
             }
             var slot = AddPlayer(device);
             var pc = CharacterFactory.Create(CharacterFactory.DefaultChoices(classId, speciesId, $"{speciesId} {classId}"));
-            if (level > PlayerCharacter.LevelCap) PlayerCharacter.LevelCap = PlayerCharacter.ActTwoLevelCap; // tests: preview Act II levels
+            if (level > PlayerCharacter.LevelCap) PlayerCharacter.LevelCap = level > PlayerCharacter.ActTwoLevelCap ? PlayerCharacter.ActThreeLevelCap : PlayerCharacter.ActTwoLevelCap; // tests: preview Act II/III levels
             while (pc.Level < level)
             {
                 pc.XP = Math.Max(pc.XP, PlayerCharacter.XpThresholds[pc.Level + 1]);

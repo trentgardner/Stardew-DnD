@@ -220,6 +220,11 @@ namespace DnD.Rules.Content
                 SaveAbility = Ability.DEX, HalfOnSave = true, Dice = new DiceExpr(0, 0, 20), DamageType = DamageType.Radiant, ZoneRadiusTiles = 2,
                 Description = "A spectral guardian holds a spot for 8 hours. Enemies that enter within 10 ft of it or end their turn there: DEX save, 20 radiant (half on a success). It fades after dealing 60." }, C);
 
+            Add(new SpellDef { Id = "freedom_of_movement", Name = "Freedom of Movement", Level = 4, School = "Abjuration", RangeFt = 5, Kind = SpellKind.Buff, EffectId = "freedom_of_movement",
+                Description = "Touch an ally: for an hour they can't be Paralyzed or Restrained, and nothing can reduce their Speed." }, B, C, D, R);
+            Add(new SpellDef { Id = "stoneskin", Name = "Stoneskin", Level = 4, School = "Abjuration", RangeFt = 5, Kind = SpellKind.Buff, Concentration = true, EffectId = "stoneskin",
+                Description = "Touch an ally: their skin turns hard as stone. Resistance to bludgeoning, piercing and slashing damage while you concentrate." }, D, R, S, W);
+
             // ---------------- Level 5
             Add(new SpellDef { Id = "cone_of_cold", Name = "Cone of Cold", Level = 5, School = "Evocation", RangeFt = 0, Kind = SpellKind.Save, Shape = TargetShape.Cone, AreaFt = 60,
                 SaveAbility = Ability.CON, HalfOnSave = true, Dice = DiceExpr.Parse("8d8"), DamageType = DamageType.Cold, UpcastDice = 1,

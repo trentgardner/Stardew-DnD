@@ -31,6 +31,10 @@ namespace DnD.Rules
         public int TargetAC;
         /// <summary>Barbarian 9: Brutal Strike declared for this attack (1 = Forceful Blow, 2 = Hamstring Blow); Rogue 5: Cunning Strike (1 = Trip, 2 = Poison, 3 = Withdraw).</summary>
         public int BrutalStrike, CunningStrike;
+        /// <summary>Rogue 11: Improved Cunning Strike's second rider (0 = none).</summary>
+        public int CunningStrike2;
+        /// <summary>Hunter 11: Superior Hunter's Prey: the Hunter's Mark damage that also hits a second creature within 30 ft (0 = none).</summary>
+        public int HuntersMarkSpill;
         public readonly List<string> AdvantageReasons = new List<string>();
         public readonly List<string> DisadvantageReasons = new List<string>();
 
@@ -71,7 +75,7 @@ namespace DnD.Rules
             foreach (var e in target.Effects)
             {
                 if (e.GrantsAdvantageToAttackers) adv.Add(e.Name.ToLower());
-                if (e.AdvantageForAttacker == attacker) adv.Add("vex");
+                if (e.AdvantageForAttacker == attacker) adv.Add(e.Id == "vex" ? "vex" : e.Name.ToLower());
             }
             foreach (var e in attacker.Effects)
             {
@@ -115,6 +119,9 @@ namespace DnD.Rules
             var adv = ComputeAdvantage(attacker, target, atk, ctx, res);
             var terms = new List<RollTerm> { new RollTerm(atk.IsSpell ? "spell attack" : "to hit", atk.ToHit) };
             if (attacker.D20Penalty != 0) terms.Add(new RollTerm("exhaustion", attacker.D20Penalty));
+            // Barbarian 13: Sundering Blow: the next attack by someone else gets +5.
+            var sunder = target.Effects.Find(e => e.Id == "sundered" && e.Source != attacker);
+            if (sunder != null) { target.Effects.Remove(sunder); terms.Add(new RollTerm("sundering blow", 5)); }
             res.Roll = Dice.RollD20(adv, terms);
             foreach (var e in attacker.Effects) if (e.AttackDie > 0) Dice.AddBonusDie(res.Roll, e.AttackDie);
             foreach (var e in attacker.Effects) if (e.AttackPenaltyDie > 0) Dice.AddBonusDie(res.Roll, -e.AttackPenaltyDie);
@@ -133,6 +140,9 @@ namespace DnD.Rules
             // Attacks against a Paralyzed/Unconscious creature from within 5 ft are automatic crits.
             if (res.Hit && ctx.DistanceFt <= 5 && (target.Has(Condition.Paralyzed) || target.Has(Condition.Unconscious)))
                 res.Critical = true;
+            // Fighter 13: Studied Attacks: a miss gives Advantage on the next attack against that creature.
+            if (!res.Hit && attacker is PlayerCharacter studier && studier.HasFeature("Studied Attacks") && !target.Effects.Any(e => e.Id == "studied" && e.Source == attacker))
+                target.AddEffect(EffectLibrary.Create("studied", attacker));
             return res;
         }
 
@@ -157,6 +167,8 @@ namespace DnD.Rules
                     r.Turn.SneakAttackUsed = true;
                     var cunning = pc.Effects.Find(e => e.Id == "cunning_ready");
                     if (cunning != null && pc.HasFeature("Cunning Strike")) { pc.Effects.Remove(cunning); r.CunningStrike = Math.Max(1, cunning.Power); sneak--; }
+                    var cunning2 = pc.CunningStrikesPerSneak > 1 ? pc.Effects.Find(e => e.Id == "cunning_ready2") : null;
+                    if (cunning2 != null && sneak > 1) { pc.Effects.Remove(cunning2); r.CunningStrike2 = Math.Max(1, cunning2.Power); sneak--; }
                     roll.Dice.AddRange(Dice.RollDamage(new DiceExpr(sneak, 6), r.Critical).Dice);
                     roll.Terms.Add(new RollTerm("sneak attack", 0));
                 }
@@ -182,6 +194,15 @@ namespace DnD.Rules
                     var mark = Dice.RollDamage(new DiceExpr(1, 6), r.Critical);
                     if (roll.Extra == null) { roll.Extra = mark; roll.ExtraType = DamageType.Force; }
                     else roll.Dice.AddRange(mark.Dice);
+                    if (pc.HasFeature("Superior Hunter's Prey") && !r.Turn.SuperiorPreyUsed) { r.Turn.SuperiorPreyUsed = true; r.HuntersMarkSpill = Math.Max(1, mark.Total); }
+                }
+                // Paladin 11: Radiant Strikes: +1d8 radiant on melee weapon and unarmed hits.
+                if (pc.HasFeature("Radiant Strikes") && !atk.Ranged && !atk.IsSpell)
+                {
+                    var rad = Dice.RollDamage(new DiceExpr(1, 8), r.Critical);
+                    if (roll.Extra == null) { roll.Extra = rad; roll.ExtraType = DamageType.Radiant; }
+                    else roll.Dice.AddRange(rad.Dice);
+                    roll.Terms.Add(new RollTerm("radiant strikes", 0));
                 }
                 // Hex: +1d6 necrotic on any attack hit against the creature you cursed.
                 if (r.Target.Effects.Any(e => e.Id == "hex" && e.Source == pc))
@@ -447,7 +468,7 @@ namespace DnD.Rules
         public bool CleaveUsed;
         public bool StunningStrikeUsed, WildResurgenceUsed;
         public bool HasteActionUsed;
-        public bool SneakAttackUsed, FrenzyUsed, ColossusUsed, HordeBreakerUsed;
+        public bool SneakAttackUsed, FrenzyUsed, ColossusUsed, HordeBreakerUsed, SuperiorPreyUsed;
         /// <summary>Sorcerer Quickened Spell: the next action spell this turn costs the Bonus Action instead.</summary>
         public bool QuickenNextSpell;
         /// <summary>The free object interaction (2024): used by swapping weapon sets.</summary>
@@ -462,7 +483,7 @@ namespace DnD.Rules
             Dashed = Disengaged = false;
             CastLeveledSpellThisTurn = false;
             CleaveUsed = HasteActionUsed = StunningStrikeUsed = WildResurgenceUsed = false;
-            SneakAttackUsed = FrenzyUsed = ColossusUsed = HordeBreakerUsed = QuickenNextSpell = false;
+            SneakAttackUsed = FrenzyUsed = ColossusUsed = HordeBreakerUsed = SuperiorPreyUsed = QuickenNextSpell = false;
             ObjectInteractionUsed = false;
             // Slow, Staggering Smite: no reactions while it lasts.
             foreach (var e in c.Effects) if (e.NoReactions) ReactionUsed = true;

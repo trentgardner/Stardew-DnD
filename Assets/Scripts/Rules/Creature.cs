@@ -126,6 +126,12 @@ namespace DnD.Rules
         public void AddEffect(ActiveEffect e)
         {
             if (e.Condition.HasValue && (ConditionImmune(e.Condition.Value) || Auras.Immune(this, e.Condition.Value))) return;
+            // Freedom of Movement: can't be Paralyzed or Restrained, and Speed can't be reduced.
+            if (Effects.Exists(x => x.FreeMovement))
+            {
+                if (e.Condition == Condition.Paralyzed || e.Condition == Condition.Restrained) return;
+                if (e.SpeedPenalty > 0 || e.SpeedHalved) { e = e.Clone(); e.SpeedPenalty = 0; e.SpeedHalved = false; }
+            }
             // Effects with the same id from the same source don't stack; refresh instead.
             Effects.RemoveAll(x => x.Id == e.Id && x.Source == e.Source);
             Effects.Add(e);
@@ -176,7 +182,8 @@ namespace DnD.Rules
         {
             if (IsDead || amount <= 0) return 0;
             if (Immunities.Contains(type)) { log?.Add($"{Name} is immune to {type.ToString().ToLower()}."); return 0; }
-            if (Resistances.Contains(type)) { amount /= 2; log?.Add($"{Name} resists ({type.ToString().ToLower()}), halved to {amount}."); }
+            bool stone = (type == DamageType.Bludgeoning || type == DamageType.Piercing || type == DamageType.Slashing) && Effects.Exists(x => x.ResistsPhysical);
+            if (Resistances.Contains(type) || stone) { amount /= 2; log?.Add($"{Name} resists ({type.ToString().ToLower()}), halved to {amount}."); }
             if (Vulnerabilities.Contains(type)) { amount *= 2; log?.Add($"{Name} is vulnerable! Doubled to {amount}."); }
 
             if (TempHP > 0)
