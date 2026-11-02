@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using DnD.Game;
 using DnD.Rules;
+using DnD.Rules.Content;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -116,6 +117,60 @@ namespace DnD.Tests
             Run(fleet, u, u.Pos);
             Assert.Greater(u.Cb.Turn.MovementLeftFt, move, "it Dashes");
             Assert.IsFalse(c.ActionsFor(p).Any(a => a.Name.Contains("Fleet Step")), "once per turn");
+        }
+
+        /// <summary>A level-13 companion of `cls` with `spell` prepared, beside a level-11 fighter, in the forest wolves' fight.</summary>
+        static IEnumerator CasterFight(string cls, string spell, int seed, System.Action<CombatInstance, Unit, Unit, Unit> got)
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(seed), "fighter", "human", level: 11);
+            var caster = CharacterFactory.Create(CharacterFactory.DefaultChoices(cls, "elf", "Sable"));
+            caster.XP = 999999;
+            while (caster.Level < 13) caster.LevelUp(caster.AutoPlan(), null);
+            if (!caster.PreparedSpells.Contains(spell)) caster.PreparedSpells.Add(spell);
+            var comp = g.SpawnCompanion(p, caster, "hums");
+            comp.Manual = false;
+            yield return Frames(2);
+            g.Warp(p, "forest", new Vector2Int(34, 8), false);
+            yield return Frames(3);
+            p.Hud.CloseAll();
+            g.StartGroupCombat("forest_wolves", p);
+            var c = g.Combats.Single();
+            var me = c.Units.First(u => u.C == caster);
+            var hero = c.Units.First(u => u.Owner == p);
+            var wolf = c.Units.First(u => u.C.Team == Team.Enemies && u.Active);
+            if (me.Cb == null) me.Cb = new Combatant(me.C);
+            hero.C.MaxHP = hero.C.HP = 300; wolf.C.MaxHP = wolf.C.HP = 300;
+            var near = wolf.Pos + Vector2Int.left;
+            if (!hero.A.Zone.IsWalkable(near) || c.Occupied(near)) near = wolf.Pos + Vector2Int.right;
+            hero.A.PlaceAt(hero.A.Zone, near);
+            got(c, me, hero, wolf);
+        }
+
+        [UnityTest]
+        public IEnumerator FireStormSparesAlliesInTheArea()
+        {
+            CombatInstance c = null; Unit me = null, hero = null, wolf = null;
+            yield return CasterFight("druid", "fire_storm", 4, (a, b, d, e) => { c = a; me = b; hero = d; wolf = e; });
+            var run = c.DebugCast(me, "fire_storm", wolf.Pos);
+            while (run.MoveNext()) { }
+            Assert.Less(wolf.C.HP, 300, "the wolf burns");
+            Assert.AreEqual(300, hero.C.HP, "the fighter beside it is untouched");
+        }
+
+        [UnityTest]
+        public IEnumerator ChainLightningLeapsToOtherWolves()
+        {
+            CombatInstance c = null; Unit me = null, hero = null, wolf = null;
+            yield return CasterFight("sorcerer", "chain_lightning", 5, (a, b, d, e) => { c = a; me = b; hero = d; wolf = e; });
+            var others = c.Units.Where(u => u.C.Team == Team.Enemies && u.Active && u != wolf).ToList();
+            foreach (var o in others) o.C.MaxHP = o.C.HP = 300;
+            var run = c.DebugCast(me, "chain_lightning", wolf.Pos);
+            while (run.MoveNext()) { }
+            Assert.Less(wolf.C.HP, 300, "the first wolf is struck");
+            int near = others.Count(o => Vector2Int.Distance(o.Pos, wolf.Pos) <= 6);
+            if (near > 0) Assert.IsTrue(others.Any(o => o.C.HP < 300), "the bolt leaps to another wolf");
+            Assert.AreEqual(300, hero.C.HP, "it never leaps to an ally");
         }
     }
 }

@@ -48,6 +48,9 @@ namespace DnD.Rules
         public bool MaxHealing;           // Beacon of Hope
         public int AttackPenaltyDie;      // Synaptic Static: -1d6 to attack rolls
         public bool ResistsPhysical;      // Stoneskin: resistance to bludgeoning, piercing and slashing
+        public bool AttackDisadvantage;   // Irresistible Dance: every attack roll has Disadvantage while it lasts
+        public Ability? DisadvantageOnSaveAbility; // Irresistible Dance: DEX saves
+        public int RegenPerTurn;          // Regenerate: HP regained at the start of each of the bearer's turns
         public bool FreeMovement;         // Freedom of Movement: no Paralyzed/Restrained, no Speed reductions
         /// <summary>Generic number for the effect's owner (e.g. the slot level Call Lightning was cast with).</summary>
         public int Power;
@@ -105,6 +108,12 @@ namespace DnD.Rules
                 case "brutal_ready": return new ActiveEffect { Id = id, Name = "Brutal Strike ready", Source = source, RoundsLeft = 1 };
                 case "cunning_ready": return new ActiveEffect { Id = id, Name = "Cunning Strike ready", Source = source, RoundsLeft = 1 };
                 case "cunning_ready2": return new ActiveEffect { Id = id, Name = "Second Cunning Strike ready", Source = source, RoundsLeft = 1 };
+                case "dancing": return new ActiveEffect { Id = id, Name = "Dancing", Source = source, RoundsLeft = 10, Concentration = true, GrantsAdvantageToAttackers = true,
+                    AttackDisadvantage = true, DisadvantageOnSaveAbility = Ability.DEX, SpeedPenalty = 999, RepeatSave = Ability.WIS, RepeatSaveDC = saveDC };
+                case "sunbeam_blind": return new ActiveEffect { Id = id, Name = "Blinded", Source = source, RoundsLeft = 1, Condition = Rules.Condition.Blinded };
+                case "regenerating": return new ActiveEffect { Id = id, Name = "Regenerating", Source = source, RoundsLeft = 600, RegenPerTurn = 1 };
+                case "caged": return new ActiveEffect { Id = id, Name = "Caged", Source = source, RoundsLeft = 600, SpeedPenalty = 999 };
+                case "heroes_feast": return new ActiveEffect { Id = id, Name = "Heroes' Feast", Source = source, RoundsLeft = -1 };
                 case "stoneskin": return new ActiveEffect { Id = id, Name = "Stoneskin", Source = source, RoundsLeft = 600, Concentration = true, ResistsPhysical = true };
                 case "freedom_of_movement": return new ActiveEffect { Id = id, Name = "Freedom of Movement", Source = source, RoundsLeft = 600, FreeMovement = true };
                 case "haste": return new ActiveEffect { Id = id, Name = "Hasted", Source = source, RoundsLeft = 10, Concentration = true, AcBonus = 2, SpeedDoubled = true, AdvantageOnSaveAbility = Ability.DEX };

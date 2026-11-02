@@ -79,6 +79,7 @@ namespace DnD.Rules
             }
             foreach (var e in attacker.Effects)
             {
+                if (e.AttackDisadvantage) dis.Add(e.Name.ToLower());
                 if (e.DisadvantageOnNextAttack) dis.Add(e.Name.ToLower());
                 if (e.AdvantageOnNextAttack) adv.Add(e.Name.ToLower());
             }
@@ -355,7 +356,31 @@ namespace DnD.Rules
             var d = s.Dice;
             if (s.IsCantrip && s.Id != "eldritch_blast") d = new DiceExpr(d.Count * caster.CantripDiceMultiplier, d.Sides, d.Bonus); // Eldritch Blast adds beams instead
             else if (slotLevel > s.Level && s.UpcastDice > 0) d = d.WithExtraDice(s.UpcastDice * (slotLevel - s.Level));
+            if (slotLevel > s.Level && s.UpcastFlat > 0) d = new DiceExpr(d.Count, d.Sides, d.Bonus + s.UpcastFlat * (slotLevel - s.Level));
             return d;
+        }
+
+        /// <summary>Chain Lightning: how many more creatures the bolt leaps to at this slot level.</summary>
+        public static int ChainTargetsAt(SpellDef s, int slotLevel) => s.ChainTargets <= 0 ? 0 : s.ChainTargets + Math.Max(0, slotLevel - s.Level);
+
+        /// <summary>Forcecage can't hold a legendary creature (it would lock a boss out of its own fight).</summary>
+        public static bool CanCage(Creature c) => !(c is Monster m && m.Def.LegendaryPerRound > 0);
+
+        /// <summary>Heal: also ends Blinded, Deafened and Poisoned. Returns how many conditions it ended.</summary>
+        public static int HealCleanse(Creature c) =>
+            c.Effects.RemoveAll(e => e.Condition == Condition.Blinded || e.Condition == Condition.Deafened || e.Condition == Condition.Poisoned);
+
+        /// <summary>Heroes' Feast: +2d10 max HP (and HP), immune to Poisoned and Frightened until the next Long Rest.</summary>
+        public static int HeroesFeast(Creature c, PlayerCharacter caster)
+        {
+            int bonus = Dice.Roll(10) + Dice.Roll(10);
+            var fx = EffectLibrary.Create("heroes_feast", caster);
+            fx.TempMaxHp = bonus;
+            c.Effects.RemoveAll(e => e.Id == "heroes_feast");
+            c.Effects.RemoveAll(e => e.Condition == Condition.Poisoned || e.Condition == Condition.Frightened);
+            c.AddEffect(fx);
+            c.Heal(bonus);
+            return bonus;
         }
 
         public static DamageRoll RollEffect(PlayerCharacter caster, SpellDef s, int slotLevel, bool critical)
@@ -549,6 +574,7 @@ namespace DnD.Rules
         {
             var c = Current;
             c.Turn.Reset(c.Creature);
+            c.Creature.StartOfTurnRegen(log);
             foreach (var cb in Order)
                 if (cb.Creature is PlayerCharacter h && h.MultiattackDefenseAgainst == c.Creature) h.MultiattackDefenseAgainst = null;
             // Durations tick at the start of the source's turn.

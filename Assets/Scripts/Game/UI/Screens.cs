@@ -547,7 +547,8 @@ namespace DnD.Game
         }
 
         static bool OutOfCombatCastable(SpellDef s) =>
-            s.Kind == SpellKind.Heal || s.Id == "light" || s.Id == "guidance" || s.Id == "mage_armor" || s.Id == "aid" || s.Id == "lesser_restoration" || s.Id == "detect_magic";
+            s.Kind == SpellKind.Heal || s.Id == "light" || s.Id == "guidance" || s.Id == "mage_armor" || s.Id == "aid" || s.Id == "lesser_restoration" || s.Id == "detect_magic"
+            || s.Id == "heroes_feast" || s.Id == "resurrection";
 
         void ShowInfo()
         {
@@ -566,7 +567,23 @@ namespace DnD.Game
             if (!s.IsCantrip && slot < 0) return;
             if (s.Id == "light") { Slot.Avatar.LightSpellMinutes = 60; Hud.Toast("Your staff glows with soft light (1 hour).", UIKit.UtilityBlue); Sfx.Play("spell"); return; }
             if (s.Id == "detect_magic") { Hud.Narrate("You close your eyes and feel for magic. Faint warmth pulses from somewhere deep beneath the mountains...", false); return; }
+            if (s.Id == "resurrection" && !GameRoot.I.AnyFallen(Slot)) { Hud.Toast("Nobody in your party has fallen.", UIKit.Bad); return; }
             SpellResolver.PaySlot(pc, s, slot);
+            if (s.Id == "heroes_feast")
+            {
+                foreach (var guest in GameRoot.I.PartyOf(Slot)) SpellResolver.HeroesFeast(guest, pc);
+                Hud.Toast("A feast fit for heroes. Everyone eats; everyone feels braver.", UIKit.Gold);
+                Sfx.Play("heal");
+                Rebuild();
+                return;
+            }
+            if (s.Id == "resurrection")
+            {
+                GameRoot.I.ReviveFallen(Slot);
+                Hud.Toast("Breath returns. Your fallen friends open their eyes.", UIKit.HealGreen);
+                Rebuild();
+                return;
+            }
             if (s.Kind == SpellKind.Heal)
             {
                 var target = GameRoot.I.LowestHpAlly(Slot);

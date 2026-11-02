@@ -123,8 +123,22 @@ namespace DnD.Rules
         /// <summary>Conditions this creature can't be given right now (Mindless Rage, Aura of Courage...).</summary>
         public virtual bool ConditionImmune(Condition c) => false;
 
+        /// <summary>Regenerate: regain HP at the start of your turn (not while down).</summary>
+        public int StartOfTurnRegen(List<string> log)
+        {
+            if (IsDead || HP <= 0) return 0;
+            int n = 0;
+            foreach (var e in Effects) n += e.RegenPerTurn;
+            if (n <= 0) return 0;
+            int h = Heal(n);
+            if (h > 0) log?.Add($"{Name} regenerates {h} HP.");
+            return h;
+        }
+
         public void AddEffect(ActiveEffect e)
         {
+            // Heroes' Feast: immune to Poisoned and Frightened.
+            if ((e.Condition == Condition.Poisoned || e.Condition == Condition.Frightened) && Effects.Exists(x => x.Id == "heroes_feast")) return;
             if (e.Condition.HasValue && (ConditionImmune(e.Condition.Value) || Auras.Immune(this, e.Condition.Value))) return;
             // Freedom of Movement: can't be Paralyzed or Restrained, and Speed can't be reduced.
             if (Effects.Exists(x => x.FreeMovement))

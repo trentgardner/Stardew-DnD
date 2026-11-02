@@ -263,6 +263,16 @@ namespace DnD.Game
                 list.Add(Need(new CombatAction { Name = "Call Lightning (again)", Group = ActionGroup.Spells, Cost = ActionCost.Action, Target = Targeting.Tile, RangeFt = cl.RangeFt, AreaTiles = 1,
                     Tooltip = "Your storm is still overhead: call another bolt, no slot needed.", Run = (me, tile) => CastSpell(me, pc, cl, tile, storm.Power) }, t, pc));
             }
+            foreach (var on in pc.Effects.Where(e => e.Id.StartsWith("recast_")).ToList())
+            {
+                var rs = SpellsDb.Get(on.Id.Substring(7));
+                if (rs == null || pc.ConcentratingOn != rs.Id) continue;
+                var again = new CombatAction { Name = $"{rs.Name} (again)", Group = ActionGroup.Spells, Cost = ActionCost.Action, RangeFt = Math.Max(5, rs.RangeFt),
+                    Tooltip = $"You're still concentrating on {rs.Name}: use it again, no slot needed.", Run = (me, tile) => CastSpell(me, pc, rs, tile, on.Power) };
+                if (rs.Shape == TargetShape.Single) again.Target = Targeting.Enemy;
+                else { again.Target = Targeting.Tile; again.AreaTiles = Math.Max(1, rs.AreaFt / 5); again.AreaFromSelf = rs.RangeFt == 0; again.AreaLine = rs.Shape == TargetShape.Line; if (again.AreaFromSelf) again.RangeFt = rs.AreaFt; }
+                list.Add(Need(again, t, pc));
+            }
             if (pc.HasEffect("swift_quiver") && weapon.Ranged)
                 list.Add(Need(new CombatAction { Name = "Swift Quiver (2 shots)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.Enemy, RangeFt = weapon.RangeLong,
                     Tooltip = "Bonus Action: two attacks with your ranged weapon.", Run = (me, tile) => SwiftQuiver(me, UnitAt(tile), weapon) }, t, pc));
@@ -457,7 +467,7 @@ namespace DnD.Game
         }
 
         static bool CombatUsable(SpellDef s) =>
-            s.Kind != SpellKind.Utility || s.Id == "spare_the_dying" || s.Id == "misty_step" || s.Id == "dimension_door" || s.Id == "guardian_of_faith";
+            s.Kind != SpellKind.Utility || s.Id == "spare_the_dying" || s.Id == "misty_step" || s.Id == "dimension_door" || s.Id == "guardian_of_faith" || s.Id == "forcecage";
 
         CombatAction SpellAction(Unit u, PlayerCharacter pc, SpellDef s)
         {
@@ -1041,11 +1051,16 @@ namespace DnD.Game
                     if (s.ZoneLineTiles > 0) area = WallTiles(me, tile, s.ZoneLineTiles);
                     else area = AreaTiles(me, new CombatAction { AreaTiles = s.Shape == TargetShape.Single ? 0 : Math.Max(1, s.AreaFt / 5), AreaFromSelf = s.RangeFt == 0, AreaLine = s.Shape == TargetShape.Line, RangeFt = s.RangeFt == 0 ? s.AreaFt : s.RangeFt }, tile);
                     if (s.Shape == TargetShape.Single) { if (target != null) targets.Add(target); }
+                    // Chain Lightning: the bolt leaps on to more foes near the first.
+                    if (s.ChainTargets > 0 && target != null)
+                        targets.AddRange(Units.Where(o => o != target && o.Active && Hostile(me, o) && Zone.DistanceFt(o.Pos, target.Pos) <= s.ChainRangeFt)
+                            .OrderBy(o => Zone.DistanceFt(o.Pos, target.Pos)).Take(SpellResolver.ChainTargetsAt(s, Math.Max(slot, s.Level))));
                     else targets.AddRange(Units.Where(o => o.Active && area.Contains(o.Pos) && o != me && (!s.OnlyEnemies || Hostile(me, o))));
                     if (s.MaxTargets > 1 && targets.Count > s.MaxTargets) targets = targets.OrderBy(o => Zone.DistanceFt(tile, o.Pos)).Take(s.MaxTargets).ToList();
                     // Evoker 6: Sculpt Spells: friends in the blast are left untouched.
                     var sculpted = SpellResolver.Sculpted(pc, s, targets.Select(o => o.C));
                     if (sculpted.Count > 0) { targets.RemoveAll(o => sculpted.Contains(o.C)); Log($"{pc.Name} sculpts the spell around {string.Join(", ", sculpted.Select(c => c.Name))}."); }
+                    if (s.Recastable && !recast) pc.AddEffect(new ActiveEffect { Id = "recast_" + s.Id, Name = s.Name, Source = pc, RoundsLeft = 10, Concentration = true, Power = Math.Max(slot, s.Level) });
                     if (s.Id == "call_lightning" && !recast) { var storm = EffectLibrary.Create("call_lightning", pc); storm.Power = Math.Max(slot, s.Level); pc.AddEffect(storm); }
                     if (s.ZoneLineTiles > 0)
                     {
@@ -1076,6 +1091,7 @@ namespace DnD.Game
                             SpellResolver.ApplySaveDamage(pc, t.C, s, dmg, saved, lines, second);
                             lines.ForEach(Log);
                             t.A.Popup("-" + Math.Max(0, before - t.C.HP), UIKit.DamageRed);
+                            if (s.Id == "disintegrate" && t.C.IsDown && !(t.C is PlayerCharacter)) Log($"{t.Name} crumbles into fine grey dust.");
                             OnDamaged(t);
                         }
                         if (!saved && s.EffectId != null && !t.C.IsDown) ApplySpellEffect(me, t, s);
@@ -1100,6 +1116,8 @@ namespace DnD.Game
                         int h = hu.C.Heal(SpellResolver.HealTotal(dmg, hu.C));
                         hu.A.Popup("+" + h, UIKit.HealGreen);
                         Log($"{hu.Name} regains {h} HP{(wasDown ? " and gets back up!" : ".")}");
+                        if (s.Id == "heal" && SpellResolver.HealCleanse(hu.C) > 0) Log($"{hu.Name}'s eyes clear and the poison burns away.");
+                        if (s.Id == "regenerate") { hu.C.AddEffect(EffectLibrary.Create("regenerating", pc)); Log($"{hu.Name}'s wounds keep knitting closed."); }
                     }
                     int blessed = healed.Any(o => o != me) ? SpellResolver.BlessedHealerAmount(pc, s, Math.Max(slot, s.Level)) : 0;
                     if (blessed > 0) { int bh = pc.Heal(blessed); if (bh > 0) { me.A.Popup("+" + bh, UIKit.HealGreen); Log($"Blessed Healer: {pc.Name} regains {bh} HP."); } }
@@ -1162,6 +1180,22 @@ namespace DnD.Game
                         {
                             var spot = Neighbours(tile).FirstOrDefault(n => Zone.IsWalkable(n) && !Occupied(n));
                             if (spot != default) { buddy.A.PlaceAt(Zone, spot); Log($"{buddy.Name} steps through with {pc.Name}."); }
+                        }
+                    }
+                    else if (s.Id == "forcecage")
+                    {
+                        var cell = new[] { tile, tile + Vector2Int.right, tile + Vector2Int.up, tile + Vector2Int.one };
+                        var caught = Units.Where(o => o.Active && cell.Contains(o.Pos)).ToList();
+                        if (caught.Count == 0) Log("The cage drops around an empty spot.");
+                        foreach (var o in caught)
+                        {
+                            if (!SpellResolver.CanCage(o.C)) { Log($"{o.Name} shrugs the bars apart. Nothing that old can be caged."); continue; }
+                            var cha = Checks.RollSave(o.C, Ability.CHA, AdvantageState.Normal);
+                            bool slips = Checks.ResolveSave(cha, pc.SpellSaveDC);
+                            Ticker($"{o.Name} CHA save vs Forcecage: {cha.Breakdown()} vs DC {pc.SpellSaveDC} → {(slips ? "slips out" : "CAGED")}");
+                            if (slips) continue;
+                            o.C.AddEffect(EffectLibrary.Create("caged", pc));
+                            o.A.Popup("Caged", UIKit.UtilityBlue);
                         }
                     }
                     else if (s.Id == "guardian_of_faith" && Zone.IsWalkable(tile))
