@@ -172,5 +172,37 @@ namespace DnD.Tests
             if (near > 0) Assert.IsTrue(others.Any(o => o.C.HP < 300), "the bolt leaps to another wolf");
             Assert.AreEqual(300, hero.C.HP, "it never leaps to an ally");
         }
+
+        [UnityTest]
+        public IEnumerator MysticArcanumSavesAndCastsOncePerLongRest()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(6), "warlock", "human", level: 13);
+            yield return Frames(2);
+            var pc = p.Character;
+            Assert.AreEqual(2, pc.MysticArcanum.Count, "a level-13 warlock knows two arcana");
+            var arcana = pc.MysticArcanum.ToList();
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(2);
+            pc = g.Players[0].Character;
+            CollectionAssert.AreEqual(arcana, pc.MysticArcanum, "the arcana are saved");
+            p = g.Players[0];
+            g.Warp(p, "forest", new Vector2Int(34, 8), false);
+            yield return Frames(3);
+            p.Hud.CloseAll();
+            g.StartGroupCombat("forest_wolves", p);
+            var c = g.Combats.Single();
+            var u = c.Units.First(x => x.Owner == p);
+            if (u.Cb == null) u.Cb = new Combatant(u.C);
+            string six = pc.ArcanumAt(6);
+            var btn = c.ActionsFor(p).FirstOrDefault(a => a.Name.StartsWith(SpellsDb.Get(six).Name) && a.Name.Contains("Arcanum"));
+            Assert.IsNotNull(btn, "the 6th-level arcanum is on the Spells menu");
+            Assert.IsTrue(btn.Enabled, "and castable even though the Pact slots are 5th-level");
+            pc.CastArcanum(six);
+            btn = c.ActionsFor(p).First(a => a.Name.StartsWith(SpellsDb.Get(six).Name) && a.Name.Contains("Arcanum"));
+            Assert.IsFalse(btn.Enabled, "once used, it waits for a Long Rest");
+            StringAssert.Contains("Long Rest", btn.Why);
+        }
     }
 }

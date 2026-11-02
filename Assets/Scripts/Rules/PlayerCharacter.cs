@@ -399,6 +399,8 @@ namespace DnD.Rules
                 case "innate_sorcery": return Class.Id == "sorcerer" ? 2 : 0;
                 case "sorcery_points": return Class.Id == "sorcerer" && Level >= 2 ? Level : 0;
                 case "magical_cunning": return Class.Id == "warlock" && Level >= 2 ? 1 : 0;
+                case "arcanum_6": return ArcanumAt(6) != null ? 1 : 0;
+                case "arcanum_7": return ArcanumAt(7) != null ? 1 : 0;
                 case "wild_shape": return Class.Id == "druid" && Level >= 2 ? (Level >= 17 ? 4 : Level >= 6 ? 3 : 2) : 0;
                 case "favored_enemy": return Class.Id == "ranger" ? (Level >= 17 ? 6 : Level >= 13 ? 5 : Level >= 9 ? 4 : Level >= 5 ? 3 : 2) : 0;
                 case "bardic_inspiration": return Class.Id == "bard" ? Math.Max(1, Mod(Ability.CHA)) : 0;

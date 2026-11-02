@@ -148,6 +148,13 @@ namespace DnD.Rules.Content
             S("ranger", 11, "Superior Hunter's Prey", "Once per turn, when your Hunter's Mark damages a creature, a second creature within 30 ft of it takes that extra damage too.");
             Asi("ranger", 12);
             F("ranger", 13, "Relentless Hunter", "Taking damage can't break your concentration on Hunter's Mark.");
+
+            // ---------------- Casters at 11 and 13 (SRD 5.2 gives them slots, not features)
+            foreach (var (cls, title) in new[] { ("cleric", "Sixth-Level Miracles"), ("druid", "Deep Magic"), ("bard", "Sixth-Level Songs"), ("sorcerer", "Sixth-Level Sorcery"), ("wizard", "Sixth-Level Spells") })
+                F(cls, 11, title, "You can now cast 6th-level spells; 7th-level at 13.");
+            Asi("cleric", 12); Asi("druid", 12); Asi("bard", 12); Asi("sorcerer", 12); Asi("wizard", 12); Asi("warlock", 12);
+            F("warlock", 11, "Mystic Arcanum (6th)", "Your patron grants one 6th-level spell you can cast once per Long Rest without a slot. A third Pact slot.");
+            F("warlock", 13, "Mystic Arcanum (7th)", "...and one 7th-level spell, also once per Long Rest.");
         }
     }
 }

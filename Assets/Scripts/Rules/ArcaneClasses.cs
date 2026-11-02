@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 
@@ -10,6 +11,25 @@ namespace DnD.Rules
 
         /// <summary>Eldritch Invocations known (ids, e.g. "agonizing_blast").</summary>
         public readonly List<string> Invocations = new List<string>();
+        /// <summary>Warlock 11/13: Mystic Arcanum: one 6th- and one 7th-level spell, each castable once per Long Rest without a slot.</summary>
+        public readonly List<string> MysticArcanum = new List<string>();
+
+        /// <summary>The Mystic Arcanum spell of a level, or null.</summary>
+        public string ArcanumAt(int spellLevel) => MysticArcanum.FirstOrDefault(id => Content.SpellsDb.Get(id)?.Level == spellLevel);
+
+        /// <summary>Mystic Arcanum: true if this spell is one of yours and its once-per-Long-Rest use is still there.</summary>
+        public bool ArcanumReady(string spellId)
+        {
+            var s = Content.SpellsDb.Get(spellId);
+            return s != null && MysticArcanum.Contains(spellId) && ResourceLeft("arcanum_" + s.Level) > 0;
+        }
+
+        /// <summary>Spends a Mystic Arcanum use (cast at exactly the spell's level, never with a Pact slot). False if it's spent or not yours.</summary>
+        public bool CastArcanum(string spellId)
+        {
+            if (!ArcanumReady(spellId)) return false;
+            return SpendResource("arcanum_" + Content.SpellsDb.Get(spellId).Level);
+        }
 
         public static readonly string[] InvocationOptions = { "agonizing_blast", "armor_of_shadows", "repelling_blast", "pact_of_the_blade", "eldritch_mind", "ember_sight",
             "thirsting_blade", "misty_visions", "beast_speech" };

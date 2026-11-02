@@ -236,6 +236,21 @@ namespace DnD.Game
                         Tooltip = $"Improved Cunning Strike: one more Sneak Attack die for a second effect: {tip}.",
                         Run = (me, tile) => { var e = EffectLibrary.Create("cunning_ready2", pc); e.Power = kind; pc.AddEffect(e); me.A.Popup(label + "?", UIKit.UtilityBlue); return Nothing(); } });
 
+            // Warlock 11/13: Mystic Arcanum, once per Long Rest each, no slot.
+            foreach (var arcId in pc.MysticArcanum)
+            {
+                var arc = SpellsDb.Get(arcId);
+                if (arc == null) continue;
+                var a = SpellAction(u, pc, arc);
+                a.Name = $"{arc.Name} (Arcanum, 1/long rest)";
+                a.Tooltip = "Mystic Arcanum: cast at its own level without a Pact slot, once per Long Rest. " + arc.Description;
+                a.Group = ActionGroup.Spells;
+                bool ready = pc.ArcanumReady(arcId);
+                a.Enabled = ready && !(t.CastLeveledSpellThisTurn) && (a.Cost == ActionCost.Action ? !t.ActionUsed : !t.BonusActionUsed);
+                a.Why = !ready ? "Used: it returns after a Long Rest." : t.CastLeveledSpellThisTurn ? "Only one spell slot per turn (2024 rules)." : a.Why;
+                a.Run = (me, tile) => { pc.CastArcanum(arcId); return CastSpell(me, pc, arc, tile, arc.Level, true); };
+                list.Add(a);
+            }
             if (pc.IsCaster)
             {
                 foreach (var id in pc.Cantrips.Concat(pc.PreparedSpells).Concat(pc.BonusAlwaysPrepared).Distinct())
@@ -990,10 +1005,10 @@ namespace DnD.Game
         static bool DivineInterventionCovers(PlayerCharacter pc, SpellDef s) =>
             pc.HasEffect("divine_ready") && !s.IsCantrip && s.Level <= 5 && s.Classes.Contains("cleric");
 
-        IEnumerator CastSpell(Unit me, PlayerCharacter pc, SpellDef s, Vector2Int tile, int freeAtSlot = 0)
+        IEnumerator CastSpell(Unit me, PlayerCharacter pc, SpellDef s, Vector2Int tile, int freeAtSlot = 0, bool arcanum = false)
         {
             var turn = me.Cb.Turn;
-            bool recast = freeAtSlot > 0; // Call Lightning calling again: the spell (and its concentration) is already going
+            bool recast = freeAtSlot > 0 && !arcanum; // Call Lightning calling again: the spell (and its concentration) is already going
             if (freeAtSlot == 0 && DivineInterventionCovers(pc, s))
             {
                 pc.RemoveEffect("divine_ready");
