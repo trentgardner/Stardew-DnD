@@ -469,6 +469,8 @@ namespace DnD.Rules
         public bool StunningStrikeUsed, WildResurgenceUsed;
         public bool HasteActionUsed;
         public bool SneakAttackUsed, FrenzyUsed, ColossusUsed, HordeBreakerUsed, SuperiorPreyUsed;
+        /// <summary>Monk: Step of the Wind used this turn; Fleet Step used this turn.</summary>
+        public bool StepOfWindUsed, FleetStepUsed;
         /// <summary>Sorcerer Quickened Spell: the next action spell this turn costs the Bonus Action instead.</summary>
         public bool QuickenNextSpell;
         /// <summary>The free object interaction (2024): used by swapping weapon sets.</summary>
@@ -484,6 +486,7 @@ namespace DnD.Rules
             CastLeveledSpellThisTurn = false;
             CleaveUsed = HasteActionUsed = StunningStrikeUsed = WildResurgenceUsed = false;
             SneakAttackUsed = FrenzyUsed = ColossusUsed = HordeBreakerUsed = SuperiorPreyUsed = QuickenNextSpell = false;
+            StepOfWindUsed = FleetStepUsed = false;
             ObjectInteractionUsed = false;
             // Slow, Staggering Smite: no reactions while it lasts.
             foreach (var e in c.Effects) if (e.NoReactions) ReactionUsed = true;

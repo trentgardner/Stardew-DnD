@@ -217,7 +217,8 @@ namespace DnD.Game
             }
             // Barbarian 9: Brutal Strike (only when attacking recklessly).
             if (pc.HasFeature("Brutal Strike") && pc.HasEffect("reckless") && !pc.HasEffect("brutal_ready"))
-                foreach (var (kind, label, tip) in new[] { (1, "Forceful Blow", "pushes the target 15 ft"), (2, "Hamstring Blow", "−15 ft Speed until your next turn") })
+                foreach (var (kind, label, tip) in new[] { (1, "Forceful Blow", "pushes the target 15 ft"), (2, "Hamstring Blow", "−15 ft Speed until your next turn"),
+                    (3, "Staggering Blow", "has Disadvantage on its next save and can't make Opportunity Attacks until your next turn"), (4, "Sundering Blow", "gives the next attack against it by someone else +5") }.Where(o => pc.BrutalStrikeOptions().Contains(o.Item1)))
                     list.Add(new CombatAction { Name = $"Brutal Strike: {label}", Group = ActionGroup.Abilities, Cost = ActionCost.Free, Target = Targeting.None,
                         Tooltip = $"Give up Reckless Advantage on your next Strength attack: if it hits, +1d10 damage and it {tip}.",
                         Run = (me, tile) => { var e = EffectLibrary.Create("brutal_ready", pc); e.Power = kind; pc.AddEffect(e); me.A.Popup(label + "!", UIKit.DamageRed); return Nothing(); } });
@@ -227,6 +228,13 @@ namespace DnD.Game
                     list.Add(new CombatAction { Name = $"Cunning Strike: {label}", Group = ActionGroup.Abilities, Cost = ActionCost.Free, Target = Targeting.None,
                         Tooltip = $"Your next Sneak Attack rolls one die fewer, and {tip}.",
                         Run = (me, tile) => { var e = EffectLibrary.Create("cunning_ready", pc); e.Power = kind; pc.AddEffect(e); me.A.Popup(label + "?", UIKit.UtilityBlue); return Nothing(); } });
+            // Rogue 11: Improved Cunning Strike: a second rider on the same Sneak Attack.
+            var firstCunning = pc.Effects.Find(e => e.Id == "cunning_ready");
+            if (pc.CunningStrikesPerSneak > 1 && firstCunning != null && !pc.HasEffect("cunning_ready2") && !t.SneakAttackUsed)
+                foreach (var (kind, label, tip) in new[] { (1, "Trip", "DEX save or fall Prone"), (2, "Poison", "CON save or Poisoned for a minute"), (3, "Withdraw", "you move half your Speed without provoking") }.Where(o => o.Item1 != firstCunning.Power))
+                    list.Add(new CombatAction { Name = $"Second Cunning Strike: {label}", Group = ActionGroup.Abilities, Cost = ActionCost.Free, Target = Targeting.None,
+                        Tooltip = $"Improved Cunning Strike: one more Sneak Attack die for a second effect: {tip}.",
+                        Run = (me, tile) => { var e = EffectLibrary.Create("cunning_ready2", pc); e.Power = kind; pc.AddEffect(e); me.A.Popup(label + "?", UIKit.UtilityBlue); return Nothing(); } });
 
             if (pc.IsCaster)
             {
@@ -319,6 +327,11 @@ namespace DnD.Game
                     Tooltip = "Disengage and Dodge as a Bonus Action.", Run = (me, tile) => PatientDefense(me, pc) }, t, pc, fp));
                 list.Add(Need(new CombatAction { Name = "Step of the Wind (1 Focus)", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
                     Tooltip = "Dash and Disengage as a Bonus Action.", Run = (me, tile) => StepOfTheWind(me, pc) }, t, pc, fp));
+                // Open Hand 11: Fleet Step: after another Bonus Action, Step of the Wind rides along.
+                if (pc.HasFeature("Fleet Step") && t.BonusActionUsed && !t.StepOfWindUsed && !t.FleetStepUsed)
+                    list.Add(new CombatAction { Name = "Step of the Wind (Fleet Step, 1 Focus)", Group = ActionGroup.Abilities, Cost = ActionCost.Free, Target = Targeting.None, Enabled = fp, Why = "No Focus left.",
+                        Tooltip = "Fleet Step: you took another Bonus Action, so Step of the Wind comes free with it (Dash and Disengage).",
+                        Run = (me, tile) => { me.Cb.Turn.FleetStepUsed = true; return StepOfTheWind(me, pc); } });
             }
             if (pc.ResourceMax("divine_intervention") > 0 && !pc.HasEffect("divine_ready"))
                 list.Add(new CombatAction { Name = "Divine Intervention", Group = ActionGroup.Spells, Cost = ActionCost.Free, Target = Targeting.None, Enabled = pc.ResourceLeft("divine_intervention") > 0, Why = "Once per Long Rest.",
@@ -553,9 +566,31 @@ namespace DnD.Game
             var pc = (PlayerCharacter)me.C;
             if (res.BrutalStrike == 1) { Push(me, target, 3); Log("Forceful Blow!"); }
             if (res.BrutalStrike == 2) { target.C.AddEffect(new ActiveEffect { Id = "hamstrung", Name = "Hamstrung", Source = pc, RoundsLeft = 1, SpeedPenalty = 15 }); target.A.Popup("Hamstrung", UIKit.UtilityBlue); }
-            if (res.CunningStrike == 0) return;
+            if (res.BrutalStrike == 3) { target.C.AddEffect(EffectLibrary.Create("staggering_blow", pc)); target.Cb.Turn.ReactionUsed = true; target.A.Popup("Staggered", UIKit.UtilityBlue); Log("Staggering Blow!"); }
+            if (res.BrutalStrike == 4) { target.C.AddEffect(EffectLibrary.Create("sundered", pc)); target.A.Popup("Sundered", UIKit.UtilityBlue); Log("Sundering Blow! The next attack against it by someone else gets +5."); }
+            if (res.CunningStrike > 0) CunningRider(me, target, pc, res.CunningStrike);
+            if (res.CunningStrike2 > 0 && target.Active) CunningRider(me, target, pc, res.CunningStrike2);
+        }
+
+        /// <summary>Hunter 11: Superior Hunter's Prey: the mark's damage also hits the nearest other enemy within 30 ft of the target.</summary>
+        void HuntersMarkSpill(Unit me, Unit target, int amount)
+        {
+            var next = Units.Where(o => o != target && o.Active && Hostile(me, o) && Zone.DistanceFt(o.Pos, target.Pos) <= 30)
+                .OrderBy(o => Zone.DistanceFt(o.Pos, target.Pos)).FirstOrDefault();
+            if (next == null) return;
+            var l = new List<string>();
+            int took = next.C.TakeDamage(amount, DamageType.Force, false, l);
+            l.ForEach(Log);
+            next.A.Popup("-" + took, UIKit.DamageRed);
+            Log($"Superior Hunter's Prey: {next.Name} takes {took} force too.");
+            if (took > 0) AttackResolver.RaiseConcentrationCheck(next.C, took);
+            OnDamaged(next);
+        }
+
+        void CunningRider(Unit me, Unit target, PlayerCharacter pc, int kind)
+        {
             int dc = 8 + pc.ProficiencyBonus + pc.Mod(Ability.DEX);
-            if (res.CunningStrike == 3)
+            if (kind == 3)
             {
                 me.Cb.Turn.MovementLeftFt += pc.Speed / 2;
                 me.Cb.Turn.Disengaged = true;
@@ -563,12 +598,12 @@ namespace DnD.Game
                 Log($"{pc.Name} slips away (half Speed, no opportunity attacks).");
                 return;
             }
-            var ab = res.CunningStrike == 1 ? Ability.DEX : Ability.CON;
-            var save = Checks.RollSave(target.C, ab, AdvantageState.Normal, res.CunningStrike == 2 ? "poison" : null);
+            var ab = kind == 1 ? Ability.DEX : Ability.CON;
+            var save = Checks.RollSave(target.C, ab, AdvantageState.Normal, kind == 2 ? "poison" : null);
             bool ok = Checks.ResolveSave(save, dc);
             Ticker($"{target.Name} {ab} save vs Cunning Strike: {save.Breakdown()} vs DC {dc} → {(ok ? "SAVED" : "FAILED")}");
             if (ok) return;
-            if (res.CunningStrike == 1) { target.C.AddEffect(EffectLibrary.Create("prone", pc)); target.A.Popup("Tripped!", UIKit.UtilityBlue); }
+            if (kind == 1) { target.C.AddEffect(EffectLibrary.Create("prone", pc)); target.A.Popup("Tripped!", UIKit.UtilityBlue); }
             else { target.C.AddEffect(new ActiveEffect { Id = "poisoned", Name = "Poisoned", Source = pc, RoundsLeft = 10, Condition = Condition.Poisoned, RepeatSave = Ability.CON, RepeatSaveDC = dc }); target.A.Popup("Poisoned", UIKit.UtilityBlue); }
         }
 
@@ -806,7 +841,8 @@ namespace DnD.Game
                     while (!done) yield return null;
                 }
                 ApplyHitResults(me, target, res, dmg);
-                if (target.Active && (res.BrutalStrike > 0 || res.CunningStrike > 0)) StrikeRiders(me, target, res);
+                if (target.Active && (res.BrutalStrike > 0 || res.CunningStrike > 0 || res.CunningStrike2 > 0)) StrikeRiders(me, target, res);
+                if (res.HuntersMarkSpill > 0) HuntersMarkSpill(me, target, res.HuntersMarkSpill);
                 if (target.Active && me.C is PlayerCharacter monk && monk.HasFeature("Stunning Strike") && !atk.Ranged && (atk.Weapon == null || monk.IsMonkWeapon(atk.Weapon)))
                 {
                     var stunReady = monk.Effects.FirstOrDefault(e => e.Id == "stun_ready");
@@ -1319,6 +1355,7 @@ namespace DnD.Game
             pc.SpendResource("focus");
             var t = me.Cb.Turn;
             t.BonusActionUsed = true;
+            t.StepOfWindUsed = true;
             t.Disengaged = true;
             t.MovementLeftFt += pc.Speed;
             me.A.Popup("Step of the Wind", UIKit.UtilityBlue);
@@ -2129,8 +2166,7 @@ namespace DnD.Game
                 var dmg = AttackResolver.RollDamage(res);
                 Ticker($"{me.Name} damage: {dmg.Breakdown()}");
                 // Monk: Deflect Attacks (reaction) against bludgeoning, piercing or slashing hits.
-                if (target.C is PlayerCharacter monk && monk.HasFeature("Deflect Attacks") && !target.Cb.Turn.ReactionUsed
-                    && (atk.DamageType == DamageType.Bludgeoning || atk.DamageType == DamageType.Piercing || atk.DamageType == DamageType.Slashing))
+                if (target.C is PlayerCharacter monk && monk.CanDeflect(atk.DamageType) && !target.Cb.Turn.ReactionUsed)
                 {
                     target.Cb.Turn.ReactionUsed = true;
                     int cut = monk.DeflectReduction();
@@ -2167,6 +2203,7 @@ namespace DnD.Game
         public void ConcentrationCheck(Creature c, int damage)
         {
             if (c.ConcentratingOn == null) return;
+            if (c is PlayerCharacter hunter && hunter.ConcentrationImmuneToDamage) { Ticker($"{c.Name} keeps the mark (Relentless Hunter)."); return; }
             int dc = Math.Max(10, damage / 2);
             var save = Checks.RollSave(c, Ability.CON, AdvantageState.Normal);
             bool ok = Checks.ResolveSave(save, dc);
