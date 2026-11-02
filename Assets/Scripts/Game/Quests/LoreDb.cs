@@ -9,6 +9,8 @@ namespace DnD.Game
         public string Id, Title, Category, Text;
         /// <summary>The first act it can be found in. Act I stays light (the user): only a couple of ominous notes in chests.</summary>
         public int MinAct = 2;
+        /// <summary>Act III: a new line the journal shows under this entry ("Read again") once the party has met her. Null = none.</summary>
+        public string RevealText;
     }
 
     /// <summary>
@@ -90,6 +92,12 @@ namespace DnD.Game
         }
 
         public static LoreDef Get(string id) => id != null && All.TryGetValue(id, out var l) ? l : null;
+
+        /// <summary>Gives an entry its "Read again" line (null clears it). Only the *.AfterTheDoor.cs files call this, once WorldDb.MetHer is set.</summary>
+        public static void SetReveal(string id, string text) { var l = Get(id); if (l != null) l.RevealText = text; }
+
+        /// <summary>True when the journal should show this entry's reveal: the party has met her, and the entry has one.</summary>
+        public static bool Revealed(LoreDef l, WorldState w) => l.RevealText != null && w.Flag(WorldDb.MetHer);
 
         /// <summary>Records a find for the whole party: a toast, and discovery XP once.</summary>
         public static bool Find(string id, PlayerSlot by)
