@@ -172,5 +172,68 @@ namespace DnD.Game
             tilly.Schedule.Add(new ScheduleEntry(22, null, 0, 0, "asleep"));
             Npcs[tilly.Id] = tilly;
         }
+
+        static void BuildPalaceAndHalls()
+        {
+            var capital = Zones["capital"];
+            capital.Warps.Add(new WarpDef(31, 9, "throne_room", 14, 20));
+            capital.Warps.Add(new WarpDef(32, 9, "throne_room", 15, 20));
+            capital.Warps.Add(new WarpDef(54, 10, "royal_archive", 12, 16));
+            capital.Warps.Add(new WarpDef(53, 22, "capital_inn", 9, 12));
+
+            var throne = new ZoneDef
+            {
+                Act = 3, Indoors = true, DragonStays = true,
+                DragonStaysText = "{name} tries the palace doors, which are tall, but not that tall. It settles on the Sunstair to wait, and the guards pretend not to be nervous.",
+                Id = "throne_room", Name = "The Throne Room of Aurelhold", Map = Maps.ThroneRoom, DefaultSpawn = new Vector2Int(14, 20), Music = "music_capital",
+                EnterNarration = "The throne room is long, gold and warm. Ever-lamps burn along both walls between pillars of white stone, and a red carpet runs the whole length of it to two thrones on a low dais: one for the King, and one beside it, older and plainer, that nobody sits in.",
+            };
+            throne.Warps.Add(new WarpDef(14, 21, "capital", 31, 10));
+            throne.Warps.Add(new WarpDef(15, 21, "capital", 32, 10));
+            Zones[throne.Id] = throne;
+
+            var archive = new ZoneDef
+            {
+                Act = 3, Indoors = true, DragonStays = true,
+                DragonStaysText = "{name} takes one look at all that paper and decides to wait outside. Wise.",
+                Id = "royal_archive", Name = "The Hall of Records", Map = Maps.RoyalArchive, DefaultSpawn = new Vector2Int(12, 16), Music = "music_capital",
+                EnterNarration = "Shelves to the ceiling, ladders on rails, and the hush of a thousand years of paperwork. The Royal Annals take up a whole wall by themselves, bound in red leather, one volume for every year of the Crown.",
+            };
+            archive.Warps.Add(new WarpDef(12, 17, "capital", 54, 11));
+            archive.Secrets[new Vector2Int(3, 14)] = new SecretDef
+            {
+                Id = "royal_annals", Sprite = "obj_bookshelf", Prompt = "Search the Royal Annals", Skill = Rules.Skill.Investigation, DC = 15,
+                Success = "Nine hundred bound volumes, in order. Year 1 of the Crown is magnificent: gold leaf, a coronation, a feast that went on for a week. Year 3 is magnificent too. Year 2 isn't there at all. You find its binding at the back of the shelf, empty. Someone cut every page out with a razor, cleanly, a long time ago.",
+                Failure = "The Annals go on, and on, and you lose your place in Year 340 somewhere around a dispute about a goat. Another day.",
+                AlreadyFound = "Year 2 of the Crown: an empty binding, cut clean.",
+                SetsFlag = "clue_records", Lore = "royal_annals",
+            };
+            Zones[archive.Id] = archive;
+
+            var inn = new ZoneDef
+            {
+                Act = 3, Indoors = true, SafeForLongRest = true,
+                Id = "capital_inn", Name = "The Gilded Wyvern", Map = Maps.CapitalInn, DefaultSpawn = new Vector2Int(9, 12), Music = "music_tavern",
+                EnterNarration = "The Gilded Wyvern is all gold paint and red velvet and noise. Half the Pageant's performers seem to be drinking here, the other half are singing, and a fire roars in a hearth big enough to stand up in. Nobody here has felt cold in their lives.",
+            };
+            inn.Warps.Add(new WarpDef(9, 13, "capital", 53, 23));
+            Zones[inn.Id] = inn;
+
+            var king = new NpcDef { Id = "king_aldric", Name = "King Aldric IX", Title = "King of Aurelhold", Look = "npc_king", Dialogue = "king_aldric" };
+            king.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "in his private apartments (the King is not receiving)"));
+            king.Schedule.Add(new ScheduleEntry(9, "throne_room", 14, 4, "receiving petitioners on the dais"));
+            king.Schedule.Add(new ScheduleEntry(17, null, 0, 0, "in his private apartments (the King is not receiving)"));
+            Npcs[king.Id] = king;
+
+            var oare = new NpcDef { Id = "oare", Name = "Archivist-Royal Delphine Oare", Title = "The Hall of Records", Look = "npc_oare", Dialogue = "oare" };
+            oare.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
+            oare.Schedule.Add(new ScheduleEntry(8, "royal_archive", 11, 10, "cataloguing at the long desk"));
+            oare.Schedule.Add(new ScheduleEntry(18, null, 0, 0, "at home"));
+            Npcs[oare.Id] = oare;
+
+            var keeper = new NpcDef { Id = "marigold", Name = "Marigold Penn", Title = "Keeper of the Gilded Wyvern", Look = "npc_marigold", Dialogue = "marigold" };
+            keeper.Schedule.Add(new ScheduleEntry(0, "capital_inn", 5, 4, "behind the bar, as ever"));
+            Npcs[keeper.Id] = keeper;
+        }
     }
 }

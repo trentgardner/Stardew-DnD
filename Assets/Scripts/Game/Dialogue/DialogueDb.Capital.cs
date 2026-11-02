@@ -20,6 +20,9 @@ namespace DnD.Game
                 case "mags": return Mags();
                 case "crale": return Crale();
                 case "tilly": return Tilly();
+                case "king_aldric": return King();
+                case "oare": return Oare();
+                case "marigold": return Marigold();
                 default: return null;
             }
         }
@@ -191,6 +194,91 @@ namespace DnD.Game
             d.Node("start", "Tilly Brightwick",
                 c => "My sister does the lamps up top. Wenna. Thirty years and she's never had to light one! Down here we use oil, same as anybody. Funny old city. Nobody minds, so long as it's warm.")
                 .Bye("Goodnight, Tilly.");
+            return d;
+        }
+
+        // =================================================================== the palace, the records, the Wyvern
+
+        static string SideLine(DCtx c)
+        {
+            var w = c.G.World;
+            if (w.Flag("banner_crown")) return " Lady-Commander Marsh speaks well of you. That is rare.";
+            if (w.Flag("banner_academy")) return " Corvane Ashby's friends, I'm told. He says you ask difficult questions. Good.";
+            if (w.Flag("banner_fae")) return " You've been to the Courts. Mind their bargains. I've had to.";
+            if (w.Flag("banner_hunters")) return " The Wyrmwatch's friends. You'll forgive my guards for counting your arrows.";
+            return "";
+        }
+
+        static Dialogue King()
+        {
+            var d = new Dialogue("king_aldric", c => c.G.Quests.Stage(WarmCity.Id) >= WarmCity.Audience ? "again" : "audience");
+            const string who = "King Aldric IX";
+            d.Node("audience", who,
+                c => "So you are the heroes of the Emberhorn. And that, outside on my stair, I'm told, is the dragon. Welcome to Aurelhold. You've done the realm a service it can't repay, so let me at least try." + SideLine(c),
+                c => "He's younger than the coins make him look, and more tired. He comes down off the dais to shake your hands himself, which makes the courtiers twitch.")
+                .Say("We came because you asked, Majesty. What do you need?", "ask")
+                .Roll(Skill.Insight, 16, "(Insight) Watch him while you mention the Emberhorn.", "tell", "tell_fail", onSuccess: c => LoreDb.Find("the_kings_ring", c.P))
+                .Roll(Skill.History, 15, "(History) The plain iron ring under his gold one...", "ring_history", "ring_fail");
+            d.Node("tell", who, c => "...Yes. The Emberhorn. Remarkable. Quite remarkable.",
+                    c => "He means every warm word. But each time you say 'Emberhorn', his thumb finds the plain iron ring under his gold one and turns it, round and round, and he's glad when the subject changes.")
+                .Say("We came because you asked, Majesty. What do you need?", "ask");
+            d.Node("tell_fail", who, c => "The Emberhorn. Yes. We heard the bells stop ringing grey all the way from here.", c => "A king, gracious and tired. Nothing more that you can see.")
+                .Say("We came because you asked, Majesty. What do you need?", "ask");
+            d.Node("ring_history", who, c => "This? An heirloom. Every King of Aurelhold wears one. Nobody remembers why. Tradition is like that.",
+                    c => "It's true: every royal portrait you've passed has the same plain iron ring, under the gold, on the same finger.")
+                .Say("We came because you asked, Majesty. What do you need?", "ask");
+            d.Node("ring_fail", who, c => "Admiring my rings? I'd give you one, but the Treasurer would weep.").Say("We came because you asked, Majesty. What do you need?", "ask");
+            d.Node("ask", who,
+                c => $"Need? Nothing. Want: a great deal. In a month it will be a thousand years since the Fall. The Thousandth Pageant. I would like {c.G.World.DragonName} to lead it. A dragon who walks beside the Crown, a thousand years after the Fall. The people will never forget it.")
+                .Say("We'd be honoured.", "close", doIt: c => c.G.World.SetFlag("pageant_yes"))
+                .Say("We'll think about it.", "close")
+                .Say("Why now? Why us?", "why");
+            d.Node("why", who,
+                c => "Because the realm went grey and the people are frightened, and frightened people need to see something hopeful walk down the middle of the street. And because you're the only ones who've stood in front of a dragon and lived. Two, actually. One of them likes you.")
+                .Say("We'd be honoured.", "close", doIt: c => c.G.World.SetFlag("pageant_yes"))
+                .Say("We'll think about it.", "close");
+            d.Node("close", who,
+                c => "Then rest. See my city. It's the only warm place left in the realm, and I'd like you to see why that matters. My Pageant-Master will find you. He finds everyone.",
+                c => "Outside, on the Sunstair, the dragon is surrounded by a ring of very brave townsfolk and one very nervous guard.",
+                c => c.G.Quests.Set(WarmCity.Id, WarmCity.Audience, c.P))
+                .Bye("Thank you, Majesty.");
+            d.Node("again", who, c => "Our heroes. Is the city treating you well? Good. Good. The Pageant draws closer every day.")
+                .Bye("Majesty.");
+            return d;
+        }
+
+        static Dialogue Oare()
+        {
+            var d = new Dialogue("oare", c => "start");
+            const string who = "Archivist-Royal Delphine Oare";
+            d.Node("start", who,
+                c => "The Hall of Records. Nine hundred years of the Crown's business, every page accounted for. Do not lick your fingers to turn them. I can tell. I can always tell.")
+                .Say("Every page?", "pages", show: c => !c.G.World.Flag("clue_records"))
+                .Say("Year 2 of the Crown is missing. Cut out.", "year2", show: c => c.G.World.Flag("clue_records"))
+                .Bye("We'll be careful.");
+            d.Node("pages", who, c => "Every page that survived. Fire, flood, mice. Archives are a war against mice, mostly. Help yourselves. The Annals are on the west wall.").Bye("Thank you.");
+            d.Node("year2", who, c => "Water damage. Long before my time. The binding was saved, the pages weren't. It happens.")
+                .Roll(Skill.Insight, 13, "(Insight) Does she believe it?", "year2_true", "year2_unsure")
+                .Bye("Of course.");
+            d.Node("year2_true", who, c => "...Is there something else?", c => "She believes it completely. It's what she was told, and what her teacher was told. Nobody in this building has ever seen water damage that looked like a razor.").Bye("No. Thank you.");
+            d.Node("year2_unsure", who, c => "Is there something else?").Bye("No. Thank you.");
+            return d;
+        }
+
+        static Dialogue Marigold()
+        {
+            var d = new Dialogue("marigold", c => "start");
+            const string who = "Marigold Penn";
+            d.Node("start", who,
+                c => "Welcome to the Wyvern, heroes! Best ale in Aurelhold and the only beds in the city that don't squeak. Your dragon's in my yard, eating my geraniums. I've decided to be honoured.")
+                .Say("I'd like a room for the night. (5 sp, long rest)", doIt: c => c.G.RentRoom(c.P), end: true)
+                .Say("Heard anything interesting?", "gossip")
+                .Bye("Just looking.");
+            d.Node("gossip", who,
+                c => c.G.Clock.Hour >= 18
+                    ? "Crale from the Foundation Works drinks alone at the end of the bar every night. Same stool. Never talks. Tips well. That's all I know and all I want to."
+                    : "The Pageant-Master's been in three times today looking for a dragon. Yours'll do, I expect.")
+                .Bye("Thanks, Marigold.");
             return d;
         }
     }

@@ -26,7 +26,9 @@ namespace DnD.Game
             ["gate_guard_0"] = DragonFeeling.Wary,
             ["gate_guard_1"] = DragonFeeling.Wary,
             ["mags"] = DragonFeeling.Fond,       // she talks to it like it's one of her own
-            ["crale"] = DragonFeeling.Wary,      // he smells of the deep, and of fear
+            ["crale"] = DragonFeeling.Wary,
+            ["king_aldric"] = DragonFeeling.Distrust, // it won't come in, and it watches the palace door
+            ["marigold"] = DragonFeeling.Fond,   // geraniums      // he smells of the deep, and of fear
             ["oakes"] = DragonFeeling.Fond,      // the glasshouse is warm and smells green
             ["varrow"] = DragonFeeling.Wary,     // measuring tapes, and that look
             ["holloway"] = DragonFeeling.Wary,   // the ledger, the counting

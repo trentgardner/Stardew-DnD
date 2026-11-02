@@ -332,6 +332,96 @@ namespace DnD.Tests
             Assert.AreEqual('D', roots.Map[20][52]);
         }
 
+        // ============================================================ Task 4: the palace, the records, the Wyvern
+
+        [UnityTest]
+        public IEnumerator AudienceWithTheKing()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 30, "bard");
+            yield return Frames(2);
+            g.RideCarriage(p, "capital", WorldDb.CapitalCarriageStop);
+            yield return Frames(3);
+            Assert.AreEqual(WarmCity.Arrived, g.Quests.Stage(WarmCity.Id));
+            var king = WorldDb.Npcs["king_aldric"];
+            Assert.AreEqual("throne_room", WorldDb.Current(king, 10, 0, g.World).Zone, "he receives by day");
+            Assert.IsNull(WorldDb.Current(king, 20, 0, g.World).Zone, "and not at night");
+            var d = DialogueDb.Get("king_aldric");
+            Assert.AreEqual("audience", d.Start(Ctx(p)));
+            Opt("king_aldric", "audience", Skill.Insight).OnSuccess(Ctx(p));
+            Assert.IsTrue(g.World.LoreFound.Contains("the_kings_ring"), "the tell goes in the journal");
+            d.Nodes["close"].OnEnter(Ctx(p));
+            Assert.AreEqual(WarmCity.Audience, g.Quests.Stage(WarmCity.Id), "the audience moves The Warm City on");
+            Assert.AreEqual("again", d.Start(Ctx(p)), "and he doesn't hold it twice");
+        }
+
+        [UnityTest]
+        public IEnumerator DragonWaitsOutsideThePalaceAndRejoins()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 31);
+            yield return Frames(2);
+            g.Warp(p, "capital", new Vector2Int(31, 11), false);
+            yield return Frames(3);
+            Assert.AreEqual("capital", g.DragonAgent.Actor.Zone.Def.Id);
+            var door = WorldDb.Zones["capital"].Warps.Find(w => w.At == new Vector2Int(31, 9));
+            g.Warp(p, door.ToZone, door.ToPos, false);
+            yield return Frames(3);
+            Assert.AreEqual("throne_room", p.Zone.Def.Id);
+            Assert.AreEqual("capital", g.DragonAgent.Actor.Zone.Def.Id, "the dragon waits on the Sunstair");
+            Assert.IsTrue(p.Hud.LogLines.Any(l => l.Contains("tall, but not that tall")), "with the palace's own line");
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(4);
+            p = g.Players[0];
+            Assert.AreEqual("throne_room", p.Zone.Def.Id);
+            Assert.AreNotEqual("throne_room", g.DragonAgent.Actor.Zone.Def.Id, "a save made inside never puts the dragon in the palace");
+            var back = WorldDb.Zones["throne_room"].Warps.Find(w => w.ToZone == "capital");
+            g.Warp(p, back.ToZone, back.ToPos, false);
+            for (int i = 0; i < 120 && g.DragonAgent.Actor.Zone != p.Zone; i++) yield return null;
+            Assert.AreEqual("capital", g.DragonAgent.Actor.Zone.Def.Id, "and rejoins outside");
+            g.Warp(p, "royal_archive", WorldDb.Zones["royal_archive"].DefaultSpawn, false);
+            yield return Frames(2);
+            Assert.AreEqual("capital", g.DragonAgent.Actor.Zone.Def.Id, "it won't go into the archive either");
+        }
+
+        [UnityTest]
+        public IEnumerator RecordsClueAndInteriorsReachable()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 32, "rogue");
+            yield return Frames(2);
+            foreach (var zone in new[] { "throne_room", "royal_archive", "capital_inn" })
+            {
+                g.Warp(p, zone, WorldDb.Zones[zone].DefaultSpawn, false);
+                yield return Frames(2);
+                AcademyTests.AssertAllReachable(g, p.Zone, p.MapPos);
+                Assert.IsTrue(WorldDb.Zones[zone].Warps.Any(w => w.ToZone == "capital"), zone + " leads back out");
+            }
+            g.Warp(p, "royal_archive", WorldDb.Zones["royal_archive"].DefaultSpawn, false);
+            yield return Frames(2);
+            var annals = Object.FindObjectsByType<SecretInteractable>(FindObjectsSortMode.None).Single(x => x.Def.Id == "royal_annals");
+            annals.Resolve(p, CheckOutcome.Success);
+            Assert.IsTrue(g.World.Flag("clue_records"));
+            Assert.IsTrue(g.World.LoreFound.Contains("royal_annals"));
+        }
+
+        [UnityTest]
+        public IEnumerator InnRestWorks()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 33);
+            yield return Frames(2);
+            g.Warp(p, "capital_inn", WorldDb.Zones["capital_inn"].DefaultSpawn, false);
+            yield return Frames(2);
+            int cp = p.Character.Copper;
+            p.Character.HP = 1;
+            g.RentRoom(p);
+            for (int i = 0; i < 300 && p.Character.HP < p.Character.EffectiveMaxHP; i++) yield return null;
+            Assert.AreEqual(cp - 50, p.Character.Copper, "5 sp");
+            Assert.AreEqual(p.Character.EffectiveMaxHP, p.Character.HP, "a long rest at the Gilded Wyvern");
+        }
+
         // ============================================================ screenshots (review by eye: grand, warm, lived-in, something off)
 
         [UnityTest]
@@ -359,6 +449,9 @@ namespace DnD.Tests
             yield return At("roots", 26, 15, "act3_roots", 15);
             yield return At("roots", 47, 21, "act3_undergate", 15);
             yield return At("steamhouse", 8, 9, "act3_steamhouse", 15);
+            yield return At("throne_room", 14, 9, "act3_throne_room");
+            yield return At("royal_archive", 12, 14, "act3_archive");
+            yield return At("capital_inn", 9, 10, "act3_gilded_wyvern", 20);
         }
     }
 }

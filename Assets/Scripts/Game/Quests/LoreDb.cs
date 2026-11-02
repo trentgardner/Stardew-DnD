@@ -94,6 +94,10 @@ namespace DnD.Game
                 "Aurelhold's lamps have no oil and no wicks. They have never been lit, as far as anyone knows, and never gone out. The city calls it the King's blessing. The iron posts are warm to the touch, like a hearthstone, and the warmth comes up out of the ground.", 3);
             Add("works_ledger", "The Works Ledger", Records,
                 "The Foundation Works' ledger, two columns to a page: WENT DOWN and CAME UP. Day shifts and night shifts, names and ticks, back and forth for years. Then a third column, DEEP SHIFT, in a different ink. Forty names in it, going back further than the foreman has been alive. Not one of them has a tick under CAME UP. Every one has a tick under PAID.", 3);
+            Add("the_kings_ring", "The King's Ring", Records,
+                "King Aldric IX wears a plain iron ring under his gold one. Every King of Aurelhold has, in every portrait, on the same finger. The court calls it tradition and nobody remembers why. When the Emberhorn comes up, his thumb turns it round and round.", 3);
+            Add("royal_annals", "The Royal Annals", Records,
+                "Nine hundred volumes of the Crown's own history in red leather, one for every year. Year 1, the founding, is gold-leafed and glorious. Year 2 is an empty binding: every page cut out with a razor, long ago. The Archivist-Royal says water damage. The Academy's Annals were 'corrected' for the same years.", 3);
             Add("missing_pages", "Missing Pages", Records,
                 "A parish ledger, swollen with damp, left on the mill's shelf by some long-gone clerk. Births, harvests and tithes, year after year in a careful hand, until the century the legends talk about. Those pages have been cut out, neatly, close to the spine. The record picks up again eighty years later as if nothing had happened.");
         }
