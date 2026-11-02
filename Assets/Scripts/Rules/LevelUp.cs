@@ -5,7 +5,7 @@ using DnD.Rules.Content;
 
 namespace DnD.Rules
 {
-    public enum ChoiceKind { Expertise, BonusSkill, Cantrip, Spell, Feat, FightingStyle, HunterPrey, LandType, Invocation, Metamagic, HunterDefense, DraconicElement, BonusSpell }
+    public enum ChoiceKind { Expertise, BonusSkill, Cantrip, Spell, Feat, FightingStyle, HunterPrey, LandType, Invocation, Metamagic, HunterDefense, DraconicElement, BonusSpell, Arcanum }
 
     /// <summary>One decision the next level asks for, e.g. "pick 2 spells from these".</summary>
     public class LevelUpChoice
@@ -97,6 +97,12 @@ namespace DnD.Rules
             if (newInvocations > 0)
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.Invocation, Count = newInvocations, Title = $"Eldritch Invocations: learn {newInvocations}",
                     Options = InvocationOptions.Where(o => !Invocations.Contains(o) && CanLearnInvocation(o, next)).ToList() });
+            if (Class.Id == "warlock" && (next == 11 || next == 13))
+            {
+                int arcLevel = next == 11 ? 6 : 7;
+                list.Add(new LevelUpChoice { Kind = ChoiceKind.Arcanum, Count = 1, Title = $"Mystic Arcanum: one {(arcLevel == 6 ? "6th" : "7th")}-level spell, once per Long Rest",
+                    Options = SpellsDb.ForClass("warlock", arcLevel).Where(s => s.Level == arcLevel && !MysticArcanum.Contains(s.Id)).Select(s => s.Id).ToList() });
+            }
             if (Class.Id == "sorcerer" && next == 6 && Class.Subclass?.Id == "draconic")
                 list.Add(new LevelUpChoice { Kind = ChoiceKind.DraconicElement, Count = 1, Title = "Elemental Affinity: your draconic element", Options = DraconicElements.ToList() });
             if (Class.Id == "sorcerer" && (next == 2 || next == 10))
@@ -234,6 +240,10 @@ namespace DnD.Rules
                     case ChoiceKind.Invocation:
                         if (!Invocations.Contains(id)) Invocations.Add(id);
                         log?.Add($"Invocation: {DescribeOption(id)}");
+                        break;
+                    case ChoiceKind.Arcanum:
+                        if (!MysticArcanum.Contains(id)) MysticArcanum.Add(id);
+                        log?.Add($"Mystic Arcanum: {DescribeOption(id)}");
                         break;
                     case ChoiceKind.Metamagic:
                         if (!Metamagic.Contains(id)) Metamagic.Add(id);

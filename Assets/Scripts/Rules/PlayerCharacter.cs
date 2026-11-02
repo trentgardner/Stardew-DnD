@@ -164,8 +164,8 @@ namespace DnD.Rules
 
         // ---------------------------------------------------------------- leveling
 
-        public static readonly int[] XpThresholds = { 0, 0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000 };
-        public const int ActOneLevelCap = 4, ActTwoLevelCap = 10;
+        public static readonly int[] XpThresholds = { 0, 0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000, 120000 };
+        public const int ActOneLevelCap = 4, ActTwoLevelCap = 10, ActThreeLevelCap = 13;
         /// <summary>The highest level the current act allows (4 in Act I, 10 in Act II). Set by the game when the act changes.</summary>
         public static int LevelCap = ActOneLevelCap;
 
@@ -399,6 +399,8 @@ namespace DnD.Rules
                 case "innate_sorcery": return Class.Id == "sorcerer" ? 2 : 0;
                 case "sorcery_points": return Class.Id == "sorcerer" && Level >= 2 ? Level : 0;
                 case "magical_cunning": return Class.Id == "warlock" && Level >= 2 ? 1 : 0;
+                case "arcanum_6": return ArcanumAt(6) != null ? 1 : 0;
+                case "arcanum_7": return ArcanumAt(7) != null ? 1 : 0;
                 case "wild_shape": return Class.Id == "druid" && Level >= 2 ? (Level >= 17 ? 4 : Level >= 6 ? 3 : 2) : 0;
                 case "favored_enemy": return Class.Id == "ranger" ? (Level >= 17 ? 6 : Level >= 13 ? 5 : Level >= 9 ? 4 : Level >= 5 ? 3 : 2) : 0;
                 case "bardic_inspiration": return Class.Id == "bard" ? Math.Max(1, Mod(Ability.CHA)) : 0;
@@ -463,6 +465,30 @@ namespace DnD.Rules
             try { return base.TakeDamage(amount, type, critical, log); }
             finally { if (rageResist) Resistances.Remove(type); }
         }
+
+        const string RelentlessKey = "relentless_dc_steps";
+        /// <summary>Barbarian 11: the DC of the next Relentless Rage save (10, +5 per use since the last rest).</summary>
+        public int RelentlessRageDC { get { ResourcesUsed.TryGetValue(RelentlessKey, out int s); return 10 + 5 * s; } }
+
+        /// <summary>Brutal Strike riders this barbarian can pick: 1 Forceful, 2 Hamstring; 13: 3 Staggering, 4 Sundering.</summary>
+        public List<int> BrutalStrikeOptions()
+        {
+            var l = new List<int>();
+            if (!HasFeature("Brutal Strike")) return l;
+            l.Add(1); l.Add(2);
+            if (HasFeature("Improved Brutal Strike")) { l.Add(3); l.Add(4); }
+            return l;
+        }
+
+        /// <summary>Rogue: Cunning Strike effects allowed on one Sneak Attack (2 with Improved Cunning Strike).</summary>
+        public int CunningStrikesPerSneak => HasFeature("Improved Cunning Strike") ? 2 : HasFeature("Cunning Strike") ? 1 : 0;
+
+        /// <summary>Monk: Deflect Attacks covers bludgeoning/piercing/slashing; Deflect Energy (13) covers every type.</summary>
+        public bool CanDeflect(DamageType t) => HasFeature("Deflect Attacks")
+            && (HasFeature("Deflect Energy") || t == DamageType.Bludgeoning || t == DamageType.Piercing || t == DamageType.Slashing);
+
+        /// <summary>Ranger 13: Relentless Hunter: damage never breaks concentration on Hunter's Mark.</summary>
+        public bool ConcentrationImmuneToDamage => HasFeature("Relentless Hunter") && ConcentratingOn == "hunters_mark";
 
         public AttackOption WeaponAttack(WeaponDef w)
         {
@@ -556,6 +582,21 @@ namespace DnD.Rules
             {
                 // Massive damage: remaining damage >= max HP kills outright.
                 if (overflow >= MaxHP) { Die(log, "is slain outright by massive damage"); return; }
+                // Barbarian 11: Relentless Rage: a CON save to keep fighting (DC 10, +5 per use, reset by a rest).
+                if (Raging && HasFeature("Relentless Rage"))
+                {
+                    int dc = RelentlessRageDC;
+                    ResourcesUsed.TryGetValue(RelentlessKey, out int steps);
+                    ResourcesUsed[RelentlessKey] = steps + 1;
+                    var save = Checks.RollSave(this, Ability.CON, AdvantageState.Normal);
+                    if (Checks.ResolveSave(save, dc))
+                    {
+                        HP = 2 * Level;
+                        log?.Add($"{Name} refuses to fall! Relentless Rage (CON {save.Total} vs DC {dc}): back up with {HP} HP.");
+                        return;
+                    }
+                    log?.Add($"Relentless Rage fails (CON {save.Total} vs DC {dc}).");
+                }
                 Stable = false;
                 DeathSuccesses = DeathFailures = 0;
                 log?.Add($"{Name} drops to 0 HP and falls unconscious!");
@@ -653,6 +694,7 @@ namespace DnD.Rules
 
         public void ShortRest(List<string> log)
         {
+            ResourcesUsed.Remove(RelentlessKey);
             RegainResource("second_wind", 1);
             RegainResource("action_surge", 99);
             RegainResource("channel_divinity", 1);

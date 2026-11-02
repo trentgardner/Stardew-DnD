@@ -154,7 +154,7 @@ namespace DnD.Game
             }
             var slot = AddPlayer(device);
             var pc = CharacterFactory.Create(CharacterFactory.DefaultChoices(classId, speciesId, $"{speciesId} {classId}"));
-            if (level > PlayerCharacter.LevelCap) PlayerCharacter.LevelCap = PlayerCharacter.ActTwoLevelCap; // tests: preview Act II levels
+            if (level > PlayerCharacter.LevelCap) PlayerCharacter.LevelCap = level > PlayerCharacter.ActTwoLevelCap ? PlayerCharacter.ActThreeLevelCap : PlayerCharacter.ActTwoLevelCap; // tests: preview Act II/III levels
             while (pc.Level < level)
             {
                 pc.XP = Math.Max(pc.XP, PlayerCharacter.XpThresholds[pc.Level + 1]);
@@ -1379,6 +1379,24 @@ namespace DnD.Game
 
         public bool AnyDeadAlly(PlayerSlot p) =>
             Players.Any(x => x.IsReady && x.Character.IsDead) || CompanionsOf(p).Any(c => c.Character != null && c.Character.IsDead);
+
+        /// <summary>Everyone in p's party: the players and every companion (the whole table shares one party).</summary>
+        public List<Creature> PartyOf(PlayerSlot p)
+        {
+            var list = new List<Creature>();
+            foreach (var x in Players.Where(x => x.IsReady && x.Character != null)) list.Add(x.Character);
+            foreach (var c in Companions.Where(c => c.Character != null)) list.Add(c.Character);
+            return list;
+        }
+
+        public bool AnyFallen(PlayerSlot p) => PartyOf(p).Any(c => c.IsDead);
+
+        /// <summary>Resurrection: every fallen player and companion comes back at full health.</summary>
+        public void ReviveFallen(PlayerSlot p)
+        {
+            foreach (var c in PartyOf(p).OfType<PlayerCharacter>().Where(c => c.IsDead)) { c.Revive(0, null); c.HP = c.EffectiveMaxHP; }
+            Sfx.Play("heal");
+        }
 
         public void TempleRevive(PlayerSlot p)
         {

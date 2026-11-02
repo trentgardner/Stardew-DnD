@@ -59,6 +59,12 @@ namespace DnD.Rules
         public int ZoneRadiusTiles;
         public int ZoneLineTiles;
         public bool Ritual;
+        /// <summary>Chain Lightning: creatures the bolt leaps to after the first (+1 per slot level above), within ChainRangeFt of it.</summary>
+        public int ChainTargets, ChainRangeFt;
+        /// <summary>Flat healing or damage added per slot level above the spell's level (Heal: +10).</summary>
+        public int UpcastFlat;
+        /// <summary>While you concentrate on it, you can use it again as an action without a slot (Sunbeam, Eyebite).</summary>
+        public bool Recastable;
         public string Description;
         public List<string> Classes = new List<string>();
 

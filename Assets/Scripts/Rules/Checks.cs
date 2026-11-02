@@ -92,6 +92,10 @@ namespace DnD.Rules
         public static D20Result RollSave(Creature c, Ability a, AdvantageState adv, string vs = null)
         {
             if (c.AdvantageOnSave(a, vs) || ((vs == "charmed" || vs == "frightened") && Auras.Countercharm(c))) adv = Dice.Combine(true, adv == AdvantageState.Disadvantage);
+            // Barbarian 13: Staggering Blow: Disadvantage on the next save.
+            if (c.Effects.Exists(e => e.DisadvantageOnSaveAbility == a)) adv = Dice.Combine(adv == AdvantageState.Advantage, true);
+            var stagger = c.Effects.Find(e => e.Id == "staggering_blow");
+            if (stagger != null) { c.Effects.Remove(stagger); adv = Dice.Combine(adv == AdvantageState.Advantage, true); }
             var terms = new List<RollTerm> { new RollTerm(a + " save", c.SaveBonus(a)) };
             if (c.D20Penalty != 0) terms.Add(new RollTerm("exhaustion", c.D20Penalty));
             int aura = Auras.ProtectionBonus(c);

@@ -220,6 +220,11 @@ namespace DnD.Rules.Content
                 SaveAbility = Ability.DEX, HalfOnSave = true, Dice = new DiceExpr(0, 0, 20), DamageType = DamageType.Radiant, ZoneRadiusTiles = 2,
                 Description = "A spectral guardian holds a spot for 8 hours. Enemies that enter within 10 ft of it or end their turn there: DEX save, 20 radiant (half on a success). It fades after dealing 60." }, C);
 
+            Add(new SpellDef { Id = "freedom_of_movement", Name = "Freedom of Movement", Level = 4, School = "Abjuration", RangeFt = 5, Kind = SpellKind.Buff, EffectId = "freedom_of_movement",
+                Description = "Touch an ally: for an hour they can't be Paralyzed or Restrained, and nothing can reduce their Speed." }, B, C, D, R);
+            Add(new SpellDef { Id = "stoneskin", Name = "Stoneskin", Level = 4, School = "Abjuration", RangeFt = 5, Kind = SpellKind.Buff, Concentration = true, EffectId = "stoneskin",
+                Description = "Touch an ally: their skin turns hard as stone. Resistance to bludgeoning, piercing and slashing damage while you concentrate." }, D, R, S, W);
+
             // ---------------- Level 5
             Add(new SpellDef { Id = "cone_of_cold", Name = "Cone of Cold", Level = 5, School = "Evocation", RangeFt = 0, Kind = SpellKind.Save, Shape = TargetShape.Cone, AreaFt = 60,
                 SaveAbility = Ability.CON, HalfOnSave = true, Dice = DiceExpr.Parse("8d8"), DamageType = DamageType.Cold, UpcastDice = 1,
@@ -242,6 +247,48 @@ namespace DnD.Rules.Content
             Add(new SpellDef { Id = "synaptic_static", Name = "Synaptic Static", Level = 5, School = "Enchantment", RangeFt = 120, Kind = SpellKind.Save, Shape = TargetShape.Sphere, AreaFt = 20,
                 SaveAbility = Ability.INT, HalfOnSave = true, Dice = DiceExpr.Parse("8d6"), DamageType = DamageType.Psychic, EffectId = "synaptic",
                 Description = "A burst of psychic noise, 20-ft radius. INT save: 8d6 psychic (half on a success); those who fail are muddled (−1d6 to attacks, INT save each turn to clear)." }, W, B, S, K);
+
+            // ---------------- Level 6
+            Add(new SpellDef { Id = "chain_lightning", Name = "Chain Lightning", Level = 6, School = "Evocation", RangeFt = 150, Kind = SpellKind.Save, SaveAbility = Ability.DEX, HalfOnSave = true,
+                Dice = DiceExpr.Parse("10d8"), DamageType = DamageType.Lightning, ChainTargets = 3, ChainRangeFt = 30,
+                Description = "A bolt strikes one creature, then leaps to up to three others within 30 ft of it. Each makes a DEX save: 10d8 lightning, half on a success. One more leap per slot level above 6th." }, S, W);
+            Add(new SpellDef { Id = "disintegrate", Name = "Disintegrate", Level = 6, School = "Transmutation", RangeFt = 60, Kind = SpellKind.Save, SaveAbility = Ability.DEX,
+                Dice = DiceExpr.Parse("10d6+40"), DamageType = DamageType.Force, UpcastDice = 3,
+                Description = "A thin green ray. DEX save or take 10d6 + 40 force; nothing on a success. Whatever it drops is reduced to fine grey dust." }, S, W);
+            Add(new SpellDef { Id = "sunbeam", Name = "Sunbeam", Level = 6, School = "Evocation", RangeFt = 0, Kind = SpellKind.Save, Shape = TargetShape.Line, AreaFt = 60, SaveAbility = Ability.CON, HalfOnSave = true,
+                Dice = DiceExpr.Parse("6d8"), DamageType = DamageType.Radiant, EffectId = "sunbeam_blind", Concentration = true, Recastable = true,
+                Description = "A beam of sunlight, 60 ft long. CON save: 6d8 radiant and Blinded until your next turn, half and no blindness on a success. While you concentrate, call the beam again as an action." }, D, S, W);
+            Add(new SpellDef { Id = "heal", Name = "Heal", Level = 6, School = "Abjuration", RangeFt = 60, Kind = SpellKind.Heal, Dice = new DiceExpr(0, 0, 70), UpcastFlat = 10,
+                Description = "A surge of positive energy: one creature regains 70 HP and is no longer Blinded, Deafened or Poisoned. +10 HP per slot level above 6th." }, C, D);
+            Add(new SpellDef { Id = "blade_barrier", Name = "Blade Barrier", Level = 6, School = "Evocation", RangeFt = 90, Kind = SpellKind.Save, Shape = TargetShape.Line, AreaFt = 100,
+                SaveAbility = Ability.DEX, HalfOnSave = true, Dice = DiceExpr.Parse("6d10"), DamageType = DamageType.Force, Concentration = true, ZoneLineTiles = 20,
+                Description = "A wall of whirling blades. Anyone caught in it, entering it or ending a turn in it makes a DEX save: 6d10 force, half on a success." }, C);
+            Add(new SpellDef { Id = "heroes_feast", Name = "Heroes' Feast", Level = 6, School = "Conjuration", CastTime = CastTime.TenMinutes, RangeFt = 30, Kind = SpellKind.Utility,
+                Description = "A magnificent feast for the whole party. Until your next Long Rest: +2d10 maximum HP (and HP), and immunity to being Poisoned or Frightened. Cast outside combat." }, B, C, D);
+            Add(new SpellDef { Id = "irresistible_dance", Name = "Irresistible Dance", Level = 6, School = "Enchantment", RangeFt = 30, Kind = SpellKind.Save, SaveAbility = Ability.WIS, Concentration = true, EffectId = "dancing",
+                Description = "WIS save or the target dances a comic jig: it can't move, its attacks and DEX saves have Disadvantage, and attacks against it have Advantage. It repeats the save at the end of each of its turns." }, B, W);
+            Add(new SpellDef { Id = "circle_of_death", Name = "Withering Circle", Level = 6, School = "Necromancy", RangeFt = 150, Kind = SpellKind.Save, Shape = TargetShape.Sphere, AreaFt = 60,
+                SaveAbility = Ability.CON, HalfOnSave = true, Dice = DiceExpr.Parse("8d8"), DamageType = DamageType.Necrotic, UpcastDice = 2,
+                Description = "A ring of withering grey light spreads 60 ft from a point. CON save: 8d8 necrotic, half on a success. +2d8 per slot level above 6th." }, K, S, W);
+            Add(new SpellDef { Id = "eyebite", Name = "Eyebite", Level = 6, School = "Necromancy", RangeFt = 60, Kind = SpellKind.Save, SaveAbility = Ability.WIS, Concentration = true, EffectId = "frightened", Recastable = true,
+                Description = "Your eyes become pits of shadow. One creature: WIS save or it panics, Frightened of you. While you concentrate, turn your gaze on another as an action." }, K, S, W);
+
+            // ---------------- Level 7
+            Add(new SpellDef { Id = "fire_storm", Name = "Fire Storm", Level = 7, School = "Evocation", RangeFt = 150, Kind = SpellKind.Save, Shape = TargetShape.Sphere, AreaFt = 20, MaxTargets = 10, OnlyEnemies = true,
+                SaveAbility = Ability.DEX, HalfOnSave = true, Dice = DiceExpr.Parse("7d10"), DamageType = DamageType.Fire,
+                Description = "Sheets of roaring flame shaped around your friends: every foe within 20 ft of a point (up to ten) makes a DEX save, 7d10 fire, half on a success. Allies in the area are untouched." }, C, D, S);
+            Add(new SpellDef { Id = "delayed_blast_fireball", Name = "Delayed Blast Fireball", Level = 7, School = "Evocation", RangeFt = 150, Kind = SpellKind.Save, Shape = TargetShape.Sphere, AreaFt = 20,
+                SaveAbility = Ability.DEX, HalfOnSave = true, Dice = DiceExpr.Parse("12d6"), DamageType = DamageType.Fire, UpcastDice = 1,
+                Description = "A bead of yellow light that bursts in a 20-ft radius. DEX save: 12d6 fire, half on a success." }, S, W);
+            Add(new SpellDef { Id = "finger_of_death", Name = "Final Word", Level = 7, School = "Necromancy", RangeFt = 60, Kind = SpellKind.Save, SaveAbility = Ability.CON, HalfOnSave = true,
+                Dice = DiceExpr.Parse("7d8+30"), DamageType = DamageType.Necrotic,
+                Description = "You speak a word that unmakes. One creature: CON save, 7d8 + 30 necrotic, half on a success." }, K, S, W);
+            Add(new SpellDef { Id = "forcecage", Name = "Forcecage", Level = 7, School = "Evocation", RangeFt = 100, Kind = SpellKind.Utility,
+                Description = "A cage of shimmering bars, 10 ft on a side, drops around a spot. Creatures inside can't leave (a CHA save lets one slip out by magic), though attacks pass through the bars. It lasts the whole fight. Legendary creatures can't be caged." }, B, K, W);
+            Add(new SpellDef { Id = "regenerate", Name = "Regenerate", Level = 7, School = "Transmutation", RangeFt = 5, Kind = SpellKind.Heal, Dice = DiceExpr.Parse("4d8+15"),
+                Description = "Touch an ally: they regain 4d8 + 15 HP, then 1 HP at the start of each of their turns for the rest of the fight." }, B, C, D);
+            Add(new SpellDef { Id = "resurrection", Name = "Resurrection", Level = 7, School = "Necromancy", CastTime = CastTime.TenMinutes, RangeFt = 5, Kind = SpellKind.Utility,
+                Description = "Bring every fallen friend in your party back to life at full health. Cast outside combat." }, B, C);
         }
 
         public static SpellDef Get(string id) => All.TryGetValue(id, out var s) ? s : null;

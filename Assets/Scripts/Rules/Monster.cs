@@ -33,6 +33,10 @@ namespace DnD.Rules
         public int RechargeMin = 5;
         /// <summary>A boss's breath: it spends a turn drawing breath (visible to everyone), and lets go at the start of its next turn.</summary>
         public bool Telegraph;
+        /// <summary>0 = the area starts at the monster (breath, spray); otherwise it lands on a point this far away (a battlemage's fireball).</summary>
+        public int RangeFt;
+        /// <summary>A condition-style effect on a failed save instead of (or as well as) damage (the stone guardian's Slow).</summary>
+        public string EffectId;
     }
 
     public enum LegendaryKind { Attack, SaveBurst }
@@ -98,6 +102,10 @@ namespace DnD.Rules
         public int LairEruptions;
         /// <summary>HP regained at the start of each of its turns (Troll), unless it took one of RegenBlockedBy since its last turn.</summary>
         public int Regeneration;
+        /// <summary>Parry (Knight, Gladiator): its Reaction adds this to its AC against one melee hit it can see, once per round.</summary>
+        public int ParryBonus;
+        /// <summary>Magic Resistance (Stone Golem): Advantage on saves against spells.</summary>
+        public bool MagicResistance;
         public List<DamageType> RegenBlockedBy = new List<DamageType>();
         public string SpriteId;
         /// <summary>Loot table entries: item id and chance (0-1).</summary>
@@ -109,6 +117,17 @@ namespace DnD.Rules
     {
         public readonly MonsterDef Def;
         public int Speed30 => Def.Speed;
+
+        /// <summary>Parry: if the hit would miss with ParryBonus more AC and its reaction is free, it parries (spends the reaction). True if the hit becomes a miss.</summary>
+        public bool TryParry(int attackTotal, bool melee, bool natural20, TurnState turn)
+        {
+            if (Def.ParryBonus <= 0 || !melee || natural20 || turn == null || turn.ReactionUsed || IsIncapacitated) return false;
+            if (attackTotal >= ArmorClass + Def.ParryBonus) return false;
+            turn.ReactionUsed = true;
+            return true;
+        }
+
+        public override bool AdvantageOnSave(Ability a, string vs) => (Def.MagicResistance && vs == "spell") || base.AdvantageOnSave(a, vs);
 
         public Monster(MonsterDef def, bool rollHp = true)
         {

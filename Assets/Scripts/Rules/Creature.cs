@@ -123,9 +123,29 @@ namespace DnD.Rules
         /// <summary>Conditions this creature can't be given right now (Mindless Rage, Aura of Courage...).</summary>
         public virtual bool ConditionImmune(Condition c) => false;
 
+        /// <summary>Regenerate: regain HP at the start of your turn (not while down).</summary>
+        public int StartOfTurnRegen(List<string> log)
+        {
+            if (IsDead || HP <= 0) return 0;
+            int n = 0;
+            foreach (var e in Effects) n += e.RegenPerTurn;
+            if (n <= 0) return 0;
+            int h = Heal(n);
+            if (h > 0) log?.Add($"{Name} regenerates {h} HP.");
+            return h;
+        }
+
         public void AddEffect(ActiveEffect e)
         {
+            // Heroes' Feast: immune to Poisoned and Frightened.
+            if ((e.Condition == Condition.Poisoned || e.Condition == Condition.Frightened) && Effects.Exists(x => x.Id == "heroes_feast")) return;
             if (e.Condition.HasValue && (ConditionImmune(e.Condition.Value) || Auras.Immune(this, e.Condition.Value))) return;
+            // Freedom of Movement: can't be Paralyzed or Restrained, and Speed can't be reduced.
+            if (Effects.Exists(x => x.FreeMovement))
+            {
+                if (e.Condition == Condition.Paralyzed || e.Condition == Condition.Restrained) return;
+                if (e.SpeedPenalty > 0 || e.SpeedHalved) { e = e.Clone(); e.SpeedPenalty = 0; e.SpeedHalved = false; }
+            }
             // Effects with the same id from the same source don't stack; refresh instead.
             Effects.RemoveAll(x => x.Id == e.Id && x.Source == e.Source);
             Effects.Add(e);
@@ -176,7 +196,8 @@ namespace DnD.Rules
         {
             if (IsDead || amount <= 0) return 0;
             if (Immunities.Contains(type)) { log?.Add($"{Name} is immune to {type.ToString().ToLower()}."); return 0; }
-            if (Resistances.Contains(type)) { amount /= 2; log?.Add($"{Name} resists ({type.ToString().ToLower()}), halved to {amount}."); }
+            bool stone = (type == DamageType.Bludgeoning || type == DamageType.Piercing || type == DamageType.Slashing) && Effects.Exists(x => x.ResistsPhysical);
+            if (Resistances.Contains(type) || stone) { amount /= 2; log?.Add($"{Name} resists ({type.ToString().ToLower()}), halved to {amount}."); }
             if (Vulnerabilities.Contains(type)) { amount *= 2; log?.Add($"{Name} is vulnerable! Doubled to {amount}."); }
 
             if (TempHP > 0)

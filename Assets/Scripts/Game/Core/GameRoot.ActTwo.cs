@@ -10,7 +10,7 @@ namespace DnD.Game
         /// <summary>The level cap follows the act; companions with banked XP catch up when it rises.</summary>
         void ApplyActCap()
         {
-            PlayerCharacter.LevelCap = World.Act >= 2 ? PlayerCharacter.ActTwoLevelCap : PlayerCharacter.ActOneLevelCap;
+            PlayerCharacter.LevelCap = World.Act >= 3 ? PlayerCharacter.ActThreeLevelCap : World.Act >= 2 ? PlayerCharacter.ActTwoLevelCap : PlayerCharacter.ActOneLevelCap;
             if (World.Act >= 2)
             {
                 World.SetFlag(WorldDb.ActTwoFlag);

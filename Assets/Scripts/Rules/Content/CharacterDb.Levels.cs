@@ -117,5 +117,44 @@ namespace DnD.Rules.Content
 
             S("rogue", 9, "Supreme Sneak", "You have Advantage on Stealth checks if you move no more than half your Speed on your turn.");
         }
+            static void AddLevelElevenToThirteen()
+        {
+            // ---------------- Fighter (Champion)
+            F("fighter", 11, "Two Extra Attacks", "Attack three times whenever you take the Attack action.");
+            Asi("fighter", 12);
+            F("fighter", 13, "Studied Attacks", "When you miss with an attack roll, your next attack roll against that creature before the end of your next turn has Advantage. Indomitable: two uses.");
+
+            // ---------------- Barbarian (Berserker)
+            F("barbarian", 11, "Relentless Rage", "While raging, dropping to 0 HP instead calls for a DC 10 CON save: on a success your HP becomes twice your barbarian level. Each use adds 5 to the DC until you finish a rest.");
+            Asi("barbarian", 12);
+            F("barbarian", 13, "Improved Brutal Strike", "Two new Brutal Strike riders: Staggering Blow (Disadvantage on its next save, no Opportunity Attacks until your next turn) and Sundering Blow (the next attack against it by someone else gets +5).");
+
+            // ---------------- Rogue (Thief)
+            F("rogue", 11, "Improved Cunning Strike", "Use up to two Cunning Strike effects on one Sneak Attack, paying each one's die. Sneak Attack becomes 6d6.");
+            Asi("rogue", 12);
+            S("rogue", 13, "Use Magic Device", "You can use any spell scroll, and a charged magic item has a 1-in-6 chance not to spend its charge. Sneak Attack becomes 7d6.");
+
+            // ---------------- Monk (Open Hand)
+            S("monk", 11, "Fleet Step", "When you take a Bonus Action other than Step of the Wind, you can also use Step of the Wind right after it. Martial Arts die becomes d10.");
+            Asi("monk", 12);
+            F("monk", 13, "Deflect Energy", "Deflect Attacks now works against attacks of any damage type.");
+
+            // ---------------- Paladin (Devotion)
+            F("paladin", 11, "Radiant Strikes", "Your melee weapon and unarmed hits deal an extra 1d8 radiant damage.");
+            Asi("paladin", 12);
+            Classes["paladin"].Subclass.LaterSpells[13] = new System.Collections.Generic.List<string> { "freedom_of_movement", "guardian_of_faith" };
+
+            // ---------------- Ranger (Hunter)
+            S("ranger", 11, "Superior Hunter's Prey", "Once per turn, when your Hunter's Mark damages a creature, a second creature within 30 ft of it takes that extra damage too.");
+            Asi("ranger", 12);
+            F("ranger", 13, "Relentless Hunter", "Taking damage can't break your concentration on Hunter's Mark.");
+
+            // ---------------- Casters at 11 and 13 (SRD 5.2 gives them slots, not features)
+            foreach (var (cls, title) in new[] { ("cleric", "Sixth-Level Miracles"), ("druid", "Deep Magic"), ("bard", "Sixth-Level Songs"), ("sorcerer", "Sixth-Level Sorcery"), ("wizard", "Sixth-Level Spells") })
+                F(cls, 11, title, "You can now cast 6th-level spells; 7th-level at 13.");
+            Asi("cleric", 12); Asi("druid", 12); Asi("bard", 12); Asi("sorcerer", 12); Asi("wizard", 12); Asi("warlock", 12);
+            F("warlock", 11, "Mystic Arcanum (6th)", "Your patron grants one 6th-level spell you can cast once per Long Rest without a slot. A third Pact slot.");
+            F("warlock", 13, "Mystic Arcanum (7th)", "...and one 7th-level spell, also once per Long Rest.");
+        }
     }
 }

@@ -194,3 +194,7 @@ Act I keeps only two light, ominous notes in chests (a miner's scrawl about lamp
 2. Names: keep, change or rename anything? (*Sundermere, Thistledown, Ember Pact, Oathbound...*)
 3. Is Ashby as the sympathetic antagonist the right flavor?
 4. Anything to add or cut?
+
+## Act III, first pieces (names approved in bulk)
+- **The Crown's soldiers:** Crown Knights, Crown Champions, Crown Battlemages; in the vaults, **Stone Guardians** and **Iron Sentinels**.
+- **Spell names changed for tone:** Circle of Death is **Withering Circle**; Finger of Death is **Final Word**.

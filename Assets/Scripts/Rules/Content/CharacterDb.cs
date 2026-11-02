@@ -138,7 +138,7 @@ namespace DnD.Rules.Content
                 SavingThrows = new[] { Ability.INT, Ability.WIS }, SkillChoices = 2,
                 SkillOptions = new[] { Skill.Arcana, Skill.History, Skill.Insight, Skill.Investigation, Skill.Medicine, Skill.Nature, Skill.Religion },
                 Caster = CasterType.Full, SpellAbility = Ability.INT,
-                CantripsKnown = Table(3, 3, 3, 4, 4, 4, 4, 4, 4, 5), PreparedSpells = Table(4, 5, 6, 7, 9, 10, 11, 12, 14, 15),
+                CantripsKnown = Table(3, 3, 3, 4, 4, 4, 4, 4, 4, 5), PreparedSpells = Table(4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17),
                 Description = "A scholar of arcane magic with a spellbook full of answers. Fragile, but devastating.",
                 StartingWeapon = "quarterstaff", StartingItems = { "dagger", "potion_healing", "rations", "torch" },
             };
@@ -166,7 +166,7 @@ namespace DnD.Rules.Content
                 SkillOptions = new[] { Skill.History, Skill.Insight, Skill.Medicine, Skill.Persuasion, Skill.Religion },
                 LightArmor = true, MediumArmor = true, Shields = true,
                 Caster = CasterType.Full, SpellAbility = Ability.WIS,
-                CantripsKnown = Table(3, 3, 3, 4, 4, 4, 4, 4, 4, 5), PreparedSpells = Table(4, 5, 6, 7, 9, 10, 11, 12, 14, 15),
+                CantripsKnown = Table(3, 3, 3, 4, 4, 4, 4, 4, 4, 5), PreparedSpells = Table(4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17),
                 Description = "A champion of the gods. Heals, protects and smites. Every party wants one.",
                 StartingWeapon = "mace", StartingArmor = "chain_shirt", StartingShield = true,
                 StartingItems = { "potion_healing", "rations", "torch" },
@@ -196,7 +196,7 @@ namespace DnD.Rules.Content
                 SkillOptions = new Skill[0],
                 LightArmor = true,
                 Caster = CasterType.Full, SpellAbility = Ability.CHA,
-                CantripsKnown = Table(2, 2, 2, 3, 3, 3, 3, 3, 3, 4), PreparedSpells = Table(4, 5, 6, 7, 9, 10, 11, 12, 14, 15),
+                CantripsKnown = Table(2, 2, 2, 3, 3, 3, 3, 3, 3, 4), PreparedSpells = Table(4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17),
                 Description = "A performer whose music is literally magic. Talks the party out of trouble, and inspires them through it.",
                 StartingWeapon = "dagger", StartingArmor = "leather",
                 StartingItems = { "dagger", "potion_healing", "rations", "torch", "fennicks_lucky_copper" },
@@ -305,7 +305,7 @@ namespace DnD.Rules.Content
                 SavingThrows = new[] { Ability.WIS, Ability.CHA }, SkillChoices = 2,
                 SkillOptions = new[] { Skill.Athletics, Skill.Insight, Skill.Intimidation, Skill.Medicine, Skill.Persuasion, Skill.Religion },
                 LightArmor = true, MediumArmor = true, HeavyArmor = true, Shields = true, MartialWeapons = true, WeaponMasteries = 2,
-                Caster = CasterType.Half, SpellAbility = Ability.CHA, PreparedSpells = Table(2, 3, 4, 5, 6, 6, 7, 7, 9, 9),
+                Caster = CasterType.Half, SpellAbility = Ability.CHA, PreparedSpells = Table(2, 3, 4, 5, 6, 6, 7, 7, 9, 9, 10, 10, 11),
                 Description = "A holy knight bound by an oath. Heavy armor, healing hands, and smites that light up the room.",
                 StartingWeapon = "longsword", StartingArmor = "chain_mail", StartingShield = true,
                 StartingItems = { "javelin", "javelin", "potion_healing", "rations", "torch" },
@@ -337,7 +337,7 @@ namespace DnD.Rules.Content
                 SavingThrows = new[] { Ability.STR, Ability.DEX }, SkillChoices = 3,
                 SkillOptions = new[] { Skill.AnimalHandling, Skill.Athletics, Skill.Insight, Skill.Investigation, Skill.Nature, Skill.Perception, Skill.Stealth, Skill.Survival },
                 LightArmor = true, MediumArmor = true, Shields = true, MartialWeapons = true, WeaponMasteries = 2,
-                Caster = CasterType.Half, SpellAbility = Ability.WIS, PreparedSpells = Table(2, 3, 4, 5, 6, 6, 7, 7, 9, 9),
+                Caster = CasterType.Half, SpellAbility = Ability.WIS, PreparedSpells = Table(2, 3, 4, 5, 6, 6, 7, 7, 9, 9, 10, 10, 11),
                 Description = "A wilderness hunter and tracker with a bow, a blade and a little nature magic. Marks a target and never lets it go.",
                 StartingWeapon = "longbow", StartingArmor = "leather",
                 StartingItems = { "shortsword", "shortsword", "potion_healing", "rations", "torch" },
@@ -368,7 +368,7 @@ namespace DnD.Rules.Content
                 SkillOptions = new[] { Skill.Arcana, Skill.AnimalHandling, Skill.Insight, Skill.Medicine, Skill.Nature, Skill.Perception, Skill.Religion, Skill.Survival },
                 LightArmor = true, Shields = true,
                 Caster = CasterType.Full, SpellAbility = Ability.WIS,
-                CantripsKnown = Table(2, 2, 2, 3, 3, 3, 3, 3, 3, 4), PreparedSpells = Table(4, 5, 6, 7, 9, 10, 11, 12, 14, 15),
+                CantripsKnown = Table(2, 2, 2, 3, 3, 3, 3, 3, 3, 4), PreparedSpells = Table(4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17),
                 Description = "A keeper of the wild with the old magic of root and storm. Heals, tangles foes in vines, and turns into a wolf when it matters.",
                 StartingWeapon = "quarterstaff", StartingArmor = "leather", StartingShield = true,
                 StartingItems = { "sickle", "potion_healing", "rations", "torch" },
@@ -397,7 +397,7 @@ namespace DnD.Rules.Content
                 SavingThrows = new[] { Ability.CON, Ability.CHA }, SkillChoices = 2,
                 SkillOptions = new[] { Skill.Arcana, Skill.Deception, Skill.Insight, Skill.Intimidation, Skill.Persuasion, Skill.Religion },
                 Caster = CasterType.Full, SpellAbility = Ability.CHA,
-                CantripsKnown = Table(4, 4, 4, 5, 5, 5, 5, 5, 5, 6), PreparedSpells = Table(2, 4, 6, 7, 9, 10, 11, 12, 14, 15),
+                CantripsKnown = Table(4, 4, 4, 5, 5, 5, 5, 5, 5, 6), PreparedSpells = Table(2, 4, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17),
                 Description = "Magic is in your blood (a dragon's, in your case). Fewer spells than a wizard, but you can bend and twist every one of them.",
                 StartingWeapon = "spear", StartingItems = { "dagger", "dagger", "potion_healing", "rations", "torch" },
             };
@@ -426,7 +426,7 @@ namespace DnD.Rules.Content
                 SkillOptions = new[] { Skill.Arcana, Skill.Deception, Skill.History, Skill.Intimidation, Skill.Investigation, Skill.Nature, Skill.Religion },
                 LightArmor = true,
                 Caster = CasterType.Pact, SpellAbility = Ability.CHA,
-                CantripsKnown = Table(2, 2, 2, 3, 3, 3, 3, 3, 3, 4), PreparedSpells = Table(2, 3, 4, 5, 6, 7, 8, 9, 10, 10),
+                CantripsKnown = Table(2, 2, 2, 3, 3, 3, 3, 3, 3, 4), PreparedSpells = Table(2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 11, 11, 12),
                 Description = "You made a deal with an ancient ember-spirit for power. Few spell slots, but they come back on every short rest, and Eldritch Blast never gets old.",
                 StartingWeapon = "sickle", StartingArmor = "leather",
                 StartingItems = { "dagger", "dagger", "potion_healing", "rations", "torch" },
@@ -448,6 +448,7 @@ namespace DnD.Rules.Content
             };
             Classes["warlock"] = warlock;
             AddLevelFiveToTen();
+            AddLevelElevenToThirteen();
         }
 
         /// <summary>Standard weapon mastery picks for a new Fighter (player can change them).</summary>

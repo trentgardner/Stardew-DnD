@@ -1538,3 +1538,17 @@ audio music_throat "Audio/Musics/40 - Crypt.ogg"
 audio music_heart "Audio/Musics/24 - Final Area.ogg"
 tint mon_warden_0 mon_ashmaw_src_0 -12 0.5 0.62
 tint mon_warden_1 mon_ashmaw_src_1 -12 0.5 0.62
+
+# ================================================================ Act III Phase 1: the Crown's soldiers and vault guardians
+still mon_crown_knight_src "Actor/Character/KnightGold/SpriteSheet.png"
+tint mon_crown_knight_0 mon_crown_knight_src_0 0 1 1
+tint mon_crown_knight_1 mon_crown_knight_src_1 0 1 1
+still mon_crown_champion_src "Actor/Character/GladiatorBlue/SpriteSheet.png"
+tint mon_crown_champion_0 mon_crown_champion_src_0 0 1 1
+tint mon_crown_champion_1 mon_crown_champion_src_1 0 1 1
+still mon_crown_battlemage_src "Actor/Character/SorcererOrange/SpriteSheet.png"
+tint mon_crown_battlemage_0 mon_crown_battlemage_src_0 -20 1.1 1
+tint mon_crown_battlemage_1 mon_crown_battlemage_src_1 -20 1.1 1
+still mon_stone_guardian_src "Actor/Character/Statue/SpriteSheet.png"
+tint mon_stone_guardian_0 mon_stone_guardian_src_0 0 0.25 0.85
+tint mon_stone_guardian_1 mon_stone_guardian_src_1 0 0.25 0.85
