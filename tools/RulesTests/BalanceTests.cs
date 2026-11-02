@@ -93,6 +93,19 @@ namespace RulesTests
                     Check(kv.Value >= floor * best.Value, $"balance L{level}: {kv.Key} {kv.Value:0.0} is under {floor:0.##} of {best.Key} {best.Value:0.0}");
                 }
             }
+            // Act III: levels 11-13 against AC 17 (Crown knights, stone guardians).
+            PlayerCharacter.LevelCap = PlayerCharacter.ActThreeLevelCap;
+            for (int level = 11; level <= 13; level++)
+            {
+                var dpr = AllClasses.ToDictionary(c => c, c => DamagePerRound(AtLevel(c, level), 17));
+                var best = dpr.OrderByDescending(kv => kv.Value).First();
+                Console.WriteLine($"L{level} at-will DPR vs AC 17: " + string.Join(", ", dpr.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key} {kv.Value:0.0}")));
+                foreach (var kv in dpr)
+                {
+                    double floor = FullCasters.Contains(kv.Key) ? 0.2 : 0.5;
+                    Check(kv.Value >= floor * best.Value, $"balance L{level}: {kv.Key} {kv.Value:0.0} is under {floor:0.##} of {best.Key} {best.Value:0.0}");
+                }
+            }
             PlayerCharacter.LevelCap = PlayerCharacter.ActOneLevelCap;
 
             // Krag (the warrens' war-boss) is beatable by a level-3 pair: the median pair drops him in 6 rounds or fewer.
