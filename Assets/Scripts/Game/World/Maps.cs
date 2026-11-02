@@ -14,6 +14,7 @@
 //                            ! telescope  - desk  < rune floor (walkable)
 //          Act II Phase 4: ) cold lantern post (lit by the dragon or a torch)
 //          Act II Phase 6: 9 lava (solid, glowing)
+//          Act III Phase 3: 7 the Victory of the Crown statue (reads Signs)  8 ever-lamp (always lit, warm)
 namespace DnD.Game
 {
     public static class Maps

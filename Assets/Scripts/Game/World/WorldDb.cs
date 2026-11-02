@@ -137,6 +137,8 @@ namespace DnD.Game
         public bool SafeForLongRest;
         /// <summary>The dragon refuses to follow into this place (it waits where it is until you come back).</summary>
         public bool DragonStays;
+        /// <summary>What the narrator says when the dragon won't follow in ("{name}" = the dragon); null = the old stairs line.</summary>
+        public string DragonStaysText;
         /// <summary>The act this place opens in (Act II places are behind gated warps; the Act I XP audit skips them).</summary>
         public int Act = 1;
         /// <summary>Lit by its own magic: nights here are a soft violet glow, not dark (the Academy's wards).</summary>

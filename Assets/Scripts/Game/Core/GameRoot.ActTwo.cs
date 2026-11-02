@@ -24,7 +24,13 @@ namespace DnD.Game
                 WorldDb.SendAllyAhead(World);
                 if (World.Flag(WardenFallen) && !World.Flag(ActTwoEndSeen)) StartCoroutine(ActTwoEndSoon()); // a save from before the card existed
             }
-            if (World.Act >= 3) World.SetFlag(WorldDb.ActThreeFlag);
+            if (World.Act >= 3)
+            {
+                World.SetFlag(WorldDb.ActThreeFlag);
+                // Act III opens in the capital (a Phase 2 Act III save picks the quest up here too).
+                var p1 = Players.FirstOrDefault(p => p.Character != null);
+                if (p1 != null && Quests.Stage(WarmCity.Id) == 0) Quests.Start(WarmCity.Id, p1);
+            }
             foreach (var c in Companions) if (c != null && c.Character != null) AutoLevel(c.Character);
             Blight.Sync();
             foreach (var z in Zones.Values) foreach (var grp in z.Def.EnemyGroups) if (grp.MinBlight > 0) SpawnGroupIfNeeded(z, grp);

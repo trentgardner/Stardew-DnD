@@ -585,7 +585,8 @@ namespace DnD.Game
                 if (c.Waiting) continue;
                 if (c.IsDragon && zone.Def.DragonStays)
                 {
-                    p.Hud.Narrate($"{World.DragonName} won't come down the stairs. Every scale is standing on end.");
+                    p.Hud.Narrate(zone.Def.DragonStaysText != null ? zone.Def.DragonStaysText.Replace("{name}", World.DragonName)
+                        : $"{World.DragonName} won't come down the stairs. Every scale is standing on end.");
                     continue;
                 }
                 c.Actor.PlaceAt(zone, pos);
