@@ -2091,7 +2091,7 @@ namespace DnD.Game
             var known = pc.Cantrips.Concat(pc.PreparedSpells).Concat(pc.BonusAlwaysPrepared).Distinct().Select(SpellsDb.Get)
                 .Where(s => s != null && !s.IsCantrip && (s.CastTime == CastTime.Action || (s.Kind == SpellKind.Heal && s.CastTime == CastTime.BonusAction && !u.Cb.Turn.BonusActionUsed))
                     && pc.LowestAvailableSlot(s.Level) > 0).ToList();
-            if (known.Count == 0 || u.Cb.Turn.CastLeveledSpellThisTurn) yield break;
+            if (u.Cb.Turn.CastLeveledSpellThisTurn) yield break; // (no slots left still leaves the Mystic Arcanum)
             var friends = Units.Where(o => !Hostile(u, o) && !o.C.IsDead).ToList();
 
             // 1. Two or more friends below half: a mass heal on the most hurt one.
@@ -2102,6 +2102,10 @@ namespace DnD.Game
                 var centre = hurt.OrderBy(o => o.C.HP).First();
                 if (Zone.DistanceFt(u.Pos, centre.Pos) <= massHeal.RangeFt) { yield return CastSpell(u, pc, massHeal, centre.Pos); cast(massHeal.CastTime == CastTime.Action); yield break; }
             }
+            // 1b. One friend badly hurt: Heal or Regenerate (only on someone under half HP).
+            var bigHeal = known.Where(s => (s.Id == "heal" || s.Id == "regenerate")).OrderByDescending(s => s.Level).FirstOrDefault();
+            var worst = hurt.Where(o => Zone.DistanceFt(u.Pos, o.Pos) <= Math.Max(5, bigHeal?.RangeFt ?? 0)).OrderBy(o => o.C.HP / (float)Math.Max(1, o.C.EffectiveMaxHP)).FirstOrDefault();
+            if (bigHeal != null && worst != null) { yield return CastSpell(u, pc, bigHeal, worst.Pos); cast(true); yield break; }
             // 2. Free concentration: Spirit Guardians when enemies are close, Haste on the front line.
             if (pc.ConcentratingOn == null)
             {
@@ -2123,12 +2127,46 @@ namespace DnD.Game
                     int enemies = foes.Count(o => area.Contains(o.Pos));
                     int allies = friends.Count(o => o != u && area.Contains(o.Pos)) - SpellResolver.Sculpted(pc, s, friends.Where(o => area.Contains(o.Pos)).Select(o => o.C)).Count;
                     if (area.Contains(u.Pos) && !probe.AreaFromSelf) allies++;
+                    if (s.OnlyEnemies) allies = 0;
                     if (allies > 0) continue;
                     int score = enemies * 10 + s.Level;
                     if (enemies >= 2 && score > bestScore) { bestScore = score; best = f.Pos; bestSpell = s; }
                 }
             }
-            if (bestSpell != null) { yield return CastSpell(u, pc, bestSpell, best); cast(true); }
+            if (bestSpell != null && bestScore >= 30) { yield return CastSpell(u, pc, bestSpell, best); cast(true); yield break; }
+            // 4. Chain Lightning when the bolt has somewhere to leap (never onto a friend: it only leaps to foes).
+            var chain = known.FirstOrDefault(s => s.ChainTargets > 0);
+            if (chain != null)
+            {
+                var first = foes.Where(f => Zone.DistanceFt(u.Pos, f.Pos) <= chain.RangeFt && Zone.LineOfSight(u.Pos, f.Pos))
+                    .OrderByDescending(f => foes.Count(o => o != f && Zone.DistanceFt(o.Pos, f.Pos) <= chain.ChainRangeFt)).FirstOrDefault();
+                if (first != null && foes.Count(o => o != first && Zone.DistanceFt(o.Pos, first.Pos) <= chain.ChainRangeFt) >= 1) { yield return CastSpell(u, pc, chain, first.Pos); cast(true); yield break; }
+            }
+            if (bestSpell != null) { yield return CastSpell(u, pc, bestSpell, best); cast(true); yield break; }
+            // 5. A single big foe: Disintegrate or Final Word on whoever has the most HP left.
+            var nuke = known.Where(s => s.Id == "disintegrate" || s.Id == "finger_of_death").OrderByDescending(s => s.Level).FirstOrDefault();
+            var big = foes.Where(f => nuke != null && Zone.DistanceFt(u.Pos, f.Pos) <= nuke.RangeFt && Zone.LineOfSight(u.Pos, f.Pos)).OrderByDescending(f => f.C.HP).FirstOrDefault();
+            if (nuke != null && big != null && big.C.HP >= 40) { yield return CastSpell(u, pc, nuke, big.Pos); cast(true); yield break; }
+            // 6. Warlock Mystic Arcanum: saved for a boss (Unique or legendary) or a crowd of 3+.
+            bool worthIt = foes.Count >= 3 || foes.Any(f => f.C is Monster fm && (fm.Def.LegendaryPerRound > 0 || fm.MaxHP >= 100));
+            if (worthIt)
+                foreach (var arcId in pc.MysticArcanum.Where(pc.ArcanumReady))
+                {
+                    var arc = SpellsDb.Get(arcId);
+                    if (arc.Kind != SpellKind.Save || arc.Dice.IsNone) continue; // Forcecage and Eyebite stay with the player
+                    Unit aim = null;
+                    if (arc.Shape == TargetShape.Single) aim = foes.Where(f => Zone.DistanceFt(u.Pos, f.Pos) <= arc.RangeFt).OrderByDescending(f => f.C.HP).FirstOrDefault();
+                    else foreach (var f in foes.Where(f => Zone.DistanceFt(u.Pos, f.Pos) <= arc.RangeFt))
+                    {
+                        var area = AreaTiles(u, new CombatAction { AreaTiles = Math.Max(1, arc.AreaFt / 5), RangeFt = arc.RangeFt }, f.Pos);
+                        if (!friends.Any(o => area.Contains(o.Pos)) && foes.Count(o => area.Contains(o.Pos)) >= 2) { aim = f; break; }
+                    }
+                    if (aim == null) continue;
+                    pc.CastArcanum(arcId);
+                    yield return CastSpell(u, pc, arc, aim.Pos, arc.Level, true);
+                    cast(true);
+                    yield break;
+                }
         }
 
         /// <summary>Companion bonus action before moving: heal up, rage, or mark the target.</summary>

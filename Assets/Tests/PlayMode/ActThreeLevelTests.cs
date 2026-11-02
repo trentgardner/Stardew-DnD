@@ -204,5 +204,97 @@ namespace DnD.Tests
             Assert.IsFalse(btn.Enabled, "once used, it waits for a Long Rest");
             StringAssert.Contains("Long Rest", btn.Why);
         }
+
+        [UnityTest]
+        public IEnumerator LevelUpScreenOffersMysticArcanum()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(7), "warlock", "human", level: 10);
+            PlayerCharacter.LevelCap = PlayerCharacter.ActThreeLevelCap;
+            p.Character.XP = PlayerCharacter.XpThresholds[11];
+            yield return Frames(2);
+            var screen = new LevelUpScreen();
+            p.Hud.Push(screen);
+            yield return Frames(2);
+            screen.PickHpAverage();
+            int guard = 0;
+            bool sawArcanum = false;
+            while (screen.CurrentChoice != null && guard++ < 10)
+            {
+                var c = screen.CurrentChoice;
+                if (c.Kind == ChoiceKind.Arcanum)
+                {
+                    sawArcanum = true;
+                    StringAssert.Contains("Mystic Arcanum", c.Title);
+                    Assert.IsTrue(screen.RowTexts.Any(t => t.Contains(SpellsDb.Get(c.Options[0]).Name)), "the 6th-level options are listed by name");
+                }
+                foreach (var id in c.Options.Take(c.Count).ToList()) screen.Toggle(id);
+                screen.Next();
+            }
+            Assert.IsTrue(sawArcanum, "warlock 11 picks a Mystic Arcanum");
+            screen.Confirm();
+            yield return Frames(2);
+            Assert.AreEqual(11, p.Character.Level);
+            Assert.AreEqual(1, p.Character.MysticArcanum.Count);
+        }
+
+        [UnityTest]
+        public IEnumerator CharacterSheetFitsAtLevelThirteenInSplitScreen()
+        {
+            var g = GameRoot.I;
+            var p1 = g.DebugStart(Still(11), "warlock", "human", level: 13);
+            var p2 = g.DebugStart(Still(12), "wizard", "elf", level: 13);
+            yield return Frames(10);
+            foreach (var p in new[] { p1, p2 }) p.Hud.Push(new CharacterSheetScreen());
+            yield return Frames(10);
+            var cols = Object.FindObjectsByType<UnityEngine.UI.Text>(FindObjectsSortMode.None).Where(t => t.transform.parent != null && t.transform.parent.name.StartsWith("Sheet")).ToList();
+            foreach (var label in cols)
+            {
+                var rt = (RectTransform)label.transform;
+                Assert.LessOrEqual(label.preferredHeight, rt.rect.height + 2f, $"the sheet's {label.transform.parent.name} column fits ({label.preferredHeight:0} > {rt.rect.height:0}): {label.text.Substring(0, System.Math.Min(40, label.text.Length))}");
+            }
+            Assert.Greater(cols.Count, 3, "found the sheet columns");
+            Shot("act3_sheet_l13");
+        }
+
+        [UnityTest]
+        public IEnumerator CompanionAiNeverTargetsAlliesWithNewAreas()
+        {
+            for (int seed = 0; seed < 5; seed++)
+            {
+                CombatInstance c = null; Unit me = null, hero = null, wolf = null;
+                yield return CasterFight("sorcerer", "fire_storm", 20 + seed, (a, b, d, e) => { c = a; me = b; hero = d; wolf = e; });
+                var pc = (PlayerCharacter)me.C;
+                if (!pc.PreparedSpells.Contains("chain_lightning")) pc.PreparedSpells.Add("chain_lightning");
+                if (!pc.PreparedSpells.Contains("delayed_blast_fireball")) pc.PreparedSpells.Add("delayed_blast_fireball");
+                for (int turn = 0; turn < 3; turn++)
+                {
+                    me.Cb.Turn.Reset(me.C);
+                    var run = c.DebugAiTurn(me);
+                    int guard = 0;
+                    while (run.MoveNext() && guard++ < 100000) { }
+                    Assert.AreEqual(300, hero.C.HP, $"seed {seed}, turn {turn}: the companion never hits the fighter with a spell");
+                }
+                GameRoot.I.QuitToTitle();
+                yield return null;
+            }
+        }
+
+        static void Shot(string name)
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "embers_screenshots");
+            Directory.CreateDirectory(dir);
+            var rt = new RenderTexture(1280, 720, 24);
+            var cams = Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
+            System.Array.Sort(cams, (a, b) => a.depth.CompareTo(b.depth));
+            foreach (var cam in cams) { if (!cam.isActiveAndEnabled) continue; var old = cam.targetTexture; cam.targetTexture = rt; cam.Render(); cam.targetTexture = old; }
+            RenderTexture.active = rt;
+            var tex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
+            tex.Apply();
+            RenderTexture.active = null;
+            File.WriteAllBytes(Path.Combine(dir, name + ".png"), tex.EncodeToPNG());
+            Object.Destroy(rt);
+        }
     }
 }
