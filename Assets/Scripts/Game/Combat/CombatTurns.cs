@@ -837,6 +837,13 @@ namespace DnD.Game
                 res.Hit = res.Roll.Total >= res.TargetAC;
                 Log($"{me.Name} uses Bardic Inspiration (+{v})!");
             }
+            // Parry (Crown Knight, Crown Champion): its reaction turns a melee hit that only just lands into a miss.
+            if (res.Hit && !res.Critical && target.C is Monster parrier && parrier.TryParry(res.Roll.Total, !atk.Ranged && !atk.IsSpell, false, target.Cb?.Turn))
+            {
+                res.Hit = false;
+                target.A.Popup("Parry!", UIKit.UtilityBlue);
+                Log($"{target.Name} parries ({res.Roll.Total} vs AC {target.C.ArmorClass} + {parrier.Def.ParryBonus}).");
+            }
             string adv = res.AdvantageReasons.Count > 0 ? $" [adv: {string.Join(", ", res.AdvantageReasons)}]" : res.DisadvantageReasons.Count > 0 ? $" [dis: {string.Join(", ", res.DisadvantageReasons)}]" : "";
             Ticker($"{me.Name} attacks {target.Name}: {res.Roll.Breakdown()} vs AC {(me.IsHuman ? "?" : res.TargetAC.ToString())} → {(res.Critical ? "CRITICAL HIT!" : res.Hit ? "HIT" : "MISS")}{adv}");
             yield return new WaitForSeconds(0.5f);
@@ -1896,19 +1903,25 @@ namespace DnD.Game
             Vector2Int best = u.Pos + Vector2Int.down; int bestHits = -1;
             foreach (var f in foes)
             {
-                if (Zone.DistanceFt(u.Pos, f.Pos) > ab.AreaFt) continue;
-                var area = AreaTiles(u, new CombatAction { AreaTiles = tiles, AreaFromSelf = true, AreaLine = ab.Shape == TargetShape.Line, RangeFt = ab.AreaFt }, f.Pos);
+                if (Zone.DistanceFt(u.Pos, f.Pos) > AbilityReachFt(ab)) continue;
+                var area = AreaTiles(u, AbilityProbe(ab), f.Pos);
                 int hits = foes.Count(o => area.Contains(o.Pos));
                 if (hits > bestHits) { bestHits = hits; best = f.Pos; }
             }
             u.A.Face(Zone.ToWorld(best));
             Log($"{u.Name} lets go: {ab.Name}!");
             Sfx.Play("spell");
-            var zoneTiles = AreaTiles(u, new CombatAction { AreaTiles = tiles, AreaFromSelf = true, AreaLine = ab.Shape == TargetShape.Line, RangeFt = ab.AreaFt }, best);
+            var zoneTiles = AreaTiles(u, AbilityProbe(ab), best);
             yield return AbilitySaves(u, ab, zoneTiles);
         }
 
         /// <summary>Everyone in the area saves against the ability (the dragon's wings shelter friends from fire).</summary>
+        /// <summary>The area a monster ability covers: from itself (breath) or landing on a point (a battlemage's fireball).</summary>
+        static CombatAction AbilityProbe(MonsterAbilityDef ab) => new CombatAction { AreaTiles = Math.Max(1, ab.AreaFt / 5), AreaFromSelf = ab.RangeFt == 0, AreaLine = ab.Shape == TargetShape.Line, RangeFt = ab.RangeFt == 0 ? ab.AreaFt : ab.RangeFt };
+
+        /// <summary>How far away a foe can be and still be caught: the area itself, or the range plus the area.</summary>
+        static int AbilityReachFt(MonsterAbilityDef ab) => ab.RangeFt == 0 ? ab.AreaFt : ab.RangeFt + ab.AreaFt;
+
         IEnumerator AbilitySaves(Unit u, MonsterAbilityDef ab, List<Vector2Int> zoneTiles)
         {
             var dmg = Dice.RollDamage(ab.Dice);
@@ -1922,9 +1935,16 @@ namespace DnD.Game
                 bool ok = Checks.ResolveSave(save, ab.SaveDC);
                 if (sheltered) Log($"{t.Name} is sheltered by {G.World.DragonName}'s wings (Advantage on the save).");
                 Ticker($"{t.Name} {ab.SaveAbility} save{(sheltered ? $" (sheltered by {G.World.DragonName}'s wings: Advantage)" : "")}: {save.Breakdown()} vs DC {ab.SaveDC} → {(ok ? "SAVED" : "FAILED")}");
-                int lost = t.C.TakeDamage(Checks.AreaDamage(t.C, ab.SaveAbility, dmg.Total, ok, true), ab.DamageType, false, lines);
+                int lost = dmg.Total > 0 ? t.C.TakeDamage(Checks.AreaDamage(t.C, ab.SaveAbility, dmg.Total, ok, true), ab.DamageType, false, lines) : 0;
+                if (!ok && ab.EffectId != null && !t.C.IsDown)
+                {
+                    var fx = EffectLibrary.Create(ab.EffectId, u.C, ab.SaveDC);
+                    fx.Concentration = false; // a monster's power, not a spell it holds
+                    t.C.AddEffect(fx);
+                    lines.Add($"{t.Name} is {fx.Name.ToLower()}!");
+                }
                 lines.ForEach(Log);
-                t.A.Popup("-" + lost, UIKit.DamageRed);
+                if (dmg.Total > 0) t.A.Popup("-" + lost, UIKit.DamageRed);
                 if (lost > 0) AttackResolver.RaiseConcentrationCheck(t.C, lost);
                 OnDamaged(t);
                 yield return new WaitForSeconds(0.3f);
@@ -2052,9 +2072,10 @@ namespace DnD.Game
                 Vector2Int best = default; int bestHits = 0;
                 foreach (var f in foes)
                 {
-                    if (Zone.DistanceFt(u.Pos, f.Pos) > ab.AreaFt) continue;
-                    var area = AreaTiles(u, new CombatAction { AreaTiles = tiles, AreaFromSelf = true, AreaLine = ab.Shape == TargetShape.Line, RangeFt = ab.AreaFt }, f.Pos);
+                    if (Zone.DistanceFt(u.Pos, f.Pos) > AbilityReachFt(ab)) continue;
+                    var area = AreaTiles(u, AbilityProbe(ab), f.Pos);
                     int hits = foes.Count(o => area.Contains(o.Pos));
+                    if (ab.RangeFt > 0 && Units.Any(o => o != u && o.Active && !Hostile(u, o) && area.Contains(o.Pos))) continue; // never on its own side
                     if (hits > bestHits) { bestHits = hits; best = f.Pos; }
                 }
                 if (bestHits < Math.Min(2, foes.Count)) continue;
@@ -2074,7 +2095,7 @@ namespace DnD.Game
                 u.A.Face(Zone.ToWorld(best));
                 Log($"{u.Name} uses {ab.Name}!");
                 Sfx.Play("spell");
-                var zoneTiles = AreaTiles(u, new CombatAction { AreaTiles = tiles, AreaFromSelf = true, AreaLine = ab.Shape == TargetShape.Line, RangeFt = ab.AreaFt }, best);
+                var zoneTiles = AreaTiles(u, AbilityProbe(ab), best);
                 yield return AbilitySaves(u, ab, zoneTiles);
                 used(true);
                 yield break;

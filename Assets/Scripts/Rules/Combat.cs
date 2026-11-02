@@ -401,7 +401,7 @@ namespace DnD.Rules
 
         public static D20Result TargetSave(PlayerCharacter caster, Creature target, SpellDef s)
         {
-            string vs = s.EffectId == "charmed" ? "charmed" : null;
+            string vs = s.EffectId == "charmed" ? "charmed" : "spell";
             return Checks.RollSave(target, s.SaveAbility, AdvantageState.Normal, vs);
         }
 

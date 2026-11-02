@@ -281,6 +281,58 @@ namespace DnD.Rules.Content
                 CopperMin = 500, CopperMax = 2000,
             };
 
+            // Act III Phase 1: the Crown's soldiers and the things that guard its vaults.
+            All["crown_knight"] = new MonsterDef
+            {
+                Id = "crown_knight", Name = "Crown Knight", SpriteId = "mon_crown_knight", AC = 18, HitDice = DiceExpr.Parse("8d8+16"),
+                Scores = new[] { 16, 11, 14, 11, 11, 15 }, CR = 3, XP = 700, Speed = 30,
+                Description = "Plate, a gold-trimmed tabard and absolute certainty. (SRD Knight.)",
+                Attacks = { Melee("Longsword", 5, "1d8+3", DamageType.Slashing) },
+                Multiattack = { "Longsword", "Longsword" },
+                ParryBonus = 2, ProficientSaves = { Ability.CON, Ability.WIS },
+                CopperMin = 500, CopperMax = 2500,
+            };
+            All["crown_champion"] = new MonsterDef
+            {
+                Id = "crown_champion", Name = "Crown Champion", SpriteId = "mon_crown_champion", AC = 16, HitDice = DiceExpr.Parse("15d8+30"),
+                Scores = new[] { 18, 15, 15, 10, 12, 15 }, CR = 5, XP = 1800, Speed = 30, ProficiencyBonus = 3,
+                Description = "The arena's darling, now the throne's. Three spear thrusts before you've finished blinking. (SRD Gladiator.)",
+                Attacks = { Melee("Spear", 7, "2d6+4", DamageType.Piercing) },
+                Multiattack = { "Spear", "Spear", "Spear" },
+                ParryBonus = 3, ProficientSaves = { Ability.STR, Ability.DEX, Ability.CON },
+                CopperMin = 1000, CopperMax = 4000,
+            };
+            All["crown_battlemage"] = new MonsterDef
+            {
+                Id = "crown_battlemage", Name = "Crown Battlemage", SpriteId = "mon_crown_battlemage", AC = 15, HitDice = DiceExpr.Parse("15d8+15"),
+                Scores = new[] { 9, 14, 12, 17, 12, 11 }, CR = 6, XP = 2300, Speed = 30, ProficiencyBonus = 3, Behavior = MonsterBehavior.Ranged,
+                Description = "A royal war-mage in a red coat, sleeves singed. (SRD Mage, without Counterspell.)",
+                Attacks = { Ranged("Arcane Burst", 6, "3d8+3", DamageType.Force, 120, 120) },
+                Multiattack = { "Arcane Burst", "Arcane Burst", "Arcane Burst" },
+                Abilities = { new MonsterAbilityDef { Name = "Fireball", Shape = TargetShape.Sphere, AreaFt = 20, RangeFt = 150, Dice = DiceExpr.Parse("8d6"), DamageType = DamageType.Fire, SaveAbility = Ability.DEX, SaveDC = 14, RechargeMin = 5 } },
+                ProficientSaves = { Ability.INT, Ability.WIS },
+                CopperMin = 1000, CopperMax = 5000,
+            };
+            All["stone_guardian"] = new MonsterDef
+            {
+                Id = "stone_guardian", Name = "Stone Guardian", SpriteId = "mon_stone_guardian", AC = 18, HitDice = DiceExpr.Parse("17d10+85"),
+                Scores = new[] { 22, 9, 20, 3, 11, 1 }, Darkvision = 120, CR = 10, XP = 5900, Speed = 30, ProficiencyBonus = 4, Scale = 1.5f,
+                Description = "A carved warden older than the city above it, built to stand at one door and never move. Until now. (SRD Stone Golem.)",
+                Attacks = { Melee("Slam", 10, "3d8+6", DamageType.Bludgeoning) },
+                Multiattack = { "Slam", "Slam" },
+                Abilities = { new MonsterAbilityDef { Name = "Slow", Shape = TargetShape.Sphere, AreaFt = 10, Dice = new DiceExpr(0, 0, 0), DamageType = DamageType.Force, SaveAbility = Ability.WIS, SaveDC = 17, RechargeMin = 5, EffectId = "slowed_spell" } },
+                Immunities = { DamageType.Poison, DamageType.Psychic }, MagicResistance = true,
+            };
+            All["iron_sentinel"] = new MonsterDef
+            {
+                Id = "iron_sentinel", Name = "Iron Sentinel", SpriteId = "mon_animated_armor", AC = 18, HitDice = DiceExpr.Parse("6d8+6"),
+                Scores = new[] { 14, 11, 13, 1, 3, 1 }, Darkvision = 60, CR = 1, XP = 200, Speed = 25,
+                Description = "An empty suit of royal plate that still walks its rounds. (SRD Animated Armor.)",
+                Attacks = { Melee("Slam", 4, "1d6+2", DamageType.Bludgeoning) },
+                Multiattack = { "Slam", "Slam" },
+                Immunities = { DamageType.Poison, DamageType.Psychic },
+            };
+
             All["cinder_bear"] = new MonsterDef
             {
                 Id = "cinder_bear", Name = "Cinder Bear", SpriteId = "mon_cinder_bear", AC = 11, HitDice = DiceExpr.Parse("4d10+12"),

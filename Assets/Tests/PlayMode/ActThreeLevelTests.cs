@@ -296,5 +296,24 @@ namespace DnD.Tests
             File.WriteAllBytes(Path.Combine(dir, name + ".png"), tex.EncodeToPNG());
             Object.Destroy(rt);
         }
+
+        [UnityTest]
+        public IEnumerator CrownSoldiersParryAndFireballToTheEnd()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(new FuzzInput(31) { ConfirmChance = 0.35f, EndTurnChance = 0.01f }, "fighter", "human", level: 11);
+            yield return Frames(2);
+            g.Warp(p, "forest", new Vector2Int(20, 20), false);
+            yield return Frames(3);
+            p.Hud.CloseAll();
+            g.StartGroupCombat(g.DebugSpawnGroup(p, "crown_knight", "crown_battlemage", "iron_sentinel"), p);
+            var c = g.Combats.Single();
+            Assert.IsTrue(c.Units.Any(u => u.C is Monster m && m.Def.Id == "crown_battlemage"), "the battlemage joins the fight");
+            Time.timeScale = 6;
+            float start = Time.realtimeSinceStartup;
+            while (g.AnyInCombat && Time.realtimeSinceStartup - start < 150f) yield return null;
+            Time.timeScale = 1;
+            Assert.IsFalse(g.AnyInCombat, "the fight finishes (won or lost)");
+        }
     }
 }
