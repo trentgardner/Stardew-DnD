@@ -41,6 +41,28 @@
 **Co-op:** your fiance presses **START** on a second controller at any time. The screen splits and she makes a
 character. You can go anywhere independently; if one of you starts a fight, the other can walk over and join it.
 
+## New: Aurelhold, the capital (Act III)
+- **Getting there**: once Act III begins, Royal Courier Bertram Quell waits in Thistledown square with the King's carriage. Talk to him to ride to
+  Aurelhold (both players, companions and the dragon go together). He'll take you home and back whenever you like.
+- **The upper city**: the Gate of Wings, the Great Square with the Victory of the Crown statue and its ever-lamps (lit at noon, warm all night),
+  the Grand Market, the Lantern Cathedral, the Sunstair up to the palace, the Hall of Records and the Gilded Wyvern inn.
+- **The Roots**: the lower city, down the east stair. Washing lines, oil lamps, the Steamhouse (a daily soak for Heroic Inspiration),
+  the Foundation Works, and the Undergate: a huge iron gate under the King's seal (it stays shut until the next part is built).
+- **The King**: King Aldric IX receives you in the throne room from 9 to 5. The dragon won't fit through the door; it waits on the Sunstair.
+- **"The Warm City"** (main quest): ride in, meet the King, then follow the odd details: lamps with no oil, records with pages cut out,
+  a crypt nobody uses, a work shift that never comes up. **Any three** point you down to the Undergate.
+- **Side quests**: "The Deep Shift" (Mags Tolley's husband in the Roots: talk Foreman Crale round, lean on him and meet his crew with your fists,
+  or quietly read his ledger) and "A Dragon for the Parade" (the Pageant rehearsal: three checks, two to pass, a retry the next day if not).
+- **Familiar faces**: Marsh, Ashby, Sorrel and Calloway are all in town for the Thousandth Pageant, each with something on their mind.
+- **Corwin Dray's** apothecary stall in the market sells the new Potion of Superior Healing (8d4+8).
+
+### Aurelhold checklist
+- [ ] Does the capital feel grand, warm and lived-in? Does anything feel *off* (without giving the game away)?
+- [ ] Is the carriage easy to find? Does co-op ride together cleanly?
+- [ ] Is the King's audience a good scene? Did you notice the ring?
+- [ ] Were the clues easy enough to stumble on? Did three feel like the right number?
+- [ ] Was Crale's crew a fun little brawl? Was the parade rehearsal fun?
+
 ## New: Into Act III (preview)
 - **From the End of Act II card**: "Begin Act III". Two weeks pass, winter comes early, and a royal summons invites you to the capital
   (the capital itself is still being built). The level cap rises to 13.

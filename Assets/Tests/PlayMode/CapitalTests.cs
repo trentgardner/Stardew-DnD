@@ -528,6 +528,78 @@ namespace DnD.Tests
             Assert.AreEqual("capital_market", WorldDb.Npcs["dray"].ShopId);
         }
 
+        // ============================================================ Task 6: the golden path
+
+        static SecretInteractable SecretIn(string id) => Object.FindObjectsByType<SecretInteractable>(FindObjectsSortMode.None).Single(x => x.Def.Id == id);
+
+        [UnityTest]
+        public IEnumerator CapitalGoldenPath()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 50, "paladin", "academy");
+            yield return Frames(2);
+            Assert.AreEqual(WarmCity.Summoned, g.Quests.Stage(WarmCity.Id));
+            g.Clock.Minutes = 10 * 60;
+
+            // The carriage from Thistledown square.
+            g.Warp(p, "town", WorldDb.TownCarriageStop, false);
+            yield return Frames(2);
+            Assert.AreEqual("town", WorldDb.Current(WorldDb.Npcs["quell"], 10, 0, g.World).Zone, "Quell waits in the square");
+            g.RideCarriage(p, "capital", WorldDb.CapitalCarriageStop);
+            yield return Frames(3);
+            Assert.AreEqual("capital", p.Zone.Def.Id);
+            Assert.AreEqual(WarmCity.Arrived, g.Quests.Stage(WarmCity.Id));
+
+            // An audience with the King.
+            g.Clock.Minutes = 10 * 60;
+            DialogueDb.Get("king_aldric").Nodes["close"].OnEnter(Ctx(p));
+            Assert.AreEqual(WarmCity.Audience, g.Quests.Stage(WarmCity.Id));
+
+            // Three clues: the lamp, the Annals, the deep shift.
+            g.Warp(p, "capital", new Vector2Int(36, 24), false);
+            yield return Frames(3);
+            SecretIn("ever_lamp").Resolve(p, CheckOutcome.Success);
+            g.Warp(p, "royal_archive", WorldDb.Zones["royal_archive"].DefaultSpawn, false);
+            yield return Frames(3);
+            SecretIn("royal_annals").Resolve(p, CheckOutcome.Success);
+            Assert.AreEqual(WarmCity.Audience, g.Quests.Stage(WarmCity.Id), "two clues so far");
+            g.Quests.Start(DeepShift.Id, p);
+            DialogueDb.Get("crale").Nodes["ask"].OnEnter(Ctx(p));
+            Opt("crale", "ask", Skill.Persuasion).OnSuccess(Ctx(p));
+            Assert.AreEqual(WarmCity.Below, g.Quests.Stage(WarmCity.Id), "everything points down");
+
+            // The rehearsal.
+            g.Quests.Start(DragonParade.Id, p);
+            g.Quests.Set(DragonParade.Id, DragonParade.Rehearsal, p);
+            foreach (var f in new[] { "parade_beat_1", "parade_beat_2" }) g.World.SetFlag(f);
+            DialogueDb.Get("glass").Nodes["result"].OnEnter(Ctx(p));
+            Assert.AreEqual(DragonParade.Done, g.Quests.Stage(DragonParade.Id));
+
+            // Home and back again.
+            g.RideCarriage(p, "town", WorldDb.TownCarriageStop);
+            yield return Frames(3);
+            Assert.AreEqual("town", p.Zone.Def.Id);
+            var buoy = Object.FindObjectsByType<TownDog>(FindObjectsSortMode.None).Single();
+            p.Character.HeroicInspiration = false;
+            buoy.PetHim(p);
+            Assert.IsTrue(p.Character.HeroicInspiration, "Buoy, still the best boy");
+            g.RideCarriage(p, "capital", WorldDb.CapitalCarriageStop);
+            yield return Frames(3);
+            Assert.AreEqual("capital", p.Zone.Def.Id);
+
+            // Save and load: everything holds.
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(4);
+            Assert.AreEqual(3, g.World.Act);
+            Assert.AreEqual(WarmCity.Below, g.Quests.Stage(WarmCity.Id));
+            Assert.AreEqual(DeepShift.Below, g.Quests.Stage(DeepShift.Id));
+            Assert.AreEqual(DragonParade.Done, g.Quests.Stage(DragonParade.Id));
+            foreach (var f in new[] { "clue_lamps", "clue_records", "clue_shift", GameRoot.CarriageInCapital }) Assert.IsTrue(g.World.Flag(f), f);
+            Assert.AreEqual("capital", g.Players[0].Zone.Def.Id);
+            Assert.AreEqual("capital", WorldDb.Current(WorldDb.Npcs["quell"], 10, 0, g.World).Zone, "the carriage is still in the capital");
+        }
+
         // ============================================================ screenshots (review by eye: grand, warm, lived-in, something off)
 
         [UnityTest]
