@@ -41,6 +41,22 @@
 **Co-op:** your fiance presses **START** on a second controller at any time. The screen splits and she makes a
 character. You can go anywhere independently; if one of you starts a fight, the other can walk over and join it.
 
+## New: levels 11-13 (Act III preview, built underneath)
+Act III raises the cap to 13 (Acts I and II still stop at 4 and 10). It isn't reachable in a normal game yet; Act III's story comes next.
+- **Every class to 13**: the fighter's third attack ("Attack 2/3", "3/3"), ASIs at 12, and the SRD features: Studied Attacks, Relentless Rage,
+  Improved Brutal Strike (Staggering and Sundering Blows), Improved Cunning Strike (two riders on one Sneak Attack), Fleet Step, Deflect Energy,
+  Radiant Strikes, Superior Hunter's Prey, Relentless Hunter.
+- **6th- and 7th-level spells** for full casters (list in DESIGN.md). Warlocks get **Mystic Arcanum**: one 6th- and one 7th-level spell, once per
+  Long Rest each, picked on the level-up screen and shown in the Spells pop-up with an "Arcanum" tag.
+- **Out of combat**, from the spellbook: Heroes' Feast (the whole party), Resurrection (every fallen friend).
+- **The Crown's soldiers**: Crown Knights and Champions (they **parry**), Crown Battlemages (a Fireball that lands at range), Stone Guardians
+  (Magic Resistance, a slowing pulse) and Iron Sentinels.
+
+### Levels 11-13 checklist (when Act III arrives)
+- [ ] Does a level-13 fighter's turn (three attacks, Action Surge for three more) feel good, or too long?
+- [ ] Is Mystic Arcanum easy to find in the Spells pop-up?
+- [ ] Do Crown Knights parrying feel fair (the popup says "Parry!")?
+
 ## Act II is complete
 From "Start at Act II" (or the end of Act I) to the Warden's fall is the whole act. Its main story ("Answers"):
 1. The Lantern Road to the Starfall Academy.

@@ -112,6 +112,30 @@ Every martial (and the warlock) stays above half the leader; full casters above 
 The Lore bard's Vicious Mockery is RAW the weakest damage cantrip. Fixed while building this: cantrips now scale at 5 in the numbers, and
 Eldritch Blast fires two beams at 5 (2024) instead of one bigger one.
 
+## Levels 11-13: curated spells and rulings (Act III Phase 1)
+- **4th (gaps for rangers and Devotion paladins)**: Freedom of Movement, Stoneskin.
+- **6th**: Chain Lightning (one bolt + 3 leaps, only onto foes), Disintegrate (nothing on a save), Sunbeam (a 60-ft line, call it again each turn),
+  Heal (70 HP, cures Blinded/Deafened/Poisoned), Blade Barrier (a lingering wall), Heroes' Feast (out of combat), Irresistible Dance,
+  **Withering Circle** (Circle of Death, renamed for tone), Eyebite (the Panicked option only: Frightened).
+- **7th**: Fire Storm (every foe within 20 ft of a point, up to ten; allies untouched, standing in for "choose the cubes around your friends"),
+  Delayed Blast Fireball (12d6 at once: no delay), **Final Word** (Finger of Death, renamed), Forcecage (a 2x2 cage, one CHA save to slip out,
+  legendary creatures can't be caged), Regenerate (4d8+15, then 1 HP each turn), Resurrection (out of combat: every fallen friend, full HP).
+- **No gold cost** for Heroes' Feast or Resurrection (materials abstracted).
+- **Mystic Arcanum** is its own once-per-Long-Rest use, cast at the spell's level; never a Pact slot, never refreshed by a Short Rest.
+- **Left out on purpose**: summons, Teleport, Plane Shift, Etherealness, Reverse Gravity, Simulacrum, Contingency, Mass Suggestion, Prismatic Spray.
+- **Use Magic Device** (thief 13) is text only: anyone can already read the game's scrolls, and there are no charged items yet.
+- **Crown monsters** (SRD stat blocks, Crown names): Crown Knight (Knight, CR 3, Parry +2), Crown Champion (Gladiator, CR 5, Parry +3),
+  Crown Battlemage (Mage without Counterspell, CR 6: Arcane Burst ×3, Fireball recharge 5-6 at range), Stone Guardian (Stone Golem, CR 10:
+  Magic Resistance, Slow), Iron Sentinel (Animated Armor, CR 1).
+
+## Balance: at-will damage per round, levels 11-13 (vs AC 17)
+| Level | Top | Martials | Warlock | Full casters |
+|---|---|---|---|---|
+| 11 | rogue 20.4 | fighter 19.2, monk 17.9, barbarian 15.6, ranger 14.7, paladin 12.8 | 17.9 | druid 12.7, wizard 11.6, sorcerer 10.7, cleric 10.1, bard 7.4 |
+| 12 | monk 21.3 | rogue 20.4, fighter 19.2, barbarian 15.6, ranger 14.7, paladin 12.8 | 21.3 | druid 12.7, sorcerer/wizard 11.6, cleric 10.1, bard 7.9 |
+| 13 | rogue 24.1 | monk 22.9, fighter 20.6, barbarian 16.8, ranger 15.7, paladin 13.8 | 22.9 | druid 13.6, sorcerer/wizard 12.4, cleric 10.8, bard 8.4 |
+The paladin's number leaves out Radiant Strikes (+1d8 on every melee hit) and smites; every martial and the warlock stay above half the leader.
+
 ## Inventory
 - 36-slot Stardew-style bag (top row = hotbar), per-item stack limits, split/merge/swap, quick-transfer,
   sort, trading items and gold with a nearby co-op partner, home storage chest.
