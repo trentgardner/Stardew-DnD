@@ -83,5 +83,94 @@ namespace DnD.Game
                 Npcs[guard.Id] = guard;
             }
         }
+
+        /// <summary>Where the stair from the capital comes down into the Roots.</summary>
+        public static readonly Vector2Int RootsStairFoot = new Vector2Int(4, 6);
+
+        static void BuildRoots()
+        {
+            var z = new ZoneDef
+            {
+                Act = 3,
+                Id = "roots", Name = "The Roots of Aurelhold", Map = Maps.Roots, DefaultSpawn = RootsStairFoot, Music = "music_capital",
+                BlightWeight = 0f, WarmLit = true, Shadowed = true,
+                EnterNarration = "The Roots. The city's underside, where the mountain leans out over the rooftops and the light comes from oil lamps and steam. Washing hangs across every alley. It's warm down here too. Warmer, if anything.",
+            };
+            var capital = Zones["capital"];
+            capital.Warps.Add(new WarpDef(59, 30, "roots", RootsStairFoot.x, RootsStairFoot.y));
+            capital.Warps.Add(new WarpDef(60, 30, "roots", RootsStairFoot.x, RootsStairFoot.y + 1));
+            foreach (var at in new[] { new Vector2Int(2, 5), new Vector2Int(3, 5), new Vector2Int(2, 6), new Vector2Int(3, 6) })
+                z.Warps.Add(new WarpDef(at.x, at.y, "capital", 58, 30));
+            z.Warps.Add(new WarpDef(20, 27, "steamhouse", 8, 10));
+
+            z.Signs[new Vector2Int(5, 4)] = "UP: THE GREAT SQUARE\n\nTwo hundred and twelve steps. Somebody has counted. Somebody has written the number on the wall, with feeling.";
+            z.Signs[new Vector2Int(51, 23)] = "A gate of black iron twice the height of a house, set straight into the mountain. It's barred from this side with a beam as thick as a tree, and sealed with the King's own seal, in red wax the size of a dinner plate.\n\nThe iron is warm.\n\nPainted on the rock beside it: THE UNDERGATE. DEEP SHIFT ONLY. BY ROYAL WARRANT.";
+            z.DoorSigns[new Vector2Int(20, 27)] = new BuildingSign("The Steamhouse", "THE STEAMHOUSE\n\nHot baths, one copper. Hotter baths, two.\nThe water comes up from below. Don't ask where. We don't.");
+            z.DoorSigns[new Vector2Int(50, 17)] = new BuildingSign("Foreman's Office", "FOUNDATION WORKS\nForeman's Office\n\nKnock. Wait. Knock again. Go away.");
+
+            var patrol = new EnemyGroupDef { Id = "roots_patrol", Style = EncounterStyle.Talk, TalkDC = 16, ScareDC = 18, Label = "the Crown patrol", NightOnly = true,
+                Spotted = "Lanterns swing round the corner: three of the King's own, in good steel. \"Curfew in the Roots, by order. State your business, or state it to the magistrate.\"",
+                Befriended = "You talk, they listen. The captain looks at your dragon, at you, and at the hour, and decides she's off duty in ten minutes anyway. \"Mind the steps going up.\"",
+                VouchFlag = "banner_crown", VouchText = "The captain sees the Crown's colours on you and stands her patrol aside. \"Evening, friends of the Redoubt. Lady-Commander Marsh speaks well of you.\"" };
+            patrol.Members.Add(new EnemySpawn("crown_knight", 26, 18));
+            patrol.Members.Add(new EnemySpawn("crown_knight", 27, 19));
+            patrol.Members.Add(new EnemySpawn("crown_battlemage", 26, 21));
+            z.EnemyGroups.Add(patrol);
+
+            var men = new EnemyGroupDef { Id = "crale_men", Style = EncounterStyle.Talk, TalkDC = 15, ScareDC = 15, Label = "Crale's works crew", Brawl = true, Unique = true,
+                RequiresFlag = "crale_men_called",
+                BrawlText = "Crale bellows across the yard: \"FISTS! Nobody draws steel in my works, and nobody gets killed! The Crown'd have my hide!\"",
+                Spotted = "Three of the biggest men in the Roots put down their shovels and roll up their sleeves.",
+                Befriended = "\"...Foreman says we're done.\" They pick their shovels back up, not looking at you." };
+            men.Members.Add(new EnemySpawn("brawler", 43, 22));
+            men.Members.Add(new EnemySpawn("brawler", 45, 22));
+            men.Members.Add(new EnemySpawn("brawler", 44, 23));
+            z.EnemyGroups.Add(men);
+
+            z.Secrets[new Vector2Int(48, 18)] = new SecretDef
+            {
+                Id = "works_ledger", Sprite = "item_scroll_revivify", Prompt = "Read the works ledger (quietly)", Skill = Rules.Skill.SleightOfHand, DC = 16,
+                QuestId = DeepShift.Id, QuestStage = DeepShift.Crale, AdvanceTo = DeepShift.Below,
+                Success = "Crale's ledger lies open on the office windowsill. You turn the pages without a sound.",
+                Failure = "Crale looks up from the yard, and you lean on the wall very casually until he looks away. Another day.",
+                AlreadyFound = "WENT DOWN. CAME UP. DEEP SHIFT. PAID.",
+                Lore = "works_ledger",
+            };
+            Zones[z.Id] = z;
+
+            var steam = new ZoneDef
+            {
+                Act = 3, Indoors = true,
+                Id = "steamhouse", Name = "The Steamhouse", Map = Maps.Steamhouse, DefaultSpawn = new Vector2Int(8, 10), Music = "music_capital",
+                EnterNarration = "Steam, everywhere. Stone benches round a pool the size of a pond, and the water's so hot it moves on its own. Workers off the night shift sit up to their chins in it with their eyes shut.",
+            };
+            steam.Warps.Add(new WarpDef(8, 11, "roots", 20, 28));
+            steam.Secrets[new Vector2Int(9, 8)] = new SecretDef
+            {
+                Id = "hot_spring", Sprite = "fx_smoke_1", Prompt = "Soak in the deep pool", Skill = Rules.Skill.Medicine, DC = 13, Daily = true, HeroicInspiration = true,
+                Success = "You ease in, inch by inch, until only your nose is out. The water comes up from below, near boiling, and smells of nothing. Not sulphur. Not stone. Just heat. You climb out a new person. (Heroic Inspiration!)",
+                Failure = "Too hot. Far too hot. You sit on the edge with your feet in and pretend that was the plan. Maybe tomorrow.",
+                AlreadyFound = "You've had your soak today. Your fingers are still wrinkled.",
+            };
+            Zones[steam.Id] = steam;
+
+            var mags = new NpcDef { Id = "mags", Name = "Mags Tolley", Title = "Laundress, the Roots", Look = "npc_mags", Dialogue = "mags" };
+            mags.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
+            mags.Schedule.Add(new ScheduleEntry(8, "roots", 21, 30, "wringing out washing by the Steamhouse"));
+            mags.Schedule.Add(new ScheduleEntry(20, null, 0, 0, "at home, writing a letter"));
+            Npcs[mags.Id] = mags;
+
+            var crale = new NpcDef { Id = "crale", Name = "Foreman Crale", Title = "The Foundation Works", Look = "npc_crale", Dialogue = "crale" };
+            crale.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
+            crale.Schedule.Add(new ScheduleEntry(6, "roots", 44, 21, "shouting at the works crew"));
+            crale.Schedule.Add(new ScheduleEntry(18, null, 0, 0, "at the Gilded Wyvern, drinking alone"));
+            Npcs[crale.Id] = crale;
+
+            var tilly = new NpcDef { Id = "tilly", Name = "Tilly Brightwick", Title = "Lamplighter of the Roots", Look = "npc_tilly", Dialogue = "tilly" };
+            tilly.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
+            tilly.Schedule.Add(new ScheduleEntry(8, "roots", 24, 11, "filling the oil lamps"));
+            tilly.Schedule.Add(new ScheduleEntry(22, null, 0, 0, "asleep"));
+            Npcs[tilly.Id] = tilly;
+        }
     }
 }

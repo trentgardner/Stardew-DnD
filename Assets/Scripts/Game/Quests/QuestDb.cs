@@ -9,6 +9,9 @@ namespace DnD.Game
     /// <summary>Act II's main quest, "answers".</summary>
     public static class Answers { public const string Id = "answers"; public const int Road = 1, Academy = 2, Tower = 3, Heard = 4, Chosen = 5, Allies = 6, OnTheRoad = 7, Gate = 8, Rest = 9; }
 
+    /// <summary>Act III side quest, "deep_shift" (stage 4, Bran comes home, is Phase 4's).</summary>
+    public static class DeepShift { public const string Id = "deep_shift"; public const int Asked = 1, Crale = 2, Below = 3; }
+
     /// <summary>Act III's opening quest, "warm_city": the capital (stage 5 is the way down, Phase 4 onward).</summary>
     public static class WarmCity { public const string Id = "warm_city"; public const int Summoned = 1, Arrived = 2, Audience = 3, Below = 4; }
 
@@ -93,6 +96,17 @@ namespace DnD.Game
 
         static QuestDb()
         {
+            Add(new QuestDef
+            {
+                Act = 3, Id = DeepShift.Id, Title = "The Deep Shift", Giver = "mags",
+                StageXp = { [DeepShift.Below] = 4000 },
+                StageFlags = { [DeepShift.Below] = "clue_shift" },
+                StageText = new[] {
+                    "", "Mags Tolley's husband Bran works the deep shift at the Foundation Works, in the Roots. His letters come up every week. He never does.",
+                    "Foreman Crale won't talk about the deep shift. The works ledger might.",
+                    "The deep shift goes down through the Undergate and stays down, on the Crown's orders and the Crown's pay. Bran is alive, somewhere below.",
+                    "Bran comes home." },
+            });
             Add(new QuestDef
             {
                 Act = 3, Id = WarmCity.Id, Title = "The Warm City", Giver = "quell",

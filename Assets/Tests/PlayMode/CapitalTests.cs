@@ -230,6 +230,108 @@ namespace DnD.Tests
             Assert.IsTrue(p.Character.HeroicInspiration, "and still the best boy in Act III");
         }
 
+        // ============================================================ Task 3: the Roots and the Deep Shift
+
+        static DCtx Ctx(PlayerSlot p) => new DCtx { P = p };
+        static DOption Opt(string dialogue, string node, Skill skill) => DialogueDb.Get(dialogue).Nodes[node].Options.First(o => o.Check == skill);
+
+        [UnityTest]
+        public IEnumerator DeepShiftEveryWay()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 20);
+            yield return Frames(2);
+            var q = QuestDb.Get(DeepShift.Id);
+
+            // Crale talked round.
+            g.Quests.Start(DeepShift.Id, p);
+            DialogueDb.Get("crale").Nodes["ask"].OnEnter(Ctx(p));
+            Assert.AreEqual(DeepShift.Crale, g.Quests.Stage(DeepShift.Id), "asking Crale moves it on");
+            Opt("crale", "ask", Skill.Persuasion).OnSuccess(Ctx(p));
+            Assert.AreEqual(DeepShift.Below, g.Quests.Stage(DeepShift.Id));
+            Assert.IsTrue(g.World.Flag("clue_shift"), "the deep shift is a clue");
+            Assert.Less(g.Quests.Stage(DeepShift.Id), q.Last, "and the quest goes on (Bran is still below)");
+            g.QuitToTitle();
+            yield return Frames(2);
+
+            // The ledger, the quiet way.
+            p = ActThree(g, 21, "rogue");
+            yield return Frames(2);
+            g.Quests.Set(DeepShift.Id, DeepShift.Crale, p);
+            g.Warp(p, "roots", new Vector2Int(47, 18), false);
+            yield return Frames(3);
+            var ledger = Object.FindObjectsByType<SecretInteractable>(FindObjectsSortMode.None).Single(x => x.Def.Id == "works_ledger");
+            ledger.Resolve(p, CheckOutcome.Success);
+            Assert.AreEqual(DeepShift.Below, g.Quests.Stage(DeepShift.Id), "the ledger tells it too");
+            Assert.IsTrue(g.World.LoreFound.Contains("works_ledger"));
+            Assert.IsTrue(g.World.Flag("clue_shift"));
+            g.QuitToTitle();
+            yield return Frames(2);
+
+            // Leaning on him and failing: his men, fists only.
+            p = ActThree(g, 22, "barbarian");
+            yield return Frames(2);
+            g.Quests.Set(DeepShift.Id, DeepShift.Crale, p);
+            g.Warp(p, "roots", new Vector2Int(44, 20), false);
+            yield return Frames(3);
+            Opt("crale", "ask", Skill.Intimidation).OnFailure(Ctx(p));
+            g.SpawnAndFight("crale_men", p);
+            yield return Frames(3);
+            var fight = g.Combats.SingleOrDefault(c => c.GroupId == "crale_men");
+            Assert.IsNotNull(fight, "Crale's men come");
+            Assert.IsTrue(fight.Brawl, "fists only");
+        }
+
+        [UnityTest]
+        public IEnumerator RootsPatrolOnlyAtNight()
+        {
+            var g = GameRoot.I;
+            ActThree(g, 23);
+            yield return Frames(2);
+            var patrol = WorldDb.Zones["roots"].EnemyGroups.Single(x => x.Id == "roots_patrol");
+            g.Clock.Minutes = 23 * 60;
+            Assert.IsTrue(patrol.InStage(g.Quests), "curfew at night");
+            g.Clock.Minutes = 12 * 60;
+            Assert.IsFalse(patrol.InStage(g.Quests), "nobody about at noon");
+            Assert.AreEqual("banner_crown", patrol.VouchFlag, "the Crown's friends are waved past");
+            var men = WorldDb.Zones["roots"].EnemyGroups.Single(x => x.Id == "crale_men");
+            Assert.IsFalse(men.InStage(g.Quests), "Crale's men only come when called");
+        }
+
+        [UnityTest]
+        public IEnumerator RootsIsReachable()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 24, "rogue");
+            yield return Frames(2);
+            g.Warp(p, "capital", new Vector2Int(58, 30), false);
+            yield return Frames(2);
+            var stair = WorldDb.Zones["capital"].Warps.Find(w => w.At == new Vector2Int(59, 30));
+            Assert.IsNotNull(stair, "the stair down from the capital");
+            g.Warp(p, stair.ToZone, stair.ToPos, false);
+            yield return Frames(2);
+            Assert.AreEqual("roots", p.Zone.Def.Id);
+            AcademyTests.AssertAllReachable(g, p.Zone, p.MapPos);
+            Assert.IsTrue(AcademyTests.CanReachBeside(p.Zone, p.MapPos, new Vector2Int(51, 23)), "the Undergate's notice");
+            var up = WorldDb.Zones["roots"].Warps.Find(w => w.ToZone == "capital");
+            Assert.IsNotNull(up, "and back up");
+            g.Warp(p, "steamhouse", WorldDb.Zones["steamhouse"].DefaultSpawn, false);
+            yield return Frames(2);
+            AcademyTests.AssertAllReachable(g, p.Zone, p.MapPos);
+        }
+
+        [UnityTest]
+        public IEnumerator UndergateIsSealedForNow()
+        {
+            var g = GameRoot.I;
+            ActThree(g, 25);
+            yield return Frames(2);
+            var roots = WorldDb.Zones["roots"];
+            Assert.IsFalse(roots.Warps.Any(w => w.At == new Vector2Int(52, 20) || w.At == new Vector2Int(52, 21)), "no way through yet");
+            StringAssert.Contains("King's own seal", roots.Signs[new Vector2Int(51, 23)]);
+            Assert.AreEqual('D', roots.Map[20][52]);
+        }
+
         // ============================================================ screenshots (review by eye: grand, warm, lived-in, something off)
 
         [UnityTest]
@@ -254,6 +356,9 @@ namespace DnD.Tests
             yield return At("capital", 31, 13, "act3_sunstair");
             yield return At("capital", 10, 22, "act3_market");
             yield return At("capital", 52, 25, "act3_east_quarter");
+            yield return At("roots", 26, 15, "act3_roots", 15);
+            yield return At("roots", 47, 21, "act3_undergate", 15);
+            yield return At("steamhouse", 8, 9, "act3_steamhouse", 15);
         }
     }
 }

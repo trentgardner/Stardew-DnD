@@ -892,5 +892,68 @@ namespace DnD.Game
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXrrrrrrXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXrrrrrrXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
         };
+
+        // Act III Phase 3: the Roots of Aurelhold, the lower city at the mountain's roots. The stair up at (2-3, 5-6);
+        // the Steamhouse door (20, 27); the Undergate (52, 20-21), sealed. Painted by a small script (session scratch).
+        public static readonly string[] Roots =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXX::::RRRRR:UUUUU:RRRRR:::::UUUUU::RRRRR:::::X::::::XX",
+            "XX:::s::WwWwWLWwWwWLWwWwW:::::WwWwWL:WwWwW::::::::::::XX",
+            "XXVV::::WWDWW:WWDWW:WWDWW:::::WWDWW::WWDWW::::::::::::XX",
+            "XXVV::::::::::::::::::::::::::::::::::::::::::::::::::XX",
+            "XXoooooooooooo::::::::::::::::::::::::::::::::::::::::XX",
+            "XXoooooooooooooooooooooooo::::::::::::oooooooooooo::::XX",
+            "XX::ool:::::l:oooooooooooooooooooooooooooooooooooo::::XX",
+            "XXX:oo::::::::::::::::::l:oooooooooooo:::::::oo::::::XXX",
+            "XXX:oo::::L:::::::L:::::::oo::::::::::::::::loo::::::XXX",
+            "XX::oo::::::::::::::::::::ool:RRRRRRR:::L::::oo:::::::XX",
+            "XX::oo::m:::m:::m:::m:::::oo::RRRRRRR:::fffffffffffff:XX",
+            "XX::oo::::::::::::::::::::oo::WwWWwWW:::f::::oo:::::::XX",
+            "XX:roo::::::::::::::::::r:oo::WWWDWWW:::f:xx:ooxRRRR::XX",
+            "XX::oo::m:::m:::m:::m:::::oo:L:::::::L::f:x::oo:WwWW::XX",
+            "XX::oo:::::::::F::::::::::oo::::::::::::f::::oo:WWDW::XX",
+            "XX::oo::::::::::::::::::::oo::::::::::::f::::oo:q:::::XX",
+            "XX::oo::m:::m:::m:::m:::::oo::UUUUUUU:::f::::oo::::iXXXX",
+            "XX::ool:::::::::::::::::::ool:UUUUUUU:::::::loo:::::DXXX",
+            "XX::oo::::::::::::::::::::oo::WwWWwWW::::::::oo:::::DXXX",
+            "XX::oo:ffff:ffff::::::::::oo::WWWDWWWL::f::::oo::::iXXXX",
+            "XX::oo::::::::::GGGGGGGGG:oo::::::::::::f::::oo::::n::XX",
+            "XX:roo:::i:A:i::GGGGGGGGG:oo:e::::::::::f::::oo::::::XXX",
+            "XX::oo::::::::::GGGGGGGGG:oo::::::::::::f::::oo:::x:::XX",
+            "XX::oo::::::::::WwWWwWWwW:oo:::::::r::::f::x:oo::xx:::XX",
+            "XXX:oo::N:::::N:WWWWDWWWW:oo:e::::::::::f::::oo:::::::XX",
+            "XXX:oo::::::::::::::::::::ool:::::::::::fffffffffffff:XX",
+            "XX::ool::::::::e:::::::::eoo:::::::::::::::::oo:::::::XX",
+            "XX::ooooooooooooooooooooooooooooooooooooooooooo:::::::XX",
+            "XX::ooooooooooooooooooooooooooooooooooooooooooo:::::::XX",
+            "XX:::::::::::::::l::::::::oo::::::::l:::::::::::::::::XX",
+            "XX::::::::::::::::::::::::oo::::::::::::::::::::::::::XX",
+            "XX::::::::::r:::::::::::::::::~~~~~~~:r:::::::::r:::::XX",
+            "XX::::::::::::::::::::r::::::j~~~~~~~:::::::::::::::::XX",
+            "XXX::::::::::::::::::::::::::::::::::::::::::::::::::XXX",
+            "XX:X:::::X::::::::::XX:::::::::::X::::::::::X:::::::X:XX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        };
+
+        // Act III Phase 3: the Steamhouse, hot baths fed from below. Door (8, 11).
+        public static readonly string[] Steamhouse =
+        {
+            "WWWWWWWWWWWWWWWWWW",
+            "WwWWwWWwWWwWWwWWwW",
+            "W::e::::::::::e::W",
+            "W::::~~~~~~~~::::W",
+            "W:N::~~~~~~~~::N:W",
+            "W::::~~~~~~~~::::W",
+            "W:N::~~~~~~~~::N:W",
+            "W::::~~~~~~~~::::W",
+            "W::e:::::q::::e::W",
+            "W::::::::::::::::W",
+            "W:x::::::::::::a:W",
+            "WWWWWWWWDWWWWWWWWW",
+        };
     }
 }

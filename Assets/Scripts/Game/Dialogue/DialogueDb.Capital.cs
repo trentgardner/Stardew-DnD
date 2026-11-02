@@ -17,6 +17,9 @@ namespace DnD.Game
                 case "hesketh": return Hesketh();
                 case "merriwether": return Merriwether();
                 case "capital_guard": return CapitalGuard();
+                case "mags": return Mags();
+                case "crale": return Crale();
+                case "tilly": return Tilly();
                 default: return null;
             }
         }
@@ -121,6 +124,73 @@ namespace DnD.Game
                     ? "Quiet night. They're always quiet here. Nobody leaves Aurelhold in winter, and nobody comes but the King's guests."
                     : $"Welcome to Aurelhold, honoured guests. Please keep the dragon to the main streets. Please don't let it sit on the market. Please- it's very large, isn't it.")
                 .Bye("Carry on.");
+            return d;
+        }
+
+        // =================================================================== the Roots
+
+        static Dialogue Mags()
+        {
+            var d = new Dialogue("mags", c => c.G.Quests.Stage(DeepShift.Id) >= DeepShift.Below ? "news" : c.G.Quests.Stage(DeepShift.Id) > 0 ? "waiting" : "intro");
+            const string who = "Mags Tolley";
+            d.Node("intro", who,
+                c => "You're the ones from up top. With the dragon. Everybody's talking. Sorry, love, I don't mean to stare, I- you're important. You've got the King's ear. Could you ask about my Bran?",
+                c => "She's wringing a sheet so hard the water's long gone out of it.")
+                .Say("Who's Bran?", "bran")
+                .Bye("Sorry. Another time.");
+            d.Node("bran", who,
+                c => "My husband. He works the deep shift at the Foundation Works, down past the Undergate. Triple pay, from the Crown. Two years now. His letters come up every week, regular as the bells, and they're his hand, I'd know it anywhere. But he never comes up. Not once. Not for our girl's naming day. Not when his mam died.",
+                c => "She folds the sheet, very carefully, into a small square.")
+                .Say("We'll ask Foreman Crale.", "yes", doIt: c => c.G.Quests.Start(DeepShift.Id, c.P))
+                .Bye("I'm sorry. We can't promise anything.");
+            d.Node("yes", who, c => "Would you? Crale's in the works yard, by the big gate. He's not a bad man. He's just scared of something. Everybody down here is, a little. Nobody says of what.").Bye("We'll find out.");
+            d.Node("waiting", who, c => "Any word? ...No. That's all right. Next week, maybe. There's always a letter next week.").Bye("Not yet. We're still asking.");
+            d.Node("news", who,
+                c => "Alive. Down there. On the Crown's orders. ...Alive is more than I had this morning. Thank you. If you're going down there- no. You wouldn't. Nobody goes down there. Just... if you do.",
+                c => $"{c.G.World.DragonName} lowers its huge head next to her, very gently, and she puts her hand on its nose and leaves it there a while.")
+                .Bye("If we do, we'll look for him.");
+            return d;
+        }
+
+        static Dialogue Crale()
+        {
+            var d = new Dialogue("crale", c => c.G.Quests.Stage(DeepShift.Id) >= DeepShift.Asked && c.G.Quests.Stage(DeepShift.Id) < DeepShift.Below ? "ask" : "start");
+            const string who = "Foreman Crale";
+            d.Node("start", who,
+                c => c.G.Quests.Stage(DeepShift.Id) >= DeepShift.Below
+                    ? "You again. I told you what I know. Now let me work, before somebody up top hears I've been talking."
+                    : "Foundation Works. Dig, shore, haul, repeat. Mind the crates, mind the crane, mind the dragon off my scaffolds.")
+                .Bye("Carry on.");
+            d.Node("ask", who,
+                c => "Bran Tolley? Deep shift. Can't talk about the deep shift. Royal warrant. Get out of my yard.",
+                c => "He doesn't look at the Undergate when he says it. He very carefully doesn't look at the Undergate.",
+                c => c.G.Quests.Set(DeepShift.Id, DeepShift.Crale, c.P))
+                .Roll(Skill.Insight, 14, "(Insight) Read him.", "insight_ok", "insight_bad")
+                .Roll(Skill.Persuasion, 16, "(Persuasion) \"Her husband. Two years. Just tell her he's alive.\"", "told", "refused", onSuccess: c => c.G.Quests.Set(DeepShift.Id, DeepShift.Below, c.P))
+                .Roll(Skill.Intimidation, 15, "(Intimidation) Lean on him.", "told", "men", onSuccess: c => c.G.Quests.Set(DeepShift.Id, DeepShift.Below, c.P),
+                      onFailure: c => c.G.World.SetFlag("crale_men_called"))
+                .Bye("We'll be back.");
+            d.Node("insight_ok", who, c => "...What?",
+                    c => "He isn't cruel. He's terrified. Of the gate, of the seal on it, of whoever signs the warrants. And under that, of something else: the thing he never lets himself think about.")
+                .Roll(Skill.Persuasion, 16, "(Persuasion) \"Her husband. Two years. Just tell her he's alive.\"", "told", "refused", onSuccess: c => c.G.Quests.Set(DeepShift.Id, DeepShift.Below, c.P))
+                .Bye("We'll be back.");
+            d.Node("insight_bad", who, c => "Stop staring. I've got a works to run.", c => "Hard to read. Harder to like.").Bye("We'll be back.");
+            d.Node("told", who,
+                c => "...Fine. FINE. Crown orders, sealed. The deep shift goes down through the Undergate and stays down. Paid triple, paid to their families, paid regular. Letters come up in a sealed bag. I don't open it. I don't ask. Nobody who asked kept his job. He's alive. They're all alive, as far as I know. Now get out of my yard.",
+                c => "He says 'as far as I know' like a man who has decided, very firmly, not to know any further.")
+                .Bye("Thank you, Crale.");
+            d.Node("refused", who, c => "No. Out. And don't come back without a warrant of your own.").Bye("We'll be back.");
+            d.Node("men", who, c => "Right. LADS! These folk want to learn some manners!", c => "Three of the biggest men in the Roots put down their shovels.")
+                .Say("(Fists up.)", doIt: c => { c.Screen.Close(); c.G.SpawnAndFight("crale_men", c.P); }, end: true);
+            return d;
+        }
+
+        static Dialogue Tilly()
+        {
+            var d = new Dialogue("tilly", c => "start");
+            d.Node("start", "Tilly Brightwick",
+                c => "My sister does the lamps up top. Wenna. Thirty years and she's never had to light one! Down here we use oil, same as anybody. Funny old city. Nobody minds, so long as it's warm.")
+                .Bye("Goodnight, Tilly.");
             return d;
         }
     }

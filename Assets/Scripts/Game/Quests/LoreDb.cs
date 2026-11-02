@@ -92,6 +92,8 @@ namespace DnD.Game
                 "Cut into the plinth in the Great Square, in letters a hand high and freshly gilded for the Thousandth Pageant: \"A THOUSAND YEARS. Here the first King of Aurelhold struck down the Ashen Queen and bound her fire, so that the realm might never burn again. LONG MAY THE CROWN KEEP THE FLAME.\"", 3);
             Add("ever_lamps", "The Ever-Lamps", Places,
                 "Aurelhold's lamps have no oil and no wicks. They have never been lit, as far as anyone knows, and never gone out. The city calls it the King's blessing. The iron posts are warm to the touch, like a hearthstone, and the warmth comes up out of the ground.", 3);
+            Add("works_ledger", "The Works Ledger", Records,
+                "The Foundation Works' ledger, two columns to a page: WENT DOWN and CAME UP. Day shifts and night shifts, names and ticks, back and forth for years. Then a third column, DEEP SHIFT, in a different ink. Forty names in it, going back further than the foreman has been alive. Not one of them has a tick under CAME UP. Every one has a tick under PAID.", 3);
             Add("missing_pages", "Missing Pages", Records,
                 "A parish ledger, swollen with damp, left on the mill's shelf by some long-gone clerk. Births, harvests and tithes, year after year in a careful hand, until the century the legends talk about. Those pages have been cut out, neatly, close to the spine. The record picks up again eighty years later as if nothing had happened.");
         }

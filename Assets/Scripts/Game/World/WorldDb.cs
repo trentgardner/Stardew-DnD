@@ -65,7 +65,16 @@ namespace DnD.Game
         public string ResolvedFlag;
         /// <summary>Only around once the blight has reached this stage (0 = always): ember-eyed beasts in known places.</summary>
         public int MinBlight;
-        public bool InStage(QuestLog q) => (MinBlight <= 0 || (GameRoot.I?.World?.BlightStage ?? 0) >= MinBlight) && InQuestStage(q);
+        /// <summary>Only around after dark (20:00 to 06:00): a curfew patrol.</summary>
+        public bool NightOnly;
+        /// <summary>Only around while this world flag is set (e.g. a foreman who called his men).</summary>
+        public string RequiresFlag;
+        /// <summary>A brawl's opening line (null = Pip's, from the Sleeping Drake).</summary>
+        public string BrawlText;
+        public bool InStage(QuestLog q) => (MinBlight <= 0 || (GameRoot.I?.World?.BlightStage ?? 0) >= MinBlight)
+            && (!NightOnly || GameRoot.I == null || GameRoot.I.Clock.IsNight)
+            && (RequiresFlag == null || (GameRoot.I?.World?.Flag(RequiresFlag) ?? false))
+            && InQuestStage(q);
         bool InQuestStage(QuestLog q) => QuestId == null || (q.Stage(QuestId) >= MinStage && q.Stage(QuestId) <= MaxStage && q.CanStart(QuestId)); // a closed quest (another force chosen) leaves the world
     }
 
@@ -145,6 +154,8 @@ namespace DnD.Game
         public bool MagicLit;
         /// <summary>Lit warm all night (the capital's ever-lamps): nights here are a soft amber, not dark.</summary>
         public bool WarmLit;
+        /// <summary>Always in the mountain's shadow, day or night (the Roots): a steady warm dimness over the whole zone.</summary>
+        public bool Shadowed;
         /// <summary>Always dusk here, whatever the clock says (the Fae glade).</summary>
         public bool Dusk;
         /// <summary>How much the blight shows here (0-1); -1 = the default for the kind of place (see Blight.Weight).</summary>
@@ -416,6 +427,7 @@ namespace DnD.Game
             BuildForces();
             BuildEmberhorn();
             BuildCapital();
+            BuildRoots();
 
             var shop = new ZoneDef { Id = "shop", Name = "Ironkettle General Goods", Map = Maps.Shop, Indoors = true, DefaultSpawn = new Vector2Int(6, 7),
                 EnterNarration = "The shop smells of lamp oil and leather. Every shelf is organized with terrifying dwarven precision.", ShopCounter = new Vector2Int(6, 3) };

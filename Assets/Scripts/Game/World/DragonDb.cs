@@ -25,6 +25,8 @@ namespace DnD.Game
             ["wenna"] = DragonFeeling.Fond,      // lets it sniff the lamps
             ["gate_guard_0"] = DragonFeeling.Wary,
             ["gate_guard_1"] = DragonFeeling.Wary,
+            ["mags"] = DragonFeeling.Fond,       // she talks to it like it's one of her own
+            ["crale"] = DragonFeeling.Wary,      // he smells of the deep, and of fear
             ["oakes"] = DragonFeeling.Fond,      // the glasshouse is warm and smells green
             ["varrow"] = DragonFeeling.Wary,     // measuring tapes, and that look
             ["holloway"] = DragonFeeling.Wary,   // the ledger, the counting
