@@ -133,5 +133,127 @@ namespace DnD.Tests
             }
             finally { hall.DragonStaysText = null; }
         }
+
+        // ============================================================ Task 2: the carriage and the upper city
+
+        [UnityTest]
+        public IEnumerator CarriageTakesEveryoneBothWays()
+        {
+            var g = GameRoot.I;
+            var p1 = ActThree(g, 10);
+            yield return Frames(2);
+            var p2 = g.DebugStart(Still(11), "rogue", "elf");
+            yield return Frames(2);
+            p2.Hud.CloseAll();
+            g.Warp(p1, "town", WorldDb.TownCarriageStop, false);
+            g.Warp(p2, "forest", new Vector2Int(40, 18), false);
+            yield return Frames(2);
+            p2.Hud.Push(new JournalScreen());
+            yield return Frames(1);
+            g.RideCarriage(p1, "capital", WorldDb.CapitalCarriageStop);
+            yield return Frames(3);
+            foreach (var p in new[] { p1, p2 })
+            {
+                Assert.AreEqual("capital", p.Zone.Def.Id, $"P{p.Index + 1} rode to the capital");
+                Assert.IsNull(p.Hud.Top as JournalScreen, $"P{p.Index + 1}'s screens closed for the ride");
+            }
+            Assert.AreNotEqual(p1.MapPos, p2.MapPos, "set down side by side, not on top of each other");
+            Assert.AreEqual("capital", g.DragonAgent.Actor.Zone.Def.Id, "the dragon walks alongside");
+            foreach (var c in g.Companions.Where(c => c != null && !c.Waiting)) Assert.AreEqual("capital", c.Actor.Zone.Def.Id, "companions come too");
+            Assert.AreEqual(WarmCity.Arrived, g.Quests.Stage(WarmCity.Id), "arriving moves The Warm City on");
+            Assert.AreEqual("capital", WorldDb.Current(WorldDb.Npcs["quell"], 12, 0, g.World).Zone, "Quell came with the carriage");
+
+            g.RideCarriage(p2, "town", WorldDb.TownCarriageStop);
+            yield return Frames(3);
+            foreach (var p in new[] { p1, p2 }) Assert.AreEqual("town", p.Zone.Def.Id, $"P{p.Index + 1} rode home");
+            Assert.AreEqual("town", g.DragonAgent.Actor.Zone.Def.Id);
+            Assert.AreEqual("town", WorldDb.Current(WorldDb.Npcs["quell"], 12, 0, g.World).Zone, "and Quell with it");
+        }
+
+        [UnityTest]
+        public IEnumerator QuellOnlyInActThree()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(12), "fighter", "human");
+            yield return Frames(2);
+            g.ApplyActTwoStart(p);
+            p.Hud.CloseAll();
+            Assert.IsNull(WorldDb.Current(WorldDb.Npcs["quell"], 12, 0, g.World)?.Zone, "no carriage in Act II");
+            g.QuitToTitle();
+            yield return Frames(2);
+            ActThree(g, 13);
+            yield return Frames(2);
+            Assert.AreEqual("town", WorldDb.Current(WorldDb.Npcs["quell"], 12, 0, g.World).Zone, "the courier waits in Thistledown");
+        }
+
+        [UnityTest]
+        public IEnumerator CapitalIsReachable()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 14, "rogue");
+            yield return Frames(2);
+            g.Warp(p, "capital", WorldDb.CapitalCarriageStop, false);
+            yield return Frames(2);
+            AcademyTests.AssertAllReachable(g, p.Zone, p.MapPos);
+            foreach (var door in new[] { new Vector2Int(31, 9), new Vector2Int(54, 10), new Vector2Int(53, 22), new Vector2Int(59, 30), new Vector2Int(29, 45) })
+                Assert.IsTrue(AcademyTests.CanReachBeside(p.Zone, p.MapPos, door), $"door/stair/sign at {door}");
+        }
+
+        [UnityTest]
+        public IEnumerator CapitalIsWarmWhileTheRealmIsGrey()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 15);
+            yield return Frames(2);
+            g.Warp(p, "capital", WorldDb.CapitalCarriageStop, false);
+            yield return Frames(2);
+            Blight.SetStage(2);
+            Assert.AreEqual(0f, Blight.OverlayAlpha(g.Zones["capital"]), 0.0001f, "no ash in Aurelhold");
+            Assert.Greater(Blight.OverlayAlpha(g.Zones["town"]), 0f, "while Thistledown is grey");
+            g.Clock.Minutes = 12 * 60;
+            var lamps = g.Zones["capital"].GetComponentsInChildren<LightSource>(true).Where(l => l.name == "obj_ever_lamp").ToList();
+            Assert.GreaterOrEqual(lamps.Count, 12, "ever-lamps line the streets");
+            Assert.IsTrue(lamps.All(l => l.On && l.GetComponentInChildren<ArcaneHalo>() != null), "and every one is burning at noon");
+        }
+
+        [UnityTest]
+        public IEnumerator BuoyStaysInThistledownInActThree()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 16);
+            yield return Frames(2);
+            for (int d = 0; d < 7; d++) CollectionAssert.Contains(new[] { "town", "ford" }, TownDog.HomeFor(d).zone, $"weekday {d}");
+            var buoy = Object.FindObjectsByType<TownDog>(FindObjectsSortMode.None).Single();
+            CollectionAssert.Contains(new[] { "town", "ford" }, buoy.Actor.Zone.Def.Id, "Buoy is home in his neighbourhood");
+            p.Character.HeroicInspiration = false;
+            buoy.PetHim(p);
+            Assert.IsTrue(p.Character.HeroicInspiration, "and still the best boy in Act III");
+        }
+
+        // ============================================================ screenshots (review by eye: grand, warm, lived-in, something off)
+
+        [UnityTest]
+        public IEnumerator CaptureCapital()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 90, "wizard");
+            yield return Frames(2);
+            IEnumerator At(string zone, int x, int y, string shot, int hour = 11)
+            {
+                g.Clock.Minutes = hour * 60;
+                g.Warp(p, zone, new Vector2Int(x, y), false);
+                yield return Frames(40);
+                p.Hud.CloseAll();
+                p.Hud.HideNarration();
+                yield return Frames(5);
+                AcademyTests.Shot(shot);
+            }
+            yield return At("capital", 31, 40, "act3_gate_of_wings");
+            yield return At("capital", 31, 25, "act3_square_day");
+            yield return At("capital", 31, 25, "act3_square_night", 22);
+            yield return At("capital", 31, 13, "act3_sunstair");
+            yield return At("capital", 10, 22, "act3_market");
+            yield return At("capital", 52, 25, "act3_east_quarter");
+        }
     }
 }

@@ -1596,3 +1596,9 @@ pattern a3_everlamp
 end
 paint obj_victory_statue a3_victory k=3a3a44 a=b4b8c4 b=7d8292 s=9aa0b0 y=e0b84a r=e06a2a o=f2a03a
 paint obj_ever_lamp a3_everlamp k=1e1a1a y=c99a3a o=ff9a2a f=ffc94a w=fff3c0
+# ---------------------------------------------------------------- Act III Phase 3: the capital's people and music
+actor npc_quell "Actor/Character/Villager3/SpriteSheet.png"
+actor npc_wenna "Actor/Character/Woman/SpriteSheet.png"
+actor npc_hesketh "Actor/Character/Villager4/SpriteSheet.png"
+actor npc_merriwether "Actor/Character/OldMan2/SpriteSheet.png"
+audio music_capital "Audio/Musics/31 - Sunny.ogg"

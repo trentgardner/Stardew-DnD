@@ -106,6 +106,12 @@ namespace DnD.Game
             GameRoot.I.RefreshNpcs();
         }
 
+        /// <summary>Clears a world flag (a state that comes and goes, like where the King's carriage is standing).</summary>
+        public void ClearFlag(string f)
+        {
+            if (Flags.Remove(f) && GameRoot.I != null) GameRoot.I.RefreshNpcs();
+        }
+
         public void SetShopModifier(int player, string shop, int pct, int day) => ShopModifiers[$"{player}:{shop}"] = new Vector2Int(pct, day);
 
         /// <summary>Total price modifier: today's haggling result plus permanent perks.</summary>

@@ -143,7 +143,7 @@ namespace DnD.Game
             { ',', (TileShape.Blob, ",bDEM") },   // dirt paths run into bridges, doors and the mine mouth
             { ';', (TileShape.Blob, ";") },       // sand
             { '~', (TileShape.Blob, "~b") },      // water (a bridge has water under it)
-            { 'o', (TileShape.Blob, "oSOmNp^&<+$l") },  // cobbled square around the statue, well, stalls, benches, planters, and the Academy's magic
+            { 'o', (TileShape.Blob, "oSOmNp^&<+$l78q") },  // cobbled square around the statue, well, stalls, benches, planters, the Academy's magic, the capital's statue and lamps
             { 'X', (TileShape.Rect, "XM") },      // cliffs (the mine entrance is cut into them)
             { 'R', (TileShape.Rect, "R") },
             { 'U', (TileShape.Rect, "U") },
@@ -265,7 +265,10 @@ namespace DnD.Game
                 // Act III: the capital. The victory statue, and the ever-lamps that burn day and night.
                 case '7':
                     Ground(m, "tile_cobbles"); Solid(m);
-                    var vic = Prop(m, "obj_victory_statue").AddComponent<SignInteractable>();
+                    var vicGo = Prop(m, "obj_victory_statue");
+                    vicGo.transform.localScale = Vector3.one * 2f; // a monument: twice the size of anything else in the square
+                    vicGo.transform.position += new Vector3(0, 0.5f, 0);
+                    var vic = vicGo.AddComponent<SignInteractable>();
                     vic.Title = "The Victory of the Crown"; vic.Prompt = "Look at the statue";
                     vic.Text = Def.Signs.TryGetValue(m, out var vt) ? vt : "A knight of the Crown, sword raised.";
                     break;
@@ -349,7 +352,7 @@ namespace DnD.Game
         static GameObject EverLamp(GameObject go)
         {
             LightSource.Attach(go, 3.5f, new Color(1f, 0.72f, 0.35f, 1f));
-            ArcaneHalo.Attach(go, 1.5f, new Color(1f, 0.75f, 0.35f)); // the flame shows at noon too
+            ArcaneHalo.Attach(go, 2.6f, new Color(1f, 0.7f, 0.3f)); // the flame shows at noon too, and pools gold at night
             return go;
         }
 

@@ -20,6 +20,11 @@ namespace DnD.Game
             ["elowen"] = DragonFeeling.Trust,    // warm hands, smells of honey cakes
             // Act II: the road and the Academy
             ["juniper"] = DragonFeeling.Trust,   // brings it biscuits, asks before petting
+            // Act III: the capital
+            ["quell"] = DragonFeeling.Fond,      // shares the horses' sugar
+            ["wenna"] = DragonFeeling.Fond,      // lets it sniff the lamps
+            ["gate_guard_0"] = DragonFeeling.Wary,
+            ["gate_guard_1"] = DragonFeeling.Wary,
             ["oakes"] = DragonFeeling.Fond,      // the glasshouse is warm and smells green
             ["varrow"] = DragonFeeling.Wary,     // measuring tapes, and that look
             ["holloway"] = DragonFeeling.Wary,   // the ledger, the counting

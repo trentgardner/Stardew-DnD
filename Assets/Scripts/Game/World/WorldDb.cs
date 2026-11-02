@@ -143,6 +143,8 @@ namespace DnD.Game
         public int Act = 1;
         /// <summary>Lit by its own magic: nights here are a soft violet glow, not dark (the Academy's wards).</summary>
         public bool MagicLit;
+        /// <summary>Lit warm all night (the capital's ever-lamps): nights here are a soft amber, not dark.</summary>
+        public bool WarmLit;
         /// <summary>Always dusk here, whatever the clock says (the Fae glade).</summary>
         public bool Dusk;
         /// <summary>How much the blight shows here (0-1); -1 = the default for the kind of place (see Blight.Weight).</summary>
@@ -413,6 +415,7 @@ namespace DnD.Game
             BuildProfessorsQuests();
             BuildForces();
             BuildEmberhorn();
+            BuildCapital();
 
             var shop = new ZoneDef { Id = "shop", Name = "Ironkettle General Goods", Map = Maps.Shop, Indoors = true, DefaultSpawn = new Vector2Int(6, 7),
                 EnterNarration = "The shop smells of lamp oil and leather. Every shelf is organized with terrifying dwarven precision.", ShopCounter = new Vector2Int(6, 3) };
@@ -671,6 +674,7 @@ namespace DnD.Game
             BuildSouthLaneNpcs();
             BuildPlacesNpcs();
             BuildAcademyNpcs();
+            BuildCapitalNpcs();
         }
 
         /// <summary>The South Lane folk (Phase 4). Names are side content pending lore approval.</summary>

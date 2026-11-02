@@ -605,6 +605,11 @@ namespace DnD.Game
                 World.SetFlag("dragon_academy_intro");
                 p.Hud.Narrate($"{World.DragonName} sneezes a puff of sparks at the walls. The wards hum back, and {World.DragonName} doesn't like that one bit.");
             }
+            if (zoneId == "capital" && Dragon != null && !World.Flag("dragon_capital_intro"))
+            {
+                World.SetFlag("dragon_capital_intro");
+                p.Hud.Narrate($"{World.DragonName} has to duck under the Gate of Wings. A baker drops an entire tray of buns. {World.DragonName}, after some thought, helps.");
+            }
             if (zoneId == "town" && Dragon != null && !World.Flag("dragon_town_intro"))
             {
                 World.SetFlag("dragon_town_intro");

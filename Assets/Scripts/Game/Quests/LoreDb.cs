@@ -87,6 +87,11 @@ namespace DnD.Game
                 "Carved into the watchtower's back wall, worn almost smooth: a line of mountains, each peak a dragon asleep with its head tucked under a wing. In the middle stands one hollow peak with a coal at its heart. The inscription reads: WE KEEP THE WATCH SO THE SLEEPERS NEED NOT WAKE.");
             Add("skipping_rhyme", "A Skipping Rhyme", Legend,
                 "Lark hums it while she ties her bouquets, the one every skipping-rope in Thistledown knows: \"Ash on the hearth and ash on the stair, the Ashen Queen is everywhere! Blow out the candle, bar the door, and the Ashen Queen won't come no more!\"");
+            // Act III Phase 3: Aurelhold.
+            Add("victory_statue", "The Victory of the Crown", Legend,
+                "Cut into the plinth in the Great Square, in letters a hand high and freshly gilded for the Thousandth Pageant: \"A THOUSAND YEARS. Here the first King of Aurelhold struck down the Ashen Queen and bound her fire, so that the realm might never burn again. LONG MAY THE CROWN KEEP THE FLAME.\"", 3);
+            Add("ever_lamps", "The Ever-Lamps", Places,
+                "Aurelhold's lamps have no oil and no wicks. They have never been lit, as far as anyone knows, and never gone out. The city calls it the King's blessing. The iron posts are warm to the touch, like a hearthstone, and the warmth comes up out of the ground.", 3);
             Add("missing_pages", "Missing Pages", Records,
                 "A parish ledger, swollen with damp, left on the mill's shelf by some long-gone clerk. Births, harvests and tithes, year after year in a careful hand, until the century the legends talk about. Those pages have been cut out, neatly, close to the spine. The record picks up again eighty years later as if nothing had happened.");
         }

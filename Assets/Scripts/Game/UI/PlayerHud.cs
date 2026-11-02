@@ -358,6 +358,7 @@ namespace DnD.Game
             var zone = Slot.Zone;
             var tint = zone != null && !zone.Def.Indoors && !zone.Def.Dark ? g.Clock.AmbientTint() : new Color(0, 0, 0, 0);
             if (zone != null && zone.Def.MagicLit && tint.a > 0) tint = new Color(0.22f, 0.12f, 0.42f, tint.a * 0.55f); // the wards light the night violet
+            if (zone != null && zone.Def.WarmLit && tint.a > 0) tint = new Color(0.32f, 0.17f, 0.05f, tint.a * 0.5f); // Aurelhold's lamps keep the night warm
             if (zone != null && zone.Def.Dusk) tint = DuskTint; // the Fae glade: always gold-and-violet dusk
             _tint.color = tint;
         }

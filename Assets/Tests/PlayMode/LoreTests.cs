@@ -179,6 +179,18 @@ namespace DnD.Tests
                 StringAssert.Contains("MetHer", File.ReadAllText(file), $"{Path.GetFileName(file)} must only register its text once the party has met her");
         }
 
+        /// <summary>Act III Phase 3: the capital's text is read by the guard (its files exist and aren't exempt).</summary>
+        [Test]
+        public void CapitalFilesAreScannedBySecretGuard()
+        {
+            var root = Path.Combine(Application.dataPath, "Scripts");
+            foreach (var name in new[] { "WorldDb.Capital.cs", "DialogueDb.Capital.cs" })
+            {
+                Assert.AreEqual(1, Directory.GetFiles(root, name, SearchOption.AllDirectories).Length, name + " exists");
+                Assert.IsTrue(GuardScans(name), name + " is scanned");
+            }
+        }
+
         [UnityTest]
         public IEnumerator RevealTextHiddenUntilTheDoor()
         {
