@@ -63,6 +63,7 @@ namespace DnD.Game
             World.Act = 3;
             Clock.Day = 120;
             World.ActThreeDay = Clock.Day;
+            World.BlightEased = true; // the Warden's fall eased the blight, as after a played Act II
             GrowUp();
             ApplyActCap();
             GiveActThreeKit(p);

@@ -149,6 +149,8 @@ namespace DnD.Tests
                 Assert.IsTrue(g.World.Flag("banner_" + side), side + ": the side's banner");
                 Assert.IsTrue(g.World.Flag(GameRoot.WardenFallen) && g.World.Flag(GameRoot.ActTwoEndSeen), side + ": Act II is told");
                 Assert.AreEqual(Answers.Rest, g.Quests.Stage(Answers.Id), side);
+                Assert.IsTrue(g.World.BlightEased, side + ": the Warden's fall eased the blight");
+                Assert.AreEqual(2, g.World.BlightStage, side + ": stage 2 (eased from 3), as after a played Act II");
                 Assert.AreEqual(10, p.Character.Level, side + ": levels 1-10 picked for you");
                 Assert.IsTrue(p.Character.CanLevelUp, side + ": level 11 is yours to choose");
                 Assert.IsTrue(g.Dragon != null && g.Dragon.IsGrown, side + ": a grown dragon");
