@@ -212,6 +212,8 @@ namespace DnD.Game
         public string ShopId;
         public List<ScheduleEntry> Schedule = new List<ScheduleEntry>();
         public bool Romanceable;
+        /// <summary>Once this world flag is set the NPC is gone from their usual places (Act III: the leaders went to the capital).</summary>
+        public string GoneFlag;
     }
 
     public static partial class WorldDb
@@ -429,6 +431,7 @@ namespace DnD.Game
             BuildCapital();
             BuildRoots();
             BuildPalaceAndHalls();
+            BuildCapitalPeople();
 
             var shop = new ZoneDef { Id = "shop", Name = "Ironkettle General Goods", Map = Maps.Shop, Indoors = true, DefaultSpawn = new Vector2Int(6, 7),
                 EnterNarration = "The shop smells of lamp oil and leather. Every shelf is organized with terrifying dwarven precision.", ShopCounter = new Vector2Int(6, 3) };
@@ -778,6 +781,7 @@ namespace DnD.Game
         public static ScheduleEntry Current(NpcDef npc, int hour, int weekday, WorldState world = null)
         {
             ScheduleEntry best = null;
+            if (world != null && npc.GoneFlag != null && world.Flag(npc.GoneFlag)) return null;
             // The festival beats everything while it runs: the whole village is in the square.
             if (world != null && world.IsLocked(Festival.Lock))
             {

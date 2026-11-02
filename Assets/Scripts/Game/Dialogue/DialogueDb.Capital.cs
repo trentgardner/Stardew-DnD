@@ -1,3 +1,4 @@
+using System.Linq;
 using DnD.Rules;
 
 namespace DnD.Game
@@ -23,6 +24,12 @@ namespace DnD.Game
                 case "king_aldric": return King();
                 case "oare": return Oare();
                 case "marigold": return Marigold();
+                case "marsh_capital": return MarshCapital();
+                case "ashby_capital": return AshbyCapital();
+                case "sorrel_capital": return SorrelCapital();
+                case "calloway_capital": return CallowayCapital();
+                case "glass": return Glass();
+                case "dray": return Dray();
                 default: return null;
             }
         }
@@ -279,6 +286,148 @@ namespace DnD.Game
                     ? "Crale from the Foundation Works drinks alone at the end of the bar every night. Same stool. Never talks. Tips well. That's all I know and all I want to."
                     : "The Pageant-Master's been in three times today looking for a dragon. Yours'll do, I expect.")
                 .Bye("Thanks, Marigold.");
+            return d;
+        }
+
+        // =================================================================== the four leaders, in town for the Pageant
+
+        static Dialogue MarshCapital()
+        {
+            var d = new Dialogue("marsh_capital", c => "start");
+            const string who = "Lady-Commander Isaine Marsh";
+            d.Node("start", who,
+                c => (c.G.World.Flag("banner_crown") ? "There you are. Good. I asked for you to be on the guest list myself. " : "Heroes of the Emberhorn. Welcome to the capital. ")
+                    + "The King called me up from the Redoubt to command his household guard for the Pageant. It's an honour. It's mostly polishing.",
+                c => "She looks the same as at the Redoubt: straight-backed, tired, honest to the bone. The gold braid on her shoulder is new.")
+                .Say("How do you like the capital?", "capital")
+                .Bye("Good to see you, Commander.");
+            d.Node("capital", who,
+                c => "Warm. Clean. Proud. Everything the Redoubt isn't. One odd thing: I command the household guard, and there are doors in the palace even I'm not allowed through. 'Royal warrant.' I've never met a door I wasn't allowed through before.",
+                c => "She says it lightly. She doesn't mean it lightly.")
+                .Bye("We'll keep our eyes open.");
+            return d;
+        }
+
+        static Dialogue AshbyCapital()
+        {
+            var d = new Dialogue("ashby_capital", c => "start");
+            const string who = "High Magister Corvane Ashby";
+            d.Node("start", who,
+                c => (c.G.World.Flag("banner_academy") ? "My friends! Come, come, look at this. " : "Ah. You. Well, you may as well see it too. ")
+                    + "I came for the Pageant and stayed for the Annals. Nine hundred volumes. Do you know, the Crown's own history has the same hole in it as ours?",
+                c => "He's surrounded by open books, and he hasn't slept.")
+                .Say("Year 2. Cut out.", "year2", show: c => c.G.World.Flag("clue_records"))
+                .Say("What hole?", "hole", show: c => !c.G.World.Flag("clue_records"))
+                .Bye("Get some sleep, Magister.");
+            d.Node("hole", who, c => "Look for yourselves: the west wall. I won't spoil it. I'd like someone else to tell me I'm not imagining it.").Bye("We'll look.");
+            d.Node("year2", who,
+                c => "Year 2. And our Annals were 'corrected' for the very same years. I always assumed the instruction came from my predecessor. I never asked where HE had it from. A High Magister who never asked a question. Imagine.",
+                c => "It's the first time you've seen him look frightened of something other than a dragon.")
+                .Bye("We'll find out.");
+            return d;
+        }
+
+        static Dialogue SorrelCapital()
+        {
+            var d = new Dialogue("sorrel_capital", c => "start");
+            const string who = "Herald Sorrel";
+            d.Node("start", who,
+                c => (c.G.World.Flag("banner_fae") ? "Our friends from the Glade! Have a flower. Have several. " : "The dragon's people. How nice. ")
+                    + "The Courts sent me to the Pageant. A thousand years, they're calling it. A thousand years since the Fall. In the Courts we count it differently. We say a thousand years since the Pact was broken.",
+                c => "She tucks a flower behind the dragon's ear-frill. It allows this.")
+                .Say("Broken by whom?", "who")
+                .Bye("Enjoy the flowers, Herald.");
+            d.Node("who", who,
+                c => (c.G.World.Flag("fae_clause") ? $"Ah, ah. That's a question with a price, and {c.G.World.DragonName} already owes us one favour. The stars are nearly ready to ask it. " : "Ah, ah. That's a question with a price. ")
+                    + "Ask the city instead. It's very proud of its lamps.")
+                .Bye("We'll ask.");
+            return d;
+        }
+
+        static Dialogue CallowayCapital()
+        {
+            var d = new Dialogue("calloway_capital", c => "start");
+            const string who = "Huntmaster Bryn Calloway";
+            d.Node("start", who,
+                c => (c.G.World.Flag("banner_hunters") ? "Sit, sit! Drink with the Wyrmwatch. " : "Hm. The dragon-keepers. Sit if you like. ")
+                    + "A thousand years since the Fall, and every hunter in the realm's in this taproom to drink to it. The Wyrmwatch was founded the same year, did you know? The very same. By royal charter.",
+                c => c.G.World.Flag("wyrmwatch_belled") ? $"Her eyes go to {c.G.World.DragonName}'s bell, out in the yard. She nods, satisfied." : "Her eyes go to the yard where the dragon is, and stay there.")
+                .Say("By royal charter?", "charter")
+                .Bye("Another time, Huntmaster.");
+            d.Node("charter", who,
+                c => "Signed by the first King himself. 'To watch for fire.' The Crown's paid our bounties for a thousand years. Generous. Never late. Never once asked what we found.")
+                .Bye("Interesting.");
+            return d;
+        }
+
+        // =================================================================== the Pageant rehearsal
+
+        static int ParadeBeats(DCtx c) => new[] { "parade_beat_1", "parade_beat_2", "parade_beat_3" }.Count(c.G.World.Flag);
+
+        static Dialogue Glass()
+        {
+            var d = new Dialogue("glass", c =>
+            {
+                int st = c.G.Quests.Stage(DragonParade.Id);
+                if (st >= DragonParade.Done) return "after";
+                if (st == 0) return "intro";
+                if (c.G.World.IsLocked("parade_retry")) return "tomorrow";
+                return c.G.Clock.Hour >= 9 && c.G.Clock.Hour < 18 ? "ready" : "evening";
+            });
+            const string who = "Pageant-Master Fennimore Glass";
+            d.Node("intro", who,
+                c => $"IT'S YOU! It's THEM! It's the DRAGON! Fennimore Glass, Pageant-Master to the Crown, eleven years, never a cancelled show! {c.G.World.DragonName} must lead the Thousandth Pageant. " + (c.G.World.Flag("pageant_yes") ? "The King says you said yes! " : "The King says you might say yes! ") + "Rehearsal. Here. Today. Please.",
+                c => "Behind him, forty performers, a paper Queen three storeys high with flames of red silk, and a band that has stopped playing to listen.")
+                .Say("All right. Let's rehearse.", "ready", doIt: c => c.G.Quests.Start(DragonParade.Id, c.P))
+                .Bye("Maybe later.");
+            d.Node("ready", who, c => "Places! PLACES! The dragon walks at the head of the parade, you walk beside it, and when the paper Queen comes round the fountain- well. You'll see. From the top!")
+                .Say("(Begin the rehearsal.)", "beat1", doIt: c => c.G.Quests.Set(DragonParade.Id, DragonParade.Rehearsal, c.P))
+                .Bye("Not yet.");
+            d.Node("beat1", who, c => "The march! Head high! Step, step, wave, step!",
+                    c => "Two hundred people are watching. The band strikes up. You have to lead a dragon down the middle of the Great Square like you do this every day.")
+                .Roll(Skill.Performance, 14, "(Performance) Lead the march.", "beat1_ok", "beat1_bad", onSuccess: c => c.G.World.SetFlag("parade_beat_1"));
+            d.Node("beat1_ok", who, c => "MAGNIFICENT! Look at them! LOOK AT THEM!", c => "The crowd cheers. A few people throw flowers. One throws a bun.").Say("(Next.)", "beat2");
+            d.Node("beat1_bad", who, c => "...Less waving. Much less waving. Onward!", c => "You trip over your own feet, then over the dragon's. The crowd is very kind about it.").Say("(Next.)", "beat2");
+            d.Node("beat2", who, c => "And HERE comes the Queen!",
+                    c => $"The paper Queen sweeps round the fountain on poles, silk flames streaming. {c.G.World.DragonName} sees it, goes very still, and opens its jaws.")
+                .Roll(Skill.AnimalHandling, 14, $"(Animal Handling) Keep the dragon from eating the scenery.", "beat2_ok", "beat2_bad", onSuccess: c => c.G.World.SetFlag("parade_beat_2"));
+            d.Node("beat2_ok", who, c => "It's PERFORMING! It's ACTING! It's a natural!", c => $"You put a hand on its neck and talk low, and {c.G.World.DragonName} closes its jaws and just watches the paper Queen go by, very seriously, all the way round.").Say("(Next.)", "beat3");
+            d.Node("beat2_bad", who, c => "Not the- oh. Oh, the left wing. We have another left wing. Somewhere.", c => $"{c.G.World.DragonName} takes one careful bite of silk flame, decides it tastes of nothing, and spits it out on a tuba.").Say("(Next.)", "beat3");
+            d.Node("beat3", who, c => "And for the FINALE-",
+                    c => "Something creaks. The painted backdrop of the Wyrmback, forty feet of canvas and timber, begins to lean, slowly, towards the crowd.")
+                .Roll(Skill.Acrobatics, 13, "(Acrobatics) Get under it and shove.", "beat3_ok", "beat3_bad", onSuccess: c => c.G.World.SetFlag("parade_beat_3"))
+                .Roll(Skill.Persuasion, 13, "(Persuasion) Get the crowd to grab the ropes.", "beat3_ok", "beat3_bad", onSuccess: c => c.G.World.SetFlag("parade_beat_3"));
+            d.Node("beat3_ok", who, c => "...THAT WAS IN THE SCRIPT. Everyone, that was IN THE SCRIPT.", c => "The backdrop rights itself to a roar from the crowd.").Say("(Take a bow.)", "result");
+            d.Node("beat3_bad", who, c => "...Stagehands! STAGEHANDS!", c => "The backdrop comes down, gently, mostly on the band.").Say("(Take a bow.)", "result");
+            d.Node("result", who,
+                c => ParadeBeats(c) >= 2
+                    ? "A TRIUMPH! A triumph. Mostly. Here, take this, wear it on the day, wear it every day. The city will be talking about this for another thousand years."
+                    : "...We'll call that a dress rehearsal. Every great show has a terrible dress rehearsal. Same time tomorrow?",
+                null,
+                c =>
+                {
+                    if (ParadeBeats(c) >= 2) c.G.Quests.Set(DragonParade.Id, DragonParade.Done, c.P);
+                    else
+                    {
+                        foreach (var f in new[] { "parade_beat_1", "parade_beat_2", "parade_beat_3" }) c.G.World.ClearFlag(f);
+                        c.G.World.Lock("parade_retry", 18 * 60);
+                    }
+                })
+                .Bye("Thank you, Pageant-Master.");
+            d.Node("tomorrow", who, c => "Tomorrow! Tomorrow we'll be PERFECT.").Bye("Tomorrow.");
+            d.Node("evening", who, c => "Rehearsals are by daylight! Come back in the morning! Bring the dragon! Bring the dragon's enthusiasm!").Bye("In the morning.");
+            d.Node("after", who, c => "My stars! My dragon! The Pageant will be the greatest in a thousand years. Literally! It's the thousandth!").Bye("We'll be there.");
+            return d;
+        }
+
+        static Dialogue Dray()
+        {
+            var d = new Dialogue("dray", c => "start");
+            const string who = "Corwin Dray";
+            d.Node("start", who,
+                c => "Remedies, tonics, draughts and cures! The best apothecary in Aurelhold, which makes it the best in the realm. And the dearest. You pay for warm.")
+                .Say("Show me what you have.", doIt: c => { c.Screen.Close(); c.G.OpenShop(c.P, "capital_market"); }, end: true)
+                .Bye("Just browsing.");
             return d;
         }
     }

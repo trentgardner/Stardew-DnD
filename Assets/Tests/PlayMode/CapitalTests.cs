@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using DnD.Game;
 using DnD.Rules;
+using DnD.Rules.Content;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -420,6 +421,111 @@ namespace DnD.Tests
             for (int i = 0; i < 300 && p.Character.HP < p.Character.EffectiveMaxHP; i++) yield return null;
             Assert.AreEqual(cp - 50, p.Character.Copper, "5 sp");
             Assert.AreEqual(p.Character.EffectiveMaxHP, p.Character.HP, "a long rest at the Gilded Wyvern");
+        }
+
+        // ============================================================ Task 5: the clues, the leaders, the Pageant, the market
+
+        [UnityTest]
+        public IEnumerator AnyThreeCluesPointDown()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 40);
+            yield return Frames(2);
+            g.Quests.Set(WarmCity.Id, WarmCity.Audience, p);
+            g.World.SetFlag("clue_lamps");
+            g.World.SetFlag("clue_records");
+            Assert.AreEqual(WarmCity.Audience, g.Quests.Stage(WarmCity.Id), "two clues aren't enough");
+            int xp = p.Character.XP;
+            g.World.SetFlag("clue_crypt");
+            Assert.AreEqual(WarmCity.Below, g.Quests.Stage(WarmCity.Id), "any three point down");
+            Assert.AreEqual(xp + 6000, p.Character.XP, "and pay once");
+            xp = p.Character.XP;
+            g.World.SetFlag("clue_shift");
+            Assert.AreEqual(WarmCity.Below, g.Quests.Stage(WarmCity.Id));
+            Assert.AreEqual(xp, p.Character.XP, "the fourth doesn't pay the stage again");
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(3);
+            Assert.AreEqual(WarmCity.Below, g.Quests.Stage(WarmCity.Id), "it holds across a reload");
+
+            // The crypt clue's own spot works.
+            p = g.Players[0];
+            g.World.Flags.Remove("clue_crypt");
+            g.Warp(p, "capital", new Vector2Int(8, 14), false);
+            yield return Frames(3);
+            var crypt = Object.FindObjectsByType<SecretInteractable>(FindObjectsSortMode.None).Single(x => x.Def.Id == "sealed_crypt");
+            crypt.Resolve(p, CheckOutcome.Success);
+            Assert.IsTrue(g.World.Flag("clue_crypt"));
+            Assert.IsTrue(g.World.LoreFound.Contains("sealed_crypt"));
+        }
+
+        [UnityTest]
+        public IEnumerator LeadersAreInTheCapitalForEachSide()
+        {
+            var g = GameRoot.I;
+            var spots = new Dictionary<string, string> { ["marsh_capital"] = "capital", ["ashby_capital"] = "royal_archive", ["sorrel_capital"] = "capital", ["calloway_capital"] = "capital_inn" };
+            foreach (var side in new[] { "crown", "academy", "fae", "hunters" })
+            {
+                var p = ActThree(g, 41, "cleric", side);
+                yield return Frames(2);
+                foreach (var kv in spots)
+                {
+                    Assert.AreEqual(kv.Value, WorldDb.Current(WorldDb.Npcs[kv.Key], 10, 0, g.World)?.Zone, $"{side}: {kv.Key} by day");
+                    var d = DialogueDb.Get(kv.Key);
+                    var start = d.Nodes[d.Start(Ctx(p))];
+                    Assert.IsNotEmpty(start.Text(Ctx(p)), $"{side}: {kv.Key} speaks");
+                    foreach (var n in d.Nodes.Values) { n.Text(Ctx(p)); n.Narration?.Invoke(Ctx(p)); }
+                }
+                foreach (var id in new[] { "marsh", "ashby", "sorrel", "calloway" })
+                    Assert.IsNull(WorldDb.Current(WorldDb.Npcs[id], 10, 0, g.World), $"{side}: {id}'s Act II self is away in the capital");
+                g.QuitToTitle();
+                yield return Frames(2);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator DragonParadePassesOnTwoOfThree()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 42, "bard");
+            yield return Frames(2);
+            var d = DialogueDb.Get("glass");
+            g.Clock.Minutes = 11 * 60;
+            Assert.AreEqual("intro", d.Start(Ctx(p)));
+            g.Quests.Start(DragonParade.Id, p);
+            g.Quests.Set(DragonParade.Id, DragonParade.Rehearsal, p);
+
+            // One success: a dress rehearsal, try again tomorrow.
+            g.World.SetFlag("parade_beat_1");
+            d.Nodes["result"].OnEnter(Ctx(p));
+            Assert.AreEqual(DragonParade.Rehearsal, g.Quests.Stage(DragonParade.Id), "one of three isn't enough");
+            Assert.IsFalse(g.World.Flag("parade_beat_1"), "the beats reset");
+            Assert.AreEqual("tomorrow", d.Start(Ctx(p)), "and Glass wants you back tomorrow");
+            g.Clock.Minutes += 24 * 60;
+            Assert.AreEqual("ready", d.Start(Ctx(p)), "the next day it's on again");
+
+            // Two successes: a triumph.
+            int xp = p.Character.XP;
+            g.World.SetFlag("parade_beat_2");
+            g.World.SetFlag("parade_beat_3");
+            d.Nodes["result"].OnEnter(Ctx(p));
+            Assert.AreEqual(DragonParade.Done, g.Quests.Stage(DragonParade.Id));
+            Assert.AreEqual(xp + 3000, p.Character.XP);
+            Assert.AreEqual(1, p.Character.Bag.Count("pageant_sash"), "the sash");
+        }
+
+        [UnityTest]
+        public IEnumerator MarketSellsSuperiorHealing()
+        {
+            var g = GameRoot.I;
+            ActThree(g, 43);
+            yield return Frames(2);
+            CollectionAssert.Contains(ShopDb.Stock("capital_market"), "potion_superior_healing");
+            var pot = (ConsumableDef)ItemsDb.Get("potion_superior_healing");
+            Assert.AreEqual(ConsumableEffect.Heal, pot.Effect);
+            Assert.AreEqual(8, pot.Amount.Count); Assert.AreEqual(4, pot.Amount.Sides); Assert.AreEqual(8, pot.Amount.Bonus);
+            Assert.AreEqual("capital", WorldDb.Current(WorldDb.Npcs["dray"], 10, 0, g.World).Zone);
+            Assert.AreEqual("capital_market", WorldDb.Npcs["dray"].ShopId);
         }
 
         // ============================================================ screenshots (review by eye: grand, warm, lived-in, something off)

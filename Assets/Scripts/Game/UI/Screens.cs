@@ -102,6 +102,8 @@ namespace DnD.Game
                     return t;
                 case "tavern":
                     return new List<string> { "rations", "torch", "potion_healing", "dragon_treat" };
+                case "capital_market":
+                    return new List<string> { "potion_healing", "potion_greater_healing", "potion_superior_healing", "ember_of_return", "scroll_revivify", "torch", "rations", "dragon_treat" };
                 case "kobold":
                     return new List<string> { "torch", "rations", "potion_healing", "lucky_pebble" };
                 case "forge":
@@ -113,7 +115,7 @@ namespace DnD.Game
             }
         }
 
-        public static string Owner(string shop) => shop == "general" ? "Brannoc" : shop == "temple" ? "Mother Elowen" : shop == "forge" ? "Garrick" : shop == "kobold" ? "Tik" : "Pip";
+        public static string Owner(string shop) => shop == "general" ? "Brannoc" : shop == "temple" ? "Mother Elowen" : shop == "forge" ? "Garrick" : shop == "kobold" ? "Tik" : shop == "capital_market" ? "Corwin Dray" : "Pip";
 
         /// <summary>What a shop pays for an item: half price, except Tik, who pays full price for anything shiny.</summary>
         /// <summary>Sells every backpack stack marked as junk (never equipped gear or quest items). Returns how many items and how much.</summary>

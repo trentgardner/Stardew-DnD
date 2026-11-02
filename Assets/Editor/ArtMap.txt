@@ -1608,3 +1608,7 @@ actor npc_tilly "Actor/Character/Cavegirl2/SpriteSheet.png"
 actor npc_king "Actor/Character/Noble/SpriteSheet.png"
 actor npc_oare "Actor/Character/Villager2/SpriteSheet.png"
 actor npc_marigold "Actor/Character/Villager/SpriteSheet.png"
+actor npc_glass "Actor/Character/Master/SpriteSheet.png"
+actor npc_dray "Actor/Character/OldMan3/SpriteSheet.png"
+tint item_potion_superior_healing item_potion_healing 40 1.2 1.0
+paint item_pageant_sash cloak k=4a1010 a=c62828 b=e57373 c=ffd54a

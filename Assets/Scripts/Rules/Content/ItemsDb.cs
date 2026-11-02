@@ -109,6 +109,7 @@ namespace DnD.Rules.Content
             // Consumables
             C("potion_healing", "Potion of Healing", ConsumableEffect.Heal, 5000, "2d4+2", "Drink (Bonus Action) to regain 2d4+2 HP. Roll it yourself!");
             C("potion_greater_healing", "Potion of Greater Healing", ConsumableEffect.Heal, 15000, "4d4+4", "Regain 4d4+4 HP.");
+            C("potion_superior_healing", "Potion of Superior Healing", ConsumableEffect.Heal, 45000, "8d4+8", "Regain 8d4+8 HP. Aurelhold's finest, and priced like it.");
             C("ember_of_return", "Ember of Return", ConsumableEffect.Revive, 5000, null,
               "A coal said to be a fragment of dragonfire. Press it to a fallen ally's heart to bring them back with 1 HP.");
             C("scroll_revivify", "Scroll of Revivify", ConsumableEffect.SpellScroll, 30000, null, "Returns a creature that died within the last minute to life with 1 HP.", "revivify");
@@ -162,7 +163,7 @@ namespace DnD.Rules.Content
                 {"war_pick",2},{"whip",3},{"hand_crossbow",3},{"heavy_crossbow",18},{"longbow",2},
                 {"padded",8},{"leather",10},{"studded_leather",13},{"hide",12},{"chain_shirt",20},{"scale_mail",45},
                 {"breastplate",20},{"half_plate",40},{"ring_mail",40},{"chain_mail",55},{"splint",60},{"plate",65},{"shield",6},
-                {"potion_healing",0.5f},{"potion_greater_healing",0.5f},{"ember_of_return",0.1f},{"scroll_revivify",0},
+                {"potion_healing",0.5f},{"potion_greater_healing",0.5f},{"potion_superior_healing",0.5f},{"pageant_sash",0.1f},{"ember_of_return",0.1f},{"scroll_revivify",0},
                 {"torch",1},{"rations",2},{"gemstone",0},{"copper_trinket",0.1f},{"egg_shard",0.5f},
                 {"copper_kettle",2},{"lucky_spoon",0.1f},{"emberwrought_blade",3},{"starfall_staff",4},{"veilthread_cloak",1},{"oathbound_signet",0},
                 {"dawnmothers_charm",0},{"starfall_wand",1},{"fennicks_lucky_copper",0},
@@ -221,6 +222,10 @@ namespace DnD.Rules.Content
             Wondrous("starfall_wand", "Starfall Wand", WornSlot.Focus, 250, true,
                 "+1 to spell attack rolls.",
                 "A student's practice wand from the Starfall Academy, tipped with a fleck of fallen star.", spellAtk: 1);
+
+            Wondrous("pageant_sash", "Pageant Sash", WornSlot.Trinket, 100, false,
+                "+1 to all saving throws.",
+                "Red and gold silk, embroidered THE THOUSANDTH PAGEANT. Fennimore Glass pinned it on you himself, and cried a little.", save: 1, rarity: "Common");
 
             Wondrous("fennicks_lucky_copper", "Fennick's Lucky Copper", WornSlot.Trinket, 50, false,
                 "Once per long rest, after you roll a d20 Test, you can reroll it and take the new roll.",

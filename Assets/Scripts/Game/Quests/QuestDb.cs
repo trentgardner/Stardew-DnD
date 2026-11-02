@@ -9,6 +9,9 @@ namespace DnD.Game
     /// <summary>Act II's main quest, "answers".</summary>
     public static class Answers { public const string Id = "answers"; public const int Road = 1, Academy = 2, Tower = 3, Heard = 4, Chosen = 5, Allies = 6, OnTheRoad = 7, Gate = 8, Rest = 9; }
 
+    /// <summary>Act III side quest, "dragon_parade" (the Pageant rehearsal).</summary>
+    public static class DragonParade { public const string Id = "dragon_parade"; public const int Asked = 1, Rehearsal = 2, Done = 3; }
+
     /// <summary>Act III side quest, "deep_shift" (stage 4, Bran comes home, is Phase 4's).</summary>
     public static class DeepShift { public const string Id = "deep_shift"; public const int Asked = 1, Crale = 2, Below = 3; }
 
@@ -96,6 +99,15 @@ namespace DnD.Game
 
         static QuestDb()
         {
+            Add(new QuestDef
+            {
+                Act = 3, Id = DragonParade.Id, Title = "A Dragon for the Parade", Giver = "glass",
+                Reward = new QuestReward { Xp = 3000, Item = "pageant_sash" },
+                StageText = new[] {
+                    "", "Pageant-Master Fennimore Glass wants your dragon at the Pageant rehearsal, in the Great Square, by daylight.",
+                    "The rehearsal: lead the march, keep the dragon off the scenery, and survive the finale.",
+                    "The rehearsal was a triumph (mostly). Glass is beside himself." },
+            });
             Add(new QuestDef
             {
                 Act = 3, Id = DeepShift.Id, Title = "The Deep Shift", Giver = "mags",

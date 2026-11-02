@@ -235,5 +235,46 @@ namespace DnD.Game
             keeper.Schedule.Add(new ScheduleEntry(0, "capital_inn", 5, 4, "behind the bar, as ever"));
             Npcs[keeper.Id] = keeper;
         }
+
+        static void BuildCapitalPeople()
+        {
+            var capital = Zones["capital"];
+            capital.Secrets[new Vector2Int(7, 14)] = new SecretDef
+            {
+                Id = "sealed_crypt", Sprite = "obj_flagstone", Prompt = "Look at the crypt stair", Skill = Rules.Skill.Perception, DC = 14,
+                Success = "A royal crypt under the cathedral, sealed with iron and the King's seal. The dust on the steps lies a year thick, except for one clean path down the middle, worn smooth, as if someone walks it often. The verger swears no one has opened it in a century.",
+                Failure = "A crypt stair, a sealed door, a lot of dust. Nothing that tells you anything. Maybe with better light tomorrow.",
+                AlreadyFound = "A clean path through a year of dust, down to a door nobody opens.",
+                SetsFlag = "clue_crypt", Lore = "sealed_crypt",
+            };
+
+            // The four leaders are in Aurelhold for the Pageant (their Act II selves step away while Act III runs).
+            foreach (var id in new[] { "marsh", "ashby", "sorrel", "calloway" }) Npcs[id].GoneFlag = ActThreeFlag;
+            void Leader(string id, string from, string name, string title, string look, string zone, int x, int y, string doing)
+            {
+                var n = new NpcDef { Id = id, Name = name, Title = title, Look = look, Dialogue = id };
+                n.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
+                n.Schedule.Add(new ScheduleEntry(8, zone, x, y, doing));
+                n.Schedule.Add(new ScheduleEntry(20, null, 0, 0, "asleep"));
+                Npcs[id] = n;
+            }
+            Leader("marsh_capital", "marsh", "Lady-Commander Isaine Marsh", "The King's Household Guard", "npc_marsh", "capital", 26, 12, "inspecting the guard at the foot of the Sunstair");
+            Leader("ashby_capital", "ashby", "High Magister Corvane Ashby", "Guest of the Hall of Records", "npc_ashby", "royal_archive", 20, 14, "reading the Royal Annals, very fast");
+            Leader("sorrel_capital", "sorrel", "Herald Sorrel", "Envoy of the Three Courts", "npc_sorrel", "capital", 12, 28, "buying every flower in the market");
+            Leader("calloway_capital", "calloway", "Huntmaster Bryn Calloway", "The Wyrmwatch", "npc_calloway", "capital_inn", 14, 6, "drinking to the Fall with her hunters");
+
+            var glass = new NpcDef { Id = "glass", Name = "Pageant-Master Fennimore Glass", Title = "The Thousandth Pageant", Look = "npc_glass", Dialogue = "glass" };
+            glass.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep, dreaming of fireworks"));
+            glass.Schedule.Add(new ScheduleEntry(9, "capital", 34, 24, "rehearsing the Pageant (loudly)"));
+            glass.Schedule.Add(new ScheduleEntry(18, "capital_inn", 4, 9, "drawing stage plans on a napkin"));
+            glass.Schedule.Add(new ScheduleEntry(23, null, 0, 0, "asleep, dreaming of fireworks"));
+            Npcs[glass.Id] = glass;
+
+            var dray = new NpcDef { Id = "dray", Name = "Corwin Dray", Title = "Apothecary, the Grand Market", Look = "npc_dray", Dialogue = "dray", ShopId = "capital_market" };
+            dray.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
+            dray.Schedule.Add(new ScheduleEntry(8, "capital", 6, 24, "minding the apothecary's stall"));
+            dray.Schedule.Add(new ScheduleEntry(19, null, 0, 0, "asleep"));
+            Npcs[dray.Id] = dray;
+        }
     }
 }

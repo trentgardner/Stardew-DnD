@@ -98,6 +98,8 @@ namespace DnD.Game
                 "King Aldric IX wears a plain iron ring under his gold one. Every King of Aurelhold has, in every portrait, on the same finger. The court calls it tradition and nobody remembers why. When the Emberhorn comes up, his thumb turns it round and round.", 3);
             Add("royal_annals", "The Royal Annals", Records,
                 "Nine hundred volumes of the Crown's own history in red leather, one for every year. Year 1, the founding, is gold-leafed and glorious. Year 2 is an empty binding: every page cut out with a razor, long ago. The Archivist-Royal says water damage. The Academy's Annals were 'corrected' for the same years.", 3);
+            Add("sealed_crypt", "The Sealed Crypt", Places,
+                "Under the Lantern Cathedral, a royal crypt sealed with iron and the King's seal. The verger swears it hasn't been opened in a century. The dust on its stair lies a year thick, except for one clean path down the middle, worn smooth by somebody's feet.", 3);
             Add("missing_pages", "Missing Pages", Records,
                 "A parish ledger, swollen with damp, left on the mill's shelf by some long-gone clerk. Births, harvests and tithes, year after year in a careful hand, until the century the legends talk about. Those pages have been cut out, neatly, close to the spine. The record picks up again eighty years later as if nothing had happened.");
         }
