@@ -11,7 +11,9 @@ namespace DnD.Game
     public static partial class WorldDb
     {
         /// <summary>World flag set while Act II runs (schedules key off it).</summary>
-        public const string ActTwoFlag = "act2";
+        public const string ActTwoFlag = "act2", ActThreeFlag = "act3";
+        /// <summary>Act III: the party has gone through the door and met her. Everything in *.AfterTheDoor.cs waits for this.</summary>
+        public const string MetHer = "met_her";
 
         static void BuildLanternRoad()
         {

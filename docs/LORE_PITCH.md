@@ -198,3 +198,4 @@ Act I keeps only two light, ominous notes in chests (a miner's scrawl about lamp
 ## Act III, first pieces (names approved in bulk)
 - **The Crown's soldiers:** Crown Knights, Crown Champions, Crown Battlemages; in the vaults, **Stone Guardians** and **Iron Sentinels**.
 - **Spell names changed for tone:** Circle of Death is **Withering Circle**; Finger of Death is **Final Word**.
+- **The summons (Act III begins):** two weeks after the Warden, winter comes early; a letter under a royal seal of red and gold invites "the heroes of the Emberhorn" to the capital. The King himself would be honoured.

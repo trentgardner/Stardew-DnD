@@ -24,6 +24,7 @@ namespace DnD.Game
                 WorldDb.SendAllyAhead(World);
                 if (World.Flag(WardenFallen) && !World.Flag(ActTwoEndSeen)) StartCoroutine(ActTwoEndSoon()); // a save from before the card existed
             }
+            if (World.Act >= 3) World.SetFlag(WorldDb.ActThreeFlag);
             foreach (var c in Companions) if (c != null && c.Character != null) AutoLevel(c.Character);
             Blight.Sync();
             foreach (var z in Zones.Values) foreach (var grp in z.Def.EnemyGroups) if (grp.MinBlight > 0) SpawnGroupIfNeeded(z, grp);
@@ -118,8 +119,9 @@ namespace DnD.Game
         {
             var a = DragonAgent;
             if (a == null || Dragon == null || !Dragon.IsTeen) return;
-            a.Actor.transform.localScale = Vector3.one * TeenDragonScale;
-            if (ArtRegistry.IsReal("mon_dragonling_teen_0")) { a.Actor.Look = "mon_dragonling_teen"; a.Actor.RefreshSprite(); }
+            a.Actor.transform.localScale = Vector3.one * (Dragon.IsGrown ? GrownDragonScale : TeenDragonScale);
+            string look = Dragon.IsGrown && ArtRegistry.IsReal("mon_dragon_grown_0") ? "mon_dragon_grown" : "mon_dragonling_teen";
+            if (ArtRegistry.IsReal(look + "_0")) { a.Actor.Look = look; a.Actor.RefreshSprite(); }
         }
     }
 }

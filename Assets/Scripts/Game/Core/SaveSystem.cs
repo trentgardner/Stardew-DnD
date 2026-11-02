@@ -75,7 +75,7 @@ namespace DnD.Game
         public bool DragonScared, DragonSniffUsed;
         public List<string> LitBraziers = new List<string>();
         public int RecruitWeek, RecruitSeed;
-        public int Act, ActTwoDay, DragonStage;
+        public int Act, ActTwoDay, ActThreeDay, DragonStage;
         public List<KV> DragonOpinion = new List<KV>(), Standing = new List<KV>();
         public string CommittedFaction;
         public int BlightStage;
@@ -229,7 +229,7 @@ namespace DnD.Game
             d.LitBraziers.AddRange(w.LitBraziers);
             d.RecruitWeek = w.RecruitWeek; d.RecruitSeed = w.RecruitSeed;
             d.FestivalDoneDay = w.FestivalDoneDay;
-            d.Act = w.Act; d.ActTwoDay = w.ActTwoDay; d.DragonStage = w.DragonStage;
+            d.Act = w.Act; d.ActTwoDay = w.ActTwoDay; d.ActThreeDay = w.ActThreeDay; d.DragonStage = w.DragonStage;
             foreach (var kv in w.DragonOpinionShift) d.DragonOpinion.Add(new KV(kv.Key, kv.Value));
             foreach (var kv in w.Standing) d.Standing.Add(new KV(kv.Key, kv.Value));
             d.CommittedFaction = w.CommittedFaction;
@@ -327,7 +327,7 @@ namespace DnD.Game
             if (d.LitBraziers != null) foreach (var b in d.LitBraziers) w.LitBraziers.Add(b);
             w.RecruitWeek = d.RecruitWeek; w.RecruitSeed = d.RecruitSeed;
             w.FestivalDoneDay = d.FestivalDoneDay;
-            w.Act = Math.Max(1, d.Act); w.ActTwoDay = d.ActTwoDay; w.DragonStage = d.DragonStage;
+            w.Act = Math.Max(1, d.Act); w.ActTwoDay = d.ActTwoDay; w.ActThreeDay = d.ActThreeDay; w.DragonStage = d.DragonStage;
             if (d.DragonOpinion != null) foreach (var kv in d.DragonOpinion) w.DragonOpinionShift[kv.K] = kv.V;
             if (d.Standing != null) foreach (var kv in d.Standing) w.Standing[kv.K] = kv.V;
             w.CommittedFaction = string.IsNullOrEmpty(d.CommittedFaction) ? null : d.CommittedFaction;

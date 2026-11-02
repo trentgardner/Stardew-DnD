@@ -77,9 +77,24 @@ namespace DnD.Game
             _menu.Clear();
             _menu.Add("Act I: Home (level 1, the whole story)", () => { Destroy(gameObject); _g.StartNewGame(_input, d); });
             _menu.Add("Act II (level 5, preview: the dragon has hatched)", () => { Destroy(gameObject); _g.StartNewGame(_input, d, actTwo: true); });
+            _menu.Add("Act III (level 11, preview: after the Warden)", () => ShowActThreeSide(d));
             _menu.Add("Back", ShowDifficulty);
             _menu.Build();
             _info.text = "Act II is still being built: starting there skips Thistledown's first summer and hands you a teenage dragon.";
+        }
+
+        /// <summary>Starting at Act III: which side did the party stand with in Act II?</summary>
+        void ShowActThreeSide(DnD.Game.Difficulty d)
+        {
+            _menu.Clear();
+            foreach (var f in new[] { "crown", "academy", "fae", "hunters" })
+            {
+                string side = f;
+                _menu.Add($"We stood with {DnD.Game.FactionDb.NameOf(side)}", () => { Destroy(gameObject); _g.StartNewGame(_input, d, actThreeSide: side); });
+            }
+            _menu.Add("Back", () => ShowStart(d));
+            _menu.Build();
+            _info.text = "Act III is still being built: starting there skips Acts I and II and hands you a grown dragon. Pick the side you stood with in Act II.";
         }
 
         void Load()

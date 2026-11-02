@@ -77,6 +77,8 @@ namespace DnD.Game
             _menu.Add(stay, Close);
             if (_act < 2 && GameRoot.I.World.Act < 2)
                 _menu.Add("Begin Act II (preview: a season passes)", () => { Close(); GameRoot.I.BeginActTwo(Slot); });
+            if (_act == 2 && GameRoot.I.World.Act == 2)
+                _menu.Add("Begin Act III (preview: the capital is still being built)", () => { Close(); GameRoot.I.BeginActThree(Slot); });
             _menu.Build();
             Sfx.Play("levelup");
         }

@@ -158,13 +158,59 @@ namespace DnD.Tests
             Assert.IsFalse(Leaks("the dawnmother's temple", "mother"), "a banned word only counts at the start of a word");
         }
 
+        /// <summary>The one exemption: text in *.AfterTheDoor.cs files is only reachable once the party has met her (Act III Phase 4).</summary>
+        public static bool GuardScans(string fileName) => !fileName.EndsWith(".AfterTheDoor.cs");
+
+        [Test]
+        public void SecretGuardExemptionIsNarrow()
+        {
+            Assert.IsTrue(GuardScans("DialogueDb.Capital.cs"), "ordinary files are scanned");
+            Assert.IsTrue(GuardScans("AfterTheDoor.cs.bak"), "the name has to end that way");
+            Assert.IsTrue(GuardScans("TheDoor.cs"), "not just any door");
+            Assert.IsFalse(GuardScans("LoreDb.AfterTheDoor.cs"), "only *.AfterTheDoor.cs is exempt");
+        }
+
+        /// <summary>Every exempt file must gate its text behind the meeting (it registers itself only when MetHer is set).</summary>
+        [Test]
+        public void AfterTheDoorFilesAreGatedOnMeetingHer()
+        {
+            var root = Path.Combine(Application.dataPath, "Scripts");
+            foreach (var file in Directory.GetFiles(root, "*.AfterTheDoor.cs", SearchOption.AllDirectories))
+                StringAssert.Contains("MetHer", File.ReadAllText(file), $"{Path.GetFileName(file)} must only register its text once the party has met her");
+        }
+
+        [UnityTest]
+        public IEnumerator RevealTextHiddenUntilTheDoor()
+        {
+            var g = GameRoot.I;
+            var p = g.DebugStart(Still(30), "wizard", "human");
+            yield return Frames(2);
+            g.World.Act = 2;
+            LoreDb.Find("missing_pages", p);
+            LoreDb.SetReveal("missing_pages", "PLANTED REVEAL LINE");
+            try
+            {
+                var j = new JournalScreen();
+                p.Hud.Push(j);
+                yield return Frames(2);
+                j.ShowLore(true);
+                StringAssert.DoesNotContain("PLANTED REVEAL LINE", j.Text, "nothing before the door");
+                StringAssert.DoesNotContain("Read again", j.Text, "not even the marker");
+                g.World.SetFlag(WorldDb.MetHer);
+                j.ShowLore(true);
+                StringAssert.Contains("Read again", j.Text, "after the door, the entry asks to be read again");
+                StringAssert.Contains("PLANTED REVEAL LINE", j.Text, "with its new line");
+            }
+            finally { LoreDb.SetReveal("missing_pages", null); }
+        }
+
         [Test]
         public void NoActTwoTextHintsAtTheSecret()
         {
             string[] banned = Banned;
             var root = Path.Combine(Application.dataPath, "Scripts");
             var offenders = new System.Collections.Generic.List<string>();
-            foreach (var file in Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories))
+            foreach (var file in Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories).Where(f => GuardScans(Path.GetFileName(f))))
                 foreach (var line in File.ReadAllLines(file))
                 {
                     if (line.TrimStart().StartsWith("//")) continue; // code comments aren't game text

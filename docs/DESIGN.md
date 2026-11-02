@@ -136,6 +136,14 @@ Eldritch Blast fires two beams at 5 (2024) instead of one bigger one.
 | 13 | rogue 24.1 | monk 22.9, fighter 20.6, barbarian 16.8, ranger 15.7, paladin 13.8 | 22.9 | druid 13.6, sorcerer/wizard 12.4, cleric 10.8, bard 8.4 |
 The paladin's number leaves out Radiant Strikes (+1d8 on every melee hit) and smites; every martial and the warlock stay above half the leader.
 
+## The grown dragon (Act III Phase 2)
+- Stage **Young** (`Dragonling.IsGrown`): AC 17, HP 20 + 8 per party level, Bite 1d10+4 and Claw 1d6+4 at PB + 4, Ember Breath a 30-ft cone of
+  ceil(level/2)d6 fire (recharge 5-6). Kindle, Shield Wing, pet/fetch/treats/trust are unchanged. `CanFly` is true, but flight is one finale moment.
+- **Balance rule (user: "2-3d10 where a fighter rolls 4d10")**: expected at-will damage vs AC 17 is 50-75% of the average martial's.
+  Measured: L11 10.7 vs 16.8 (64%), L12 10.7 vs 17.3 (61%), L13 11.5 vs 19.0 (61%). RulesTests `GrownDragonTests` enforces it.
+- **"Read again"** (for Act III's reveal): `LoreDef.RevealText`, shown under an entry with "★ Read again" once `met_her` is set. Text that may only
+  exist after the meeting lives in `*.AfterTheDoor.cs` files, which the secret guard skips and which must gate on `MetHer`.
+
 ## Inventory
 - 36-slot Stardew-style bag (top row = hotbar), per-item stack limits, split/merge/swap, quick-transfer,
   sort, trading items and gold with a nearby co-op partner, home storage chest.

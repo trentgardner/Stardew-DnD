@@ -124,10 +124,14 @@ namespace DnD.Game
             _title = TitleScreen.Create(this);
         }
 
-        public void StartNewGame(PlayerInput device, Difficulty diff, bool actTwo = false)
+        /// <summary>A new game that starts at Act III with this side as the one the party stood with (null = no).</summary>
+        string _startActThree;
+
+        public void StartNewGame(PlayerInput device, Difficulty diff, bool actTwo = false, string actThreeSide = null)
         {
             ResetWorld();
-            _startActTwo = actTwo;
+            _startActTwo = actTwo && actThreeSide == null;
+            _startActThree = actThreeSide;
             Settings.Difficulty = diff;
             PlaythroughId = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             int n = SaveSystem.List().Select(s => s.PlaythroughId).Distinct().Count() + 1;
@@ -161,7 +165,8 @@ namespace DnD.Game
                 pc.LevelUp(pc.AutoPlan(), null);
             }
             SpawnPlayer(slot, pc, null);
-            if (World.Act >= 2 && Players.Count > 1) GiveActTwoKit(slot); // a partner joining an Act II game
+            if (World.Act >= 3 && Players.Count > 1) GiveActThreeKit(slot); // a partner joining an Act III game
+            else if (World.Act >= 2 && Players.Count > 1) GiveActTwoKit(slot); // a partner joining an Act II game
             return slot;
         }
 
@@ -330,6 +335,8 @@ namespace DnD.Game
             {
                 SpawnPlayer(slot, pc, null);
                 if (Players.Count == 1 && _startActTwo) { _startActTwo = false; ApplyActTwoStart(slot); }
+                else if (Players.Count == 1 && _startActThree != null) { var side = _startActThree; _startActThree = null; ApplyActThreeStart(slot, side); }
+                else if (World.Act >= 3) { GiveActThreeKit(slot); slot.Hud.Narrate($"{pc.Name} joins the adventure!"); }
                 else if (World.Act >= 2) { GiveActTwoKit(slot); slot.Hud.Narrate($"{pc.Name} joins the adventure!"); }
                 else if (Players.Count == 1)
                     slot.Hud.Push(new MessageScreen("The Fallen Star",

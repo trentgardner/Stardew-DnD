@@ -656,7 +656,11 @@ namespace DnD.Game
             foreach (var group in found.GroupBy(l => l.Category))
             {
                 sb.AppendLine($"<i>{group.Key}</i>");
-                foreach (var l in group) sb.AppendLine($"<b>{l.Title}</b>: {l.Text}\n");
+                foreach (var l in group.OrderBy(x => LoreDb.Revealed(x, g.World) ? 0 : 1))
+                {
+                    if (LoreDb.Revealed(l, g.World)) sb.AppendLine($"<b>{l.Title}</b> <color=#b8860b>★ Read again</color>: {l.Text}\n<i>{l.RevealText}</i>\n");
+                    else sb.AppendLine($"<b>{l.Title}</b>: {l.Text}\n");
+                }
             }
             return sb.ToString().TrimEnd();
         }

@@ -41,6 +41,18 @@
 **Co-op:** your fiance presses **START** on a second controller at any time. The screen splits and she makes a
 character. You can go anywhere independently; if one of you starts a fight, the other can walk over and join it.
 
+## New: Into Act III (preview)
+- **From the End of Act II card**: "Begin Act III". Two weeks pass, winter comes early, and a royal summons invites you to the capital
+  (the capital itself is still being built). The level cap rises to 13.
+- **Your dragon is grown**: bigger, a deeper red, AC 17, a bite and a claw, and a 30-ft breath. It deals about two-thirds of what a
+  fighter or rogue does each round: enough to feel like a dragon on your side, never enough to win the fight for you. (Flying is saved for the finale.)
+- **Title screen**: Act III (level 11) lets you pick which side you stood with in Act II. Your character arrives at level 10 and you choose level 11 yourself.
+  A partner who joins an Act III game arrives the same way.
+
+### Into Act III checklist
+- [ ] Does the grown dragon feel like a real help without stealing the show?
+- [ ] Is the size right (it's drawn 1.8x)? Does it still look like *your* dragon?
+
 ## New: levels 11-13 (Act III preview, built underneath)
 Act III raises the cap to 13 (Acts I and II still stop at 4 and 10). It isn't reachable in a normal game yet; Act III's story comes next.
 - **Every class to 13**: the fighter's third attack ("Attack 2/3", "3/3"), ASIs at 12, and the SRD features: Studied Attacks, Relentless Rage,
