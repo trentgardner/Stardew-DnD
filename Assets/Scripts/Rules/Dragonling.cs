@@ -17,6 +17,8 @@ namespace DnD.Rules
         DragonStage _stage = DragonStage.Hatchling;
         public DragonStage Stage { get => _stage; set { _stage = value; SetPartyLevel(_partyLevel); } }
         public bool IsTeen => Stage >= DragonStage.Wyrmling;
+        /// <summary>Act III: grown, big enough to carry a rider (flying is one finale moment, not travel).</summary>
+        public bool IsGrown => Stage >= DragonStage.Young;
         public bool CanFly => Stage >= DragonStage.Young;
         public bool BreathReady = true;
         int _partyLevel = 1;
@@ -25,8 +27,8 @@ namespace DnD.Rules
         public int BreathDC => 8 + ProficiencyBonus + Mod(Ability.CON);
         /// <summary>Hatchling: a 1d6 puff. Teenager: ceil(party level / 2) d6 (3d6 at 5, 5d6 at 10).</summary>
         public DiceExpr BreathDamage => IsTeen ? new DiceExpr((_partyLevel + 1) / 2, 6) : new DiceExpr(1, 6);
-        public int BreathConeTiles => IsTeen ? 3 : 1;
-        protected override int BaseArmorClass => IsTeen ? 15 : base.BaseArmorClass;
+        public int BreathConeTiles => IsGrown ? 6 : IsTeen ? 3 : 1;
+        protected override int BaseArmorClass => IsGrown ? 17 : IsTeen ? 15 : base.BaseArmorClass;
 
         /// <summary>
         /// Teenager: bite and claw, +PB+2 to hit, 1d6+2 and 1d4+2. Tuned to roughly half a fighter's damage per round:
@@ -35,6 +37,16 @@ namespace DnD.Rules
         public override List<AttackOption> GetAttacks()
         {
             if (!IsTeen) return base.GetAttacks();
+            if (IsGrown)
+            {
+                // Grown (Act III): about two-thirds of a martial's at-will damage. "I have a dragon on my side", never carrying a fight.
+                int g = ProficiencyBonus + 4;
+                return new List<AttackOption>
+                {
+                    new AttackOption { Name = "Bite", ToHit = g, Damage = new DiceExpr(1, 10, 4), DamageType = DamageType.Piercing, ReachFt = 5 },
+                    new AttackOption { Name = "Claw", ToHit = g, Damage = new DiceExpr(1, 6, 4), DamageType = DamageType.Slashing, ReachFt = 5 },
+                };
+            }
             int hit = ProficiencyBonus + 2;
             return new List<AttackOption>
             {
@@ -57,7 +69,20 @@ namespace DnD.Rules
         }
 
         public static int MaxHPFor(int partyLevel) => 5 + 5 * Math.Max(1, partyLevel);
-        public static int MaxHPFor(int partyLevel, DragonStage stage) => stage >= DragonStage.Wyrmling ? 10 + 6 * Math.Max(1, partyLevel) : MaxHPFor(partyLevel);
+        public static int MaxHPFor(int partyLevel, DragonStage stage) =>
+            stage >= DragonStage.Young ? 20 + 8 * Math.Max(1, partyLevel) : stage >= DragonStage.Wyrmling ? 10 + 6 * Math.Max(1, partyLevel) : MaxHPFor(partyLevel);
+
+        /// <summary>Expected at-will damage per round against an AC (hit chance × average, plus the extra dice of a 5% crit): the balance check's yardstick.</summary>
+        public static double ExpectedDamagePerRound(Dragonling d, int ac)
+        {
+            double total = 0;
+            foreach (var a in d.AttackRoutine())
+            {
+                double hit = Math.Min(0.95, Math.Max(0.05, (21 - (ac - a.ToHit)) / 20.0));
+                total += hit * (a.Damage.Average + a.DamageMod) + 0.05 * (a.Damage.Average - a.Damage.Bonus);
+            }
+            return total;
+        }
 
         /// <summary>Grows with the party. Damage already taken stays taken.</summary>
         public void SetPartyLevel(int partyLevel)

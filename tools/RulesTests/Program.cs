@@ -42,6 +42,7 @@ namespace RulesTests
             SpellTests7();
             CasterTests13();
             MonsterTests13();
+            GrownDragonTests();
             SpellTests5();
             MonsterTests();
             MartialTests10();
