@@ -77,3 +77,6 @@ Task 6: complete (commits 75b927a..HEAD, tests: FinaleTests;LoreTests;ArtTests â
 - Final: minor (deferred): the stage-1 retry spot (31,15) is 4 tiles from the stage-1 group, so the fight restarts as soon as the "Behind the barricade" message closes.
 - Final: minor (deferred): loading a save made after the win doesn't show the To Be Continued card again (Phase 7 replaces it).
 - Final: Declined to judge (rulings): XP pacing of stages 10-13 (Phase 7's balance table); the endings themselves (Phase 7).
+- Final: full suite 488/488, RulesTests 1408/1408 (after the fix pass).
+- Final: minor (deferred): the Ashen Queen and the grown dragon are both red sprites; the Queen is bigger and horned, but they can read alike.
+- Final: minor (deferred): the Deep is very dark around the King's fight (only the party's light); he's hard to see without a torch.
