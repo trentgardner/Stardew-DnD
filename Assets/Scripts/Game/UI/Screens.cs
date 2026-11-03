@@ -316,6 +316,7 @@ namespace DnD.Game
 
         void Rebuild()
         {
+            if (Closed || _text == null) return; // a hit-die roll can finish after the window closed (fuzz)
             var pc = Slot.Character;
             var g = GameRoot.I;
             _text.text = $"HP {pc.HP}/{pc.EffectiveMaxHP} · Hit Dice {pc.HitDiceRemaining}/{pc.Level} (d{pc.Class.HitDie})" +
@@ -348,6 +349,7 @@ namespace DnD.Game
 
         void SpendDice()
         {
+            if (Closed) return; // the healing already landed; there's no window left to ask about the next die
             var pc = Slot.Character;
             if (pc.HitDiceRemaining <= 0 || pc.HP >= pc.EffectiveMaxHP) { Rebuild(); return; }
             Hud.Push(new ChoiceScreen("Spend a Hit Die?", $"Roll d{pc.Class.HitDie} + CON to heal. ({pc.HitDiceRemaining} left)", new List<(string, Action)>
