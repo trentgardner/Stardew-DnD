@@ -400,6 +400,94 @@ namespace DnD.Tests
             }
         }
 
+        // ============================================================ Task 4: the Deep, the Iron Gaoler, the grey door
+
+        static readonly Vector2Int BeforeTheDoor = new Vector2Int(24, 2);
+
+        [UnityTest]
+        public IEnumerator DeepIsReachable()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 40);
+            yield return Frames(2);
+            g.Quests.Set(WarmCity.Id, WarmCity.Opened, p, 0f);
+            g.World.SetFlag("puzzle:royal_crypts:crypt_gate");
+            int xp = p.Character.XP;
+            var down = WorldDb.Zones["royal_crypts"].Warps.Find(w => w.ToZone == "the_deep");
+            Assert.IsNotNull(down, "the crypts lead down to the Deep");
+            yield return StepOnto(g, p, "royal_crypts", down.At, down.At + Vector2Int.up);
+            Assert.AreEqual("the_deep", p.Zone.Def.Id);
+            Assert.AreEqual(WarmCity.Deep, g.Quests.Stage(WarmCity.Id), "the Deep is stage 6");
+            Assert.That(p.Character.XP - xp, Is.InRange(4000, 4100), "4000 for the stage (plus a little for finding a new place)");
+            var z = p.Zone;
+            AcademyTests.AssertAllReachable(g, z, z.Def.DefaultSpawn);
+            Assert.IsTrue(AcademyTests.CanReachBeside(z, z.Def.DefaultSpawn, BeforeTheDoor), "the tile before the door");
+            Assert.AreEqual(12, z.Def.Map.Sum(r => r.Count(ch => ch == '1')), "twelve Great Ones in the ring");
+            Assert.IsFalse(z.IsWalkable(new Vector2Int(24, 1)), "the door itself is solid");
+            Assert.IsNotNull(Object.FindObjectsByType<GreyDoor>(FindObjectsSortMode.None).SingleOrDefault(), "and it can be knocked on");
+            var back = WorldDb.Zones["the_deep"].Warps.Find(w => w.ToZone == "royal_crypts");
+            Assert.IsNotNull(back, "and back up");
+        }
+
+        [UnityTest]
+        public IEnumerator DoorWaitsForTheGaoler()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 41);
+            yield return Frames(2);
+            g.Quests.Set(WarmCity.Id, WarmCity.Deep, p, 0f);
+            yield return Into(g, p, "the_deep", BeforeTheDoor);
+            var door = DialogueDb.Get("grey_door");
+            var node = door.Nodes[door.Start(Ctx(p))];
+            var open = node.Options.First(o => o.Text.Contains("Open"));
+            open.Do(Ctx(p));
+            yield return Frames(3);
+            Assert.AreEqual("the_deep", p.Zone.Def.Id, "the Gaoler is in the way");
+            Assert.GreaterOrEqual(Count(p, "The Gaoler stands between you and the door"), 1);
+            Assert.IsFalse(g.World.Flag(WorldDb.MetHer));
+
+            var knock = node.Options.First(o => o.Text.Contains("Knock"));
+            knock.Do(Ctx(p));
+            Assert.IsTrue(g.World.Flag("knocked_back"));
+            Assert.IsTrue(g.World.LoreFound.Contains("the_door"));
+            Assert.GreaterOrEqual(Count(p, "three knocks back"), 1);
+        }
+
+        [UnityTest]
+        public IEnumerator GaolerFightsOrStandsAside()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 42);
+            yield return Frames(2);
+            yield return Into(g, p, "the_deep");
+            var def = WorldDb.Zones["the_deep"].EnemyGroups.Single(x => x.Id == "gaoler");
+            Assert.AreEqual(Skill.Deception, def.TalkSkill, "you can speak as the King");
+            Assert.AreEqual(18, def.TalkDC);
+            int fightXp = def.Members.Sum(m => MonstersDb.Get(m.MonsterId).XP);
+            Assert.AreEqual(8400, fightXp);
+            int xp = p.Character.XP;
+            g.PacifyGroup("gaoler", p);
+            Assert.AreEqual(xp + fightXp, p.Character.XP, "talking past it pays the same as beating it");
+            Assert.IsTrue(g.World.Flag("gaoler_resolved"));
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(4);
+            Assert.IsTrue(g.World.Flag("gaoler_resolved"), "it stays knelt");
+            Assert.IsFalse(Object.FindObjectsByType<EnemyAgent>(FindObjectsSortMode.None).Any(a => a.Group.Id == "gaoler" && a.Monster.Team == Team.Enemies), "no Gaoler waiting");
+            g.QuitToTitle();
+            yield return Frames(2);
+
+            // A fresh start: it's a real boss fight.
+            p = ActThree(g, 43);
+            yield return Frames(2);
+            yield return Into(g, p, "the_deep", new Vector2Int(24, 12));
+            g.StartGroupCombat("gaoler", p);
+            yield return Frames(3);
+            var fight = g.Combats.SingleOrDefault(c => c.GroupId == "gaoler");
+            Assert.IsNotNull(fight, "it fights");
+            Assert.AreEqual(2, MonstersDb.Get("iron_gaoler").LegendaryPerRound, "with legendary actions");
+        }
+
         [UnityTest]
         public IEnumerator GatherAtBringsEveryone()
         {

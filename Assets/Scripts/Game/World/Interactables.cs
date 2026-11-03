@@ -33,6 +33,14 @@ namespace DnD.Game
         }
     }
 
+    /// <summary>The grey door at the bottom of the Deep (Act III): knock, or open it once the Gaoler is past.</summary>
+    public class GreyDoor : Interactable
+    {
+        public override float Range => 1.8f;
+        public override string PromptText(PlayerSlot p) => "The grey door";
+        public override void Interact(PlayerSlot p) => p.Hud.Push(new DialogueScreen("grey_door", null, null));
+    }
+
     public class SignInteractable : Interactable
     {
         public string Text;

@@ -41,6 +41,7 @@ namespace RulesTests
             Eq(new Monster(TestBoss(), false).RechargeMinFor(TestBoss().Abilities[0]), 5, "phase one: the normal recharge");
 
             WardenIsABossNotAWall();
+            GaolerIsABossNotAWall();
             ActTwoBalanceTable();
         }
 
@@ -111,6 +112,40 @@ namespace RulesTests
             double warden = 3 * rend + tail;
             Console.WriteLine($"The Warden's damage per round vs AC 17: {warden:0.0}");
             Check(warden >= 25, $"Warden: {warden:0.0} damage a round is too gentle for a boss");
+        }
+        /// <summary>
+        /// Act III Phase 4: the Iron Gaoler must be beatable by a typical level-12 party of four in 4-9 rounds of at-will damage,
+        /// and hit hard enough to feel like a boss (two Slams and a Chain Lash a round).
+        /// </summary>
+        static void GaolerIsABossNotAWall()
+        {
+            var w = MonstersDb.Get("iron_gaoler");
+            Check(w != null, "the Iron Gaoler exists");
+            if (w == null) return;
+            Eq(w.LegendaryPerRound, 2, "Gaoler: two legendary actions a round");
+            Check(!w.Immunities.Contains(DamageType.Fire), "Gaoler: the party's dragon's fire still matters");
+            string[] pool = { "fighter", "rogue", "cleric", "wizard", "ranger", "paladin", "bard", "druid" };
+            PlayerCharacter.LevelCap = PlayerCharacter.ActThreeLevelCap;
+            var dpr = new System.Collections.Generic.Dictionary<string, double>();
+            foreach (var c in pool) dpr[c] = DamagePerRound(AtLevel(c, 12), w.AC);
+            PlayerCharacter.LevelCap = PlayerCharacter.ActOneLevelCap;
+            var rounds = new List<double>();
+            for (int a = 0; a < pool.Length; a++)
+                for (int b = a + 1; b < pool.Length; b++)
+                    for (int c = b + 1; c < pool.Length; c++)
+                        for (int d = c + 1; d < pool.Length; d++)
+                            rounds.Add(w.HitDice.Average / (dpr[pool[a]] + dpr[pool[b]] + dpr[pool[c]] + dpr[pool[d]]));
+            rounds.Sort();
+            double median = rounds[rounds.Count / 2], slowest = rounds[rounds.Count - 1];
+            Console.WriteLine($"The Iron Gaoler ({w.HitDice.Average:0} HP, AC {w.AC}) vs level-12 parties of four: median {median:0.0} rounds, slowest {slowest:0.0}");
+            Check(median >= 4 && median <= 9, $"Gaoler: a typical party needs {median:0.0} rounds (want 4-9)");
+            Check(slowest <= 12, $"Gaoler: the slowest party needs {slowest:0.0} rounds (want <= 12)");
+            var slam = w.Attacks.First(x => x.Name == "Slam");
+            double Expected(int toHit, double avg, int ac) { double p = Math.Min(0.95, Math.Max(0.05, (21 - (ac - toHit)) / 20.0)); return p * avg + 0.05 * (avg - 6); }
+            double one = Expected(slam.ToHit, slam.Damage.Average, 18);
+            double gaoler = 3 * one;
+            Console.WriteLine($"The Iron Gaoler's damage per round vs AC 18: {gaoler:0.0}");
+            Check(gaoler >= 30, $"Gaoler: {gaoler:0.0} damage a round is too gentle for a boss");
         }
     }
 }

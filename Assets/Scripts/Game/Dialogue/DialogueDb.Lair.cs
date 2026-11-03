@@ -13,6 +13,7 @@ namespace DnD.Game
         {
             switch (id)
             {
+                case "grey_door": return GreyDoorChoices();
                 case "bran": return Bran();
                 case "hap_mossy": return HapMossy();
                 case "deep_shift_1": return DeepShiftHand("deep_shift_1", "Lew Carrow",
@@ -21,6 +22,27 @@ namespace DnD.Game
                     "Up top? Haven't seen it in six years. Is the King's Square still gold? I used to sell chestnuts there. Funny what you miss.");
                 default: return null;
             }
+        }
+
+        // =================================================================== the grey door
+
+        static Dialogue GreyDoorChoices()
+        {
+            var d = new Dialogue("grey_door", c => "door");
+            d.Node("door", null,
+                c => "",
+                c => "The grey door from the dream. It's warm to the touch, like a hearthstone, and the chains end in its frame. There's no lock. There's no handle on this side at all. There's a handle on the other side; you can tell from the hinges.")
+                .Say("Knock.", doIt: c => Knock(c), end: true)
+                .Say("Open the door.", doIt: c => c.G.OpenGreyDoor(c.P), end: true)
+                .Bye("Not yet.");
+            return d;
+        }
+
+        static void Knock(DCtx c)
+        {
+            c.G.World.SetFlag("knocked_back");
+            LoreDb.Find("the_door", c.P);
+            c.P.Hud.Narrate("You knock: three times, slow. For a long moment, nothing. Then, from the other side, very quietly: three knocks back.", true);
         }
 
         // =================================================================== the deep shift

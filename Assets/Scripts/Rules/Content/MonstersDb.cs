@@ -333,6 +333,29 @@ namespace DnD.Rules.Content
                 Immunities = { DamageType.Poison, DamageType.Psychic },
             };
 
+            // Act III Phase 4: the boss of the Deep, before the grey door.
+
+            // Act III Phase 4: the boss of the Deep, before the grey door.
+            All["iron_gaoler"] = new MonsterDef
+            {
+                Id = "iron_gaoler", Name = "The Iron Gaoler", SpriteId = "mon_gaoler", AC = 19, HitDice = DiceExpr.Parse("24d10+120"),
+                Scores = new[] { 24, 9, 20, 3, 11, 1 }, Darkvision = 120, CR = 12, XP = 8400, Speed = 30, ProficiencyBonus = 4, Scale = 2.2f,
+                Description = "A figure of black iron three times the height of a man, chains wound round its arms, one word cut into its blank iron face: HOLD. Built by the first Crown to stand before one door. (SRD Iron Golem, tuned as a boss.)",
+                Attacks = { Melee("Slam", 11, "3d8+7", DamageType.Bludgeoning) },
+                Multiattack = { "Slam", "Slam" },
+                Abilities = { new MonsterAbilityDef { Name = "Binding Chains", Shape = TargetShape.Line, AreaFt = 30, Dice = DiceExpr.Parse("6d8"), DamageType = DamageType.Force, SaveAbility = Ability.STR, SaveDC = 17, RechargeMin = 5, Telegraph = true } },
+                Immunities = { DamageType.Poison, DamageType.Psychic },
+                LegendaryPerRound = 2,
+                LegendaryActions =
+                {
+                    new LegendaryActionDef { Name = "Chain Lash", Cost = 1, Kind = LegendaryKind.Attack, Attack = "Slam", RangeFt = 15 },
+                    new LegendaryActionDef { Name = "Ward Pulse", Cost = 1, Kind = LegendaryKind.SaveBurst, RangeFt = 20, Dice = DiceExpr.Parse("3d8"), DamageType = DamageType.Force, SaveAbility = Ability.CON, SaveDC = 16 },
+                },
+                PhaseTwoAt = 0.5, PhaseTwoRechargeMin = 4, LairEruptions = 0,
+                PhaseTwoText = "The chains on the floor pull taut all at once, and the whole Deep rings like a struck bell. The Gaoler straightens. For the first time, it hurries.",
+            };
+            All["iron_gaoler"].Attacks.Add(Melee("Chain", 11, "2d8+7", DamageType.Bludgeoning, 15));
+
             All["cinder_bear"] = new MonsterDef
             {
                 Id = "cinder_bear", Name = "Cinder Bear", SpriteId = "mon_cinder_bear", AC = 11, HitDice = DiceExpr.Parse("4d10+12"),

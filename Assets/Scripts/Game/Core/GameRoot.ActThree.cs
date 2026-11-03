@@ -43,6 +43,13 @@ namespace DnD.Game
             }
         }
 
+        /// <summary>The grey door (Act III): it waits for the Gaoler, then opens onto what's beyond (see GameRoot.AfterTheDoor.cs).</summary>
+        public void OpenGreyDoor(PlayerSlot by)
+        {
+            if (!World.Flag("gaoler_resolved")) { by.Hud.Narrate("The Gaoler stands between you and the door."); return; }
+            ThroughTheDoor(by);
+        }
+
         /// <summary>The Third Ideal's boon follows the world flag: every player character has it while it's set (after a load, for joiners too).</summary>
         public void ApplyIdeals()
         {

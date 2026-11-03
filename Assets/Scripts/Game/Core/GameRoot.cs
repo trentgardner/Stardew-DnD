@@ -613,6 +613,11 @@ namespace DnD.Game
                 p.Hud.Narrate($"{World.DragonName} has to duck under the Gate of Wings. A baker drops an entire tray of buns. {World.DragonName}, after some thought, helps.");
             }
             if (zoneId == "royal_crypts") World.SetFlag("crypt_stair_open"); // the cathedral stair opens from below
+            if (zoneId == "the_deep" && Dragon != null && !World.Flag("dragon_deep_intro"))
+            {
+                World.SetFlag("dragon_deep_intro");
+                p.Hud.Narrate($"{World.DragonName} has been shivering since the stair. Now it stops, and lifts its head, and stares at the grey door as if it's heard its name.");
+            }
             if (zoneId == "undergate" && Dragon != null && !World.Flag("dragon_undergate_intro"))
             {
                 World.SetFlag("dragon_undergate_intro");

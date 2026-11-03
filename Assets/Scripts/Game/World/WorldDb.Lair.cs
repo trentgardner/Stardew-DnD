@@ -18,6 +18,7 @@ namespace DnD.Game
             BuildUndergate();
             BuildIronVaults();
             BuildRoyalCrypts();
+            BuildTheDeep();
         }
 
         /// <summary>The people of the deep shift (called after the capital's people).</summary>
@@ -170,6 +171,35 @@ namespace DnD.Game
             };
             guardian.Members.Add(new EnemySpawn("stone_guardian", 31, 16));
             z.EnemyGroups.Add(guardian);
+            Zones[z.Id] = z;
+        }
+
+        // =================================================================== the Deep
+
+        static void BuildTheDeep()
+        {
+            var crypts = Zones["royal_crypts"];
+            crypts.Warps.Add(new WarpDef(18, 23, "the_deep", 24, 33));
+
+            var z = new ZoneDef
+            {
+                Act = 3,
+                Id = "the_deep", Name = "The Deep", Map = Maps.TheDeep, Dark = true, DefaultSpawn = new Vector2Int(24, 33), Music = "music_deep",
+                BlightWeight = 0f, DragonStays = false,
+                EnterNarration = "The stair opens onto a floor so wide the lamplight doesn't reach the other side. Around its edge, in a ring, lie heads of stone, each as big as a house, their chins on the floor and their eyes shut. Dragons. Twelve of them. Chains as thick as a man run from twelve iron rings across the floor to the far wall, where there is a door. It's grey. You've seen it before. You've all seen it before.",
+            };
+            z.Warps.Add(new WarpDef(23, 35, "royal_crypts", 18, 22));
+            z.Warps.Add(new WarpDef(24, 35, "royal_crypts", 18, 22));
+            z.Lore.Add(new LoreSpotDef { Id = "the_great_ones_below", Pos = new Vector2Int(24, 26), Prompt = "Look around the ring", Sprite = "obj_inscription" });
+            var gaoler = new EnemyGroupDef
+            {
+                Id = "gaoler", Style = EncounterStyle.Talk, TalkSkill = Rules.Skill.Deception, TalkDC = 18, ScareDC = 99, Label = "the Iron Gaoler", Unique = true, SightTiles = 9,
+                ResolvedFlag = "gaoler_resolved",
+                Spotted = "Before the grey door, something moves that you took for part of the wall: a figure of black iron three times your height, chains wound round its arms. Its face is a blank iron plate with one word cut into it. HOLD.",
+                Befriended = "You give the order in the King's own cadence. The Gaoler's head turns, slowly, to the door, and back to you. Then it kneels, the way it must have knelt a thousand times, and is still.",
+            };
+            gaoler.Members.Add(new EnemySpawn("iron_gaoler", 24, 7));
+            z.EnemyGroups.Add(gaoler);
             Zones[z.Id] = z;
         }
 

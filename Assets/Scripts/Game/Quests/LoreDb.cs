@@ -111,6 +111,10 @@ namespace DnD.Game
                 "In the Royal Crypts the dust lies a year thick, except for one clean path. It comes down the cathedral stair, runs past every King's tomb without stopping, and goes on down. One pair of feet, once a year, for a very long time.", 3);
             Add("third_ideal", "The Third Ideal", Pact,
                 "Scratched on the tomb of the last of the Oathbound, in the crypt of the Kings she served: \"" + WorldDb.ThirdIdeal + "\" Nobody knows why she was buried there, or who let her be.", 3);
+            Add("the_great_ones_below", "The Great Ones, Below", Legend,
+                "The Great Ones didn't lie down on top of anything. In the Deep, at the roots of the Wyrmback, they lie in a ring, chins on the floor, facing in: the way you'd sit around a fire, or around someone you meant to keep company.", 3);
+            Add("the_door", "The Door", Legend,
+                "The door from the valley's dream, real, at the bottom of everything: grey, warm, and knocked on from the other side.", 3);
             Add("missing_pages", "Missing Pages", Records,
                 "A parish ledger, swollen with damp, left on the mill's shelf by some long-gone clerk. Births, harvests and tithes, year after year in a careful hand, until the century the legends talk about. Those pages have been cut out, neatly, close to the spine. The record picks up again eighty years later as if nothing had happened.");
         }

@@ -15,6 +15,7 @@
 //          Act II Phase 4: ) cold lantern post (lit by the dragon or a torch)
 //          Act II Phase 6: 9 lava (solid, glowing)
 //          Act III Phase 3: 7 the Victory of the Crown statue (reads Signs)  8 ever-lamp (always lit, warm)
+//          Act III Phase 4: 1 a Great One's stone head (solid, drawn 2x)  2 chain on the floor (walkable)  0 the grey door
 namespace DnD.Game
 {
     public static class Maps
@@ -698,6 +699,46 @@ namespace DnD.Game
             "XXXXXXXXXXXXXXXXX:V:XXXXXXXXXXXXXXXX",
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        };
+
+        public static readonly string[] TheDeep =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXX0XXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXX::2::XXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXX:::222:::XXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXX::::1222221::::XXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXX::l::2222222::l::XXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXX::::::2:22:22:2::::::XXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXX:1:::2:222:222:2:::1:XXXXXXXXXXXXX",
+            "XXXXXXXXXXXXX:::::222:22:22:222:::::XXXXXXXXXXXX",
+            "XXXXXXXXXXXX:::::22:2:22:22:2:22:::::XXXXXXXXXXX",
+            "XXXXXXXXXXX::::::2:2:2:2:2:2:2:2::::::XXXXXXXXXX",
+            "XXXXXXXXXXX:::::2:2::2:2:2:2::2:2:::::XXXXXXXXXX",
+            "XXXXXXXXXXX:1::2::2:2::2:2::2:2::2::1:XXXXXXXXXX",
+            "XXXXXXXXXX::::2::2::2::2:2::2::2::2::::XXXXXXXXX",
+            "XXXXXXXXXX::::::2:::2:2:::2:2:::2::::::XXXXXXXXX",
+            "XXXXXXXXXX::::::2::2::2:::2::2::2::::::XXXXXXXXX",
+            "XXXXXXXXXX:::l:2:::2::2:::2::2:::2:l:::XXXXXXXXX",
+            "XXXXXXXXXX:::::2:::2::2:::2::2:::2:::::XXXXXXXXX",
+            "XXXXXXXXXX::1:2:::2:::2:::2:::2:::2:1::XXXXXXXXX",
+            "XXXXXXXXXX::::::::2:::2:::2:::2::::::::XXXXXXXXX",
+            "XXXXXXXXXXX:::::::2:::2:::2:::2:::::::XXXXXXXXXX",
+            "XXXXXXXXXXX::::::2::::2:::2::::2::::::XXXXXXXXXX",
+            "XXXXXXXXXXX::::::2:::2:::::2:::2::::::XXXXXXXXXX",
+            "XXXXXXXXXXXX:::::::::2:::::2:::::::::XXXXXXXXXXX",
+            "XXXXXXXXXXXXX::1:::::2:::::2:::::1::XXXXXXXXXXXX",
+            "XXXXXXXXXXXXXX:::::::2:::::2:::::::XXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXX:::::::::::::::::::::XXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXX::::1:::::::1::::XXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXX::l:::::::::l::XXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXX:::::::::XXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXX:::XXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXX:::XXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXX:::XXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXX:::XXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXX,,XXXXXXXXXXXXXXXXXXXXXXX",
         };
 
         public static readonly string[] EmberhornThroat =
