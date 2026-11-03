@@ -20,6 +20,20 @@ namespace DnD.Game
             ["elowen"] = DragonFeeling.Trust,    // warm hands, smells of honey cakes
             // Act II: the road and the Academy
             ["juniper"] = DragonFeeling.Trust,   // brings it biscuits, asks before petting
+            // Act III: the capital
+            ["quell"] = DragonFeeling.Fond,      // shares the horses' sugar
+            ["wenna"] = DragonFeeling.Fond,      // lets it sniff the lamps
+            ["gate_guard_0"] = DragonFeeling.Wary,
+            ["gate_guard_1"] = DragonFeeling.Wary,
+            ["mags"] = DragonFeeling.Fond,       // she talks to it like it's one of her own
+            ["crale"] = DragonFeeling.Wary,
+            ["king_aldric"] = DragonFeeling.Distrust, // it won't come in, and it watches the palace door
+            ["marigold"] = DragonFeeling.Fond,   // geraniums
+            ["glass"] = DragonFeeling.Fond,      // he calls it a natural
+            ["marsh_capital"] = DragonFeeling.Wary,
+            ["ashby_capital"] = DragonFeeling.Distrust,
+            ["sorrel_capital"] = DragonFeeling.Fond,
+            ["calloway_capital"] = DragonFeeling.Wary,      // he smells of the deep, and of fear
             ["oakes"] = DragonFeeling.Fond,      // the glasshouse is warm and smells green
             ["varrow"] = DragonFeeling.Wary,     // measuring tapes, and that look
             ["holloway"] = DragonFeeling.Wary,   // the ledger, the counting

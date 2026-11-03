@@ -136,6 +136,20 @@ Eldritch Blast fires two beams at 5 (2024) instead of one bigger one.
 | 13 | rogue 24.1 | monk 22.9, fighter 20.6, barbarian 16.8, ranger 15.7, paladin 13.8 | 22.9 | druid 13.6, sorcerer/wizard 12.4, cleric 10.8, bard 8.4 |
 The paladin's number leaves out Radiant Strikes (+1d8 on every melee hit) and smites; every martial and the warlock stay above half the leader.
 
+## Aurelhold, the capital (Act III Phase 3)
+- **Zones** (all `Act = 3`, `BlightWeight = 0`): `capital` (64x48, `WarmLit`), `roots` (56x40, `WarmLit` + `Shadowed`: a steady warm dimness),
+  `steamhouse`, `throne_room` and `royal_archive` (`DragonStays`, each with its own `DragonStaysText`), `capital_inn` (rest via `RentRoom`).
+- **The carriage**: `GameRoot.RideCarriage(by, zone, pos)` closes every ready player's screens, then warps them all (side by side) a frame later;
+  companions and the dragon follow. The world flag `quell_in_capital` says which end Quell stands at.
+- **Map chars**: `7` the Victory of the Crown statue (reads `Signs`, drawn 2x), `8` an ever-lamp (amber light + amber `ArcaneHalo`, so the flame shows by day).
+- **Engine**: `EnemyGroupDef.NightOnly` (the Roots curfew patrol), `EnemyGroupDef.RequiresFlag` + `GameRoot.SpawnAndFight` (Crale's crew),
+  `EnemyGroupDef.BrawlText`, `NpcDef.GoneFlag` (the four leaders leave their Act II posts for the capital), `WorldState.ClearFlag`.
+- **Quests and XP**: "The Warm City" (`warm_city`: Summoned 1, Arrived 2 = 2000, Audience 3 = 3000, Below 4 = 6000 once any 3 of
+  `clue_lamps`/`clue_records`/`clue_crypt`/`clue_shift` are set; stage 5 is Phase 4's). "The Deep Shift" (`deep_shift`: stage 3 = 4000 and
+  `clue_shift`; stage 4 is Phase 4's). "A Dragon for the Parade" (`dragon_parade`: 3000 XP + the Pageant Sash, +1 to saves).
+- **The secret**: the capital may grow suspicion of the Crown (the King's iron ring, the cut Annals, the warm lamps, the deep shift, the
+  Wyrmwatch's royal charter); nothing in it hints at who is below. `LoreTests.CapitalFilesAreScannedBySecretGuard` keeps both files under the guard.
+
 ## The grown dragon (Act III Phase 2)
 - Stage **Young** (`Dragonling.IsGrown`): AC 17, HP 20 + 8 per party level, Bite 1d10+4 and Claw 1d6+4 at PB + 4, Ember Breath a 30-ft cone of
   ceil(level/2)d6 fire (recharge 5-6). Kindle, Shield Wing, pet/fetch/treats/trust are unchanged. `CanFly` is true, but flight is one finale moment.

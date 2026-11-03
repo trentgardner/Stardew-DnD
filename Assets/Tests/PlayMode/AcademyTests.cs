@@ -136,7 +136,7 @@ namespace DnD.Tests
             g.Warp(p, w.ToZone, w.ToPos, false);
         }
 
-        static bool CanReachBeside(Zone z, Vector2Int from, Vector2Int m)
+        internal static bool CanReachBeside(Zone z, Vector2Int from, Vector2Int m)
         {
             if (z.IsWalkable(m) && (m == from || z.FindPath(from, m, null, 40000).Count > 0)) return true;
             foreach (var d in new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right })
@@ -148,7 +148,7 @@ namespace DnD.Tests
         }
 
         /// <summary>Every secret, lore spot, chest, warp and daytime NPC spot in the zone can be reached from `from`.</summary>
-        static void AssertAllReachable(GameRoot g, Zone z, Vector2Int from)
+        internal static void AssertAllReachable(GameRoot g, Zone z, Vector2Int from)
         {
             foreach (var kv in z.Def.Secrets) Assert.IsTrue(CanReachBeside(z, from, kv.Key), $"{z.Def.Id}: secret {kv.Value.Id} at {kv.Key}");
             foreach (var l in z.Def.Lore) Assert.IsTrue(CanReachBeside(z, from, l.Pos), $"{z.Def.Id}: lore {l.Id} at {l.Pos}");
@@ -625,7 +625,7 @@ namespace DnD.Tests
             yield return At("ashby_tower", 8, 10, "act2_ashby_study");
         }
 
-        static void Shot(string name)
+        internal static void Shot(string name)
         {
             string dir = Path.Combine(Path.GetTempPath(), "embers_screenshots");
             Directory.CreateDirectory(dir);

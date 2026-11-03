@@ -199,3 +199,14 @@ Act I keeps only two light, ominous notes in chests (a miner's scrawl about lamp
 - **The Crown's soldiers:** Crown Knights, Crown Champions, Crown Battlemages; in the vaults, **Stone Guardians** and **Iron Sentinels**.
 - **Spell names changed for tone:** Circle of Death is **Withering Circle**; Finger of Death is **Final Word**.
 - **The summons (Act III begins):** two weeks after the Warden, winter comes early; a letter under a royal seal of red and gold invites "the heroes of the Emberhorn" to the capital. The King himself would be honoured.
+
+## Act III, the capital (names approved in bulk)
+- **Aurelhold**, the capital, in the high valley inside the ring of the Wyrmback: the **Gate of Wings**, the **Great Square** with the
+  **Victory of the Crown** statue and the **Ever-Lamps**, the **Sunstair**, the **Grand Market**, the **Lantern Cathedral** and its sealed crypt,
+  the **Hall of Records** (the Royal Annals), **the Gilded Wyvern** inn. Below: **the Roots**, **the Steamhouse**, **the Foundation Works** and **the Undergate**.
+- **People:** **King Aldric IX** (and the plain iron ring every King wears); **Royal Courier Bertram Quell**; **Wenna Brightwick**, lamplighter
+  (and her sister **Tilly**, down in the Roots); **Hesketh** the baker; **Bandmaster Merriwether**; **Mags Tolley** and her husband **Bran**, on
+  the deep shift; **Foreman Crale**; **Archivist-Royal Delphine Oare**; **Marigold Penn** of the Gilded Wyvern; **Pageant-Master Fennimore Glass**;
+  **Corwin Dray**, apothecary.
+- **The Thousandth Pageant:** a thousand years since the Fall, a month away. The Fae Courts count it as a thousand years since the Pact was broken.
+- **Lore added:** The Victory of the Crown, The Ever-Lamps, The Works Ledger, The King's Ring, The Royal Annals, The Sealed Crypt.

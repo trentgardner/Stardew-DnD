@@ -69,6 +69,8 @@ namespace DnD.Game
         static Sprite _soft;
         SpriteRenderer _sr;
         float _phase;
+        /// <summary>The halo's colour (cyan for the Academy's wards; amber for the capital's ever-lamps).</summary>
+        public Color Tint = new Color(0.55f, 0.85f, 1f);
 
         static Sprite Soft
         {
@@ -90,7 +92,7 @@ namespace DnD.Game
             }
         }
 
-        public static void Attach(GameObject prop, float radius)
+        public static void Attach(GameObject prop, float radius, Color? tint = null)
         {
             var go = new GameObject("halo");
             go.transform.SetParent(prop.transform, false);
@@ -101,7 +103,8 @@ namespace DnD.Game
             sr.sprite = Soft;
             var parent = prop.GetComponent<SpriteRenderer>();
             sr.sortingOrder = parent != null ? parent.sortingOrder - 1 : 0;
-            go.AddComponent<ArcaneHalo>();
+            var h = go.AddComponent<ArcaneHalo>();
+            if (tint.HasValue) h.Tint = tint.Value;
         }
 
         void Start()
@@ -115,7 +118,7 @@ namespace DnD.Game
             if (_sr == null || GameRoot.I == null) return;
             bool night = GameRoot.I.Clock.IsNight;
             float pulse = 0.5f + 0.5f * Mathf.Sin((Time.time / 3f + _phase) * Mathf.PI * 2f);
-            _sr.color = new Color(0.55f, 0.85f, 1f, (night ? 0.45f : 0.16f) + 0.08f * pulse);
+            _sr.color = new Color(Tint.r, Tint.g, Tint.b, (night ? 0.45f : 0.16f) + 0.08f * pulse);
         }
     }
 }

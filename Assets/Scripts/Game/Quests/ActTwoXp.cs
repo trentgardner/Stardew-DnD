@@ -32,7 +32,7 @@ namespace DnD.Game
 
         public static int Available(bool includeSide, int players, bool includeWarden)
         {
-            var zones = WorldDb.Zones.Values.Where(z => z.Act >= 2).ToList();
+            var zones = WorldDb.Zones.Values.Where(z => z.Act == 2).ToList();
             var groups = zones.SelectMany(z => z.EnemyGroups).ToDictionary(g => g.Id);
             int xp = 0;
 
@@ -53,7 +53,7 @@ namespace DnD.Game
                 foreach (var g in WorldDb.Zones.Values.Where(z => z.Act < 2).SelectMany(z => z.EnemyGroups).Where(g => g.MinBlight > 0)) xp += GroupXp(g, players);
 
             // Quests: Answers; one side's scouting (main) or every side's (side); one major (the richest, with its fights).
-            var act2 = QuestDb.All.Values.Where(q => q.Act >= 2 && !q.Id.StartsWith("test_")).ToList();
+            var act2 = QuestDb.All.Values.Where(q => q.Act == 2 && !q.Id.StartsWith("test_")).ToList();
             xp += act2.Where(q => q.Id == Answers.Id).Sum(q => QuestXp(q, includeWarden));
             var scouting = act2.Where(q => q.Faction != null && !q.Major).GroupBy(q => q.Faction).ToDictionary(g => g.Key, g => g.Sum(q => QuestXp(q, true)));
             xp += includeSide ? scouting.Values.Sum() : scouting.Values.DefaultIfEmpty(0).Max();
@@ -62,7 +62,7 @@ namespace DnD.Game
             {
                 xp += act2.Where(q => q.Faction == null && q.Id != Answers.Id).Sum(q => QuestXp(q, true)); // professors, Ash on the Doors
                 foreach (var z in zones) foreach (var s in z.Secrets.Values) if (!s.IsQuestSpot) xp += s.DC * 2;
-                xp += LoreDb.All.Values.Count(l => l.MinAct >= 2) * LoreDb.FindXp;
+                xp += LoreDb.All.Values.Count(l => l.MinAct == 2) * LoreDb.FindXp;
             }
             return xp;
         }

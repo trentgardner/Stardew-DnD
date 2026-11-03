@@ -9,6 +9,15 @@ namespace DnD.Game
     /// <summary>Act II's main quest, "answers".</summary>
     public static class Answers { public const string Id = "answers"; public const int Road = 1, Academy = 2, Tower = 3, Heard = 4, Chosen = 5, Allies = 6, OnTheRoad = 7, Gate = 8, Rest = 9; }
 
+    /// <summary>Act III side quest, "dragon_parade" (the Pageant rehearsal).</summary>
+    public static class DragonParade { public const string Id = "dragon_parade"; public const int Asked = 1, Rehearsal = 2, Done = 3; }
+
+    /// <summary>Act III side quest, "deep_shift" (stage 4, Bran comes home, is Phase 4's).</summary>
+    public static class DeepShift { public const string Id = "deep_shift"; public const int Asked = 1, Crale = 2, Below = 3; }
+
+    /// <summary>Act III's opening quest, "warm_city": the capital (stage 5 is the way down, Phase 4 onward).</summary>
+    public static class WarmCity { public const string Id = "warm_city"; public const int Summoned = 1, Arrived = 2, Audience = 3, Below = 4; }
+
     /// <summary>Stages of the main quest, "fallen_star" (save version 2 numbering).</summary>
     public static class FallenStar { public const int Crater = 1, Trail = 2, Warrens = 3, Egg = 4, Hatched = 5, Done = 6; }
 
@@ -90,6 +99,41 @@ namespace DnD.Game
 
         static QuestDb()
         {
+            Add(new QuestDef
+            {
+                Act = 3, Id = DragonParade.Id, Title = "A Dragon for the Parade", Giver = "glass",
+                Reward = new QuestReward { Xp = 3000, Item = "pageant_sash" },
+                StageText = new[] {
+                    "", "Pageant-Master Fennimore Glass wants your dragon at the Pageant rehearsal, in the Great Square, by daylight.",
+                    "The rehearsal: lead the march, keep the dragon off the scenery, and survive the finale.",
+                    "The rehearsal was a triumph (mostly). Glass is beside himself." },
+            });
+            Add(new QuestDef
+            {
+                Act = 3, Id = DeepShift.Id, Title = "The Deep Shift", Giver = "mags",
+                StageXp = { [DeepShift.Below] = 4000 },
+                StageFlags = { [DeepShift.Below] = "clue_shift" },
+                StageText = new[] {
+                    "", "Mags Tolley's husband Bran works the deep shift at the Foundation Works, in the Roots. His letters come up every week. He never does.",
+                    "Foreman Crale won't talk about the deep shift. The works ledger might.",
+                    "The deep shift goes down through the Undergate and stays down, on the Crown's orders and the Crown's pay. Bran is alive, somewhere below.",
+                    "Bran comes home." },
+            });
+            Add(new QuestDef
+            {
+                Act = 3, Id = WarmCity.Id, Title = "The Warm City", Giver = "quell",
+                StageXp = { [WarmCity.Arrived] = 2000, [WarmCity.Audience] = 3000, [WarmCity.Below] = 6000 },
+                StageText = new[] {
+                    "", "A royal courier is waiting in Thistledown square with the King's own carriage.",
+                    "Aurelhold, the capital, inside the ring of the Wyrmback. Everywhere else went grey. Here, every lamp is lit. The King expects you at the palace.",
+                    "The King was gracious, and asked your dragon to lead the Thousandth Pageant. The city is beautiful. Some of it doesn't add up.",
+                    "Lamps that burn on nothing. Records with holes in them. A crypt nobody admits to using. A shift that never comes up. Everything in Aurelhold points down, to the Undergate in the Roots.",
+                    "Below Aurelhold." },
+                Triggers = {
+                    new QuestTrigger(QuestEvent.ZoneEntered, "capital", WarmCity.Summoned, WarmCity.Arrived),
+                    QuestTrigger.FlagsAtLeast(WarmCity.Audience, WarmCity.Below, 3, "clue_lamps", "clue_records", "clue_crypt", "clue_shift"),
+                },
+            });
             Add(new QuestDef
             {
                 Id = "fallen_star", Title = "The Fallen Star", Giver = "rhoswen",

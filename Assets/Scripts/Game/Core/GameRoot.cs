@@ -585,7 +585,8 @@ namespace DnD.Game
                 if (c.Waiting) continue;
                 if (c.IsDragon && zone.Def.DragonStays)
                 {
-                    p.Hud.Narrate($"{World.DragonName} won't come down the stairs. Every scale is standing on end.");
+                    p.Hud.Narrate(zone.Def.DragonStaysText != null ? zone.Def.DragonStaysText.Replace("{name}", World.DragonName)
+                        : $"{World.DragonName} won't come down the stairs. Every scale is standing on end.");
                     continue;
                 }
                 c.Actor.PlaceAt(zone, pos);
@@ -603,6 +604,11 @@ namespace DnD.Game
             {
                 World.SetFlag("dragon_academy_intro");
                 p.Hud.Narrate($"{World.DragonName} sneezes a puff of sparks at the walls. The wards hum back, and {World.DragonName} doesn't like that one bit.");
+            }
+            if (zoneId == "capital" && Dragon != null && !World.Flag("dragon_capital_intro"))
+            {
+                World.SetFlag("dragon_capital_intro");
+                p.Hud.Narrate($"{World.DragonName} has to duck under the Gate of Wings. A baker drops an entire tray of buns. {World.DragonName}, after some thought, helps.");
             }
             if (zoneId == "town" && Dragon != null && !World.Flag("dragon_town_intro"))
             {
@@ -843,6 +849,14 @@ namespace DnD.Game
             }
         }
 
+        /// <summary>A group a conversation calls in (a foreman's men): it appears in its zone now and the fight starts.</summary>
+        public void SpawnAndFight(string groupId, PlayerSlot instigator)
+        {
+            foreach (var z in Zones.Values)
+                foreach (var grp in z.Def.EnemyGroups)
+                    if (grp.Id == groupId) { SpawnGroupIfNeeded(z, grp); StartGroupCombat(groupId, instigator); return; }
+        }
+
         public void StartGroupCombat(string groupId, PlayerSlot instigator, bool enemiesSurprised = false)
         {
             if (Combats.Any(x => x.GroupId == groupId && !x.Finished)) return; // already fighting this group
@@ -856,7 +870,7 @@ namespace DnD.Game
                 if (p != instigator && Vector2.Distance(p.MapPos, instigator.MapPos) > 12) continue;
                 p.Hud.CloseAll();
                 c.AddUnit(p.Character, p.Avatar, p);
-                if (c.Brawl) { p.Character.Nonlethal = true; p.Hud.Narrate("Pip leaps onto the bar: \"FISTS ONLY! NO MAGIC IN MY BAR! And nobody DIES, or you're ALL banned!\""); continue; } // companions sit this one out
+                if (c.Brawl) { p.Character.Nonlethal = true; p.Hud.Narrate(agents.First(a => a != null).Group.BrawlText ?? "Pip leaps onto the bar: \"FISTS ONLY! NO MAGIC IN MY BAR! And nobody DIES, or you're ALL banned!\""); continue; } // companions sit this one out
                 foreach (var comp in CompanionsOf(p))
                     if (comp.Character != null && !comp.Character.IsDead && comp.Actor.Zone == zone && Vector2.Distance(comp.Actor.MapPos, p.MapPos) <= 12)
                         c.AddUnit(comp.Character, comp.Actor, comp: comp);

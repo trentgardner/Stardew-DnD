@@ -14,6 +14,7 @@
 //                            ! telescope  - desk  < rune floor (walkable)
 //          Act II Phase 4: ) cold lantern post (lit by the dragon or a torch)
 //          Act II Phase 6: 9 lava (solid, glowing)
+//          Act III Phase 3: 7 the Victory of the Crown statue (reads Signs)  8 ever-lamp (always lit, warm)
 namespace DnD.Game
 {
     public static class Maps
@@ -836,6 +837,192 @@ namespace DnD.Game
             "W::+:::::::::+:::W",
             "W::::::::::::::::W",
             "WWWWWWWWDWWWWWWWWW",
+        };
+
+        // Act III Phase 3: Aurelhold, the capital, inside the ring of the Wyrmback. The Gate of Wings at (29-34, 44); the palace door (31-32, 9);
+        // the Roots stair (59-60, 30). Painted by a small script (session scratch), then edited by hand.
+        public static readonly string[] Capital =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWXX",
+            "XXW.............RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.............WXX",
+            "XXW.GGGGGGGGGGG.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.UUUUUUUUUUUUWXX",
+            "XXW.GGGGGGGGGGG.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.UUUUUUUUUUUUWXX",
+            "XXW.GGGGGGGGGGG.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.UUUUUUUUUUUUWXX",
+            "XXW.GGGGGGGGGGG.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.UUUUUUUUUUUUWXX",
+            "XXW.GGGGGGGGGGG.WwWWwWWwWWwWWwWWwWWwWWwWWwWWwWWW.UUUUUUUUUUUUWXX",
+            "XXW.WwWWwWWwWWW.WWWWWWWWWWWWWWWDDWWWWWWWWWWWWWWW.WwWWwWWwWWwWWXX",
+            "XXW.WWWWWDWWWWW.oopooopooopooopooopooopooopooopo.WWWWWDWWWWWWWXX",
+            "XXWooooooooooooo...........8,,,,,,,,8...........oooooooooooooWXX",
+            "XXXf...........f..t.....t...,,,,,,,,....t.....too............XXX",
+            "XXWf.A......t..f.....t.....8,,,,,,,,8......t...oo.t..........WXX",
+            "XXWf..Vq.......f.*********..,,,,,,,,..*********oo..........t.WXX",
+            "XXWf*........*.f...t.......8,,,,,,,,8........t.oo...t........WXX",
+            "XXWfffffff.fffff...poomoomoonooooooooomoomoop..oo............WXX",
+            "XXW................oooooooooooooooooooooooooo..ooRRRRRRRRRRRRWXX",
+            "XXW8.............8.oo**Oooooooo8ooooooooO**oo..ooRRRRRRRRRRRRWXX",
+            "XXW,,,,,,,,,,,,,,,.oo**oooo8ooooooo8ooooo**oo..ooRRRRRRRRRRRRWXX",
+            "XXW,m,,m,,m,,m,,m,.oooooooooooooooooooooooooo..ooRRRRRRRRRRRRWXX",
+            "XXW,,,,,,,,,,,,,x,.ooNooooooopooopooooooooNoo..ooWwWWwWWwWWwWWXX",
+            "XXW,,,,,,,,,,,,,,ooooooooooooooooooooooooooooooooWWWWDWWWWWWWWXX",
+            "XXW,m,,m,,m,,m,,moooooooo8ooooo7oooooqoooooooooooooooooooooooWXX",
+            "XXX,,,,,,,,,,,,,,oooooooooooooooooooooooooooooooo.......a.a..XXX",
+            "XXW,,,,,,,O,,,,,,,.ooNooooooopooopooooooooNoo..oo........N...WXX",
+            "XXW,m,,m,,m,,m,,m,.oooooooooooooooooooooooooo..oo............WXX",
+            "XXW,,x,,,,,,,,,,,,.oo**oooo8ooooooo8ooooo**oo..oo...........tWXX",
+            "XXW,,,,,,,,,,,x,,,.oo**Oooooooo8ooooooooO**oo..oo.8.....8....WXX",
+            "XXW,m,,m,,m,,m,,m,.oooooooooooooooooooooooooo..oooooooooosoooWXX",
+            "XXW,,,,,,,,,,,,,,,.poooooooooNooooNooooooooop..ooooooooooooVVWXX",
+            "XXW8.............8...........oooooo..............ooooooooooooWXX",
+            "XXW..........................oooooo..........................WXX",
+            "XXW.UUUUUUU..RRRRRRR........8oooooo8.........RRRRRRR.........WXX",
+            "XXW.UUUUUUU..RRRRRRR.GGGGGG..oooooo..UUUUUU..RRRRRRR..UUUUUUUWXX",
+            "XXW.UUUUUUU..RRRRRRR.GGGGGG..oooooo..UUUUUU..RRRRRRR..UUUUUUUWXX",
+            "XXX.WwWWwWW..WwWWwWW.GGGGGG.8oooooo8.UUUUUU..WwWWwWW..UUUUUUUXXX",
+            "XXW.WWWDWWW..WWWDWWW.WwWWwW..oooooo..WwWWwW..WWWDWWW..WwWWwWWWXX",
+            "XXW..................WWDWWW..oooooo..WWDWWW...........WWWDWWWWXX",
+            "XXW,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,XX",
+            "XXW.*.*.*.*.*.*.*.*.*.*.*.*..oooooo..*.*.*.*.*.*.*.*.*.*.*.*.WXX",
+            "XXW..t.......t..........t....oooooo.........t..........t.....WXX",
+            "XXW...~~.t.........t........8oooooo8s..t..........t....~~~.t.WXX",
+            "XXW...~~.....................oooooo....................~~~...WXX",
+            "XXWWWWWWWWWWWWWWWWWWWWWWWWWW8oooooo8WWWWWWWWWWWWWWWWWWWWWWWWWWXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXsoooooXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXrrrrrrXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXrrrrrrXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        };
+
+        // Act III Phase 3: the Roots of Aurelhold, the lower city at the mountain's roots. The stair up at (2-3, 5-6);
+        // the Steamhouse door (20, 27); the Undergate (52, 20-21), sealed. Painted by a small script (session scratch).
+        public static readonly string[] Roots =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXX::::RRRRR:UUUUU:RRRRR:::::UUUUU::RRRRR:::::X::::::XX",
+            "XX:::s::WwWwWLWwWwWLWwWwW:::::WwWwWL:WwWwW::::::::::::XX",
+            "XXVV::::WWDWW:WWDWW:WWDWW:::::WWDWW::WWDWW::::::::::::XX",
+            "XXVV::::::::::::::::::::::::::::::::::::::::::::::::::XX",
+            "XXoooooooooooo::::::::::::::::::::::::::::::::::::::::XX",
+            "XXoooooooooooooooooooooooo::::::::::::oooooooooooo::::XX",
+            "XX::ool:::::l:oooooooooooooooooooooooooooooooooooo::::XX",
+            "XXX:oo::::::::::::::::::l:oooooooooooo:::::::oo::::::XXX",
+            "XXX:oo::::L:::::::L:::::::oo::::::::::::::::loo::::::XXX",
+            "XX::oo::::::::::::::::::::ool:RRRRRRR:::L::::oo:::::::XX",
+            "XX::oo::m:::m:::m:::m:::::oo::RRRRRRR:::fffffffffffff:XX",
+            "XX::oo::::::::::::::::::::oo::WwWWwWW:::f::::oo:::::::XX",
+            "XX:roo::::::::::::::::::r:oo::WWWDWWW:::f:xx:ooxRRRR::XX",
+            "XX::oo::m:::m:::m:::m:::::oo:L:::::::L::f:x::oo:WwWW::XX",
+            "XX::oo:::::::::F::::::::::oo::::::::::::f::::oo:WWDW::XX",
+            "XX::oo::::::::::::::::::::oo::::::::::::f::::oo:q:::::XX",
+            "XX::oo::m:::m:::m:::m:::::oo::UUUUUUU:::f::::oo::::iXXXX",
+            "XX::ool:::::::::::::::::::ool:UUUUUUU:::::::loo:::::DXXX",
+            "XX::oo::::::::::::::::::::oo::WwWWwWW::::::::oo:::::DXXX",
+            "XX::oo:ffff:ffff::::::::::oo::WWWDWWWL::f::::oo::::iXXXX",
+            "XX::oo::::::::::GGGGGGGGG:oo::::::::::::f::::oo::::n::XX",
+            "XX:roo:::i:A:i::GGGGGGGGG:oo:e::::::::::f::::oo::::::XXX",
+            "XX::oo::::::::::GGGGGGGGG:oo::::::::::::f::::oo:::x:::XX",
+            "XX::oo::::::::::WwWWwWWwW:oo:::::::r::::f::x:oo::xx:::XX",
+            "XXX:oo::N:::::N:WWWWDWWWW:oo:e::::::::::f::::oo:::::::XX",
+            "XXX:oo::::::::::::::::::::ool:::::::::::fffffffffffff:XX",
+            "XX::ool::::::::e:::::::::eoo:::::::::::::::::oo:::::::XX",
+            "XX::ooooooooooooooooooooooooooooooooooooooooooo:::::::XX",
+            "XX::ooooooooooooooooooooooooooooooooooooooooooo:::::::XX",
+            "XX:::::::::::::::l::::::::oo::::::::l:::::::::::::::::XX",
+            "XX::::::::::::::::::::::::oo::::::::::::::::::::::::::XX",
+            "XX::::::::::r:::::::::::::::::~~~~~~~:r:::::::::r:::::XX",
+            "XX::::::::::::::::::::r::::::j~~~~~~~:::::::::::::::::XX",
+            "XXX::::::::::::::::::::::::::::::::::::::::::::::::::XXX",
+            "XX:X:::::X::::::::::XX:::::::::::X::::::::::X:::::::X:XX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        };
+
+        // Act III Phase 3: the Steamhouse, hot baths fed from below. Door (8, 11).
+        public static readonly string[] Steamhouse =
+        {
+            "WWWWWWWWWWWWWWWWWW",
+            "WwWWwWWwWWwWWwWWwW",
+            "W::e::::::::::e::W",
+            "W::::~~~~~~~~::::W",
+            "W:N::~~~~~~~~::N:W",
+            "W::::~~~~~~~~::::W",
+            "W:N::~~~~~~~~::N:W",
+            "W::::~~~~~~~~::::W",
+            "W::e:::::q::::e::W",
+            "W::::::::::::::::W",
+            "W:x::::::::::::a:W",
+            "WWWWWWWWDWWWWWWWWW",
+        };
+
+        // Act III Phase 3: the palace throne room. Doors (14-15, 21); the thrones at (14-15, 2).
+        public static readonly string[] ThroneRoom =
+        {
+            "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+            "WwWWwWWwWWwWWwWWwWWwWWwWWwWWwW",
+            "W:::::::::::::AA:::::::::::::W",
+            "W:::N::::::8::::::8::::::N:::W",
+            "W:8:::::::__________:::::::8:W",
+            "W:::::P:::__________:::P:::::W",
+            "W::::::::::::____::::::::::::W",
+            "W::::::::::::____::::::::::::W",
+            "W:8:::P::::::____::::::P:::8:W",
+            "W::::::::::::____::::::::::::W",
+            "W::::::::::::____::::::::::::W",
+            "W:::::P::::::____::::::P:::::W",
+            "W:8::::::::::____::::::::::8:W",
+            "W::::::::::::____::::::::::::W",
+            "W:::::P::::::____::::::P:::::W",
+            "W::::::::::::____::::::::::::W",
+            "W:8::::::::::____::::::::::8:W",
+            "W:::::P::::::____::::::P:::::W",
+            "W::::::::::::____::::::::::::W",
+            "W::::::::::::____::::::::::::W",
+            "W:8::::::::::____::::::::::8:W",
+            "WWWWWWWWWWWWWWDDWWWWWWWWWWWWWW",
+        };
+
+        // Act III Phase 3: the Hall of Records. Door (12, 17); the Annals at (3, 14).
+        public static readonly string[] RoyalArchive =
+        {
+            "WWWWWWWWWWWWWWWWWWWWWWWWWW",
+            "WWwWWWwWWWwWWWwWWWwWWWwWWW",
+            "W::::::::::::::::::::::::W",
+            "W:zzzzzzzz::::::zzzzzzzz:W",
+            "W:::::::::::--:::::::::::W",
+            "W::::::::::::::::::::::::W",
+            "W:zzzzzzzz::::::zzzzzzzz:W",
+            "W::::::::::::::::::::::::W",
+            "W:::::::::::--:::::::::::W",
+            "W:zzzzzzzz::::::zzzzzzzz:W",
+            "W::::::::::::::::::::::::W",
+            "W::::::::::::::::::::::::W",
+            "W:zzzzzzzz::--::zzzzzzzz:W",
+            "W::::::::::::::::::::::::W",
+            "W::q:::::::::::::::::::::W",
+            "W:l::::::::::::::::NN::l:W",
+            "W::::::::::::::::::::::::W",
+            "WWWWWWWWWWWWDWWWWWWWWWWWWW",
+        };
+
+        // Act III Phase 3: the Gilded Wyvern. Door (9, 13).
+        public static readonly string[] CapitalInn =
+        {
+            "WWWWWWWWWWWWWWWWWWWW",
+            "WwWWwWWwWWwWWwWWwWWW",
+            "W================F=W",
+            "W=CCCCCCCx=========W",
+            "W==========NaN=NaN=W",
+            "W==================W",
+            "W==================W",
+            "W==================W",
+            "W==========NaN=NaN=W",
+            "W==NaN=============W",
+            "W==================W",
+            "W=B====_____=====x=W",
+            "W==================W",
+            "WWWWWWWWWDWWWWWWWWWW",
         };
     }
 }
