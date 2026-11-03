@@ -183,6 +183,7 @@ namespace DnD.Game
             Settings.NarratorKeyMomentsOnly = d.NarratorKeyOnly;
             Clock.Day = d.Day; Clock.Minutes = d.Minutes;
             SaveSystem.ApplyWorld(d, this);
+            PrepareFinale(); // the finale's street groups, before anything spawns
             BuildWorld();
             InGame = true;
             _pendingPlayers.Clear();
@@ -200,6 +201,7 @@ namespace DnD.Game
             if (World.EggHatched) SpawnDragon(Players.FirstOrDefault(p => p.Index == d.DragonLeader) ?? p1);
             ApplyActCap();
             CheckTheTurn();
+            CheckTheFinale();
             p1.Hud.Narrate($"Welcome back. {Clock.Weekday}, day {Clock.Day}." + (_pendingPlayers.Count > 0 ? " Player 2: press Start (or Enter) to rejoin!" : ""));
         }
 
@@ -803,6 +805,7 @@ namespace DnD.Game
             Quests.Notify(QuestEvent.GroupResolved, groupId);
             var def = Zones.Values.SelectMany(z => z.Def.EnemyGroups).FirstOrDefault(g => g.Id == groupId);
             if (def?.ResolvedFlag != null) World.SetFlag(def.ResolvedFlag);
+            OnFinaleGroupResolved(groupId);
         }
 
         /// <summary>Paid off: the group lets you be (no XP, they're still there, and you can still deal with them later).</summary>
@@ -971,6 +974,7 @@ namespace DnD.Game
                 foreach (var a in agents) if (a) Destroy(a.gameObject);
                 _groups.Remove(c.GroupId);
             }
+            if (FinaleWipe(c, fallen)) yield break; // Act III: the fight for the city waits for you
             // A real party wipe costs everyone a day. If a partner is still up and about elsewhere,
             // the fallen are simply carried to the temple and the world keeps its time.
             if (everyone) Clock.SleepUntil(8);

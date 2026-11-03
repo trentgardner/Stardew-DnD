@@ -227,5 +227,221 @@ namespace DnD.Tests
             }
             finally { WorldDb.Zones[Arena].EnemyGroups.RemoveAll(e => e.Id == Finale.Prefix + "test"); }
         }
+
+        // ================================================================== Task 4: the streets
+
+        static System.Collections.Generic.List<string> Ids(System.Collections.Generic.List<EnemySpawn> m) => m.Select(x => x.MonsterId).ToList();
+
+        [Test]
+        public void StreetMembersFollowTheTable()
+        {
+            var endFire = FinaleDb.StreetMembers(1, Turn.End, Chosen(Turn.End, "fae_clause"));
+            CollectionAssert.AreEqual(new[] { "cinder_hound", "cinder_hound" }, Ids(endFire), "End, the Fae held back: only the fire comes up");
+            CollectionAssert.Contains(Ids(FinaleDb.StreetMembers(1, Turn.End, Chosen(Turn.End))), "fae_knight", "the Fae stand against ending her");
+            var sealMarsh = Ids(FinaleDb.StreetMembers(1, Turn.Seal, Chosen(Turn.Seal, "banner_crown")));
+            Assert.AreEqual(1, sealMarsh.Count(i => i == "crown_knight"), "Marsh took half the guard with her");
+            Assert.IsFalse(sealMarsh.Contains("fae_knight"), "the Fae stand aside for the seal");
+            foreach (var e in Turn.Endings)
+                for (int n = 1; n <= Finale.Stages; n++)
+                {
+                    var m = FinaleDb.StreetMembers(n, e, Chosen(e));
+                    Assert.That(m.Count, Is.InRange(1, 6), $"{e} stage {n}: 1-6 foes");
+                    Assert.AreEqual(m.Count, m.Select(x => x.Pos).Distinct().Count(), $"{e} stage {n}: one per tile");
+                }
+        }
+
+        [UnityTest]
+        public IEnumerator StreetSpotsAreReachable()
+        {
+            var g = GameRoot.I;
+            var p = CapitalTests.ActThree(g, 5);
+            yield return Frames(2);
+            var z = g.Zones["capital"];
+            for (int n = 1; n <= Finale.Stages; n++)
+            {
+                foreach (var e in Turn.Endings)
+                    foreach (var m in FinaleDb.StreetMembers(n, e, Chosen(e)))
+                        Assert.IsTrue(z.IsWalkable(m.Pos), $"{e} stage {n}: {m.MonsterId} at {m.Pos} stands on open ground");
+                foreach (var spot in new[] { FinaleDb.StreetSpot(n), FinaleDb.RetrySpot(n) })
+                {
+                    Assert.IsTrue(z.IsWalkable(spot), $"stage {n}: {spot} is walkable");
+                    Assert.Greater(z.FindPath(WorldDb.SunstairSpot, spot, null, 40000).Count, 0, $"stage {n}: {spot} is reachable from the Sunstair");
+                }
+            }
+            Assert.IsTrue(z.IsWalkable(FinaleDb.DragonWaitSpot));
+        }
+
+        /// <summary>Met her, questioned, standing at the foot of the Sunstair: ready to choose.</summary>
+        static IEnumerator ToTheChoice(GameRoot g, PlayerSlot p, params string[] flags)
+        {
+            g.Quests.Set(WarmCity.Id, WarmCity.Called, p, 0f);
+            foreach (var f in new[] { WorldDb.MetHer, "meeting_seen", Turn.Questioning, Turn.BeatsSeen }.Concat(flags)) g.World.SetFlag(f);
+            g.Warp(p, "capital", WorldDb.SunstairSpot, false);
+            yield return Frames(3);
+            p.Hud.CloseAll();
+        }
+
+        /// <summary>Closes beats (untitled break beats and titled stage intros) until none is left.</summary>
+        static IEnumerator CloseBeats(PlayerSlot p, System.Collections.Generic.List<MessageScreen> seen = null)
+        {
+            for (int i = 0; i < 12; i++)
+            {
+                yield return Frames(4);
+                var b = Beat(p);
+                if (b == null) { yield return Frames(4); if (Beat(p) == null) yield break; continue; }
+                seen?.Add(b);
+                b.Close();
+            }
+        }
+
+        static bool Spawned(string groupId) => Object.FindObjectsByType<EnemyAgent>(FindObjectsSortMode.None).Any(a => a.Group.Id == groupId && !a.Monster.IsDown);
+
+        /// <summary>Fights stage n and wins it at once.</summary>
+        static IEnumerator WinStreet(GameRoot g, PlayerSlot p, int n)
+        {
+            p.Hud.CloseAll();
+            g.StartGroupCombat(Finale.StreetGroup(n), p);
+            yield return Frames(2);
+            var c = g.Combats.Single(x => x.GroupId == Finale.StreetGroup(n));
+            foreach (var u in c.Units) if (u.Cb == null) u.Cb = new Combatant(u.C);
+            foreach (var f in c.Units.Where(u => u.C.Team == Team.Enemies).ToList()) c.DebugDamage(f, 9999);
+            c.DebugEndCheck();
+            yield return Frames(4);
+        }
+
+        [UnityTest]
+        public IEnumerator StreetsRunInOrder()
+        {
+            var g = GameRoot.I;
+            var p = CapitalTests.ActThree(g, 6, side: "academy");
+            yield return Frames(2);
+            yield return ToTheChoice(g, p);
+            g.ChooseEnding(p, Turn.Seal);
+            var seen = new System.Collections.Generic.List<MessageScreen>();
+            yield return CloseBeats(p, seen);
+            Assert.IsFalse(seen.Any(b => b.Title == "To Be Continued"), "no placeholder after the break any more");
+            Assert.IsTrue(seen.Any(b => b.Title == FinaleDb.StreetTitle(1)), "the first stage's intro played");
+            Assert.AreEqual(WarmCity.Streets, g.Quests.Stage(WarmCity.Id));
+            Assert.IsTrue(g.World.Flag(Finale.Started));
+            Assert.IsTrue(Spawned(Finale.StreetGroup(1)), "stage 1 is waiting in the square");
+            Assert.IsFalse(Spawned(Finale.StreetGroup(2)) || Spawned(Finale.StreetGroup(3)), "and only stage 1");
+            for (int n = 1; n <= Finale.Stages; n++)
+            {
+                Assert.AreEqual(n, Finale.CurrentStreet(g.World));
+                yield return WinStreet(g, p, n);
+                seen.Clear();
+                yield return CloseBeats(p, seen);
+                Assert.IsTrue(g.World.Flag(Finale.StreetDone(n)), $"stage {n} done");
+                if (n < Finale.Stages)
+                {
+                    Assert.IsTrue(Spawned(Finale.StreetGroup(n + 1)), $"stage {n + 1} opens");
+                    Assert.IsTrue(seen.Any(b => b.Title == FinaleDb.StreetTitle(n + 1)), $"stage {n + 1}'s intro played");
+                }
+            }
+            Assert.AreEqual(Finale.Stages + 1, Finale.CurrentStreet(g.World));
+            Assert.GreaterOrEqual(g.Quests.Stage(WarmCity.Id), WarmCity.Flight, "the streets are won: up into the air");
+        }
+
+        [UnityTest]
+        public IEnumerator EndPathDragonStaysOut()
+        {
+            var g = GameRoot.I;
+            var p = CapitalTests.ActThree(g, 7, side: "hunters");
+            yield return Frames(2);
+            yield return ToTheChoice(g, p);
+            g.ChooseEnding(p, Turn.End);
+            yield return CloseBeats(p);
+            Assert.IsTrue(g.World.Flag(Finale.DragonWaits));
+            Assert.LessOrEqual(Vector2.Distance(g.DragonAgent.Actor.MapPos, FinaleDb.DragonWaitSpot), 1.5f, "it lies across the top of the stair down");
+            p.Hud.CloseAll();
+            g.StartGroupCombat(Finale.StreetGroup(1), p);
+            yield return Frames(2);
+            Assert.IsFalse(g.Combats.Single().Units.Any(u => u.C is Dragonling), "it won't fight for this");
+        }
+
+        [UnityTest]
+        public IEnumerator FinaleWipeRetriesInTheCapital()
+        {
+            var g = GameRoot.I;
+            var p = CapitalTests.ActThree(g, 8, side: "academy");
+            yield return Frames(2);
+            yield return ToTheChoice(g, p);
+            g.ChooseEnding(p, Turn.Seal);
+            yield return CloseBeats(p);
+            yield return WinStreet(g, p, 1);
+            yield return CloseBeats(p);
+            int day = g.Clock.Day, copper = p.Character.Copper;
+            g.StartGroupCombat(Finale.StreetGroup(2), p);
+            yield return Frames(2);
+            var c = g.Combats.Single();
+            foreach (var u in c.Units) if (u.Cb == null) u.Cb = new Combatant(u.C);
+            foreach (var u in c.Units.Where(u => u.C.Team == Team.Players && !u.Ally)) u.C.HP = 0;
+            c.DebugEndCheck();
+            yield return new WaitForSecondsRealtime(2.5f);
+            yield return Frames(3);
+            Assert.AreEqual("capital", p.Zone.Def.Id, "never the Thistledown temple");
+            Assert.LessOrEqual(Vector2.Distance(p.MapPos, FinaleDb.RetrySpot(2)), 2f, "behind the barricade before the next fight");
+            Assert.AreEqual(day, g.Clock.Day, "no day lost");
+            Assert.AreEqual(copper, p.Character.Copper, "no temple fee");
+            Assert.Greater(p.Character.HP, 0);
+            Assert.IsTrue(Spawned(Finale.StreetGroup(2)), "stage 2 is waiting again");
+        }
+
+        [UnityTest]
+        public IEnumerator FinaleResumesAfterLoadAtEveryStage()
+        {
+            var g = GameRoot.I;
+            var p = CapitalTests.ActThree(g, 9, side: "academy");
+            yield return Frames(2);
+            yield return ToTheChoice(g, p);
+            // (a) Saved by the choice itself, before the break's beats were seen: they replay, then stage 1 opens.
+            g.ChooseEnding(p, Turn.Seal);
+            yield return Frames(2);
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(5);
+            p = g.Players.First();
+            var seen = new System.Collections.Generic.List<MessageScreen>();
+            yield return CloseBeats(p, seen);
+            Assert.GreaterOrEqual(seen.Count, 3, "the break replays");
+            Assert.IsTrue(g.World.Flag(Finale.StreetOpen(1)));
+            Assert.IsTrue(Spawned(Finale.StreetGroup(1)));
+            // (b) After stage 1: stage 2 is open, stage 1 doesn't come back.
+            yield return WinStreet(g, p, 1);
+            yield return CloseBeats(p);
+            path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(5);
+            p = g.Players.First();
+            yield return CloseBeats(p);
+            Assert.IsFalse(Spawned(Finale.StreetGroup(1)), "stage 1 stays won");
+            Assert.IsTrue(Spawned(Finale.StreetGroup(2)), "stage 2 is waiting");
+            Assert.AreEqual(2, Finale.CurrentStreet(g.World));
+            // (c) After stage 3: the streets stay won.
+            yield return WinStreet(g, p, 2);
+            yield return CloseBeats(p);
+            yield return WinStreet(g, p, 3);
+            yield return CloseBeats(p);
+            path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(5);
+            p = g.Players.First();
+            Assert.AreEqual(Finale.Stages + 1, Finale.CurrentStreet(g.World));
+            Assert.GreaterOrEqual(g.Quests.Stage(WarmCity.Id), WarmCity.Flight);
+            Assert.IsFalse(Spawned(Finale.StreetGroup(3)));
+        }
+
+        [Test]
+        public void FinaleFilesAreGated()
+        {
+            var root = Application.dataPath;
+            foreach (var name in new[] { "FinaleDb.AfterTheDoor.cs", "GameRoot.Finale.AfterTheDoor.cs", "WorldDb.Finale.AfterTheDoor.cs", "MonstersDb.Finale.AfterTheDoor.cs" })
+            {
+                var files = Directory.GetFiles(root, name, SearchOption.AllDirectories);
+                Assert.AreEqual(1, files.Length, name + " exists");
+                StringAssert.Contains("MetHer", File.ReadAllText(files[0]), name + " is gated on meeting her");
+                Assert.IsFalse(LoreTests.GuardScans(name));
+            }
+        }
     }
 }

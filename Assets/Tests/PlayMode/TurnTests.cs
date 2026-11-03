@@ -528,7 +528,7 @@ namespace DnD.Tests
             for (int i = 0; i < 8; i++)
             {
                 var b = Beat(p);
-                if (b != null && b.Title == "To Be Continued") break;
+                if (b != null && b.Title != "") break; // the break is over: the first street stage (titled) begins
                 if (b != null) { seen.Add(b.Body); b.Close(); }
                 yield return Frames(4);
             }
@@ -659,7 +659,7 @@ namespace DnD.Tests
             StringAssert.Contains("rolls up his sleeves", seen[1]);
             StringAssert.Contains("\"Guards.\"", seen[1]);
             StringAssert.Contains("Your funeral", seen[1]);
-            Assert.AreEqual("To Be Continued", Beat(p)?.Title, "Phase 6 picks up here");
+            Assert.AreEqual(FinaleDb.StreetTitle(1), Beat(p)?.Title, "Phase 6 picks up here: the fight in the Great Square");
             Assert.IsTrue(GameRoot.BreakBeats(Turn.Seal, W(Turn.Swayed("crown")))[1].Contains("unpins the royal badge"));
         }
 
@@ -735,7 +735,7 @@ namespace DnD.Tests
             g.LoadGame(path);
             yield return Frames(6);
             p = g.Players[0];
-            Assert.AreEqual(WarmCity.Break, g.Quests.Stage(WarmCity.Id));
+            Assert.AreEqual(WarmCity.Streets, g.Quests.Stage(WarmCity.Id), "after the break, the fight through the streets (Phase 6)");
             Assert.AreEqual(Turn.Save, Turn.Ending(g.World));
             Assert.GreaterOrEqual(p.Character.XP, PlayerCharacter.XpThresholds[13], "level 13 at the turn");
             for (int h = 0; h < 24; h++) foreach (var id in Speakers) Assert.IsNull(WorldDb.Current(WorldDb.Npcs[id], h, 0, g.World));

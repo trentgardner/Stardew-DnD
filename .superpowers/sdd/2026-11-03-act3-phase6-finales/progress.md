@@ -29,3 +29,12 @@ Task 2: complete (commits 9b2d189..74d547d, tests: unity-test.sh FinaleTests;Vol
 - Task 3: Ruling: Marsh's Household Guard is listed first (before the With forces) so it survives the 3-ally cap — she is the spec's named defector — cost if wrong: one fewer force soldier in a 4-way-With save run.
 - Task 3: Ruling: RED for the Task 3 tests was a compile failure (FinaleDb/FinaleAlly/Unit.Ally absent) — not run separately; the first real run failed on a test-baseline bug (zone-discovery XP), fixed in the test.
 Task 3: complete (commits 74d547d..HEAD, tests: unity-test.sh FinaleTests;ActThreeFightTests → 7/7 pass)
+
+## Task 4
+- Task 4: Ruling: stage 2 is "the Wyvern Yard" at (52,25) (outside the Gilded Wyvern), not the Grand Market — the market stalls are on the west side, but the route runs east from the square to the Roots stair (59-60,30) — cost if wrong: a name.
+- Task 4: Ruling: StreetMembersFollowTheTable uses End + fae_clause for "only the fire" — the base table puts the Fae Against on End, so End with no hooks also has a fae_knight (plan's test text was wrong) — cost if wrong: none.
+- Task 4: Ruling: the dragon's End-path refusal uses CompanionAgent.Waiting (already excluded from fights and warps) plus StaysPut at FinaleDb.DragonWaitSpot (58,29); AddDragonTo unchanged — cost if wrong: none.
+- Task 4: Ruling: PlayBeats gains an optional title; stage intros are titled screens, which is how TurnTests' PlayBreak now knows the break is over. TurnGoldenPath line 738 now expects Streets after the break.
+- Task 4: Ruling: TheBreak made internal so CheckTheFinale can replay it after a load (fixes Phase 5's deferred "load during the break's beats").
+- Task 4: tests: FinaleTests+TurnTests 38/39 then TurnTests fix → Turn+Lore+Quest 70/70 (FinaleTests all green in the first run; RED was compile).
+Task 4: complete (commits 8fe4e79..HEAD, tests: FinaleTests;TurnTests;LoreTests;QuestTests → green)
