@@ -197,7 +197,7 @@ namespace DnD.Tests
 
         // ============================================================ Task 3: the Emberhorn
 
-        static PlayerSlot AtTheGate(GameRoot g, PlayerSlot p, string side)
+        internal static PlayerSlot AtTheGate(GameRoot g, PlayerSlot p, string side)
         {
             g.ApplyActTwoStart(p);
             p.Hud.CloseAll();
@@ -359,7 +359,7 @@ namespace DnD.Tests
             Assert.IsFalse(g.World.PacifiedGroups.Contains("warden"), "no peaceful way past it");
         }
 
-        static DOption Opt(DNode n, string startsWith) => n.Options.First(o => o.Text.StartsWith(startsWith));
+        internal static DOption Opt(DNode n, string startsWith) => n.Options.First(o => o.Text.StartsWith(startsWith));
 
         [UnityTest]
         public IEnumerator InsightOnlyWithTheBestiary()

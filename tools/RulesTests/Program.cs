@@ -23,51 +23,59 @@ namespace RulesTests
             else { _failed++; Console.WriteLine($"FAIL: {name} (expected {expected}, got {actual})"); }
         }
 
+        /// <summary>Runs one test group, then puts the shared state back (level cap, dice), even if the group throws.</summary>
+        static void Run(Action group)
+        {
+            try { group(); }
+            catch (Exception e) { _failed++; Console.WriteLine($"FAIL: {group.Method.Name} threw {e.GetType().Name}: {e.Message}"); }
+            finally { PlayerCharacter.LevelCap = PlayerCharacter.ActOneLevelCap; Dice.Rng = new SystemRandom(); }
+        }
+
         public static int Main()
         {
-            DiceTests();
-            AbilityTests();
-            CharacterTests();
-            CheckTests();
-            AttackTests();
-            DeathSaveTests();
-            InventoryTests();
-            ItemTests();
-            SpellTests();
-            EncounterTests();
-            ContentTests();
-            LevelUpTests();
-            LevelTenTests();
-            LevelThirteenTests();
-            SpellTests7();
-            CasterTests13();
-            MonsterTests13();
-            GrownDragonTests();
-            FinaleBossTests();
-            SpellTests5();
-            MonsterTests();
-            MartialTests10();
-            HolyMartialTests10();
-            NatureCasterTests10();
-            ArcaneTests10();
-            ReviewFixTests();
-            WyrmlingTests();
-            RogueTests();
-            BarbarianTests();
-            MonkTests();
-            PaladinTests();
-            RangerTests();
-            DruidTests();
-            WarlockTests();
-            SorcererTests();
-            KnockoutTests();
-            DragonTests();
-            BalanceTests();
-            BossTests();
-            ThirdIdealTests();
-            WeaponSetTests();
-            HotbarMoveTests();
-
+            Run(DiceTests);
+            Run(AbilityTests);
+            Run(CharacterTests);
+            Run(CheckTests);
+            Run(AttackTests);
+            Run(DeathSaveTests);
+            Run(InventoryTests);
+            Run(ItemTests);
+            Run(SpellTests);
+            Run(EncounterTests);
+            Run(ContentTests);
+            Run(LevelUpTests);
+            Run(LevelTenTests);
+            Run(LevelThirteenTests);
+            Run(SpellTests7);
+            Run(CasterTests13);
+            Run(MonsterTests13);
+            Run(GrownDragonTests);
+            Run(FinaleBossTests);
+            Run(KnownBugTests);
+            Run(SpellTests5);
+            Run(MonsterTests);
+            Run(MartialTests10);
+            Run(HolyMartialTests10);
+            Run(NatureCasterTests10);
+            Run(ArcaneTests10);
+            Run(ReviewFixTests);
+            Run(WyrmlingTests);
+            Run(RogueTests);
+            Run(BarbarianTests);
+            Run(MonkTests);
+            Run(PaladinTests);
+            Run(RangerTests);
+            Run(DruidTests);
+            Run(WarlockTests);
+            Run(SorcererTests);
+            Run(KnockoutTests);
+            Run(DragonTests);
+            Run(BalanceTests);
+            Run(BossTests);
+            Run(ThirdIdealTests);
+            Run(WeaponSetTests);
+            Run(HotbarMoveTests);
             Console.WriteLine($"\n{_passed} passed, {_failed} failed");
             return _failed == 0 ? 0 : 1;
         }

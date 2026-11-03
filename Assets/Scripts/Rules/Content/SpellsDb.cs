@@ -144,7 +144,7 @@ namespace DnD.Rules.Content
                 Description = "A humanoid makes a WIS save or is Paralyzed. It repeats the save at the end of each of its turns." }, W, C, B, D, S, K);
             Add(new SpellDef { Id = "shatter", Name = "Shatter", Level = 2, School = "Evocation", RangeFt = 60, Shape = TargetShape.Sphere, AreaFt = 10, MaxTargets = 99, Kind = SpellKind.Save, SaveAbility = Ability.CON, HalfOnSave = true, Dice = DiceExpr.Parse("3d8"), UpcastDice = 1, DamageType = DamageType.Thunder,
                 Description = "A painfully loud ringing in a 10-ft radius. CON save, 3d8 thunder (half on a success)." }, W, B, S);
-            Add(new SpellDef { Id = "spiritual_weapon", Name = "Spiritual Weapon", Level = 2, School = "Evocation", CastTime = CastTime.BonusAction, RangeFt = 60, Kind = SpellKind.Attack, Dice = DiceExpr.Parse("1d8"), AddSpellMod = true, DamageType = DamageType.Force, Concentration = true, EffectId = "spiritual_weapon",
+            Add(new SpellDef { Id = "spiritual_weapon", Name = "Spiritual Weapon", Level = 2, School = "Evocation", CastTime = CastTime.BonusAction, RangeFt = 60, Kind = SpellKind.Attack, Dice = DiceExpr.Parse("1d8"), AddSpellMod = true, DamageType = DamageType.Force, Concentration = true, EffectId = "spiritual_weapon", UpcastDice = 1,
                 Description = "Bonus Action: a floating spectral weapon makes a melee spell attack for 1d8 + modifier force. Concentration." }, C);
             Add(new SpellDef { Id = "aid", Name = "Aid", Level = 2, School = "Abjuration", RangeFt = 30, MaxTargets = 3, Kind = SpellKind.Buff, EffectId = "aid",
                 Description = "Up to 3 allies gain +5 max HP and current HP for 8 hours." }, C, B, P, R);

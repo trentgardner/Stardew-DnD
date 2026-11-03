@@ -144,7 +144,8 @@ namespace DnD.Game
             var sp = UIKit.Rect(Root, "Speaker", new Vector2(0, 1), new Vector2(1, 1), new Vector2(10, -22), new Vector2(-10, -4));
             _speaker = UIKit.Label(sp, "", 13, UIKit.Ink, TextAnchor.MiddleLeft);
             _speaker.fontStyle = FontStyle.Bold;
-            _hearts = UIKit.Label(sp, "", 11, UIKit.Bad, TextAnchor.MiddleRight);
+            var hr = UIKit.Rect(Root, "Hearts", new Vector2(0, 1), new Vector2(1, 1), new Vector2(10, -22), new Vector2(-56, -4)); // clear of the ✕
+            _hearts = UIKit.Label(hr, "", 11, UIKit.Bad, TextAnchor.MiddleRight);
             var narr = UIKit.Rect(Root, "Narr", new Vector2(0, 1), new Vector2(1, 1), new Vector2(10, -56), new Vector2(-10, -22));
             _narr = UIKit.Label(narr, "", 10, new Color32(110, 80, 60, 255), TextAnchor.UpperLeft);
             _narr.fontStyle = FontStyle.Italic;

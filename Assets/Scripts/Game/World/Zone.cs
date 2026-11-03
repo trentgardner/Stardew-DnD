@@ -232,7 +232,11 @@ namespace DnD.Game
                 case 'q':
                     Ground(m, c == 'O' ? "tile_cobbles" : c == 'Y' ? "tile_mushrooms" : floor); Solid(m);
                     if (Def.Secrets.TryGetValue(m, out var secret))
-                        Prop(m, secret.Sprite, c == 'Y').AddComponent<SecretInteractable>().Def = secret;
+                    {
+                        var sp = Prop(m, secret.Sprite, c == 'Y');
+                        sp.AddComponent<SecretInteractable>().Def = secret;
+                        if (secret.Sprite == "obj_ever_lamp") EverLamp(sp); // it glows like the others
+                    }
                     else Debug.LogWarning($"{Def.Id}: no SecretDef at {m}");
                     break;
                 case 'X': Wall(m, Def.Dark ? "tile_cave_wall" : "tile_cliff"); break; // rock in the mine, green cliffs outdoors

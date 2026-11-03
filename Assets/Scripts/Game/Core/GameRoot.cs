@@ -371,6 +371,7 @@ namespace DnD.Game
             if (saved != null) { slot.Avatar.TorchMinutes = saved.Torch; slot.Avatar.LightSpellMinutes = saved.LightSpell; }
             _lastLongRest[slot.Index] = NowAbs;
             SnapCamera(slot);
+            OnPlayerJoinedMidScene(slot);
         }
 
         void SnapCamera(PlayerSlot p)
@@ -500,6 +501,17 @@ namespace DnD.Game
 
         // ================================================================== time-of-day events
 
+        /// <summary>Dusk and dawn: night-only groups come out (or go home) where the players are, without leaving and coming back.</summary>
+        void RefreshTimedGroups()
+        {
+            foreach (var z in Players.Where(p => p.IsReady && p.Zone != null).Select(p => p.Zone).Distinct().ToList())
+                foreach (var grp in z.Def.EnemyGroups.Where(x => x.NightOnly).ToList())
+                    if (!Combats.Any(c => c.GroupId == grp.Id && !c.Finished)) SpawnGroupIfNeeded(z, grp);
+        }
+
+        /// <summary>Tests: run the hourly tick for this hour now.</summary>
+        public void DebugHour(int hour) => OnHourChanged(hour);
+
         void OnHourChanged(int hour)
         {
             if (hour == 20 && !World.Flag("first_nightfall"))
@@ -510,6 +522,7 @@ namespace DnD.Game
             }
             FestivalTick();
             foreach (var n in _npcs) n.UpdateSchedule(false);
+            if (hour == 20 || hour == 6) RefreshTimedGroups();
             StoryTick();
             if (hour == 0) RefreshRecruits();
             if (hour == 2)
@@ -753,12 +766,18 @@ namespace DnD.Game
 
         /// <summary>Story hooks for a group being dealt with, whichever way it went (fight, talk, scare).</summary>
         /// <summary>Your side's last help at the Heart, applied when the Warden fight begins (Perrin's ward, Odo's mark).</summary>
+        /// <summary>Ashby's fire ward on everyone on the party's side in the Warden fight (safe to call again for late joiners).</summary>
+        public void ApplyWardenWard(CombatInstance c)
+        {
+            if (c.GroupId != WardenGroup || !World.Flag(DialogueDb.WardActiveFlag)) return;
+            foreach (var u in c.Units.Where(u => u.C.Team == Team.Players && !(u.C is Dragonling)))
+                if (u.C.Resistances.Add(DamageType.Fire)) c.WardResisted.Add(u.C);
+        }
+
         void ApplyWardenBoons(CombatInstance c)
         {
             if (c.GroupId != WardenGroup) return;
-            if (World.Flag(DialogueDb.WardActiveFlag))
-                foreach (var u in c.Units.Where(u => u.C.Team == Team.Players && !(u.C is Dragonling)))
-                    if (u.C.Resistances.Add(DamageType.Fire)) c.WardResisted.Add(u.C);
+            ApplyWardenWard(c);
             if (World.Flag(DialogueDb.WardenMarkedFlag))
                 foreach (var u in c.Units.Where(u => u.C is Monster m && m.Def.Id == "warden"))
                 {

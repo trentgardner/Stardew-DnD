@@ -148,6 +148,21 @@ namespace DnD.Rules
         }
 
         /// <summary>Rolls damage for a hit. Called when the player clicks "Roll Damage".</summary>
+        /// <summary>
+        /// Savage Attacker: reroll the weapon's own damage dice and keep the better set. Only the weapon dice (the first ones in the
+        /// roll) are rerolled, so once-per-turn riders (Sneak Attack, Hunter's Prey, Kindle...) are never spent twice. True if kept.
+        /// </summary>
+        public static bool SavageReroll(DamageRoll roll, AttackRollResult r)
+        {
+            if (roll == null || r?.Attack == null || r.Attack.Damage.IsNone) return false;
+            var fresh = Dice.RollDamage(r.Attack.Damage, r.Critical, null, r.Attack.MinDieValue);
+            int n = Math.Min(fresh.Dice.Count, roll.Dice.Count);
+            int Sum(List<DieRoll> d) { int t = 0; for (int i = 0; i < n; i++) if (!d[i].Discarded) t += d[i].Value; return t; }
+            if (Sum(fresh.Dice) <= Sum(roll.Dice)) return false;
+            for (int i = 0; i < n; i++) roll.Dice[i] = fresh.Dice[i];
+            return true;
+        }
+
         public static DamageRoll RollDamage(AttackRollResult r)
         {
             var atk = r.Attack;
@@ -348,7 +363,13 @@ namespace DnD.Rules
         }
 
         /// <summary>How many separate attacks a spell makes (Eldritch Blast: one beam per cantrip tier, 2 at level 5).</summary>
-        public static int Projectiles(PlayerCharacter caster, SpellDef s) => s.Id == "eldritch_blast" ? caster.CantripDiceMultiplier : s.Projectiles;
+        public static int Projectiles(PlayerCharacter caster, SpellDef s, int slotLevel = 0) =>
+            s.Id == "eldritch_blast" ? caster.CantripDiceMultiplier
+            : s.Id == "scorching_ray" && slotLevel > s.Level ? s.Projectiles + (slotLevel - s.Level) // one more ray per slot level above 2nd
+            : s.Projectiles;
+
+        /// <summary>Aid: +5 max and current HP at 2nd level, +5 more per slot level above it.</summary>
+        public static int AidBonus(int slotLevel) => 5 * Math.Max(1, slotLevel - 1);
 
         /// <summary>The dice a spell rolls at the given slot level (cantrip scaling, upcasting).</summary>
         public static DiceExpr EffectDice(PlayerCharacter caster, SpellDef s, int slotLevel)
@@ -488,6 +509,16 @@ namespace DnD.Rules
         public bool ActionUsed, BonusActionUsed, ReactionUsed;
         public int MovementLeftFt;
         public int AttacksLeftInAction;
+
+        /// <summary>
+        /// Takes the Attack action: it's spent, and this action's other attacks are added to any left over from an earlier one
+        /// this turn (Action Surge between swings keeps the rest of the first action's attacks).
+        /// </summary>
+        public void StartAttackAction(int attacksPerAction)
+        {
+            ActionUsed = true;
+            AttacksLeftInAction += System.Math.Max(0, attacksPerAction - 1);
+        }
         public bool Dashed, Disengaged;
         public bool CastLeveledSpellThisTurn;
         public bool CleaveUsed;

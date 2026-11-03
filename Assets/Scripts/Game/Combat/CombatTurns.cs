@@ -23,6 +23,7 @@ namespace DnD.Game
         public int AreaTiles;          // sphere radius / cone length in tiles (0 = single target)
         public bool AreaFromSelf;      // cones & cubes originate at the caster
         public bool AreaLine;          // a 5-ft-wide line (Lightning Bolt)
+        public int WallTiles;          // a wall of this many tiles (Wall of Fire): the preview matches the cast
         public bool Enabled = true;
         public string Why;             // reason it's disabled
         public Func<Unit, Vector2Int, IEnumerator> Run;
@@ -193,10 +194,11 @@ namespace DnD.Game
             var tankard = new AttackOption { Name = "Tankard (improvised)", ToHit = pc.Mod(Ability.STR), Damage = new DiceExpr(1, 4), DamageMod = pc.Mod(Ability.STR),
                 DamageType = DamageType.Bludgeoning, Ability = Ability.STR };
             var list = all.Where(a => BrawlAllowed.Any(n => a.Name.StartsWith(n))).ToList();
-            list.Insert(1, Need(new CombatAction { Name = "Unarmed Strike", Cost = ActionCost.Action, Target = Targeting.Enemy, RangeFt = 5,
-                Tooltip = $"Unarmed Strike: {AbilityUtil.Fmt(fists.ToHit)} to hit, {fists.Damage} {AbilityUtil.Fmt(fists.DamageMod)} bludgeoning", Run = (me, tile) => AttackAction(me, UnitAt(tile), fists) }, t, pc));
-            list.Insert(2, Need(new CombatAction { Name = "Tankard (improvised, 1d4)", Cost = ActionCost.Action, Target = Targeting.Enemy, RangeFt = 5,
-                Tooltip = "Improvised weapon: 1d4 bludgeoning, no proficiency bonus. Pip will bill you.", Run = (me, tile) => AttackAction(me, UnitAt(tile), tankard) }, t, pc));
+            // Through the Extra Attack helper: a fighter's second punch is still on the bar after the first.
+            list.Insert(1, WeaponAttackAction(u, pc, fists, "Unarmed Strike", ActionGroup.Main));
+            var tk = WeaponAttackAction(u, pc, tankard, "Tankard (improvised, 1d4)", ActionGroup.Main);
+            if (tk.Cost == ActionCost.Action) tk.Tooltip = "Improvised weapon: 1d4 bludgeoning, no proficiency bonus. Pip will bill you.";
+            list.Insert(2, tk);
             return list;
         }
 
@@ -265,7 +267,7 @@ namespace DnD.Game
                     {
                         var orig = a.Run;
                         var quick = new CombatAction { Name = a.Name + " (Quickened, 2 pts)", Group = ActionGroup.Spells, Cost = ActionCost.Bonus, Target = a.Target, RangeFt = a.RangeFt,
-                            AreaTiles = a.AreaTiles, AreaFromSelf = a.AreaFromSelf, Tooltip = "Metamagic: cast it as a Bonus Action for 2 sorcery points. " + a.Tooltip,
+                            AreaTiles = a.AreaTiles, AreaFromSelf = a.AreaFromSelf, AreaLine = a.AreaLine, WallTiles = a.WallTiles, Tooltip = "Metamagic: cast it as a Bonus Action for 2 sorcery points. " + a.Tooltip,
                             Run = (me, tile) => { pc.SpendResource("sorcery_points", 2); me.Cb.Turn.QuickenNextSpell = true; return orig(me, tile); } };
                         list.Add(Need(quick, t, pc, pc.ResourceLeft("sorcery_points") >= 2));
                     }
@@ -296,7 +298,7 @@ namespace DnD.Game
                     Tooltip = "Haste: one extra weapon attack this turn.", Run = (me, tile) => { me.Cb.Turn.HasteActionUsed = true; return AttackAction(me, UnitAt(tile), weapon, false); } });
             if (pc.HasEffect("spiritual_weapon"))
                 list.Add(Need(new CombatAction { Name = "Spiritual Weapon strike", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.Enemy, RangeFt = 60,
-                    Run = (me, tile) => SpellAttack(me, pc, UnitAt(tile), SpellsDb.Get("spiritual_weapon"), 2) }, t, pc));
+                    Run = (me, tile) => SpellAttack(me, pc, UnitAt(tile), SpellsDb.Get("spiritual_weapon"), Math.Max(2, pc.Effects.Find(e => e.Id == "spiritual_weapon")?.Power ?? 2)) }, t, pc));
 
             if (pc.ResourceMax("second_wind") > 0)
                 list.Add(Need(new CombatAction { Name = $"Second Wind ({pc.ResourceLeft("second_wind")})", Group = ActionGroup.Abilities, Cost = ActionCost.Bonus, Target = Targeting.None,
@@ -501,7 +503,7 @@ namespace DnD.Game
                 case SpellKind.Utility: a.Target = s.Id == "spare_the_dying" ? Targeting.AllyDown : Targeting.Tile; break;
                 default:
                     if (s.Shape == TargetShape.Single) a.Target = Targeting.Enemy;
-                    else { a.Target = Targeting.Tile; a.AreaTiles = Math.Max(1, s.AreaFt / 5); a.AreaFromSelf = s.RangeFt == 0; a.AreaLine = s.Shape == TargetShape.Line && s.ZoneLineTiles == 0; if (a.AreaFromSelf) a.RangeFt = s.AreaFt; }
+                    else { a.Target = Targeting.Tile; a.AreaTiles = Math.Max(1, s.AreaFt / 5); a.AreaFromSelf = s.RangeFt == 0; a.AreaLine = s.Shape == TargetShape.Line && s.ZoneLineTiles == 0; a.WallTiles = s.ZoneLineTiles; if (a.AreaFromSelf) a.RangeFt = s.AreaFt; }
                     break;
             }
             if (s.Kind == SpellKind.Heal && s.MaxTargets > 1) { a.Target = Targeting.Tile; a.AreaTiles = Math.Max(1, s.AreaFt / 5); }
@@ -677,6 +679,7 @@ namespace DnD.Game
         {
             var list = new List<Vector2Int>();
             if (a.AreaTiles <= 0) return list;
+            if (a.WallTiles > 0) return WallTiles(u, cursor, a.WallTiles); // Wall of Fire: the wall itself, as it will be cast
             if (a.AreaLine) return LineTiles(u.Pos, cursor, a.AreaTiles);
             if (a.AreaFromSelf)
             {
@@ -821,8 +824,7 @@ namespace DnD.Game
             var turn = me.Cb.Turn;
             if (consumeAction)
             {
-                turn.ActionUsed = true;
-                turn.AttacksLeftInAction = me.C is PlayerCharacter apc && !atk.IsSpell ? apc.AttacksPerAction - 1 : 0;
+                turn.StartAttackAction(me.C is PlayerCharacter apc && !atk.IsSpell ? apc.AttacksPerAction : 1);
             }
             me.A.Face(target.A.transform.position);
             var ctx = Context(me, target);
@@ -863,8 +865,8 @@ namespace DnD.Game
                 var dmg = AttackResolver.RollDamage(res);
                 if (me.C is PlayerCharacter sp && sp.Background.OriginFeat == "Savage Attacker" && !turn.CleaveUsed && !atk.IsSpell)
                 {
-                    var second = AttackResolver.RollDamage(res);
-                    if (second.Total > dmg.Total) { dmg = second; Log("Savage Attacker: you reroll damage and keep the better result."); }
+                    // Only the weapon's dice are rerolled, so once-per-turn riders (Prey, Sneak Attack, Kindle) aren't spent twice.
+                    if (AttackResolver.SavageReroll(dmg, res)) Log("Savage Attacker: you reroll the weapon's damage and keep the better result.");
                 }
                 if (me.IsHuman)
                 {
@@ -1006,6 +1008,9 @@ namespace DnD.Game
             return lost;
         }
 
+        /// <summary>Tests: the tiles an action's area would cover with the cursor here (the targeting preview).</summary>
+        public List<Vector2Int> DebugAreaTiles(Unit u, CombatAction a, Vector2Int cursor) => AreaTiles(u, a, cursor);
+
         public void OnDamaged(Unit target)
         {
             if (target.C is Monster phased && !phased.IsDown)
@@ -1084,7 +1089,15 @@ namespace DnD.Game
             switch (s.Kind)
             {
                 case SpellKind.Attack:
-                    for (int i = 0; i < SpellResolver.Projectiles(pc, s); i++)
+                    if (s.Id == "spiritual_weapon")
+                    {
+                        // The weapon is the caster's: it stays (concentration) and strikes again as a Bonus Action, at the slot it was cast with.
+                        pc.Effects.RemoveAll(e => e.Id == "spiritual_weapon");
+                        var sw = EffectLibrary.Create("spiritual_weapon", pc);
+                        sw.Power = Math.Max(slot, s.Level);
+                        pc.AddEffect(sw);
+                    }
+                    for (int i = 0; i < SpellResolver.Projectiles(pc, s, slot); i++)
                     {
                         if (target == null || !target.Active) target = Units.FirstOrDefault(o => o.Active && Hostile(me, o) && Zone.DistanceFt(me.Pos, o.Pos) <= s.RangeFt);
                         if (target == null) break;
@@ -1222,8 +1235,9 @@ namespace DnD.Game
                     {
                         var fx = EffectLibrary.Create(s.EffectId, pc);
                         fx.Power = Math.Max(slot, s.Level);
+                        if (s.Id == "aid") fx.TempMaxHp = SpellResolver.AidBonus(fx.Power);
                         r.C.AddEffect(fx);
-                        if (s.Id == "aid") r.C.Heal(5);
+                        if (s.Id == "aid") r.C.Heal(SpellResolver.AidBonus(fx.Power));
                         if (s.Id == "armor_of_agathys") r.C.TempHP = Math.Max(r.C.TempHP, 5 * Math.Max(1, slot));
                         r.A.Popup(fx.Name, UIKit.UtilityBlue);
                         Log($"{r.Name} is affected by {s.Name}.");
@@ -1308,6 +1322,7 @@ namespace DnD.Game
         void ApplySpellEffect(Unit me, Unit t, SpellDef s)
         {
             if (s.EffectId == "push10") { Push(me, t, 2); return; }
+            if (s.EffectId == "spiritual_weapon") return; // the caster's (CastSpell gives it), not the target's
             var fx = EffectLibrary.Create(s.EffectId, me.C, (me.C as PlayerCharacter)?.SpellSaveDC ?? 10);
             if (s.EffectId == "laughter") t.C.AddEffect(EffectLibrary.Create("prone", me.C));
             t.C.AddEffect(fx);
@@ -1490,7 +1505,8 @@ namespace DnD.Game
             if (t.ActionUsed && t.AttacksLeftInAction > 0)
             {
                 int max = pc.AttacksPerAction;
-                return new CombatAction { Name = $"{name} {max - t.AttacksLeftInAction + 1}/{max}", Group = group, Cost = ActionCost.Free, Target = Targeting.Enemy, RangeFt = range,
+                string count = t.AttacksLeftInAction >= max ? $"({t.AttacksLeftInAction} left)" : $"{max - t.AttacksLeftInAction + 1}/{max}"; // Action Surge can stack them
+                return new CombatAction { Name = $"{name} {count}", Group = group, Cost = ActionCost.Free, Target = Targeting.Enemy, RangeFt = range,
                     Tooltip = "Extra Attack: this Attack action still has an attack left. " + atk.Summary(),
                     Run = (me, tile) => { me.Cb.Turn.AttacksLeftInAction--; return AttackAction(me, UnitAt(tile), atk, false); } };
             }
@@ -1941,6 +1957,7 @@ namespace DnD.Game
             m.Charging = null;
             u.A.Sr.color = Color.white;
             if (ab == null || !u.Active) yield break;
+            if (m.IsIncapacitated) { Log($"{u.Name} loses the breath it was drawing."); u.A.Popup("Breath lost", Color.white); yield break; }
             var foes = Units.Where(o => Hostile(u, o) && o.Active).ToList();
             int tiles = Math.Max(1, ab.AreaFt / 5);
             Vector2Int best = u.Pos + Vector2Int.down; int bestHits = -1;

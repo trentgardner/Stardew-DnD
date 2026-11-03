@@ -109,18 +109,31 @@ namespace DnD.Game
         {
             yield return null;
             if (_endingOffered != ending || World.Flag(Turn.Chosen)) yield break;
-            foreach (var p in Players.Where(x => x.IsReady).ToList())
+            _endingOfferedBy = by;
+            foreach (var p in Players.Where(x => x.IsReady).ToList()) PushEndingConfirm(p, by, ending);
+        }
+
+        PlayerSlot _endingOfferedBy;
+
+        void PushEndingConfirm(PlayerSlot p, PlayerSlot by, string ending)
+        {
+            var me = p;
+            p.Hud.CloseAll();
+            var screen = new ChoiceScreen(EndingLabel(ending), EndingBody(ending), new List<(string, System.Action)>
             {
-                var me = p;
-                p.Hud.CloseAll();
-                var screen = new ChoiceScreen(EndingLabel(ending), EndingBody(ending), new List<(string, System.Action)>
-                {
-                    ("Yes. " + EndingLabel(ending) + ".", () => AgreeToEnding(me, by, ending)),
-                    ("Not yet", () => CancelEnding(by)),
-                });
-                screen.OnCancel = () => CancelEnding(by);
-                p.Hud.Push(screen);
-            }
+                ("Yes. " + EndingLabel(ending) + ".", () => AgreeToEnding(me, by, ending)),
+                ("Not yet", () => CancelEnding(by)),
+            });
+            screen.OnCancel = () => CancelEnding(by);
+            p.Hud.Push(screen);
+        }
+
+        /// <summary>A player joins while the party is being asked something everyone must answer: they're asked too.</summary>
+        void OnPlayerJoinedMidScene(PlayerSlot p)
+        {
+            if (World == null || !p.IsReady) return;
+            if (_endingOffered != null && !World.Flag(Turn.Chosen)) { PushEndingConfirm(p, _endingOfferedBy ?? p, _endingOffered); return; }
+            if (World.Flag(Finale.RiderPending) && !Flying) OfferRider();
         }
 
         void AgreeToEnding(PlayerSlot who, PlayerSlot by, string ending)

@@ -387,6 +387,20 @@ namespace DnD.Game
 
     public class CharacterSheetScreen : GameScreen
     {
+        /// <summary>The sheet's Features line: every feature once, repeats counted (×n).</summary>
+        public static IEnumerable<string> FeatureNames(PlayerCharacter pc)
+        {
+            var feats = new List<string>();
+            foreach (var f in pc.Class.Features) if (f.Level <= pc.Level) feats.Add(f.Name);
+            if (pc.Level >= 3 && pc.Class.Subclass != null) foreach (var f in pc.Class.Subclass.Features) if (f.Level <= pc.Level) feats.Add(f.Name);
+            foreach (var t in pc.Species.Traits) feats.Add(t.Split(':')[0]);
+            feats.Add(pc.Background.OriginFeat);
+            // Ability Score Improvements: count them from the level-up rules (the level-4 one isn't listed as a class feature).
+            feats.RemoveAll(n => n == "Ability Score Improvement");
+            for (int l = 1; l <= pc.Level; l++) if (pc.AsiLevel(l)) feats.Add("Ability Score Improvement");
+            return feats.GroupBy(n => n).Select(gr => gr.Count() > 1 ? $"{gr.Key} ×{gr.Count()}" : gr.Key).ToList();
+        }
+
         Text _left, _skills, _feats;
         MenuList _menu;
 
@@ -430,12 +444,7 @@ namespace DnD.Game
                 + "\n<size=8>" + string.Join(" · ", SkillUtil.All.Where(s => !pc.IsProficient(s)).Select(Sk)) + "</size>";
             var sk = new System.Text.StringBuilder();
             // Features as one wrapped paragraph (a level 10 character has ~20 of them), repeats counted once.
-            var feats = new List<string>();
-            foreach (var f in pc.Class.Features) if (f.Level <= pc.Level) feats.Add(f.Name);
-            if (pc.Level >= 3 && pc.Class.Subclass != null) foreach (var f in pc.Class.Subclass.Features) if (f.Level <= pc.Level) feats.Add(f.Name);
-            foreach (var t in pc.Species.Traits) feats.Add(t.Split(':')[0]);
-            feats.Add(pc.Background.OriginFeat);
-            var named = feats.GroupBy(n => n).Select(gr => gr.Count() > 1 ? $"{gr.Key} ×{gr.Count()}" : gr.Key);
+            var named = FeatureNames(pc);
             sk.AppendLine("<b>Features</b>");
             sk.Append("<size=8>").Append(string.Join(" · ", named)).Append("</size>");
             _feats.text = sk.ToString();

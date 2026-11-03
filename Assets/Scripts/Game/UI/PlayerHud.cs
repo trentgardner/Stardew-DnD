@@ -25,7 +25,7 @@ namespace DnD.Game
         public abstract void Build();
         public abstract void Tick();
         public virtual void OnClose() { }
-        public void Close() { Closed = true; }
+        public void Close() { Closed = true; if (Root) Root.gameObject.SetActive(false); } // gone from the screen now, removed next frame
 
         /// <summary>A ✕ in the window's top-right corner, labelled with the device's back button.</summary>
         protected void AddCloseButton()
@@ -287,6 +287,9 @@ namespace DnD.Game
             RefreshHud();
 
             if (_narratorTimer > 0) { _narratorTimer -= Time.unscaledDeltaTime; if (_narratorTimer <= 0) _narrator.gameObject.SetActive(false); }
+            // The narrator's box would sit on top of a window's bottom edge: it waits while one is open (the line is in the log).
+            bool wantNarrator = _narratorTimer > 0 && !_screens.Any(s => !s.Closed);
+            if (_narrator.gameObject.activeSelf != wantNarrator) _narrator.gameObject.SetActive(wantNarrator);
             if (_flashTimer > 0) { _flashTimer -= Time.unscaledDeltaTime; var c = _flash.color; c.a = Mathf.Clamp01(_flashTimer * 1.5f) * 0.35f; _flash.color = c; }
             for (int i = _toastItems.Count - 1; i >= 0; i--)
             {
@@ -420,6 +423,9 @@ namespace DnD.Game
         }
 
         /// <summary>The DM speaks. Stays up a few seconds (longer for longer text).</summary>
+        /// <summary>Whether the narrator's box is on screen (tests).</summary>
+        public bool NarratorVisible => _narrator != null && _narrator.gameObject.activeSelf;
+
         public void Narrate(string text, bool keyMoment = true)
         {
             var g = GameRoot.I;
