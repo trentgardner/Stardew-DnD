@@ -1,0 +1,15 @@
+# SDD ledger — plan: docs/superpowers/plans/2026-11-03-act3-phase7-endings.md
+
+Executor: executing-plans (inline), branch act3/phase7-endings. Spec: docs/superpowers/specs/2026-11-02-act3-design.md.
+
+## Pre-flight
+- T1→T2: EndingDb.Scenes/Slides, Ending.Seen/Complete consumed by PlayEnding. OK.
+- T2→T4: PlayEnding/CreditsScreen/Dedication used by golden paths and screenshots. OK.
+- The dedication (user, 2026-11-03): exact copy pinned in Global Constraints and Task 2.
+
+## Task 1
+- Task 1: Ruling: the warm dragon variant needs bond tier >= 3 of 5 (DragonBond/20), not "Hearts >= 6" — the dragon's bond tops out at 5 hearts — cost if wrong: a few more parties see the warm lines.
+- Task 1: Ruling: Slides(ending, w, day) takes the day count (WorldState doesn't hold the clock) — cost if wrong: none.
+- Task 1: Ruling: "The King" is its own scene (so an ending with no companions still has 6 scenes: Her, the dragon, Aurelhold, the King, the Road Home, Thistledown); the last slide is titled "Afterwards".
+- Task 1: Ruling: RED was a compile failure (EndingDb absent); the implementation was written before running it. EndingTests;LoreTests → 22/22.
+Task 1: complete (tests: EndingTests;LoreTests → 22/22)
