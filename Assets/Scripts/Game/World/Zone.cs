@@ -273,6 +273,28 @@ namespace DnD.Game
                     vic.Text = Def.Signs.TryGetValue(m, out var vt) ? vt : "A knight of the Crown, sword raised.";
                     break;
                 case '8': Ground(m, "tile_cobbles"); Solid(m); EverLamp(Prop(m, "obj_ever_lamp")); break;
+                case '1': // Act III: a Great One, asleep in stone with its chin on the floor (drawn twice the size of anything else)
+                {
+                    Ground(m, floor); Solid(m);
+                    var head = Prop(m, "obj_great_one_head");
+                    head.transform.localScale = Vector3.one * 2f;
+                    head.transform.position += new Vector3(0, 0.5f, 0);
+                    var look = head.AddComponent<SignInteractable>();
+                    look.Title = "A Great One"; look.Prompt = "Look at the stone head"; look.Reach = 2.2f;
+                    look.Text = Def.Signs.TryGetValue(m, out var ht) ? ht : "A dragon's head of grey stone, as big as a house, chin on the floor, eyes shut. Its nostrils are worn smooth, as if it has been breathing, very slowly, for a very long time.";
+                    break;
+                }
+                case '2': // a chain across the floor (walkable)
+                {
+                    Ground(m, floor);
+                    var chain = Prop(m, "obj_chain");
+                    chain.GetComponent<SpriteRenderer>().sortingOrder = -998; // flat on the floor, under feet
+                    break;
+                }
+                case '0': // the grey door from the dream
+                    Ground(m, floor); Solid(m);
+                    Prop(m, "obj_grey_door").AddComponent<GreyDoor>();
+                    break;
                 case ')': Ground(m, floor); Solid(m); Prop(m, "obj_lantern_cold", true).AddComponent<UnlitBrazier>().Init(Def.Id, m, "obj_lantern", "lantern post"); break; // a cold road lantern
                 // puzzle pieces: the puzzle layer dresses these; a closed gate and a push block are solid
                 case 'Z': case 'J': Ground(m, floor); Solid(m); break;

@@ -41,6 +41,33 @@
 **Co-op:** your fiance presses **START** on a second controller at any time. The screen splits and she makes a
 character. You can go anywhere independently; if one of you starts a fight, the other can walk over and join it.
 
+## New: Below Aurelhold (Act III)
+- **Opening the Undergate**: once any three of the capital's clues point down, the Undergate in the Roots can be opened: heave the bar
+  (Athletics), pick the King's lock (Sleight of Hand), or ask Foreman Crale for his key (after "The Deep Shift" has found Bran out).
+- **The Undergate Works**: the deep shift's camp. Talk to Bran Tolley and bring him home to Mags (three ways). The Keepers of the Undergate
+  stand in the way: talk them round, or fight (Crown-side parties are waved through).
+- **The Iron Vaults**: a beam puzzle (turn three mirrors to light the crystal over the far door), iron sentinels, a stone guardian.
+- **The Royal Crypts**: put the two tomb lids back on their plinths to open the stair down. Find the **Third Ideal** on an Oathbound
+  knight's tomb (once per long rest, it keeps you at 1 HP instead of 0). The crypt stair also comes up in the capital, by the cathedral:
+  a shortcut both ways once you've been down.
+- **The Deep**: the bottom of everything, and the **Iron Gaoler** (a boss with legendary actions, or speak as the King with Deception).
+  Then the grey door from the dream. Knock first, if you like.
+- **What's behind the door**: play it and see. (Spoiler below.)
+
+### Below Aurelhold checklist
+- [ ] Did the way down feel like a real dungeon (fights, puzzles, dread)? Too long, too short?
+- [ ] Were the puzzles clear? Did the hints help?
+- [ ] Was the Gaoler a good fight (or a satisfying talk)?
+- [ ] Did the door land? Quiet, small, surprising?
+- [ ] Afterwards, did the journal's "Read again" entries make you go "ohhh"?
+
+<details><summary>SPOILER: what's behind the door (don't open before playing)</summary>
+
+Beyond the door is a little girl, Edda: the "Ashen Queen" of the legend is a story told about her. She has been kept down there since the
+Crown sealed the world's fire inside her. No music, three short beats, the dragon goes to her first, and then she talks (Insight, Arcana and
+History checks; promise to come back). After you leave, the journal marks 16 legend entries "Read again" with a new line each.
+</details>
+
 ## New: Aurelhold, the capital (Act III)
 - **Getting there**: once Act III begins, Royal Courier Bertram Quell waits in Thistledown square with the King's carriage. Talk to him to ride to
   Aurelhold (both players, companions and the dragon go together). He'll take you home and back whenever you like.

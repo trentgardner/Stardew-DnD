@@ -141,7 +141,7 @@ namespace DnD.Game
 
         static Dialogue Mags()
         {
-            var d = new Dialogue("mags", c => c.G.Quests.Stage(DeepShift.Id) >= DeepShift.Below ? "news" : c.G.Quests.Stage(DeepShift.Id) > 0 ? "waiting" : "intro");
+            var d = new Dialogue("mags", c => c.G.World.Flag("bran_home") ? "home" : c.G.Quests.Stage(DeepShift.Id) >= DeepShift.Below ? "news" : c.G.Quests.Stage(DeepShift.Id) > 0 ? "waiting" : "intro");
             const string who = "Mags Tolley";
             d.Node("intro", who,
                 c => "You're the ones from up top. With the dragon. Everybody's talking. Sorry, love, I don't mean to stare, I- you're important. You've got the King's ear. Could you ask about my Bran?",
@@ -159,6 +159,10 @@ namespace DnD.Game
                 c => "Alive. Down there. On the Crown's orders. ...Alive is more than I had this morning. Thank you. If you're going down there- no. You wouldn't. Nobody goes down there. Just... if you do.",
                 c => $"{c.G.World.DragonName} lowers its huge head next to her, very gently, and she puts her hand on its nose and leaves it there a while.")
                 .Bye("If we do, we'll look for him.");
+            d.Node("home", who,
+                c => "He's home. He's thin as a rake and he can't sleep without the warm, so I've put a hot brick in the bed. You brought him up. Whatever you need, you've got it.",
+                c => "Bran is sitting on the scrubbed-white step behind her, in the lamplight, with his eyes shut and his face turned up, as if there were a sky to see.")
+                .Bye("Look after each other.");
             return d;
         }
 
@@ -170,7 +174,13 @@ namespace DnD.Game
                 c => c.G.Quests.Stage(DeepShift.Id) >= DeepShift.Below
                     ? "You again. I told you what I know. Now let me work, before somebody up top hears I've been talking."
                     : "Foundation Works. Dig, shore, haul, repeat. Mind the crates, mind the crane, mind the dragon off my scaffolds.")
+                .Say("Open the Undergate for us.", "undergate", show: c => c.G.Quests.Stage(DeepShift.Id) >= DeepShift.Below && c.G.Quests.Stage(WarmCity.Id) == WarmCity.Below)
                 .Bye("Carry on.");
+            d.Node("undergate", who,
+                c => "...You know, don't you. Not what's down there. Nobody knows that. But you know there's a down there.",
+                c => "He takes a key from round his neck on a bootlace: black iron, heavy, warm from his skin. \"I've the key. I've always had the key. God help me, I've never once used it.\"")
+                .Say("(Take the key and open the Undergate.)", doIt: c => c.G.Quests.Set(WarmCity.Id, WarmCity.Opened, c.P), end: true)
+                .Bye("Not yet.");
             d.Node("ask", who,
                 c => "Bran Tolley? Deep shift. Can't talk about the deep shift. Royal warrant. Get out of my yard.",
                 c => "He doesn't look at the Undergate when he says it. He very carefully doesn't look at the Undergate.",

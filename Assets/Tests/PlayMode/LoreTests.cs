@@ -191,6 +191,32 @@ namespace DnD.Tests
             }
         }
 
+        /// <summary>Act III Phase 4: everything past the door is in its four exempt files, each gated on meeting her.</summary>
+        [Test]
+        public void RevealFilesExistAndAreGated()
+        {
+            var root = Path.Combine(Application.dataPath, "Scripts");
+            foreach (var name in new[] { "WorldDb.AfterTheDoor.cs", "DialogueDb.AfterTheDoor.cs", "LoreDb.AfterTheDoor.cs", "GameRoot.AfterTheDoor.cs" })
+            {
+                var files = Directory.GetFiles(root, name, SearchOption.AllDirectories);
+                Assert.AreEqual(1, files.Length, name + " exists");
+                StringAssert.Contains("MetHer", File.ReadAllText(files[0]), name + " is gated on meeting her");
+                Assert.IsFalse(GuardScans(name));
+            }
+        }
+
+        /// <summary>Act III Phase 4: the lair's text before the door is read by the guard.</summary>
+        [Test]
+        public void LairFilesAreScannedBySecretGuard()
+        {
+            var root = Path.Combine(Application.dataPath, "Scripts");
+            foreach (var name in new[] { "WorldDb.Lair.cs", "DialogueDb.Lair.cs" })
+            {
+                Assert.AreEqual(1, Directory.GetFiles(root, name, SearchOption.AllDirectories).Length, name + " exists");
+                Assert.IsTrue(GuardScans(name), name + " is scanned");
+            }
+        }
+
         [UnityTest]
         public IEnumerator RevealTextHiddenUntilTheDoor()
         {

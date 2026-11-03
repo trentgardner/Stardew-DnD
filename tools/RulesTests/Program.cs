@@ -63,6 +63,7 @@ namespace RulesTests
             DragonTests();
             BalanceTests();
             BossTests();
+            ThirdIdealTests();
             WeaponSetTests();
             HotbarMoveTests();
 

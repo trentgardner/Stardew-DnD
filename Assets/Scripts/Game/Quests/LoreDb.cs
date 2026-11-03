@@ -17,7 +17,7 @@ namespace DnD.Game
     /// Lore for the journal (Act II). The legend is told the way the world tells it. Records that are missing are just
     /// missing: no culprit is ever implied here. (The secret-leak test checks every line that names the Queen.)
     /// </summary>
-    public static class LoreDb
+    public static partial class LoreDb
     {
         public const string Legend = "The Legend", Records = "Records", Pact = "The Pact", Places = "Places";
         public const int FindXp = 25;
@@ -100,8 +100,24 @@ namespace DnD.Game
                 "Nine hundred volumes of the Crown's own history in red leather, one for every year. Year 1, the founding, is gold-leafed and glorious. Year 2 is an empty binding: every page cut out with a razor, long ago. The Archivist-Royal says water damage. The Academy's Annals were 'corrected' for the same years.", 3);
             Add("sealed_crypt", "The Sealed Crypt", Places,
                 "Under the Lantern Cathedral, a royal crypt sealed with iron and the King's seal. The verger swears it hasn't been opened in a century. The dust on its stair lies a year thick, except for one clean path down the middle, worn smooth by somebody's feet.", 3);
+            // Act III Phase 4: below Aurelhold (before the door).
+            Add("warm_pipes", "The Warm Pipes", Places,
+                "Under the Roots, fat iron pipes run up the rock toward the city: to the ever-lamps, the Steamhouse, the palace hearths. None of them comes from a furnace. They come out of the stone, from somewhere below, warm as a hand. The deep shift tends them and never asks what's on the other end.", 3);
+            Add("deep_shift_rest", "The Deep Shift's Rest", Records,
+                "Forty cairns below the Undergate, each with a name chalked on a flat stone and touched up so often the chalk is an inch thick. Hap Mossy keeps them. 'They went peaceful, mostly,' he says. 'Old age. It's a long shift.'", 3);
+            Add("ward_stones", "The Ward-Stones", Places,
+                "In the Iron Vaults below the Undergate, black ward-stones are set into every wall, each carved over and over with one word in a script older than the Crown: HOLD. The wards are strong and old, and every one of them faces the same way: inward, and down. Nothing there was built to keep anyone out.", 3);
+            Add("kings_path", "The Kings' Path", Records,
+                "In the Royal Crypts the dust lies a year thick, except for one clean path. It comes down the cathedral stair, runs past every King's tomb without stopping, and goes on down. One pair of feet, once a year, for a very long time.", 3);
+            Add("third_ideal", "The Third Ideal", Pact,
+                "Scratched on the tomb of the last of the Oathbound, in the crypt of the Kings she served: \"" + WorldDb.ThirdIdeal + "\" Nobody knows why she was buried there, or who let her be.", 3);
+            Add("the_great_ones_below", "The Great Ones, Below", Legend,
+                "The Great Ones didn't lie down on top of anything. In the Deep, at the roots of the Wyrmback, they lie in a ring, chins on the floor, facing in: the way you'd sit around a fire, or around someone you meant to keep company.", 3);
+            Add("the_door", "The Door", Legend,
+                "The door from the valley's dream, real, at the bottom of everything: grey, warm, and knocked on from the other side.", 3);
             Add("missing_pages", "Missing Pages", Records,
                 "A parish ledger, swollen with damp, left on the mill's shelf by some long-gone clerk. Births, harvests and tithes, year after year in a careful hand, until the century the legends talk about. Those pages have been cut out, neatly, close to the spine. The record picks up again eighty years later as if nothing had happened.");
+            RegisterReveals(); // the "Read again" lines (LoreDb.AfterTheDoor.cs), shown only once the party has met her
         }
 
         public static LoreDef Get(string id) => id != null && All.TryGetValue(id, out var l) ? l : null;

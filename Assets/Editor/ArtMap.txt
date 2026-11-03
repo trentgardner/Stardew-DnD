@@ -1612,3 +1612,84 @@ actor npc_glass "Actor/Character/Master/SpriteSheet.png"
 actor npc_dray "Actor/Character/OldMan3/SpriteSheet.png"
 tint item_potion_superior_healing item_potion_healing 40 1.2 1.0
 paint item_pageant_sash cloak k=4a1010 a=c62828 b=e57373 c=ffd54a
+
+# Act III Phase 4: below Aurelhold
+audio music_undergate "Audio/Musics/21 - Dungeon.ogg"
+actor npc_bran "Actor/Character/Villager4/SpriteSheet.png"
+actor npc_hap_mossy "Actor/Character/OldMan2/SpriteSheet.png"
+actor npc_deep_shift "Actor/Character/Villager5/SpriteSheet.png"
+audio music_crypts "Audio/Musics/40 - Crypt.ogg"
+audio music_deep "Audio/Musics/37 - Dark Forest.ogg"
+strip mon_gaoler_src "Actor/Boss/GiantBlueSamurai/Idle.png" 2 48
+tint  mon_gaoler_0 mon_gaoler_src_0 0 0.12 0.62
+tint  mon_gaoler_1 mon_gaoler_src_1 0 0.12 0.62
+pattern a4_head
+k..............k
+kk............kk
+.kk..........kk.
+..kkkkkkkkkkkk..
+..kssssssssssk..
+.ksbbsssssbbssk.
+.kssssssssssssk.
+.kssssssssssssk.
+..kssssssssssk..
+..kssssssssssk..
+...kssssssssk...
+...kssssssssk...
+...ksnssssnsk...
+....kssssssk....
+.....kkkkkk.....
+................
+end
+pattern a4_chain
+......kk........
+.....kaak.......
+.....k..k.......
+.....kaak.......
+......kk........
+.......kk.......
+......kaak......
+......k..k......
+......kaak......
+.......kk.......
+......kk........
+.....kaak.......
+.....k..k.......
+.....kaak.......
+......kk........
+.......kk.......
+end
+pattern a4_door
+.kkkkkkkkkkkkkk.
+kggggggggggggggk
+kgsssssssssssgk.
+kgsggggggggggsgk
+kgsgssssssssgsgk
+kgsgsggggggsgsgk
+kgsgsgsssssgsgsk
+kgsgsgsggsgsgsgk
+kgsgsgsggsgsgsgk
+kgsgsgsssssgsgsk
+kgsgsggggggsgsgk
+kgsgssssssssgsgk
+kgsggggggggggsgk
+kgsssssssssssgk.
+kggggggggggggggk
+kkkkkkkkkkkkkkkk
+end
+paint obj_great_one_head a4_head k=2c2c30 s=7a7a80 b=45454c n=3a3a40
+paint obj_chain a4_chain k=1e1e22 a=5a5a62
+paint obj_grey_door a4_door k=2a2a2e g=8a8a90 s=6e6e74
+actor npc_edda_src "Actor/Character/Child/SpriteSheet.png"
+tint  npc_edda_down_0 npc_edda_src_down_0 0 0.3 1.12
+tint  npc_edda_down_1 npc_edda_src_down_1 0 0.3 1.12
+tint  npc_edda_down_2 npc_edda_src_down_2 0 0.3 1.12
+tint  npc_edda_down_3 npc_edda_src_down_3 0 0.3 1.12
+tint  npc_edda_side_0 npc_edda_src_side_0 0 0.3 1.12
+tint  npc_edda_side_1 npc_edda_src_side_1 0 0.3 1.12
+tint  npc_edda_side_2 npc_edda_src_side_2 0 0.3 1.12
+tint  npc_edda_side_3 npc_edda_src_side_3 0 0.3 1.12
+tint  npc_edda_up_0 npc_edda_src_up_0 0 0.3 1.12
+tint  npc_edda_up_1 npc_edda_src_up_1 0 0.3 1.12
+tint  npc_edda_up_2 npc_edda_src_up_2 0 0.3 1.12
+tint  npc_edda_up_3 npc_edda_src_up_3 0 0.3 1.12

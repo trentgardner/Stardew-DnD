@@ -392,6 +392,7 @@ namespace DnD.Game
         {
             if (!InGame) return;
             Music.Play(WantedMusic());
+            ApplyIdeals();
 
             // Drop-in: an unassigned controller (or the keyboard) presses Start / Enter.
             TryDropIn();
@@ -445,8 +446,9 @@ namespace DnD.Game
         public string WantedMusic()
         {
             if (MusicOverride != null) return MusicOverride;
-            if (AnyInCombat) return "music_fight";
             var lead = Players.FirstOrDefault(p => p.IsReady);
+            if (lead?.Zone != null && lead.Zone.Def.Silent) return null;
+            if (AnyInCombat) return "music_fight";
             if (lead == null) return null;
             var z = lead.Zone.Def;
             if (z.Id == "town" && World.IsLocked(Festival.Lock)) return "music_festival";
@@ -599,7 +601,7 @@ namespace DnD.Game
             DragonAgent?.GetComponent<DragonPet>()?.FeelBlight(zone);
             Quests.Notify(QuestEvent.ZoneEntered, zoneId, p);
             string key = $"entered:{p.Index}:{zoneId}:{Clock.Day}";
-            if (!World.IsLocked(key)) { World.Lock(key, 24 * 60); p.Hud.Narrate(zone.Def.EnterNarration, !World.Flag("seen:" + zoneId)); World.SetFlag("seen:" + zoneId); }
+            if (!World.IsLocked(key)) { World.Lock(key, 24 * 60); if (zone.Def.EnterNarration != null) p.Hud.Narrate(zone.Def.EnterNarration, !World.Flag("seen:" + zoneId)); World.SetFlag("seen:" + zoneId); }
             if (zoneId == "academy" && Dragon != null && !World.Flag("dragon_academy_intro"))
             {
                 World.SetFlag("dragon_academy_intro");
@@ -609,6 +611,23 @@ namespace DnD.Game
             {
                 World.SetFlag("dragon_capital_intro");
                 p.Hud.Narrate($"{World.DragonName} has to duck under the Gate of Wings. A baker drops an entire tray of buns. {World.DragonName}, after some thought, helps.");
+            }
+            if (zoneId == "royal_crypts") World.SetFlag("crypt_stair_open"); // the cathedral stair opens from below
+            if (zoneId != "beyond_the_door") { var pet = DragonAgent?.GetComponent<DragonPet>(); if (pet != null) pet.StaysPut = false; }
+            if (zoneId == "the_deep" && World.Flag(WorldDb.MetHer) && !World.Flag("reveal_toast"))
+            {
+                World.SetFlag("reveal_toast");
+                foreach (var q in Players.Where(x => x.IsReady)) q.Hud.Narrate("Your journal: some of what you read on the road reads differently now. (\u2605 Read again)", true);
+            }
+            if (zoneId == "the_deep" && Dragon != null && !World.Flag("dragon_deep_intro"))
+            {
+                World.SetFlag("dragon_deep_intro");
+                p.Hud.Narrate($"{World.DragonName} has been shivering since the stair. Now it stops, and lifts its head, and stares at the grey door as if it's heard its name.");
+            }
+            if (zoneId == "undergate" && Dragon != null && !World.Flag("dragon_undergate_intro"))
+            {
+                World.SetFlag("dragon_undergate_intro");
+                p.Hud.Narrate($"{World.DragonName} sniffs the warm pipes, and goes very still, and then won't go near them.");
             }
             if (zoneId == "town" && Dragon != null && !World.Flag("dragon_town_intro"))
             {

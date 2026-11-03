@@ -210,3 +210,13 @@ Act I keeps only two light, ominous notes in chests (a miner's scrawl about lamp
   **Corwin Dray**, apothecary.
 - **The Thousandth Pageant:** a thousand years since the Fall, a month away. The Fae Courts count it as a thousand years since the Pact was broken.
 - **Lore added:** The Victory of the Crown, The Ever-Lamps, The Works Ledger, The King's Ring, The Royal Annals, The Sealed Crypt.
+
+## Act III, the lair (names approved in bulk)
+- **The Undergate Works** and its **Warm Pipes**; **Bran Tolley**, **Hap Mossy**, **Lew Carrow** and **Dobbin Hale** of the deep shift;
+  **Ser Orla Hadley** and **the Keepers of the Undergate**; **the Deep Shift's Rest**.
+- **The Iron Vaults** (the ward-stones: HOLD); **the Royal Crypts** and **Dame Ysolde, last of the Oathbound**; **the Third Ideal**:
+  "No one is born a monster. I will judge none by the story told of them."
+- **The Deep**: the Great Ones in their ring, the chains, **the Iron Gaoler**, the grey door.
+- **Beyond the door**: **Edda**. Her drawings of her twelve sleeping friends; the presents, one a century, each signed "Forgive me."
+- **Lore added:** The Warm Pipes, The Deep Shift's Rest, The Ward-Stones, The Kings' Path, The Third Ideal, The Great Ones Below, The Door,
+  The Drawings, The Presents, and 16 "Read again" lines.

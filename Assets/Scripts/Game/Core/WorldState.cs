@@ -104,6 +104,7 @@ namespace DnD.Game
             if (!Flags.Add(f) || GameRoot.I == null) return;
             GameRoot.I.Quests.Notify(QuestEvent.FlagSet, f);
             GameRoot.I.RefreshNpcs();
+            GameRoot.I.ApplyIdeals();
         }
 
         /// <summary>Clears a world flag (a state that comes and goes, like where the King's carriage is standing).</summary>

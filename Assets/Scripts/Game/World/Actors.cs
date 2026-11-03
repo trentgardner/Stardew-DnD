@@ -331,6 +331,7 @@ namespace DnD.Game
             var n = a.gameObject.AddComponent<NpcAgent>();
             n.Def = def;
             n.Actor = a;
+            if (def.Glow != null) ArcaneHalo.Attach(a.gameObject, 0.8f, def.Glow);
             n.UpdateSchedule(true);
             return n;
         }
@@ -507,7 +508,7 @@ namespace DnD.Game
         void Update()
         {
             if (IsDragon && GameRoot.I.DragonFighting) { Actor.Moving = false; return; } // holds its grid square
-            if (IsDragon) { PickNearestLeader(); if (GetComponent<DragonPet>()?.Busy == true) return; }
+            if (IsDragon) { PickNearestLeader(); var pet = GetComponent<DragonPet>(); if (pet != null && (pet.Busy || pet.StaysPut)) return; }
             if (Leader == null || Leader.Avatar == null || Leader.InCombat && Character != null) return;
             if (Waiting) { Actor.Moving = false; return; }
             if (Actor.Zone != Leader.Zone)

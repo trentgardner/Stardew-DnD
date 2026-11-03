@@ -32,16 +32,39 @@ namespace DnD.Game
             bool first = !World.Flag("carriage_ridden");
             World.SetFlag("carriage_ridden");
             if (zone == "capital") World.SetFlag(CarriageInCapital); else World.ClearFlag(CarriageInCapital);
-            int i = 0;
+            GatherAt(zone, pos);
             foreach (var p in Players.Where(p => p.IsReady && p.Avatar != null).ToList())
             {
-                p.Hud.CloseAll();
-                Warp(p, zone, pos + new Vector2Int(i++, 0), false);
                 p.Hud.Narrate(zone == "capital"
                     ? first
                         ? "Two days up the King's Road, through passes white with early snow. Then the carriage tops a ridge and the whole party goes quiet. A city fills the valley inside the mountains' ring, and every window in it is lit."
                         : "Two days up the King's Road, the snow deeper every mile, until Aurelhold glows up out of the valley like a hearth."
                     : "Two days down the King's Road, and the warmth goes out of the air a mile at a time. Thistledown looks small and grey and very dear.", true);
+            }
+        }
+
+        /// <summary>The grey door (Act III): it waits for the Gaoler, then opens onto what's beyond (see GameRoot.AfterTheDoor.cs).</summary>
+        public void OpenGreyDoor(PlayerSlot by)
+        {
+            if (!World.Flag("gaoler_resolved")) { by.Hud.Narrate("The Gaoler stands between you and the door."); return; }
+            ThroughTheDoor(by);
+        }
+
+        /// <summary>The Third Ideal's boon follows the world flag: every player character has it while it's set (after a load, for joiners too).</summary>
+        public void ApplyIdeals()
+        {
+            bool third = World != null && World.Flag(WorldDb.OathThird);
+            foreach (var p in Players) if (p.Character != null) p.Character.ThirdIdeal = third;
+        }
+
+        /// <summary>Every ready player (with their companions and the dragon) warps to `zone`, side by side from `pos`. No checks, no text.</summary>
+        public void GatherAt(string zone, Vector2Int pos)
+        {
+            int i = 0;
+            foreach (var p in Players.Where(p => p.IsReady && p.Avatar != null).ToList())
+            {
+                p.Hud.CloseAll();
+                Warp(p, zone, pos + new Vector2Int(i++, 0), false);
             }
         }
 

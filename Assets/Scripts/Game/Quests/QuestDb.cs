@@ -12,11 +12,11 @@ namespace DnD.Game
     /// <summary>Act III side quest, "dragon_parade" (the Pageant rehearsal).</summary>
     public static class DragonParade { public const string Id = "dragon_parade"; public const int Asked = 1, Rehearsal = 2, Done = 3; }
 
-    /// <summary>Act III side quest, "deep_shift" (stage 4, Bran comes home, is Phase 4's).</summary>
-    public static class DeepShift { public const string Id = "deep_shift"; public const int Asked = 1, Crale = 2, Below = 3; }
+    /// <summary>Act III side quest, "deep_shift": stage 4, Bran comes home, is found below the Undergate (Phase 4).</summary>
+    public static class DeepShift { public const string Id = "deep_shift"; public const int Asked = 1, Crale = 2, Below = 3, Home = 4; }
 
-    /// <summary>Act III's opening quest, "warm_city": the capital (stage 5 is the way down, Phase 4 onward).</summary>
-    public static class WarmCity { public const string Id = "warm_city"; public const int Summoned = 1, Arrived = 2, Audience = 3, Below = 4; }
+    /// <summary>Act III's main quest, "warm_city": the capital (1-4), the way down (5-7, Phase 4); stage 8 is Phase 5's.</summary>
+    public static class WarmCity { public const string Id = "warm_city"; public const int Summoned = 1, Arrived = 2, Audience = 3, Below = 4, Opened = 5, Deep = 6, Door = 7; }
 
     /// <summary>Stages of the main quest, "fallen_star" (save version 2 numbering).</summary>
     public static class FallenStar { public const int Crater = 1, Trail = 2, Warrens = 3, Egg = 4, Hatched = 5, Done = 6; }
@@ -111,27 +111,33 @@ namespace DnD.Game
             Add(new QuestDef
             {
                 Act = 3, Id = DeepShift.Id, Title = "The Deep Shift", Giver = "mags",
-                StageXp = { [DeepShift.Below] = 4000 },
+                StageXp = { [DeepShift.Below] = 4000, [DeepShift.Home] = 3000 },
                 StageFlags = { [DeepShift.Below] = "clue_shift" },
                 StageText = new[] {
                     "", "Mags Tolley's husband Bran works the deep shift at the Foundation Works, in the Roots. His letters come up every week. He never does.",
                     "Foreman Crale won't talk about the deep shift. The works ledger might.",
                     "The deep shift goes down through the Undergate and stays down, on the Crown's orders and the Crown's pay. Bran is alive, somewhere below.",
-                    "Bran comes home." },
+                    "Bran Tolley came up out of the dark and walked home to the Roots. Mags hasn't let go of him since." },
+                Reward = new QuestReward { Flag = "bran_home", Npc = "mags", Friendship = 60 },
             });
             Add(new QuestDef
             {
                 Act = 3, Id = WarmCity.Id, Title = "The Warm City", Giver = "quell",
-                StageXp = { [WarmCity.Arrived] = 2000, [WarmCity.Audience] = 3000, [WarmCity.Below] = 6000 },
+                StageXp = { [WarmCity.Arrived] = 2000, [WarmCity.Audience] = 3000, [WarmCity.Below] = 6000, [WarmCity.Opened] = 2000, [WarmCity.Deep] = 4000, [WarmCity.Door] = 6000 },
+                StageFlags = { [WarmCity.Opened] = WorldDb.UndergateOpen },
                 StageText = new[] {
                     "", "A royal courier is waiting in Thistledown square with the King's own carriage.",
                     "Aurelhold, the capital, inside the ring of the Wyrmback. Everywhere else went grey. Here, every lamp is lit. The King expects you at the palace.",
                     "The King was gracious, and asked your dragon to lead the Thousandth Pageant. The city is beautiful. Some of it doesn't add up.",
                     "Lamps that burn on nothing. Records with holes in them. A crypt nobody admits to using. A shift that never comes up. Everything in Aurelhold points down, to the Undergate in the Roots.",
-                    "Below Aurelhold." },
+                    "The Undergate stands open. The deep shift's stair goes down into the dark, and warm air comes up it.",
+                    "The Deep, at the roots of the Wyrmback. Chains as thick as a man run from twelve iron rings to a grey door. You've seen it before, in a dream.",
+                    "You opened the door.",
+                    "Back up into the light." },
                 Triggers = {
                     new QuestTrigger(QuestEvent.ZoneEntered, "capital", WarmCity.Summoned, WarmCity.Arrived),
                     QuestTrigger.FlagsAtLeast(WarmCity.Audience, WarmCity.Below, 3, "clue_lamps", "clue_records", "clue_crypt", "clue_shift"),
+                    new QuestTrigger(QuestEvent.ZoneEntered, "the_deep", WarmCity.Opened, WarmCity.Deep),
                 },
             });
             Add(new QuestDef

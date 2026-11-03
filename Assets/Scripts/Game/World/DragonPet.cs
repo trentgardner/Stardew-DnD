@@ -17,6 +17,8 @@ namespace DnD.Game
         float _emoteUntil, _still, _lastZ;
         /// <summary>Busy with a game of fetch: the follow logic leaves it alone.</summary>
         public bool Busy { get; private set; }
+        /// <summary>The dragon has chosen to stay where it is (it won't follow) until the party leaves this place.</summary>
+        public bool StaysPut;
         public bool Napping { get; private set; }
 
         static GameRoot G => GameRoot.I;
@@ -214,6 +216,14 @@ namespace DnD.Game
                     if (zone.IsWalkable(tile) && zone.LineOfSight(p.MapPos, tile)) return tile;
                 }
             return null;
+        }
+
+        /// <summary>A scripted walk (Act III: the dragon goes to someone on its own). Busy while it walks.</summary>
+        public IEnumerator GoTo(Vector3 target, float near)
+        {
+            Busy = true;
+            yield return RunTo(() => target, near);
+            Busy = false;
         }
 
         IEnumerator RunTo(Func<Vector3> target, float near)

@@ -15,6 +15,7 @@
 //          Act II Phase 4: ) cold lantern post (lit by the dragon or a torch)
 //          Act II Phase 6: 9 lava (solid, glowing)
 //          Act III Phase 3: 7 the Victory of the Crown statue (reads Signs)  8 ever-lamp (always lit, warm)
+//          Act III Phase 4: 1 a Great One's stone head (solid, drawn 2x)  2 chain on the floor (walkable)  0 the grey door
 namespace DnD.Game
 {
     public static class Maps
@@ -604,6 +605,156 @@ namespace DnD.Game
         };
 
         // Act II Phase 6: the Emberhorn. The Throat (Dark): in from the road at (0, 11-12), on to the Heart at (39, 11-12); the Ring Chamber to the north.
+        public static readonly string[] Undergate =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXX:P:PXXXXXXXXXX:P:PXXXXXXXXXX::::XXX",
+            "X:XXXXPXP:::::X:XXXXPXP:::::X:XXXXPX::::::XX",
+            "X:::::::::::::P:P:P:::::::::P:P:P::::::::::X",
+            "X::::::::::::::::::::::::::::::::::::::::::X",
+            "X::::::::::::::q::::::RRRRRRRR:::::::::::::X",
+            "X:::::::::::::::::::::RRRRRRRR:::::::::::::X",
+            "X::::B:B:B:B::::::::::RRRRRRRR:::::::::::::X",
+            "X::::::::::::xx:::::::RRRRRRRR:::::::::::::X",
+            "X::::B:B:B:B::::::::::WWwWWwWW:::::::::::::X",
+            "X:::::::::::::::::::::WWWDWWWW::::::::xx:::X",
+            "X::l::::::F::::::::::l::::::::l:::::::::l::X",
+            "X:::::::::::::::::::::s::::::::::::::::::::X",
+            "::::::::::::::::::::::::::::::::::::::::::VX",
+            "::::::::::::::::::::::::::::::::::::::::::VX",
+            "X::::::::::::::::::::::::::::::::::::::::::X",
+            "X::l::::::::::::::::::::::::::::::::::::l::X",
+            "X::::NaaaaaaaaaN::::::::::::::::::::::x::::X",
+            "X:::x::::::::::::::::::::::::::::::::::::::X",
+            "X::::::::::::::::::::::::::l:::::::::l:::::X",
+            "X::::LLLLLLLLLL:::::::::::::r:r:r:r:r::::::X",
+            "X::::::::::::::::::::::::::::::::::::::::::X",
+            "X:::::::::::::::::::::::::::r:r:r:r:r::::::X",
+            "X::::::::::::::::::::::::::::::::::::::::::X",
+            "X::::::::::::::X:::::::::::::::::::X:::::::X",
+            "XXX::X:::::::::XXXX:X:::::::::XXXXXX:::::::X",
+            "XXXXXXX:::XXXXXXXXXXXXX::X::XXXXXXXXXXXXX::X",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        };
+
+        public static readonly string[] IronVaults =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXX@XXXXXXXXXXXXXXXXXX",
+            "XX:::::::X::::::::XX:::::::::::::XXXXXXX",
+            "XX:+:::+:X:+::q:+:XX:::::::::::::XXXXXXX",
+            "XX:::::::X::::::::XX::::+::::::+:XXXXXXX",
+            "XX:::x:::X:::x::::XX:::::::::::::XXXXXXX",
+            "XX:::::::X::::::::XX:::::::::::::XXXXXXX",
+            "XX:+x::+:X:+x:::+:XX:/:::::::/:::XXXXXXX",
+            "XX:::::::X::::::::XX:::::::::::::XXXXXXX",
+            "XXXXX:XXXXXXX:XXXXXX:::::::::::::XXXXXXX",
+            "XXXXX:XXXXXXX:XXXXXX:::::+:::::::XXXXXXX",
+            "X::P:::P:::P:::P:::::::::::::::::XXXXXXX",
+            ",::::::::::::::::::::::::::::::::Z::::VX",
+            ",::::::::::::::::::::::::::::::::X::::VX",
+            "X::P:::P:::P:::P:::::::::::::::::XXXXXXX",
+            "XXXXX:XXXXXXX:XXXXXX:::::+:::::::XXXXXXX",
+            "XXXXX:XXXXXXX:XXXXXX:::::::::::::XXXXXXX",
+            "XX:::::::X::::::::XX:::::::::::::XXXXXXX",
+            "XX:+:::+:X:+::::+:XX:::::::::::::XXXXXXX",
+            "XX:::::::X::::::::XX:::%:::::/:::XXXXXXX",
+            "XX:::x:::X:::x::::XX:::::::::::::XXXXXXX",
+            "XX:::::::X::::::::XX:::::::::::::XXXXXXX",
+            "XX:+:::+:X:+::::+:XX::::+::::::+:XXXXXXX",
+            "XX:::::::X::::::::XX:::::::::::::XXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        };
+
+        public static readonly string[] RoyalCrypts =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX::A::XX",
+            "XV:::XXXXXXXXXXXXXXXXXXXXXXXX:q:q:XX",
+            "X::::XXXXXXXXXXXXXXXXXXXXXXXX:::::XX",
+            "X:::::::::::::::::::::::::::::::::XX",
+            "X::::::A:::A:::A:::A:::A:::A::::::XX",
+            "XX::::::::::::::::::::::::::::::::XX",
+            "XX::q:::::::::::::::::::::::::::::XX",
+            "XX:::P:::P:::P:::P:::P:::P:::P::::XX",
+            "XX::::::::::::::::::::::::::::::::XX",
+            "XX::::::::Q:::::::::::::::Q:::::::XX",
+            "XX::::::::::::::::::::::::::::::::XX",
+            "XX::::::::J:::::::::::::::J::::::::,",
+            "XX:::::::::::::::::::::::::::::::::,",
+            "XX::::::::::::::::::::::::::::::::XX",
+            "XX:::P:::P:::P:::P:::P:::P:::P::::XX",
+            "XX::::::::::::::::::::::::::::::::XX",
+            "XX::::::::::::::::::::::::::::::::XX",
+            "XX:::::A:::A:::A:::A:::A:::A::::::XX",
+            "XX::::::::::::::::::::::::::::::::XX",
+            "XXXXXXXXXXXXXXXXXXZXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXX:::XXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXX:::XXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXX:V:XXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        };
+
+        public static readonly string[] TheDeep =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXX0XXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXX2:2:2XXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXX2:2:2:2:2XXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXX:::212:2:212:::XXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXX::l:2:2:2:2:2:l::XXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXX::::::2:2:2:2:2::::::XXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXX:1::::2:2:2:2:2::::1:XXXXXXXXXXXXX",
+            "XXXXXXXXXXXXX:::::::2:2:2:2:2:::::::XXXXXXXXXXXX",
+            "XXXXXXXXXXXX::::::::2:2:2:2:2::::::::XXXXXXXXXXX",
+            "XXXXXXXXXXX:::::::::2:2:2:2:2:::::::::XXXXXXXXXX",
+            "XXXXXXXXXXX:::::::::2:2:2:2:2:::::::::XXXXXXXXXX",
+            "XXXXXXXXXXX:1:::::::2:2:2:2:2:::::::1:XXXXXXXXXX",
+            "XXXXXXXXXX::::::::::2:2:2:2:2::::::::::XXXXXXXXX",
+            "XXXXXXXXXX::::::::::2:2:2:2:2::::::::::XXXXXXXXX",
+            "XXXXXXXXXX::::::::::2:2:2:2:2::::::::::XXXXXXXXX",
+            "XXXXXXXXXX:::l::::::2:2:2:2:2::::::l:::XXXXXXXXX",
+            "XXXXXXXXXX::::::::::2:2:2:2:2::::::::::XXXXXXXXX",
+            "XXXXXXXXXX::1:::::::2:2:2:2:2:::::::1::XXXXXXXXX",
+            "XXXXXXXXXX::::::::::2:2:2:2:2::::::::::XXXXXXXXX",
+            "XXXXXXXXXXX:::::::::2:2:2:2:2:::::::::XXXXXXXXXX",
+            "XXXXXXXXXXX:::::::::2:2:2:2:2:::::::::XXXXXXXXXX",
+            "XXXXXXXXXXX:::::::::2:2:2:2:2:::::::::XXXXXXXXXX",
+            "XXXXXXXXXXXX::::::::2:2:2:2:2::::::::XXXXXXXXXXX",
+            "XXXXXXXXXXXXX::1::::2:2:2:2:2::::1::XXXXXXXXXXXX",
+            "XXXXXXXXXXXXXX::::::2:2:2:2:2::::::XXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXX::::::2:2:2:2:2::::::XXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXX::::1:::::::1::::XXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXX::l:::::::::l::XXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXX:::::::::XXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXX:::XXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXX:::XXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXX:::XXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXX:::XXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXX,,XXXXXXXXXXXXXXXXXXXXXXX",
+        };
+
+        public static readonly string[] BeyondTheDoor =
+        {
+            "XXXXXXXXXXXXXX",
+            "XWWWWWWWWWWWWX",
+            "XW==========WX",
+            "XW=B======__WX",
+            "XW==_______=WX",
+            "XW==_______=WX",
+            "XW==========WX",
+            "XW==========WX",
+            "XWWWWW==WWWWWX",
+            "XXXXXX,,XXXXXX",
+        };
+
         public static readonly string[] EmberhornThroat =
         {
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
