@@ -42,6 +42,12 @@ namespace DnD.Game
             World.SetFlag(Turn.Questioning);
             SaveSystem.Save(true);
             GatherAt("capital", WorldDb.SunstairSpot);
+            if (DragonAgent != null && DragonAgent.Actor.Zone == Zones["capital"])
+            {
+                DragonAgent.Actor.PlaceAt(Zones["capital"], WorldDb.SunstairDragonSpot);
+                var pet = DragonAgent.GetComponent<DragonPet>();
+                if (pet != null) pet.StaysPut = true; // it holds its ground beside you until you leave the square
+            }
             StartCoroutine(QuestioningScene(by));
         }
 

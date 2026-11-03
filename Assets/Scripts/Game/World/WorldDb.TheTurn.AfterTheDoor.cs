@@ -12,14 +12,16 @@ namespace DnD.Game
     {
         /// <summary>Where the party stands at the questioning: the foot of the Sunstair, facing the palace.</summary>
         public static readonly Vector2Int SunstairSpot = new Vector2Int(31, 14);
+        /// <summary>Where the dragon stands at the questioning: beside the party, not on top of it.</summary>
+        public static readonly Vector2Int SunstairDragonSpot = new Vector2Int(29, 15);
 
         static void BuildTheTurn()
         {
             Speaker("king_q", "king_aldric", 31, 11, "on the Sunstair, waiting for an answer");
-            Speaker("marsh_q", "marsh_capital", 29, 12, "at the King's shoulder, watching you");
-            Speaker("ashby_q", "ashby_capital", 26, 13, "at the foot of the Sunstair, watching you");
+            Speaker("marsh_q", "marsh_capital", 29, 11, "at the King's shoulder, watching you");
+            Speaker("ashby_q", "ashby_capital", 28, 13, "at the foot of the Sunstair, watching you");
             Speaker("sorrel_q", "sorrel_capital", 34, 12, "at the foot of the Sunstair, watching you");
-            Speaker("calloway_q", "calloway_capital", 37, 13, "at the foot of the Sunstair, watching you");
+            Speaker("calloway_q", "calloway_capital", 35, 14, "at the foot of the Sunstair, watching you");
 
             void Speaker(string id, string original, int x, int y, string doing)
             {

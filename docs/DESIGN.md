@@ -136,6 +136,54 @@ Eldritch Blast fires two beams at 5 (2024) instead of one bigger one.
 | 13 | rogue 24.1 | monk 22.9, fighter 20.6, barbarian 16.8, ranger 15.7, paladin 13.8 | 22.9 | druid 13.6, sorcerer/wizard 12.4, cleric 10.8, bard 8.4 |
 The paladin's number leaves out Radiant Strikes (+1d8 on every melee hit) and smites; every martial and the warlock stay above half the leader.
 
+## The turn (Act III Phase 5)
+
+- **Exempt files** (each contains `MetHer`, checked by `LoreTests.TurnFilesAreGated`): `GameRoot.TheTurn.AfterTheDoor.cs` (the trigger,
+  the scene, the choice, the break), `DialogueDb.TheTurn.AfterTheDoor.cs` (dialogue `questioning`), `WorldDb.TheTurn.AfterTheDoor.cs`
+  (the speakers), `TurnDb.AfterTheDoor.cs` (`Turn` flags, the reaction table, the gate, betrayal). QuestDb's warm_city 7-9 text stays guard-clean.
+- **Trigger:** `CheckTheTurn()` runs on every zone entry (from `Warp`) and after `LoadGame`. At warm_city 7 or 8, with `MetHer` and
+  `meeting_seen`, and with a ready player in `capital`, it calls `BeginQuestioning` a frame later. That refuses if anyone is fighting.
+  Otherwise it sets warm_city 8 (`Called`) and `Turn.Questioning`, saves, runs `GatherAt("capital", SunstairSpot (31,14))`, puts the
+  dragon at (29,15) with `StaysPut`, and plays two beats (`turn_beats_seen`) through `PlayBeats`. `PlayBeats` is the meeting scene's
+  loop, now shared.
+- **The speakers:** `king_q`, `marsh_q`, `ashby_q`, `sorrel_q` and `calloway_q` are separate NpcDefs on dialogue `questioning`, because
+  `DialogueDb.Get` caches per id. They appear only while `Questioning` is set and `turn_chosen` isn't. The originals (`king_aldric`,
+  `*_capital`) get `GoneFlag = Questioning`.
+- **Dialogue `questioning`:** its start is `open` -> `voices` (after `king_confessed`) -> `decide` (after all four `turn_heard_<force>`).
+  Every route to `decide` passes `confess`. The lie, the ring, Insight, Intimidation/Persuasion, and "let the dragon answer" all lead
+  there. Sway rolls set `swayed_<force>` (+1000 XP each, once). Your banner lowers that leader's DC by 3. `seal_understood` gives
+  advantage with Ashby, and `wyrmwatch_belled` with Calloway. `fae_clause` calls in the favour (`fae_favour_called`, no roll). Every
+  roll is `social: false`, so one failure doesn't lock another leader's check. Every line is echoed to the other players' logs.
+- **Reaction table** (`TurnDb.Reaction`):
+
+  | force | end | seal | save |
+  |---|---|---|---|
+  | crown | With | Against | Against |
+  | academy | Aside | With | Against |
+  | fae | Against | Aside | With |
+  | hunters | With | Aside | Against |
+
+  Each modifier steps the stance once toward With, capped:
+  - `banner_<force>`
+  - `swayed_<force>`
+  - `wyrmwatch_belled` (hunters, save only)
+  - `wyvern_egg_saved` (academy)
+  - `marsh_asks_ashby` (academy, when Marsh defects)
+
+  `fae_clause` puts a floor under the fae at Aside. The crown never moves on seal/save. Instead, `MarshDefects` (not end, and
+  `banner_crown` or `swayed_crown`) brings Marsh and part of the Household Guard over to you.
+- **Save gate** (`SaveGateMissing`), shown on `gate_short`:
+  - `seal_understood` or Ashby swayed;
+  - Sorrel swayed, the favour called, or lore `the_great_ones_below`;
+  - `promised_her`.
+- **The choice:** `OfferEnding` sends a confirm to every ready player and needs every Yes. Any "Not yet" or Esc goes back to `decide`
+  (`ChoiceScreen.OnCancel` is new). `ChooseEnding` is atomic: `ending_<e>` + `turn_chosen`, then betrayal (`betrayed_side` and -50
+  standing if your committed force ends Against), dragon bond (end -10, save +10), warm_city 9 (`Break`), a save, and then the break.
+- **The break:** three beats (`GameRoot.BreakBeats`): the ending's opening, `TurnDb.BreakSummary` (one line per force, Marsh's badge if
+  she defects), and the dragon. Then a **To Be Continued** placeholder. Phase 6 replaces it and reads `Turn.Ending(w)`,
+  `TurnDb.Reaction` and `TurnDb.MarshDefects` to build the fights.
+- **XP:** warm_city 8 = 4000 and 9 = 8000, so 85000 + the main quest = 120000 (level 13 at the turn; `MainQuestReachesThirteenAtTheTurn`).
+
 ## The lair (Act III Phase 4)
 - **Zones** (all `Act = 3`, `Dark`, `BlightWeight = 0`): `undergate` (the works below the Roots), `iron_vaults` (beam puzzle), `royal_crypts`
   (lid puzzle, the Third Ideal, a stair up to capital (6,14) once `crypt_stair_open`), `the_deep` (the Gaoler, the grey door) and

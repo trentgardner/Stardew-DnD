@@ -704,5 +704,128 @@ namespace DnD.Tests
                     yield return Frames(2);
                 }
         }
+
+        // ============================================================ Task 5: golden paths and screenshots
+
+        [UnityTest]
+        public IEnumerator TurnGoldenPath()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 60, side: "academy");
+            yield return Frames(2);
+            // The end of Phase 4's golden path: the whole main quest paid, met her, promised, understood the seal.
+            foreach (var st in new[] { WarmCity.Arrived, WarmCity.Audience, WarmCity.Below, WarmCity.Opened, WarmCity.Deep, WarmCity.Door }) g.Quests.Set(WarmCity.Id, st, p);
+            yield return Met(g, p, "promised_her", "seal_understood");
+            yield return Surface(g, p);
+            var t = Talk(p);
+            Assert.AreEqual("open", t.NodeId);
+            t.Goto("lie_bad"); t.Goto("truth"); t.Goto("deny"); t.Goto("roar"); t.Goto("confess"); t.Goto("confess2"); t.Goto("voices");
+            t.Goto("marsh"); t.Goto("voices"); t.Goto("ashby"); t.Goto("voices");
+            t.Goto("sorrel"); t.Goto("sway_fae_ok"); t.Goto("voices"); t.Goto("calloway"); t.Goto("voices");
+            t.Goto("decide");
+            OptText("decide", "Save her.").Do(Ctx(p));
+            yield return Frames(3);
+            p.Hud.Find<ChoiceScreen>().Choose("Yes");
+            yield return Frames(3);
+            var seen = new List<string>();
+            yield return PlayBreak(g, p, seen);
+            Assert.AreEqual(3, seen.Count);
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(6);
+            p = g.Players[0];
+            Assert.AreEqual(WarmCity.Break, g.Quests.Stage(WarmCity.Id));
+            Assert.AreEqual(Turn.Save, Turn.Ending(g.World));
+            Assert.GreaterOrEqual(p.Character.XP, PlayerCharacter.XpThresholds[13], "level 13 at the turn");
+            for (int h = 0; h < 24; h++) foreach (var id in Speakers) Assert.IsNull(WorldDb.Current(WorldDb.Npcs[id], h, 0, g.World));
+            var buoy = Object.FindObjectsByType<TownDog>().SingleOrDefault();
+            Assert.IsNotNull(buoy, "Buoy is still about");
+            Assert.AreEqual("town", buoy.Actor.Zone.Def.Id, "in Thistledown");
+            StringAssert.Contains("Buoy", buoy.PromptText(p));
+            g.QuitToTitle();
+            yield return Frames(2);
+
+            // End (the hunters' side): no betrayal, the Crown beside you.
+            p = ActThree(g, 61, side: "hunters");
+            yield return Frames(2);
+            yield return AtDecide(g, p);
+            yield return Pick(g, p, Turn.End);
+            p.Hud.Find<ChoiceScreen>().Choose("Yes");
+            yield return Frames(3);
+            Assert.AreEqual(Turn.End, Turn.Ending(g.World));
+            Assert.AreEqual(Stance.With, TurnDb.Reaction("crown", Turn.End, g.World));
+            Assert.AreEqual(Stance.With, TurnDb.Reaction("hunters", Turn.End, g.World));
+            Assert.IsFalse(g.World.Flag(Turn.Betrayed));
+            g.QuitToTitle();
+            yield return Frames(2);
+
+            // Seal (the Crown's side, Marsh won over): Marsh defects, and the throne counts it a betrayal.
+            p = ActThree(g, 62, side: "crown");
+            yield return Frames(2);
+            yield return AtDecide(g, p);
+            Talk(p).Goto("sway_crown_ok");
+            g.ChooseEnding(p, Turn.Seal);
+            yield return Frames(2);
+            Assert.IsTrue(TurnDb.MarshDefects(Turn.Seal, g.World));
+            Assert.IsTrue(g.World.Flag(Turn.Betrayed));
+            Assert.AreEqual(Stance.With, TurnDb.Reaction("academy", Turn.Seal, g.World));
+        }
+
+        [UnityTest]
+        public IEnumerator CaptureTurn()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 90, "wizard", "fae");
+            yield return Frames(2);
+            g.Clock.Minutes = 12 * 60;
+            yield return Met(g, p, "seal_understood", "fae_clause");
+            g.Warp(p, "capital", new Vector2Int(58, 30), false);
+            yield return Frames(40);
+            AcademyTests.Shot("act5_beat1");
+            Beat(p)?.Close();
+            yield return Frames(20);
+            AcademyTests.Shot("act5_beat2");
+            Beat(p)?.Close();
+            yield return Frames(20);
+            p.Hud.CloseAll();
+            p.Hud.HideNarration();
+            yield return Frames(5);
+            AcademyTests.Shot("act5_sunstair");
+            g.OpenQuestioning(p);
+            yield return Frames(3);
+            AcademyTests.Shot("act5_open");
+            var t = Talk(p);
+            t.Goto("confess");
+            yield return Frames(3);
+            AcademyTests.Shot("act5_confess");
+            t.Goto("confess2");
+            yield return Frames(3);
+            AcademyTests.Shot("act5_confess2");
+            t.Goto("voices");
+            yield return Frames(3);
+            AcademyTests.Shot("act5_voices");
+            t.Goto("sorrel");
+            yield return Frames(3);
+            AcademyTests.Shot("act5_sorrel");
+            foreach (var n in new[] { "marsh", "ashby", "calloway" }) t.Goto(n);
+            t.Goto("gate_short");
+            yield return Frames(3);
+            AcademyTests.Shot("act5_gate_short");
+            t.Goto("decide");
+            yield return Frames(3);
+            AcademyTests.Shot("act5_decide");
+            g.World.SetFlag("promised_her"); g.World.SetFlag(Turn.FaeFavourCalled);
+            yield return Pick(g, p, Turn.Save);
+            yield return Frames(3);
+            AcademyTests.Shot("act5_confirm");
+            p.Hud.Find<ChoiceScreen>().Choose("Yes");
+            yield return Frames(5);
+            Beat(p)?.Close();
+            yield return Frames(10);
+            AcademyTests.Shot("act5_break2");
+            Beat(p)?.Close();
+            yield return Frames(10);
+            AcademyTests.Shot("act5_break3");
+        }
     }
 }
