@@ -1962,7 +1962,7 @@ namespace DnD.Game
             var tiles = new List<Vector2Int>();
             foreach (var bu in Units)
             {
-                if (!(bu.C is Monster m) || !bu.Active || !m.PhaseTwo || m.Def.LairEruptions <= 0) continue;
+                if (!(bu.C is Monster m) || !bu.Active || m.LairEruptionsNow <= 0) continue;
                 var near = new List<Vector2Int>();
                 foreach (var h in Units.Where(o => o.Active && Hostile(bu, o)))
                     for (int dx = -2; dx <= 2; dx++)
@@ -1972,7 +1972,7 @@ namespace DnD.Game
                             if (Zone.InBounds(t) && Zone.IsWalkable(t) && t != bu.Pos && !near.Contains(t) && !tiles.Contains(t)) near.Add(t);
                         }
                 var occupied = near.Where(t => Units.Any(o => o.Active && Hostile(bu, o) && o.Pos == t)).ToList();
-                for (int i = 0; i < m.Def.LairEruptions && near.Count > 0; i++)
+                for (int i = 0; i < m.LairEruptionsNow && near.Count > 0; i++)
                 {
                     var pool = i == 0 && occupied.Count > 0 ? occupied : near;
                     var pick = pool[rng.Next(pool.Count)];
