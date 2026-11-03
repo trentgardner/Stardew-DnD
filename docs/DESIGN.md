@@ -183,6 +183,35 @@ The paladin's number leaves out Radiant Strikes (+1d8 on every melee hit) and sm
   she defects), and the dragon. Then the finale begins (Phase 6, below).
 - **XP:** warm_city 8 = 4000 and 9 = 8000, so 85000 + the main quest = 120000 (level 13 at the turn; `MainQuestReachesThirteenAtTheTurn`).
 
+## The endings (Act III Phase 7)
+- **Exempt files** (contain `MetHer`): `EndingDb.AfterTheDoor.cs` (`Ending` flags, `EndingDb.Scenes/Slides/PonderLine`) and
+  `GameRoot.Ending.AfterTheDoor.cs` (`PlayEnding`, `PlaySlides`, the credits, resume). UI: `EpilogueScreen`, `CreditsScreen`.
+- **The sequence** (after the boss's victory beats; `VictorySoon` → `PlayEnding`):
+  1. **Her**.
+  2. **{the dragon}**, with a warm variant at bond tier 3+ of 5.
+  3. **The Ones Who Came With You**: one line per companion, skipped if there are none.
+  4. **Aurelhold**: Marsh's line if she defects, then Ashby, Sorrel and Calloway by `TurnDb.Reaction`.
+  5. **The King**.
+  6. **The Road Home**: `GatherAt("town")`, and Buoy is set beside the carriage stop.
+  7. **Thistledown**: Brannoc, Elowen, Pip, Rhoswen (the romance line at 8+ hearts), Snik's statue if `snik_friend`, and Buoy, always.
+
+  Then `ending_seen` and a save. Then 11 epilogue slides (`EpilogueScreen`, one press each, Esc too, lead-driven, a lead who
+  leaves hands over): Sundermere, Aurelhold, the four forces by stance, the dragon, Her, Thistledown, You ("{day} days..."),
+  Afterwards (the ponder line). Then the credits, which scroll and end on **the dedication**, alone and held until a press.
+  Then `game_complete`, a save, and the title.
+- **The dedication** (the user's words, exact, never cut; `GameRoot.Dedication`, pinned by `EndingTests.DedicationIsInTheCredits`):
+  "To my beautiful fiancée Lauren, this game is dedicated. I love you forever."
+- **The credits** carry NOTICE.md's SRD 5.2 CC-BY-4.0 attribution, the non-affiliation line, and the Ninja Adventure credit.
+- **Never a verdict**: `EndingTests.NoVerdicts`. The ponder lines:
+  - End: "The world is safe now. That's what everyone says. You find you can't say it out loud."
+  - Seal: "She's asleep, and she isn't dreaming. Ashby promised. You hope he was right. You hope she isn't knocking."
+  - Save: "The fire is home, and so is she. Somewhere, a thousand years of kings are turning in their graves. Let them. Still, you wonder what the fire will want, now that it's free."
+- **Resume:** loading after `finale_won` replays the ending from its first scene. Loading a `game_complete` save shows one
+  "The story is told" note, and the world is free to wander. `ResetWorld` clears `EndingPlaying` and the flight state.
+- **Polish:** the seal fight is lit (a radius-7 light on Ashby at the door), and the Ashen Queen is ash-grey with ember, so she
+  reads differently from the grown dragon.
+- **Balance:** `ActThreeBalanceTable` (RulesTests). The street fights at level 13 take a median 1.4-7.7 rounds.
+
 ## The finales (Act III Phase 6)
 - **Exempt files** (each contains `MetHer`, checked by `FinaleTests.FinaleFilesAreGated`): `FinaleDb.AfterTheDoor.cs` (`Finale` flags,
   `FinaleDb` tables, the flight routes), `GameRoot.Finale.AfterTheDoor.cs` (the streets, allies, wipes, resume, the boss fights),
@@ -234,8 +263,7 @@ The paladin's number leaves out Radiant Strikes (+1d8 on every melee hit) and sm
   the flight's effects (`LastFlightWon` keeps a copy).
   - **Seal:** Ashby works at the grey door (24,6). `OnCombatRound` adds one per round (`SealProgress`, narrated "The seal: n/7"). The King's
     phase pulls it back once. At 7, the King's side yields. Beating the King also wins.
-  - **The win** (warm_city 13 `Won`, `finale_won`): saved, two victory beats (`FinaleDb.Victory`), then a **To Be Continued** card.
-    Phase 7 replaces it with the endings.
+  - **The win** (warm_city 13 `Won`, `finale_won`): saved, two victory beats (`FinaleDb.Victory`), then the endings (Phase 7, above).
 
 ## The lair (Act III Phase 4)
 - **Zones** (all `Act = 3`, `Dark`, `BlightWeight = 0`): `undergate` (the works below the Roots), `iron_vaults` (beam puzzle), `royal_crypts`

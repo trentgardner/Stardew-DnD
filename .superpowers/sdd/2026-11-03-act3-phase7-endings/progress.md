@@ -28,3 +28,10 @@ Task 2: complete (tests: EndingTests;FinaleTests → 47/47)
 - Task 3: Ashen Queen retinted ash-grey with an ember tinge (hue 282, sat 0.45, val 0.95) so she reads differently from the red grown dragon.
 - Task 3: tests: EndingTests → 16/16.
 Task 3: complete (tests: RulesTests 1420/1420; EndingTests 16/16)
+
+## Task 4
+- Task 4: whole-act golden paths End/Seal/Save green: meeting → surface → questioning (confess + 4 leaders) → OfferEnding + Yes → 3 streets → flight → boss with phases → 7 scenes → 11 slides → credits (dedication) → title, game_complete saved; warm_city 7,8,9,10,11,12,13 in order.
+- Task 4: Ruling: the golden paths start at the meeting (MetHer, warm_city 7), not at Act III's start — the capital and lair have their own golden paths (CapitalTests, LairTests) — cost if wrong: the seam between Phase 4 and 5 is covered by TurnTests, not here.
+- Task 4: screenshots reviewed (act7_*): Her, Thistledown, slides (opaque now), credits and dedication. Fix: Buoy placed at TownCarriageStop+(1,4) so the beat window doesn't hide him.
+- Task 4: minor (deferred): a stale "Round 1" tracker bar and the "Victory!" narration can still be on screen behind the first ending scene (existing combat UI).
+- Task 4: docs: DESIGN "The endings (Act III Phase 7)", PLAYTEST (the game is complete + checklist), README (complete).

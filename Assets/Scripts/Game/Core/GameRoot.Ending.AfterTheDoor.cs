@@ -56,7 +56,7 @@ namespace DnD.Game
                     foreach (var p in Players.Where(p => p.IsReady)) p.Hud.CloseAll();
                     GatherAt("town", WorldDb.TownCarriageStop);
                     var buoy = FindObjectsByType<TownDog>(FindObjectsSortMode.None).FirstOrDefault();
-                    if (buoy != null && Zones.TryGetValue("town", out var town)) buoy.Actor.PlaceAt(town, WorldDb.TownCarriageStop + new Vector2Int(2, 1));
+                    if (buoy != null && Zones.TryGetValue("town", out var town)) buoy.Actor.PlaceAt(town, WorldDb.TownCarriageStop + new Vector2Int(1, 4)); // below the beat window, so he is on screen
                     yield return null;
                 }
                 if (Lead == null) { EndingPlaying = false; yield break; }

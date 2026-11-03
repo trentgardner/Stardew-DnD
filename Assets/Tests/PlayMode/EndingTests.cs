@@ -350,5 +350,103 @@ namespace DnD.Tests
             Assert.AreEqual(PlayerCharacter.ActThreeLevelCap, PlayerCharacter.LevelCap, "still 13 after the last fight");
             Assert.AreEqual(13, PlayerCharacter.ActThreeLevelCap);
         }
+
+        // ================================================================== Task 4: the whole act's end, for each ending
+
+        IEnumerator ActThreeGoldenPath(string ending, string side, params string[] flags)
+        {
+            var g = GameRoot.I;
+            var p = FinaleTests.Roller(g, side);
+            ((RollerInput)p.Input).PressWhen = () => p.Hud != null && p.Hud.Dice.IsOpen && Time.frameCount % 2 == 0 && !g.World.Flag(Finale.Flown);
+            yield return FinaleTests.Frames(2);
+            g.Clock.Minutes = 12 * 60;
+            var stages = new List<int>();
+            // The meeting is behind you: warm_city 7, standing in the Roots.
+            g.Quests.Set(WarmCity.Id, WarmCity.Door, p, 0f);
+            foreach (var f in new[] { WorldDb.MetHer, "meeting_seen" }.Concat(flags)) g.World.SetFlag(f);
+            g.Warp(p, "roots", new Vector2Int(50, 20), false);
+            yield return FinaleTests.Frames(3);
+            stages.Add(g.Quests.Stage(WarmCity.Id));
+            // Up into the light: the whole city is waiting at the Sunstair.
+            g.Warp(p, "capital", new Vector2Int(58, 30), false);
+            yield return FinaleTests.Frames(5);
+            DialogueScreen talk = null;
+            for (int i = 0; i < 12 && (talk = p.Hud.Find<DialogueScreen>()) == null; i++) { FinaleTests.Beat(p)?.Close(); yield return FinaleTests.Frames(4); }
+            Assert.IsNotNull(talk, ending + ": the questioning");
+            stages.Add(g.Quests.Stage(WarmCity.Id));
+            talk.Goto("confess");
+            foreach (var n in new[] { "marsh", "ashby", "sorrel", "calloway" }) talk.Goto(n);
+            g.OfferEnding(p, ending);
+            yield return FinaleTests.Frames(3);
+            Assert.IsNotNull(FinaleTests.Choice(p), ending + ": the confirm");
+            FinaleTests.Choice(p).Choose("Yes");
+            yield return FinaleTests.Frames(3);
+            stages.Add(g.Quests.Stage(WarmCity.Id));
+            // The break, then the streets.
+            for (int n = 1; n <= Finale.Stages; n++)
+            {
+                for (float t0 = Time.realtimeSinceStartup; Time.realtimeSinceStartup - t0 < 8f;)
+                {
+                    yield return FinaleTests.Frames(4);
+                    var b = FinaleTests.Beat(p);
+                    if (b != null) b.Close();
+                    else if (!p.Hud.Dice.IsOpen && p.Hud.Top == null) break;
+                }
+                if (n == 1) stages.Add(g.Quests.Stage(WarmCity.Id));
+                foreach (var q in g.Players.Where(x => x.IsReady)) Assert.IsTrue(q.Hud.Top == null || q.Hud.Top.Closed, $"{ending}: nothing left open before stage {n}");
+                yield return FinaleTests.WinStreet(g, p, n);
+            }
+            yield return FinaleTests.RideOut(g, p, ending, 0);
+            stages.Add(g.Quests.Stage(WarmCity.Id) - 1); // Flight (11) was passed on the way to the landing
+            stages.Add(g.Quests.Stage(WarmCity.Id));
+            yield return FinaleTests.Frames(3);
+            var c = FinaleTests.BossFightOf(g, ending);
+            Assert.IsNotNull(c, ending + ": the last fight");
+            yield return FinaleTests.BeatTheBoss(g, p, c, ending);
+            stages.Add(g.Quests.Stage(WarmCity.Id));
+            CollectionAssert.AreEqual(new[] { WarmCity.Door, WarmCity.Called, WarmCity.Break, WarmCity.Streets, WarmCity.Flight, WarmCity.Boss, WarmCity.Won }, stages, ending + ": warm_city 7 → 13, in order");
+
+            // The ending, with pictures.
+            float start = Time.realtimeSinceStartup;
+            int slide = 0; bool credits = false;
+            while (g.InGame && Time.realtimeSinceStartup - start < 150f)
+            {
+                yield return null;
+                var top = p.Hud.Top;
+                if (top == null || top.Closed) continue;
+                if (top is MessageScreen m)
+                {
+                    yield return FinaleTests.Frames(8);
+                    if (m.Title == "Her") AcademyTests.Shot($"act7_{ending}_her");
+                    if (m.Title == EndingDb.ThistledownTitle && !m.Body.Contains("Buoy")) AcademyTests.Shot($"act7_{ending}_thistledown");
+                    if (m.Title == EndingDb.ThistledownTitle && m.Body.Contains("Buoy")) { p.Hud.HideNarration(); AcademyTests.Shot($"act7_{ending}_buoy"); }
+                    m.Close();
+                }
+                else if (top is EpilogueScreen e)
+                {
+                    yield return FinaleTests.Frames(4);
+                    if (slide == 0 || slide == 2 || e.Slide.Title == "Afterwards") AcademyTests.Shot($"act7_{ending}_slide{slide}");
+                    slide++;
+                    e.Close();
+                }
+                else if (top is CreditsScreen cr)
+                {
+                    credits = true;
+                    yield return new WaitForSecondsRealtime(2.2f);
+                    cr.SkipToDedication();
+                    yield return new WaitForSecondsRealtime(1.7f);
+                    cr.Close();
+                }
+                yield return FinaleTests.Frames(2);
+            }
+            Assert.AreEqual(EndingDb.Slides(ending, new WorldState(), 1).Count, slide, ending + ": every slide");
+            Assert.IsTrue(credits, ending + ": the credits");
+            Assert.IsFalse(g.InGame, ending + ": back to the title");
+            Assert.IsTrue(Directory.GetFiles(_tempSaves, "*", SearchOption.AllDirectories).Any(f => File.ReadAllText(f).Contains(Ending.Complete)), ending + ": the told story is saved");
+        }
+
+        [UnityTest, Timeout(600000)] public IEnumerator ActThreeGoldenPathEnd() => ActThreeGoldenPath(Turn.End, "hunters");
+        [UnityTest, Timeout(600000)] public IEnumerator ActThreeGoldenPathSeal() => ActThreeGoldenPath(Turn.Seal, "academy");
+        [UnityTest, Timeout(600000)] public IEnumerator ActThreeGoldenPathSave() => ActThreeGoldenPath(Turn.Save, "fae", "seal_understood", "promised_her", Turn.FaeFavourCalled);
     }
 }

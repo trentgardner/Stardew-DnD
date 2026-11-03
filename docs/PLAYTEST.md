@@ -61,7 +61,16 @@ character. You can go anywhere independently; if one of you starts a fight, the 
   **"Take the reins"**. Closed it by accident? Walk up to the dragon and choose **Ride**. Then a flight over the city with two choices,
   each a roll. Good rolls make the last fight easier.
 - **The last fight**: a different big boss for each ending, with story scenes as it changes (they always play, however hard you hit).
-  On the seal path, keep the King off Ashby for seven rounds, or beat him. Then a **To Be Continued** card: the endings come next update.
+  On the seal path, keep the King off Ashby for seven rounds, or beat him.
+- **The ending** (new, **the game is complete**): scenes for her, your dragon, your companions, the leaders and the King. Then
+  the road home to Thistledown, where everyone from Act I is waiting (Buoy too). Then an epilogue built from your choices, and the
+  credits. Your save is kept. Loading it afterwards lets you wander.
+
+### The ending checklist
+- [ ] Did your ending land? Which one did you pick, and would you pick it again?
+- [ ] Did the ending feel rushed, or too long?
+- [ ] Did the last line of the epilogue make you think?
+- [ ] Did the credits look right on the TV (both halves in co-op)?
 
 ### The fight for Aurelhold checklist
 - [ ] Did the three street fights feel different from each other? Too many, too few?
@@ -517,4 +526,4 @@ Tick these off on the laptop and TV. If something feels wrong, note what you wer
 - A few sprites are still Claude-made fill-ins where the art pack had nothing (see `ART_IMPORT_GUIDE.md`).
 - Lore names are pending your approval (`LORE_PITCH.md`).
 - The road past Miller's Ford is blocked by a fallen tree (Port Varrel comes later).
-- Level cap is 4 for this playtest (the end of Act I).
+- (Act III is complete: the level cap is 13 and the story has an ending. Older limits listed above this line have been lifted.)
