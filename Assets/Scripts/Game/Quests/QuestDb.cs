@@ -15,8 +15,8 @@ namespace DnD.Game
     /// <summary>Act III side quest, "deep_shift": stage 4, Bran comes home, is found below the Undergate (Phase 4).</summary>
     public static class DeepShift { public const string Id = "deep_shift"; public const int Asked = 1, Crale = 2, Below = 3, Home = 4; }
 
-    /// <summary>Act III's main quest, "warm_city": the capital (1-4), the way down (5-7, Phase 4); stage 8 is Phase 5's.</summary>
-    public static class WarmCity { public const string Id = "warm_city"; public const int Summoned = 1, Arrived = 2, Audience = 3, Below = 4, Opened = 5, Deep = 6, Door = 7; }
+    /// <summary>Act III's main quest, "warm_city": the capital (1-4), the way down (5-7, Phase 4); 8-9 the turn (Phase 5); 10 the finale (Phase 6 fills it in).</summary>
+    public static class WarmCity { public const string Id = "warm_city"; public const int Summoned = 1, Arrived = 2, Audience = 3, Below = 4, Opened = 5, Deep = 6, Door = 7, Called = 8, Break = 9, Finale = 10; }
 
     /// <summary>Stages of the main quest, "fallen_star" (save version 2 numbering).</summary>
     public static class FallenStar { public const int Crater = 1, Trail = 2, Warrens = 3, Egg = 4, Hatched = 5, Done = 6; }
@@ -123,7 +123,7 @@ namespace DnD.Game
             Add(new QuestDef
             {
                 Act = 3, Id = WarmCity.Id, Title = "The Warm City", Giver = "quell",
-                StageXp = { [WarmCity.Arrived] = 2000, [WarmCity.Audience] = 3000, [WarmCity.Below] = 6000, [WarmCity.Opened] = 2000, [WarmCity.Deep] = 4000, [WarmCity.Door] = 6000 },
+                StageXp = { [WarmCity.Arrived] = 2000, [WarmCity.Audience] = 3000, [WarmCity.Below] = 6000, [WarmCity.Opened] = 2000, [WarmCity.Deep] = 4000, [WarmCity.Door] = 6000, [WarmCity.Called] = 4000, [WarmCity.Break] = 8000 },
                 StageFlags = { [WarmCity.Opened] = WorldDb.UndergateOpen },
                 StageText = new[] {
                     "", "A royal courier is waiting in Thistledown square with the King's own carriage.",
@@ -132,8 +132,10 @@ namespace DnD.Game
                     "Lamps that burn on nothing. Records with holes in them. A crypt nobody admits to using. A shift that never comes up. Everything in Aurelhold points down, to the Undergate in the Roots.",
                     "The Undergate stands open. The deep shift's stair goes down into the dark, and warm air comes up it.",
                     "The Deep, at the roots of the Wyrmback. Chains as thick as a man run from twelve iron rings to a grey door. You've seen it before, in a dream.",
-                    "You opened the door.",
-                    "Back up into the light." },
+                    "You opened the door, and what was behind it changes everything. Now you have to go back up and tell them.",
+                    "All of Aurelhold is waiting at the Sunstair: the King, Marsh, Ashby, Sorrel and Calloway. They want to know what you found below, and what you mean to do about it.",
+                    "The choice is made. Steel is coming out all over the Great Square.",
+                    "The fight for Aurelhold is over. (The finale comes in a later update.)" },
                 Triggers = {
                     new QuestTrigger(QuestEvent.ZoneEntered, "capital", WarmCity.Summoned, WarmCity.Arrived),
                     QuestTrigger.FlagsAtLeast(WarmCity.Audience, WarmCity.Below, 3, "clue_lamps", "clue_records", "clue_crypt", "clue_shift"),

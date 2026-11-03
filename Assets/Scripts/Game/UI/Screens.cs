@@ -56,10 +56,15 @@ namespace DnD.Game
         public bool Choose(string prefix)
         {
             foreach (var (label, act) in _opts)
-                if (label.StartsWith(prefix)) { Close(); act?.Invoke(); return true; }
+                if (label.StartsWith(prefix)) { _chose = true; Close(); act?.Invoke(); return true; }
             return false;
         }
         public override bool ShowCloseButton => _cancellable;
+
+        /// <summary>Runs when the prompt is closed without picking an option (Esc/B or the close button), unless everything is closing.</summary>
+        public Action OnCancel;
+        bool _chose;
+        public override void OnClose() { if (!_chose && !Hud.ClosingAll) OnCancel?.Invoke(); }
 
         public override void Build()
         {
@@ -74,7 +79,7 @@ namespace DnD.Game
             }
             var list = UIKit.Rect(Root, "List", new Vector2(0, 0), new Vector2(1, 1), new Vector2(8, 8), new Vector2(-8, top));
             _menu = new MenuList(list) { RowHeight = 18, FontSize = 11 };
-            foreach (var (label, act) in _opts) { var a = act; _menu.Add(label, () => { Close(); a?.Invoke(); }); }
+            foreach (var (label, act) in _opts) { var a = act; _menu.Add(label, () => { _chose = true; Close(); a?.Invoke(); }); }
             _menu.Build();
         }
 

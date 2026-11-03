@@ -32,9 +32,23 @@ namespace DnD.Game
                 "Behind the bed, someone is hiding. A little girl, seven or eight, in a nightdress gone grey with age, ash-pale hair, and eyes that catch the lamplight like coals. She's staring at you. She is terrified of you.",
                 $"{name} has been afraid of fire since the day it hatched. It walks past all of you, right up to her, folds itself down small, which takes some doing, and puts its great head in her lap. She stares at it. Then, very carefully, she pats it. And she laughs.",
             };
+            yield return PlayBeats(by, beats, i => i == 2 ? DragonGoesToHer() : null);
+            World.SetFlag("meeting_seen");
+            var her = FindObjectsByType<NpcAgent>(FindObjectsSortMode.None).FirstOrDefault(n => n.Def.Id == "edda");
+            var talker = by.IsReady ? by : Players.FirstOrDefault(p => p.IsReady);
+            talker?.Hud.Push(new DialogueScreen("edda", her, null));
+        }
+
+        /// <summary>
+        /// Story beats (MessageScreens) shown to every ready player in turn. Each advances when the lead player closes theirs;
+        /// the other players' copies close with it. `before(i)` (if not null) runs before beat i.
+        /// </summary>
+        public IEnumerator PlayBeats(PlayerSlot by, string[] beats, System.Func<int, IEnumerator> before = null)
+        {
             for (int i = 0; i < beats.Length; i++)
             {
-                if (i == 2) yield return DragonGoesToHer();
+                var pre = before?.Invoke(i);
+                if (pre != null) yield return pre;
                 var lead = by.IsReady ? by : Players.FirstOrDefault(p => p.IsReady);
                 if (lead == null) yield break;
                 MessageScreen mine = null;
@@ -48,10 +62,6 @@ namespace DnD.Game
                 foreach (var p in Players.Where(x => x.IsReady && x != lead)) p.Hud.CloseAll(); // the other player's copy goes with it
                 yield return null;
             }
-            World.SetFlag("meeting_seen");
-            var her = FindObjectsByType<NpcAgent>(FindObjectsSortMode.None).FirstOrDefault(n => n.Def.Id == "edda");
-            var talker = by.IsReady ? by : Players.FirstOrDefault(p => p.IsReady);
-            talker?.Hud.Push(new DialogueScreen("edda", her, null));
         }
 
         IEnumerator DragonGoesToHer()

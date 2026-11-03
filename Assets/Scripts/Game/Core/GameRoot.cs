@@ -199,6 +199,7 @@ namespace DnD.Game
             }
             if (World.EggHatched) SpawnDragon(Players.FirstOrDefault(p => p.Index == d.DragonLeader) ?? p1);
             ApplyActCap();
+            CheckTheTurn();
             p1.Hud.Narrate($"Welcome back. {Clock.Weekday}, day {Clock.Day}." + (_pendingPlayers.Count > 0 ? " Player 2: press Start (or Enter) to rejoin!" : ""));
         }
 
@@ -600,6 +601,7 @@ namespace DnD.Game
             AwardOnce(p, "zone:" + zoneId, 15, $"discovering {zone.Def.Name}");
             DragonAgent?.GetComponent<DragonPet>()?.FeelBlight(zone);
             Quests.Notify(QuestEvent.ZoneEntered, zoneId, p);
+            CheckTheTurn();
             string key = $"entered:{p.Index}:{zoneId}:{Clock.Day}";
             if (!World.IsLocked(key)) { World.Lock(key, 24 * 60); if (zone.Def.EnterNarration != null) p.Hud.Narrate(zone.Def.EnterNarration, !World.Flag("seen:" + zoneId)); World.SetFlag("seen:" + zoneId); }
             if (zoneId == "academy" && Dragon != null && !World.Flag("dragon_academy_intro"))

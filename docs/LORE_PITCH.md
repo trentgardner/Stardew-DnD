@@ -220,3 +220,9 @@ Act I keeps only two light, ominous notes in chests (a miner's scrawl about lamp
 - **Beyond the door**: **Edda**. Her drawings of her twelve sleeping friends; the presents, one a century, each signed "Forgive me."
 - **Lore added:** The Warm Pipes, The Deep Shift's Rest, The Ward-Stones, The Kings' Path, The Third Ideal, The Great Ones Below, The Door,
   The Drawings, The Presents, and 16 "Read again" lines.
+
+## Act III, the turn (names approved in bulk)
+- **The questioning at the Sunstair**: the whole of Aurelhold in the Great Square. King Aldric confesses that every King has known.
+- The leaders' asks: **Marsh** (seal it, and let the King answer after), **Ashby** (seal her properly, so she sleeps and doesn't dream),
+  **Sorrel** (let her out: the Crown broke the Pact), **Calloway** (end it while it's chained).
+- **Marsh's badge**: if she comes over, she drops the royal badge on the Sunstair and a dozen of the Household Guard follow her.

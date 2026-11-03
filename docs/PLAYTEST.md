@@ -41,6 +41,35 @@
 **Co-op:** your fiance presses **START** on a second controller at any time. The screen splits and she makes a
 character. You can go anywhere independently; if one of you starts a fight, the other can walk over and join it.
 
+## New: Back to the capital (Act III)
+- **Coming back up**: once you've been through the grey door, walking back into Aurelhold (by the Roots stair or the cathedral shortcut)
+  starts a big scene. The whole city is waiting at the foot of the Sunstair: the King, Marsh, Ashby, Sorrel and Calloway. Both players are
+  brought there (not while either of you is mid-fight) and both see every beat. The other player sees each line in their log.
+- **The questioning**: a real conversation with dice. Tell the truth, or try lying (Deception). Get the King to admit what he knows (Insight,
+  Intimidation, Persuasion, or something you found earlier). Then hear out all four leaders. Each one can be won over with a check, and
+  the side you stood with in Act II makes theirs easier. Fae side: the favour your dragon owes the Courts gets called in here.
+- **The choice**: three endings, offered only after everyone has spoken. One of them needs some groundwork. If you're not ready for it,
+  the game tells you exactly what's missing and where to get it. "Not yet" lets you walk away, sort it out, and come back to any of the
+  five. **In co-op, both players have to say yes.** Either player saying "Not yet" cancels it.
+- **The break**: who stands with you and who doesn't depends on your Act II side, the leaders you won over, and some Act II choices
+  (the dragon's bell, the wyvern egg, Marsh and Ashby's letters, the Fae clause). Then a **To Be Continued** card: the fights come next update.
+
+### Back to the capital checklist
+- [ ] Did the questioning feel like a real scene, not one button? Too long, too short?
+- [ ] Did the King's confession land?
+- [ ] Was it clear what each leader wanted? Did winning them over feel worth the roll?
+- [ ] If the third ending was locked, was it obvious what to do about it?
+- [ ] Co-op: did the "both say yes" confirm work, and did "Not yet" put you back at the question?
+- [ ] Was it hard to choose? (It should be.)
+
+<details><summary>SPOILER: the three endings (don't open before playing)</summary>
+
+End her, seal her away, or save her. Saving her needs three things: understanding how the fire is held (Arcana with Edda, or win Ashby
+over), someone who knows the old Pact (win Sorrel over, the Fae favour, or read the ring of the Great Ones in the Deep), and having
+promised Edda you'd come back. The Crown fights you unless you end her. Marsh comes over to you if you stood with the Crown or won her
+over. If your own Act II side ends up against you, that's a betrayal, and they remember it.
+</details>
+
 ## New: Below Aurelhold (Act III)
 - **Opening the Undergate**: once any three of the capital's clues point down, the Undergate in the Roots can be opened: heave the bar
   (Athletics), pick the King's lock (Sleight of Hand), or ask Foreman Crale for his key (after "The Deep Shift" has found Bran out).
