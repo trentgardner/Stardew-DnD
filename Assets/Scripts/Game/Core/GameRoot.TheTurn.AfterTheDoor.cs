@@ -185,13 +185,11 @@ namespace DnD.Game
             return new[] { open, TurnDb.BreakSummary(ending, w), dragon };
         }
 
-        IEnumerator TheBreak(PlayerSlot by, string ending)
+        internal IEnumerator TheBreak(PlayerSlot by, string ending)
         {
             yield return null;
             yield return PlayBeats(by, BreakBeats(ending, World));
-            // Placeholder until Phase 6 builds the fight for Aurelhold.
-            foreach (var p in Players.Where(x => x.IsReady))
-                p.Hud.Push(new MessageScreen("To Be Continued", "The fight for Aurelhold is coming in the next update. Your choice is saved."));
+            BeginFinale(by.IsReady ? by : Players.FirstOrDefault(p => p.IsReady) ?? by, ending); // Phase 6: the fight for Aurelhold
         }
     }
 }

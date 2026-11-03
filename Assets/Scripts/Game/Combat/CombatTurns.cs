@@ -978,8 +978,41 @@ namespace DnD.Game
             return true;
         }
 
+        /// <summary>True while a boss's phase beats are on screen: the AI, legendary actions and the round loop wait (Act III finales).</summary>
+        public bool BeatsPlaying;
+
+        /// <summary>Raised after a phase's beats have played (the boss, the phase). The seal fight listens for the King's.</summary>
+        public static event Action<Monster, BossPhaseDef> PhaseEntered;
+
+        /// <summary>Waits while a phase's beats are on screen.</summary>
+        IEnumerator WhileBeats() { while (BeatsPlaying) yield return null; }
+
+        IEnumerator PhaseBeats(Unit target, Monster boss, BossPhaseDef phase)
+        {
+            BeatsPlaying = true;
+            Log($"{target.Name}: phase {boss.PhaseIndex + 1}!");
+            target.A.Popup("PHASE " + (boss.PhaseIndex + 1), UIKit.DamageRed);
+            var lead = Humans.FirstOrDefault() ?? G.Players.FirstOrDefault(p => p.IsReady);
+            if (lead != null && phase.Beats != null && phase.Beats.Length > 0) yield return G.PlayBeats(lead, phase.Beats);
+            BeatsPlaying = false;
+            PhaseEntered?.Invoke(boss, phase);
+        }
+
+        /// <summary>Tests: deal this much damage to a unit through the fight's damage path (phases, popups, defeat).</summary>
+        public int DebugDamage(Unit target, int amount)
+        {
+            int lost = target.C.TakeDamage(amount, DamageType.Force, false, new List<string>());
+            OnDamaged(target);
+            return lost;
+        }
+
         public void OnDamaged(Unit target)
         {
+            if (target.C is Monster phased && !phased.IsDown)
+            {
+                var phase = phased.TakePendingPhase();
+                if (phase != null) G.StartCoroutine(PhaseBeats(target, phased, phase));
+            }
             if (target.C is Monster boss && !boss.IsDown)
             {
                 string phase = boss.CheckPhaseTwo();
@@ -991,6 +1024,14 @@ namespace DnD.Game
                 }
             }
             if (target.C.IsDead && target.DeathRound < 0) target.DeathRound = Enc.Round;
+            if (target.Ally && target.C.IsDown)
+            {
+                // A force's soldier who drops is carried off by their own: never one of the party's fallen.
+                Log($"{target.Name} falls back, hurt.");
+                foreach (var h in Humans) h.Hud.Narrate($"{target.Name} falls back, hurt.");
+                if (target.A) target.A.gameObject.SetActive(false);
+                return;
+            }
             if (target.C is PlayerCharacter shaped) WildShapeFx.Sync(target.A, shaped);
             if (target.C is Dragonling && target.C.IsDown) { ScareOffDragon(target); return; }
             if (target.C.IsDown && target.C.Team == Team.Enemies) { target.A.Popup("Defeated!", UIKit.Gold); }
@@ -1752,7 +1793,9 @@ namespace DnD.Game
 
         IEnumerator AiTurn(Unit u)
         {
+            yield return WhileBeats();
             yield return new WaitForSeconds(0.35f);
+            yield return WhileBeats();
             var turn = u.Cb.Turn;
             var foes = Units.Where(o => Hostile(u, o) && o.Active && !Spares(u, o)).ToList();
             if (foes.Count == 0) yield break;
@@ -1962,7 +2005,7 @@ namespace DnD.Game
             var tiles = new List<Vector2Int>();
             foreach (var bu in Units)
             {
-                if (!(bu.C is Monster m) || !bu.Active || !m.PhaseTwo || m.Def.LairEruptions <= 0) continue;
+                if (!(bu.C is Monster m) || !bu.Active || m.LairEruptionsNow <= 0) continue;
                 var near = new List<Vector2Int>();
                 foreach (var h in Units.Where(o => o.Active && Hostile(bu, o)))
                     for (int dx = -2; dx <= 2; dx++)
@@ -1972,7 +2015,7 @@ namespace DnD.Game
                             if (Zone.InBounds(t) && Zone.IsWalkable(t) && t != bu.Pos && !near.Contains(t) && !tiles.Contains(t)) near.Add(t);
                         }
                 var occupied = near.Where(t => Units.Any(o => o.Active && Hostile(bu, o) && o.Pos == t)).ToList();
-                for (int i = 0; i < m.Def.LairEruptions && near.Count > 0; i++)
+                for (int i = 0; i < m.LairEruptionsNow && near.Count > 0; i++)
                 {
                     var pool = i == 0 && occupied.Count > 0 ? occupied : near;
                     var pick = pool[rng.Next(pool.Count)];
@@ -2022,6 +2065,7 @@ namespace DnD.Game
         /// <summary>After another creature's turn: each legendary monster may take one legendary action.</summary>
         public IEnumerator LegendaryOpportunities(Unit justActed)
         {
+            yield return WhileBeats();
             foreach (var u in Units.ToList())
             {
                 if (u == justActed || !u.Active || !(u.C is Monster m) || m.Def.LegendaryPerRound <= 0 || m.LegendaryLeft <= 0) continue;

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace DnD.Rules.Content
 {
     /// <summary>Stat blocks for the playtest (SRD 5.2 creatures plus custom leaders: Snik, Wren).</summary>
-    public static class MonstersDb
+    public static partial class MonstersDb
     {
         public static readonly Dictionary<string, MonsterDef> All = new Dictionary<string, MonsterDef>();
 
@@ -416,6 +416,8 @@ namespace DnD.Rules.Content
                 PhaseTwoText = "The grey fire takes it back completely. The Warden's eyes go dull as ash, and the mountain answers: the floor splits, and the lava rises.",
             };
             All["warden"].Attacks.Add(Melee("Tail", 10, "2d8+6", DamageType.Bludgeoning, 15));
+
+            BuildFinale(); // Act III Phase 6: MonstersDb.Finale.AfterTheDoor.cs
 
             // The party's hatchling (see Dragonling): HP comes from the party's level, not from hit dice.
             All["dragonling"] = new MonsterDef

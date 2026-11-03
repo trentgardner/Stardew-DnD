@@ -572,10 +572,12 @@ namespace DnD.Game
             return spot;
         }
 
-        public override string PromptText(PlayerSlot p) => IsDragon ? $"Play with {GameRoot.I.World.DragonName}" : $"Talk to {Character.Name}";
+        public override string PromptText(PlayerSlot p) => IsDragon && GameRoot.I.World.Flag(Finale.RiderPending) ? $"Ride {GameRoot.I.World.DragonName}"
+            : IsDragon ? $"Play with {GameRoot.I.World.DragonName}" : $"Talk to {Character.Name}";
 
         public override void Interact(PlayerSlot p)
         {
+            if (IsDragon && GameRoot.I.World.Flag(Finale.RiderPending)) { GameRoot.I.OfferRider(); return; } // the finale: the flight waits for a rider
             if (IsDragon) { GetComponent<DragonPet>().OpenMenu(p); return; }
             p.Hud.Push(new DialogueScreen("companion", null, this));
         }

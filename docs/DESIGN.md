@@ -180,9 +180,62 @@ The paladin's number leaves out Radiant Strikes (+1d8 on every melee hit) and sm
   (`ChoiceScreen.OnCancel` is new). `ChooseEnding` is atomic: `ending_<e>` + `turn_chosen`, then betrayal (`betrayed_side` and -50
   standing if your committed force ends Against), dragon bond (end -10, save +10), warm_city 9 (`Break`), a save, and then the break.
 - **The break:** three beats (`GameRoot.BreakBeats`): the ending's opening, `TurnDb.BreakSummary` (one line per force, Marsh's badge if
-  she defects), and the dragon. Then a **To Be Continued** placeholder. Phase 6 replaces it and reads `Turn.Ending(w)`,
-  `TurnDb.Reaction` and `TurnDb.MarshDefects` to build the fights.
+  she defects), and the dragon. Then the finale begins (Phase 6, below).
 - **XP:** warm_city 8 = 4000 and 9 = 8000, so 85000 + the main quest = 120000 (level 13 at the turn; `MainQuestReachesThirteenAtTheTurn`).
+
+## The finales (Act III Phase 6)
+- **Exempt files** (each contains `MetHer`, checked by `FinaleTests.FinaleFilesAreGated`): `FinaleDb.AfterTheDoor.cs` (`Finale` flags,
+  `FinaleDb` tables, the flight routes), `GameRoot.Finale.AfterTheDoor.cs` (the streets, allies, wipes, resume, the boss fights),
+  `GameRoot.Flight.AfterTheDoor.cs` (the rider prompt and the flight), `WorldDb.Finale.AfterTheDoor.cs` (the groups) and
+  `MonstersDb.Finale.AfterTheDoor.cs` (the bosses and the forces' soldiers).
+- **Phased bosses** (rules engine): `MonsterDef.Phases` (`BossPhaseDef`: `At`, `Beats`, `RechargeMin`, `LairEruptions`, `LegendaryPerRound`).
+  `Monster.TakeDamage` puts a floor at the next threshold (`ceil(At x MaxHP)`): any hit that reaches it stops there, enters the phase
+  (`PhaseIndex`, `PendingPhase`), and the excess is lost. One phase per hit, and no death before the last phase. `LegendaryBudget`,
+  `RechargeMinFor` and `LairEruptionsNow` read the current phase. The Warden's `PhaseTwoAt` is unchanged.
+- **Phase beats** (combat): `OnDamaged` takes the pending phase and plays its beats through `PlayBeats` at once. `CombatInstance.BeatsPlaying`
+  holds the AI, legendary actions and the round loop until they're closed. `CombatInstance.PhaseEntered` fires afterwards.
+- **Bosses** (balance: median 6-14 rounds for a level-13 party of four; `FinaleBossTests`):
+  - `ashen_queen` (end): AC 19, 28d12+196, CR 17, fire-immune, Rend x2 + Ember Rend, a 60-ft breath (17d6, DEX 21, telegraphed),
+    3 legendary actions (4 in phase 3). Phases at 66% and 33%. Median 7.1 rounds.
+  - `king_regalia` (seal): AC 20, 30d10+150, CR 14, fire-resistant, Magic Resistance, Parry +3, Sceptre x2, Chains of the Ring (20 ft, 4d8
+    force, STR 18). Phase at 50%. With two Ring-knights (`crown_knight`). Median 6.4 rounds.
+  - `crowned_fire` (save): AC 18, 32d12+160, CR 17, fire-immune, Flame Sceptre x2 (reach 10), Pyre of Lamps (60-ft line, 16d6, DEX 20),
+    3 legendary actions. Phases at 66% and 33%. Median 6.5 rounds.
+  - The forces' soldiers: `wyrmwatch_hunter`, `fae_knight`, `academy_warden` (as foes or allies).
+- **Allies** (`FinaleDb.Allies`): one soldier per force that stands With you, plus Marsh's **Household Guard** first if she defects, 3 at most.
+  They join finale fights only (`Finale.IsFinaleGroup`: ids start `finale_`), as AI units on `Team.Players` with `Unit.Ally`. They don't
+  count for `PlayersUp`, XP, loot or bond. At 0 HP they "fall back", and they leave when the fight ends (`RemoveFinaleAllies`).
+- **The streets** (warm_city 10 `Streets`): three `EncounterStyle.None` groups in `capital`, each gated on `finale_street_open_<n>` and
+  resolved into `finale_street_done_<n>`. Stage 1 is the Great Square (31,19), stage 2 the Wyvern Yard (52,25), stage 3 the head of the
+  Roots stair (55,30). `PrepareFinale` fills their members from `FinaleDb.StreetMembers`, at the choice and on load before anything spawns:
+  - End: fire coming up through the Roots (cinder hounds, fire elementals, a salamander).
+  - Seal/Save: the guards who stayed (Crown Knights, a Battlemage, a Champion), one knight fewer per stage if Marsh defects.
+  - Every force Against adds its soldiers (academy s1/s2, fae s1/s3, hunters s2). At most 6 per stage.
+
+  Each stage opens with two titled beats (`StreetIntro`). On the End path the dragon waits at the top of the Roots stair (58,29)
+  (`finale_dragon_waits`, `CompanionAgent.Waiting`) and joins nothing until the flight.
+- **Wipes**: a finale wipe (not Hardcore-everyone) costs no day and no fee. Everyone comes to at the stage's `RetrySpot`, or at the landing
+  once flown, with half HP, and the group is back at full strength.
+- **Resume** (`CheckTheFinale` on load): if `turn_chosen` but not `finale_started`, the break replays (this fixes Phase 5's deferred minor).
+  Otherwise the open stage respawns. Between the streets and the landing, the dragon comes back down (or the rider prompt reopens).
+  After the landing, the boss is back in place.
+- **The flight** (warm_city 11 `Flight`): takeoff beats, then **"Who rides {dragon}?"**. Solo there's no prompt. In co-op every player sees it
+  and can pick anyone. The pick confirms with "Take the reins" or hands it over with "Let {other} ride" (one press). Nothing moves until
+  the rider confirms. Esc leaves `finale_rider_pending`, and "Ride {dragon}" on the dragon reopens the prompt. A candidate who drops out
+  hands it back to whoever is left. The dragon flies the route's waypoints over the capital, with the rider drawn on its back and every
+  camera following it. Two passes, each with two options; each option is a rider skill check (DC 15 / 17, in the dice tray):
+  - Success adds a `FlightEffect`: `BossWounded` (10% off, never past the first threshold), `NoLegendaryFirstRound`, `AddsScattered`
+    (seal: one Ring-knight fewer; otherwise the boss's breath starts spent) or `PartyInspired` (Heroic Inspiration).
+  - Failure costs 3d6 fire, never below 1 HP.
+
+  Routes: End, over the market to the Lantern Cathedral spire, then down into the Great Square. Seal, over the palace wall and down
+  **the Chimney** into the Deep, with Ashby riding behind. Save, over the lamps to the palace roof, then to the Sunstair.
+- **The last fight** (warm_city 12 `Boss`): `StartFinaleBoss` opens `finale_boss_<ending>` at the landing and starts it at once, applying
+  the flight's effects (`LastFlightWon` keeps a copy).
+  - **Seal:** Ashby works at the grey door (24,6). `OnCombatRound` adds one per round (`SealProgress`, narrated "The seal: n/7"). The King's
+    phase pulls it back once. At 7, the King's side yields. Beating the King also wins.
+  - **The win** (warm_city 13 `Won`, `finale_won`): saved, two victory beats (`FinaleDb.Victory`), then a **To Be Continued** card.
+    Phase 7 replaces it with the endings.
 
 ## The lair (Act III Phase 4)
 - **Zones** (all `Act = 3`, `Dark`, `BlightWeight = 0`): `undergate` (the works below the Roots), `iron_vaults` (beam puzzle), `royal_crypts`

@@ -226,3 +226,11 @@ Act I keeps only two light, ominous notes in chests (a miner's scrawl about lamp
 - The leaders' asks: **Marsh** (seal it, and let the King answer after), **Ashby** (seal her properly, so she sleeps and doesn't dream),
   **Sorrel** (let her out: the Crown broke the Pact), **Calloway** (end it while it's chained).
 - **Marsh's badge**: if she comes over, she drops the royal badge on the Sunstair and a dozen of the Household Guard follow her.
+
+## Act III, the finales (names approved in bulk)
+- **The fight for Aurelhold**: the Great Square, **the Wyvern Yard** (the Pageant's paper Queen as a barricade), the head of the Roots stair.
+- **The Ashen Queen**, the fire's shape, the legend's shape (end her). **King Aldric, in the Iron Regalia**: black iron from the same forge
+  as the Ring (seal her). **The Crowned Fire**: the King, taken by the fire he tried to take (save her).
+- **The Chimney**: the great vent where the warm air comes up from the Deep.
+- **The Ring-knights**; **Wyrmwatch Hunters**; **Knights of the Courts**; **Academy Ward-Mages** (Ashby's, when they're with you);
+  **the Household Guard** (Marsh's, if she comes over).

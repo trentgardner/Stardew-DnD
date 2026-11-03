@@ -183,6 +183,7 @@ namespace DnD.Game
             Settings.NarratorKeyMomentsOnly = d.NarratorKeyOnly;
             Clock.Day = d.Day; Clock.Minutes = d.Minutes;
             SaveSystem.ApplyWorld(d, this);
+            PrepareFinale(); // the finale's street groups, before anything spawns
             BuildWorld();
             InGame = true;
             _pendingPlayers.Clear();
@@ -200,6 +201,7 @@ namespace DnD.Game
             if (World.EggHatched) SpawnDragon(Players.FirstOrDefault(p => p.Index == d.DragonLeader) ?? p1);
             ApplyActCap();
             CheckTheTurn();
+            CheckTheFinale();
             p1.Hud.Narrate($"Welcome back. {Clock.Weekday}, day {Clock.Day}." + (_pendingPlayers.Count > 0 ? " Player 2: press Start (or Enter) to rejoin!" : ""));
         }
 
@@ -230,6 +232,7 @@ namespace DnD.Game
             foreach (var c in Combats) c.Finished = true;
             Combats.Clear();
             StopAllCoroutines();
+            ResetFlight(); // a flight cut short by quitting must not block the next one
             if (_worldRoot) Destroy(_worldRoot.gameObject);
             Zones.Clear(); _npcs.Clear(); _groups.Clear(); Companions.Clear(); Dragon = null; MusicOverride = null; _recruitAgents.Clear(); TavernRecruits.Clear();
             _deathTime.Clear(); _sleeping.Clear(); _lastLongRest.Clear(); _parley.Clear(); _pendingPlayers.Clear();
@@ -392,6 +395,7 @@ namespace DnD.Game
         void Update()
         {
             if (!InGame) return;
+            FlightTick();
             Music.Play(WantedMusic());
             ApplyIdeals();
 
@@ -432,6 +436,7 @@ namespace DnD.Game
             {
                 if (p.Avatar == null) continue;
                 var target = p.Avatar.transform.position;
+                if (_flightCam != null) target = _flightCam.position; // the flight: everyone watches the dragon
                 var cur = p.InCombat ? p.Combat.Current : null;
                 // Watch whoever is acting: a monster, or a companion you're commanding.
                 if (cur != null && cur.A != null && cur.A != p.Avatar) target = Vector3.Lerp(target, cur.A.transform.position, 0.5f);
@@ -803,6 +808,7 @@ namespace DnD.Game
             Quests.Notify(QuestEvent.GroupResolved, groupId);
             var def = Zones.Values.SelectMany(z => z.Def.EnemyGroups).FirstOrDefault(g => g.Id == groupId);
             if (def?.ResolvedFlag != null) World.SetFlag(def.ResolvedFlag);
+            OnFinaleGroupResolved(groupId);
         }
 
         /// <summary>Paid off: the group lets you be (no XP, they're still there, and you can still deal with them later).</summary>
@@ -834,6 +840,7 @@ namespace DnD.Game
         public void OnCombatRetreat(CombatInstance c)
         {
             Combats.Remove(c);
+            RemoveFinaleAllies(c);
             DragonBackOut();
             if (c.GroupId != null) CalmGroup(c.GroupId);
             foreach (var h in c.Humans) h.Hud.Narrate("You got away! They've lost track of you for now. Rest up, then finish this however you like.");
@@ -897,6 +904,7 @@ namespace DnD.Game
                         c.AddUnit(comp.Character, comp.Actor, comp: comp);
             }
             AddDragonTo(c, false);
+            AddFinaleAllies(c);
             ApplyWardenBoons(c);
             if (!c.Units.Any(u => u.Owner != null))
             {
@@ -911,6 +919,7 @@ namespace DnD.Game
         public void OnCombatFinished(CombatInstance c, bool victory)
         {
             Combats.Remove(c);
+            RemoveFinaleAllies(c);
             if (victory && c.Units.Any(u => u.C is Dragonling)) { DragonPet.AddBond(c.Humans.FirstOrDefault(), 1, "a fight won together"); DragonAgent?.GetComponent<DragonPet>()?.ShowOff(); }
             DragonBackOut();
             if (c.Brawl) { EndBrawl(c, victory); return; }
@@ -968,6 +977,7 @@ namespace DnD.Game
                 foreach (var a in agents) if (a) Destroy(a.gameObject);
                 _groups.Remove(c.GroupId);
             }
+            if (FinaleWipe(c, fallen)) yield break; // Act III: the fight for the city waits for you
             // A real party wipe costs everyone a day. If a partner is still up and about elsewhere,
             // the fallen are simply carried to the temple and the world keeps its time.
             if (everyone) Clock.SleepUntil(8);

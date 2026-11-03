@@ -43,7 +43,7 @@ namespace DnD.Game
         /// Story beats (MessageScreens) shown to every ready player in turn. Each advances when the lead player closes theirs;
         /// the other players' copies close with it. `before(i)` (if not null) runs before beat i.
         /// </summary>
-        public IEnumerator PlayBeats(PlayerSlot by, string[] beats, System.Func<int, IEnumerator> before = null)
+        public IEnumerator PlayBeats(PlayerSlot by, string[] beats, System.Func<int, IEnumerator> before = null, string title = null)
         {
             for (int i = 0; i < beats.Length; i++)
             {
@@ -54,7 +54,7 @@ namespace DnD.Game
                 MessageScreen mine = null;
                 foreach (var p in Players.Where(x => x.IsReady))
                 {
-                    var screen = new MessageScreen("", beats[i]);
+                    var screen = new MessageScreen(title ?? "", beats[i]);
                     p.Hud.Push(screen);
                     if (p == lead) mine = screen;
                 }

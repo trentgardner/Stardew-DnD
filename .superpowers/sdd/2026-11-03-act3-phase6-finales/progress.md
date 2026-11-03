@@ -1,0 +1,82 @@
+# SDD ledger — plan: docs/superpowers/plans/2026-11-03-act3-phase6-finales.md
+
+Executor: executing-plans (inline), branch act3/phase6-finales. Spec: docs/superpowers/specs/2026-11-02-act3-design.md.
+
+## Pre-flight
+- T1→T2: T1 produces PendingPhase/TakePendingPhase/Beats; T2 consumes the same names. OK.
+- T1→T3/T4: force-unit ids (wyrmwatch_hunter, fae_knight, academy_warden) used by Allies and StreetMembers. OK.
+- T3→T4: Finale.Prefix "finale_"; street groups "finale_street_n" match IsFinaleGroup. OK.
+- T4→T5: OnFinaleGroupResolved(s3) → BeginFlight stub replaced by T5. OK.
+- T5→T6: FlightResults, Route(e).LandingSpot, StartFinaleBoss(ending). OK.
+- T4/T6: Finale.Won (flag) vs WarmCity.Won (stage int): different classes, both named Won. OK.
+- T2→T6: CombatTurns.PhaseEntered event used by the seal. OK.
+
+## Task 1
+- Task 1: Ruling: FinaleBossesLastLongEnough uses the median level-13 party of four (8-class pool, dragon not counted), not fighter+paladin+dragon — matches the Warden/Gaoler balance tests already in BossTests — cost if wrong: bosses a little shorter for strong pairs.
+- Task 1: Ruling: boss HP raised past the plan's dice (Queen 28d12+196 = 378, King 30d10+150 = 315, Crowned Fire 32d12+160 = 368) — the plan's values gave 3.8-4.8 rounds, under the spec's floor — cost if wrong: long fights; Phase 7's balance table can trim.
+- Task 1: Ruling: Chains of the Ring deals force damage only (no restrained) — the only restrain effect ("entangle") needs concentration on the caster — cost if wrong: the King's area attack is plainer.
+- Task 1: Ruling: lair eruptions now read Monster.LairEruptionsNow (CombatTurns), so phases drive them; the Warden keeps PhaseTwo behaviour. Ally/foe XP values chosen from SRD CR.
+Task 1: complete (commits 1fa4251..9b2d189, tests: bash -c 'cd tools/RulesTests && dotnet run 2>&1 | tail -1 | grep ' 0 failed'' → 1406 passed, 0 failed)
+
+## Task 2
+- Task 2: Ruling: the tests read the top open MessageScreen (Hud.Top, skipping closed ones) instead of Hud.Find — closed screens aren't removed while the initiative dice is open (PlayerHud.Update) — cost if wrong: none (test helper only).
+- Task 2: note: in real play a phase beat pushed while the dice tray is open waits for the tray to close before it can be dismissed (existing Hud rule). Acceptable.
+- Task 2: green: FinaleTests+VolcanoTests 24/24.
+Task 2: complete (commits 9b2d189..74d547d, tests: unity-test.sh FinaleTests;VolcanoTests → 24/24 pass)
+
+## Task 3
+- Task 3: Ruling: PlayersUp excludes allies (Unit.Ally) — otherwise a wiped party with a standing ally would never lose — cost if wrong: none.
+- Task 3: Ruling: Marsh's Household Guard is listed first (before the With forces) so it survives the 3-ally cap — she is the spec's named defector — cost if wrong: one fewer force soldier in a 4-way-With save run.
+- Task 3: Ruling: RED for the Task 3 tests was a compile failure (FinaleDb/FinaleAlly/Unit.Ally absent) — not run separately; the first real run failed on a test-baseline bug (zone-discovery XP), fixed in the test.
+Task 3: complete (commits 74d547d..HEAD, tests: unity-test.sh FinaleTests;ActThreeFightTests → 7/7 pass)
+
+## Task 4
+- Task 4: Ruling: stage 2 is "the Wyvern Yard" at (52,25) (outside the Gilded Wyvern), not the Grand Market — the market stalls are on the west side, but the route runs east from the square to the Roots stair (59-60,30) — cost if wrong: a name.
+- Task 4: Ruling: StreetMembersFollowTheTable uses End + fae_clause for "only the fire" — the base table puts the Fae Against on End, so End with no hooks also has a fae_knight (plan's test text was wrong) — cost if wrong: none.
+- Task 4: Ruling: the dragon's End-path refusal uses CompanionAgent.Waiting (already excluded from fights and warps) plus StaysPut at FinaleDb.DragonWaitSpot (58,29); AddDragonTo unchanged — cost if wrong: none.
+- Task 4: Ruling: PlayBeats gains an optional title; stage intros are titled screens, which is how TurnTests' PlayBreak now knows the break is over. TurnGoldenPath line 738 now expects Streets after the break.
+- Task 4: Ruling: TheBreak made internal so CheckTheFinale can replay it after a load (fixes Phase 5's deferred "load during the break's beats").
+- Task 4: tests: FinaleTests+TurnTests 38/39 then TurnTests fix → Turn+Lore+Quest 70/70 (FinaleTests all green in the first run; RED was compile).
+Task 4: complete (commits 8fe4e79..HEAD, tests: FinaleTests;TurnTests;LoreTests;QuestTests → green)
+
+## Task 5
+- Task 5: Ruling: TDD order broken: GameRoot.Flight.AfterTheDoor.cs was drafted before its tests; tests were then written against the spec/plan behaviours and the first run caught two real bugs (below) — cost if wrong: weaker proof than test-first for paths the tests don't hit.
+- Task 5: Ruling: FinaleDb.Route takes (ending, WorldState) — the beats use the dragon's name — cost if wrong: none.
+- Task 5: Ruling: every pass option is a rider skill check (d20 + skill vs DC 15/17, in the dice tray); a failure's 3d6 fire is narrated with its breakdown rather than rolled in the tray — cost if wrong: the scorch is less "visible" than the check.
+- Task 5: Ruling: Esc on a pass picks its first option (the flight can't stall); Esc on the rider prompt leaves RiderPending, and "Ride {dragon}" on the dragon reopens it.
+- Task 5: Ruling: the dragon flies by moving its actor's transform (Waiting + StaysPut hold it), not a DragonPet.FlyTo; the rider's controller is disabled and their avatar rides on the dragon (YSort offset +40); every camera follows the dragon via _flightCam.
+- Task 5: bug found + fixed: _flying leaked across QuitToTitle/LoadGame (StopAllCoroutines killed Fly mid-air) so no later flight could start — ResetWorld now calls ResetFlight().
+- Task 5: bug found + fixed: CombatInstance's initiative loop rolled for a player whose HUD was destroyed (dropped out) or kept waiting after the fight ended — it now stops once Finished and auto-rolls for a player who left.
+- Task 5: tests: FinaleTests;CoopTests;VolcanoTests → 65/65.
+Task 5: complete (commits 9077da3..HEAD, tests: FinaleTests;CoopTests;VolcanoTests → 65/65)
+
+## Task 6
+- Task 6: Ruling: AddsScattered off the seal path makes the boss start with its breath spent (must recharge) instead of "one fewer lair eruption" — eruption counts come from the def per phase; a spent breath is the same size of edge and simpler — cost if wrong: a different flavour of edge.
+- Task 6: Ruling: the seal's progress line is narrated each round ("The seal: n/7") rather than a persistent HUD widget — cost if wrong: less glanceable.
+- Task 6: Ruling: at 7/7 the remaining foes "yield" by being knocked to 0 HP, so the normal victory path (XP, OnGroupResolved, FinaleWon) runs — cost if wrong: full XP for a seal win (same as beating them).
+- Task 6: Ruling: the round hook is a direct G.OnCombatRound(this, round) call in the combat loop (then `if (Finished) break`), not a static event; the King's chain pull listens on CombatInstance.PhaseEntered (hooked once, routed to GameRoot.I).
+- Task 6: Ruling: LastFlightWon keeps a copy of the flight's effects after StartFinaleBoss uses FlightResults up (the flight tests read it).
+- Task 6: art: Ashen Queen = ashmaw sheet tinted ember red (hue 282, sat 1.6, val 1.3); King = GiantRedSamurai idle strip in iron/gold; Crowned Fire = GiantFlam strip gold-white; soldiers = Hunter/Knight/SorcererBlack tints. Import clean for the new lines (the Edda tint warnings at ArtMap 1687-1695 predate this phase).
+- Task 6: RED was a compile failure (Finale.BossGroup/SealProgress/OnCombatRound absent). Tests: FinaleTests;LoreTests;ArtTests → 50/50.
+Task 6: complete (commits 75b927a..HEAD, tests: FinaleTests;LoreTests;ArtTests → 50/50)
+
+## Task 7
+- Task 7: golden paths End/Seal/Save solo + CoopSave (P2 rides) green: every beat in order (break, 3 intros, takeoff, landing, phases, victory), no window left open between stages, the card.
+- Task 7: Ruling: the golden paths wait for the dice tray (a fight's initiative still tumbling) before asserting "nothing open" — closed screens are only removed once the tray closes (PlayerHud.Update); a timing artifact of forced wins, not a game bug.
+- Task 7: Ruling: the test input taps on alternate frames (RollerInput.PressWhen ... frameCount % 2) so back-to-back rolls each get a press.
+- Task 7: screenshots reviewed (54 PNGs in %TEMP%/embers_screenshots/act6_*): stage intros/fights, rider prompt on both split screens, flight with rider on the dragon, passes, landings, phase beats, the seal line, victory and the card. Text fits. The bosses were behind the initiative tray in the first set; added act6_<e>_boss_field (initiative rolled) for the full-suite run.
+- Task 7: observed (not fixed, existing UI): the narrator box at the bottom overlaps the bottom edge of tall choice/beat windows; a stale "Roll for initiative!" banner can linger after a fight ends.
+
+## Final review
+- Final review: self-review (no subagent dispatched: the session's rules say only spawn agents when the user asks) — a self-review by the author is weaker than a fresh reviewer.
+- Final: fixed a full-minute Banishment making a phased boss vanish (skipping its phases and beats) — FinaleBossTests BanishmentCantSkipPhases RED→GREEN, RulesTests 1408/1408.
+- Final: fixed the rider dropping out mid-flight (destroyed avatar/HUD touched by the flight, pass roll, camera) — FinaleTests.RiderDropsMidFlight RED→GREEN; the flight lands whoever's left.
+- Final: Ruling: CaptureFinale waits for a human's turn before forcing a live boss fight to end — a forced end during an AI multiattack hit a destroyed ally; a real fight only ends between turns (the seal at round start) — cost if wrong: an exception if some future path ends a fight mid-attack.
+- Final: minor (deferred): the narrator box overlaps the bottom edge of tall choice/beat windows (existing UI).
+- Final: minor (deferred): a stale "Roll for initiative!" banner can linger after a fight ends (existing UI).
+- Final: minor (deferred): the stage-1 retry spot (31,15) is 4 tiles from the stage-1 group, so the fight restarts as soon as the "Behind the barricade" message closes.
+- Final: minor (deferred): loading a save made after the win doesn't show the To Be Continued card again (Phase 7 replaces it).
+- Final: Declined to judge (rulings): XP pacing of stages 10-13 (Phase 7's balance table); the endings themselves (Phase 7).
+- Final: full suite 488/488, RulesTests 1408/1408 (after the fix pass).
+- Final: minor (deferred): the Ashen Queen and the grown dragon are both red sprites; the Queen is bigger and horned, but they can read alike.
+- Final: minor (deferred): the Deep is very dark around the King's fight (only the party's light); he's hard to see without a torch.

@@ -16,6 +16,8 @@ namespace DnD.Game
         public PlayerSlot Owner;          // a human player's own character
         public EnemyAgent Enemy;
         public CompanionAgent Comp;
+        /// <summary>A force's soldier fighting beside the party (Act III finales): AI-driven, not a party member, no XP.</summary>
+        public bool Ally;
         public Combatant Cb;
         public CombatInstance Fight;
         public int DeathRound = -1;
@@ -117,17 +119,19 @@ namespace DnD.Game
             // Initiative: humans roll their own d20s, everyone else rolls on the ticker.
             foreach (var u in Units.ToList())
             {
+                if (Finished) yield break; // ended before everyone had rolled (a forced end, a player who left)
                 var adv = u.C.InitiativeAdvantage ? AdvantageState.Advantage : AdvantageState.Normal;
                 if (_surprise && u.C.Team == Team.Players) adv = Dice.Combine(adv == AdvantageState.Advantage, true);
                 if (_enemiesSurprised && u.C.Team == Team.Enemies) adv = Dice.Combine(adv == AdvantageState.Advantage, true);
                 var terms = new List<RollTerm> { new RollTerm("initiative", u.C.InitiativeBonus) };
                 if (u.C.D20Penalty != 0) terms.Add(new RollTerm("exhaustion", u.C.D20Penalty));
-                if (u.IsHuman)
+                if (u.IsHuman && u.Ctrl.Hud != null && u.Ctrl.IsReady) // a player who just left rolls on the ticker
                 {
                     D20Result res = null;
                     u.Ctrl.Hud.Dice.RollD20(u.Owner != null ? "Initiative!" : $"Initiative: {u.Name}", $"DEX {AbilityUtil.Fmt(u.C.InitiativeBonus)}{(adv == AdvantageState.Disadvantage ? " · surprised (Disadvantage)" : adv == AdvantageState.Advantage ? " · Advantage" : "")}",
                         () => Dice.RollD20(adv, terms), null, false, r => res = r);
-                    while (res == null) yield return null;
+                    while (res == null && !Finished && u.Ctrl != null && u.Ctrl.Hud != null) yield return null;
+                    if (res == null) { if (Finished) yield break; res = Dice.RollD20(adv, terms); }
                     u.Cb = Enc.Add(u.C);
                     u.Cb.InitiativeRoll = res;
                 }
@@ -152,12 +156,15 @@ namespace DnD.Game
             int lairRound = 0;
             while (!Finished)
             {
+                yield return WhileBeats(); // a boss's phase beats are on screen: the story first
                 var cur = Current;
                 if (cur == null) { Enc.Advance(); continue; }
                 if (Enc.Round != lairRound)
                 {
                     // Lair actions (initiative count 20): the floor erupts at the start of each round in a boss's second phase.
                     lairRound = Enc.Round;
+                    G.OnCombatRound(this, Enc.Round); // the seal counts the rounds
+                    if (Finished) break;
                     var erupt = PickEruptionTiles(new System.Random());
                     if (erupt.Count > 0) { yield return Erupt(erupt); if (CheckEnd()) break; }
                 }
@@ -302,7 +309,13 @@ namespace DnD.Game
         }
 
         /// <summary>Who keeps a fight going on the players' side. The hatchling doesn't: it can't win a fight alone.</summary>
-        bool PlayersUp => Units.Any(u => u.C.Team == Team.Players && u.Active && !(u.C is Dragonling));
+        bool PlayersUp => Units.Any(u => u.C.Team == Team.Players && u.Active && !(u.C is Dragonling) && !u.Ally);
+        /// <summary>Tests: whether the party (not the dragon, not allies) still has someone standing.</summary>
+        public bool DebugPlayersUp => PlayersUp;
+        /// <summary>Tests: run the end-of-fight check now.</summary>
+        public bool DebugEndCheck() => CheckEnd();
+        /// <summary>Ends the fight now if one side is out (a story win that knocked the rest out).</summary>
+        public bool CheckEndNow() => CheckEnd();
 
         /// <summary>A dragon that ran off scared leaves the grid (it no longer blocks a tile or takes turns).</summary>
         void PurgeScaredDragon() => Units.RemoveAll(u => u.C is Dragonling && u.C.IsDown);

@@ -57,6 +57,22 @@ namespace DnD.Rules
         public int SaveDC = 15;
     }
 
+    /// <summary>
+    /// One phase of a phased boss (Act III finales). Entered when HP reaches At of max: no hit can carry it past the threshold,
+    /// so the phase's beats always play however fast the party deals damage.
+    /// </summary>
+    public class BossPhaseDef
+    {
+        public double At;
+        public string[] Beats;
+        /// <summary>Breath recharges on this or higher in this phase (0 = unchanged).</summary>
+        public int RechargeMin;
+        /// <summary>Floor tiles that erupt at the start of each round in this phase (0 = none).</summary>
+        public int LairEruptions;
+        /// <summary>Legendary actions per round in this phase (0 = unchanged).</summary>
+        public int LegendaryPerRound;
+    }
+
     public class MonsterDef
     {
         public string Id;
@@ -90,6 +106,8 @@ namespace DnD.Rules
         /// <summary>Legendary actions and how many it gets per round (0 = none).</summary>
         public List<LegendaryActionDef> LegendaryActions = new List<LegendaryActionDef>();
         public int LegendaryPerRound;
+        /// <summary>Phased boss (Act III): ordered by At, descending. Empty = the PhaseTwo fields apply as before.</summary>
+        public List<BossPhaseDef> Phases = new List<BossPhaseDef>();
         /// <summary>A world flag that, once set, lets a hit while it draws breath choke it (the party knows the weak spot).</summary>
         public string WeakSpotFlag;
         /// <summary>How big the sprite is drawn (the footprint stays one tile).</summary>
@@ -145,11 +163,22 @@ namespace DnD.Rules
             LegendaryLeft = def.LegendaryPerRound;
         }
 
+        /// <summary>Phases entered so far (0 = none).</summary>
+        public int PhaseIndex;
+        /// <summary>A phase that was entered and whose beats haven't been played yet (the game takes it with TakePendingPhase).</summary>
+        public BossPhaseDef PendingPhase;
+        public BossPhaseDef CurrentPhase => PhaseIndex == 0 ? null : Def.Phases[PhaseIndex - 1];
+        public BossPhaseDef TakePendingPhase() { var p = PendingPhase; PendingPhase = null; return p; }
+        /// <summary>Legendary actions per round right now (the current phase's, if it sets one).</summary>
+        public int LegendaryBudget => CurrentPhase != null && CurrentPhase.LegendaryPerRound > 0 ? CurrentPhase.LegendaryPerRound : Def.LegendaryPerRound;
+        /// <summary>Tiles of floor that erupt each round right now: the current phase's, else phase two's.</summary>
+        public int LairEruptionsNow => CurrentPhase != null ? CurrentPhase.LairEruptions : PhaseTwo ? Def.LairEruptions : 0;
+
         readonly HashSet<MonsterAbilityDef> _charged = new HashSet<MonsterAbilityDef>();
 
         /// <summary>Legendary actions left this round.</summary>
         public int LegendaryLeft;
-        public void ResetLegendary() => LegendaryLeft = Def.LegendaryPerRound;
+        public void ResetLegendary() => LegendaryLeft = LegendaryBudget;
         public bool SpendLegendary(int cost)
         {
             if (cost <= 0 || LegendaryLeft < cost) return false;
@@ -169,7 +198,9 @@ namespace DnD.Rules
             return Def.PhaseTwoText ?? $"{Name} grows desperate.";
         }
 
-        public int RechargeMinFor(MonsterAbilityDef a) => PhaseTwo && Def.PhaseTwoRechargeMin > 0 ? Def.PhaseTwoRechargeMin : a.RechargeMin;
+        public int RechargeMinFor(MonsterAbilityDef a) =>
+            CurrentPhase != null && CurrentPhase.RechargeMin > 0 ? CurrentPhase.RechargeMin
+            : PhaseTwo && Def.PhaseTwoRechargeMin > 0 ? Def.PhaseTwoRechargeMin : a.RechargeMin;
         bool _regenBlocked;
 
         public bool IsCharged(MonsterAbilityDef a) => _charged.Contains(a);
@@ -199,7 +230,18 @@ namespace DnD.Rules
 
         public override int TakeDamage(int amount, DamageType type, bool critical, List<string> log)
         {
+            int before = HP;
+            int floor = PhaseIndex < Def.Phases.Count ? (int)System.Math.Ceiling(Def.Phases[PhaseIndex].At * MaxHP) : 0;
             int lost = base.TakeDamage(amount, type, critical, log);
+            if (floor > 0 && before > floor && HP <= floor)
+            {
+                // A phase boundary: the hit stops here, the phase begins, and the excess is lost.
+                HP = floor;
+                IsDead = false;
+                lost = before - floor;
+                PendingPhase = Def.Phases[PhaseIndex];
+                PhaseIndex++;
+            }
             if (Def.RegenBlockedBy.Contains(type) && amount > 0 && !Immunities.Contains(type)) _regenBlocked = true;
             return lost;
         }
