@@ -66,3 +66,14 @@ Task 6: complete (commits 75b927a..HEAD, tests: FinaleTests;LoreTests;ArtTests �
 - Task 7: Ruling: the test input taps on alternate frames (RollerInput.PressWhen ... frameCount % 2) so back-to-back rolls each get a press.
 - Task 7: screenshots reviewed (54 PNGs in %TEMP%/embers_screenshots/act6_*): stage intros/fights, rider prompt on both split screens, flight with rider on the dragon, passes, landings, phase beats, the seal line, victory and the card. Text fits. The bosses were behind the initiative tray in the first set; added act6_<e>_boss_field (initiative rolled) for the full-suite run.
 - Task 7: observed (not fixed, existing UI): the narrator box at the bottom overlaps the bottom edge of tall choice/beat windows; a stale "Roll for initiative!" banner can linger after a fight ends.
+
+## Final review
+- Final review: self-review (no subagent dispatched: the session's rules say only spawn agents when the user asks) — a self-review by the author is weaker than a fresh reviewer.
+- Final: fixed a full-minute Banishment making a phased boss vanish (skipping its phases and beats) — FinaleBossTests BanishmentCantSkipPhases RED→GREEN, RulesTests 1408/1408.
+- Final: fixed the rider dropping out mid-flight (destroyed avatar/HUD touched by the flight, pass roll, camera) — FinaleTests.RiderDropsMidFlight RED→GREEN; the flight lands whoever's left.
+- Final: Ruling: CaptureFinale waits for a human's turn before forcing a live boss fight to end — a forced end during an AI multiattack hit a destroyed ally; a real fight only ends between turns (the seal at round start) — cost if wrong: an exception if some future path ends a fight mid-attack.
+- Final: minor (deferred): the narrator box overlaps the bottom edge of tall choice/beat windows (existing UI).
+- Final: minor (deferred): a stale "Roll for initiative!" banner can linger after a fight ends (existing UI).
+- Final: minor (deferred): the stage-1 retry spot (31,15) is 4 tiles from the stage-1 group, so the fight restarts as soon as the "Behind the barricade" message closes.
+- Final: minor (deferred): loading a save made after the win doesn't show the To Be Continued card again (Phase 7 replaces it).
+- Final: Declined to judge (rulings): XP pacing of stages 10-13 (Phase 7's balance table); the endings themselves (Phase 7).

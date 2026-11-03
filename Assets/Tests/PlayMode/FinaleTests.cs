@@ -570,6 +570,31 @@ namespace DnD.Tests
             Assert.IsTrue(g.World.Flag(Finale.RiderFlag(p1.Index)), "alone now: P1 rides");
         }
 
+        /// <summary>Final review: the rider drops out in mid-air. The flight lands whoever is left, with no errors.</summary>
+        [UnityTest]
+        public IEnumerator RiderDropsMidFlight()
+        {
+            var g = GameRoot.I;
+            var p1 = Roller(g, "academy");
+            yield return Frames(2);
+            var p2 = g.DebugStart(Still(35), "cleric", "dwarf");
+            yield return Frames(2);
+            p2.Hud.CloseAll();
+            yield return ToTheFlight(g, p1, Turn.Seal);
+            yield return CloseAll(g);
+            Choice(p1).Choose(p2.Character.Name);
+            yield return Frames(3);
+            Choice(p2).Choose("Take the reins");
+            for (int i = 0; i < 40 && !g.Flying; i++) yield return Frames(2);
+            Assert.IsTrue(g.Flying, "P2 is in the air");
+            yield return new WaitForSecondsRealtime(0.5f);
+            g.DropOut(p2);
+            yield return RideOut(g, p1, Turn.Seal, 0);
+            Assert.IsTrue(g.World.Flag(Finale.Flown), "the flight still lands");
+            Assert.AreEqual("the_deep", p1.Zone.Def.Id, "P1 is at the landing");
+            Assert.IsFalse(g.Flying);
+        }
+
         [UnityTest]
         public IEnumerator EscOnThePromptNeverLosesTheFlight()
         {
@@ -1036,6 +1061,8 @@ namespace DnD.Tests
                 AcademyTests.Shot($"act6_{ending}_boss_field");
                 var c = BossFightOf(g, ending);
                 var boss = BossUnit(c, ending);
+                // The fight is live now: wait for a player's turn (it waits for input) so no attack is mid-swing when we force the end.
+                for (float t0 = Time.realtimeSinceStartup; !(c.Current != null && c.Current.IsHuman) && Time.realtimeSinceStartup - t0 < 20f;) yield return null;
                 c.DebugDamage(boss, 99999);
                 yield return Frames(8);
                 AcademyTests.Shot($"act6_{ending}_phase1");

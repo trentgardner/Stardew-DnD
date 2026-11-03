@@ -132,20 +132,24 @@ namespace DnD.Game
             {
                 Vector3 from = dragonT.position, to = capital.ToWorld(route.Waypoints[i]);
                 float t = 0, dur = Mathf.Max(0.3f, Vector3.Distance(from, to) / 6f);
-                while (t < dur)
+                while (t < dur && rider.IsReady)
                 {
                     t += Time.deltaTime;
-                    dragonT.position = Vector3.Lerp(from, to, Mathf.SmoothStep(0, 1, t / dur));
-                    if (agent != null) rider.Avatar.transform.position = dragonT.position + new Vector3(0, 0.35f, 0);
+                    if (dragonT) dragonT.position = Vector3.Lerp(from, to, Mathf.SmoothStep(0, 1, t / dur));
+                    if (agent != null && dragonT) rider.Avatar.transform.position = dragonT.position + new Vector3(0, 0.35f, 0);
                     yield return null;
                 }
+                if (!rider.IsReady) break; // the rider left mid-air: the dragon brings everyone else down to the landing
                 if (i == 1 || i == 3) yield return Pass(rider, route.Passes[i == 1 ? 0 : 1]);
             }
 
-            yield return PlayBeats(rider, route.Landing);
+            var lead = rider.IsReady ? rider : Players.FirstOrDefault(p => p.IsReady);
+            if (lead != null) yield return PlayBeats(lead, route.Landing);
             _flightCam = null;
-            if (ys != null) ys.Offset -= 40;
-            if (ctrl != null) ctrl.enabled = true;
+            if (ys) ys.Offset -= 40;
+            if (ctrl) ctrl.enabled = true;
+            lead = rider.IsReady ? rider : Players.FirstOrDefault(p => p.IsReady);
+            if (lead == null) { _flying = false; yield break; } // nobody left to land: the save still has the flight waiting
             GatherAt(route.LandingZone, route.LandingSpot);
             if (agent != null)
             {
@@ -156,7 +160,7 @@ namespace DnD.Game
             }
             foreach (var p in Players.Where(p => p.IsReady)) foreach (var c in CompanionsOf(p)) if (!c.IsDragon && c.Character != null) c.Actor.PlaceAt(Zones[route.LandingZone], route.LandingSpot + new Vector2Int(1, 1));
             World.SetFlag(Finale.Flown);
-            if (Quests.Stage(WarmCity.Id) < WarmCity.Boss) Quests.Set(WarmCity.Id, WarmCity.Boss, rider);
+            if (Quests.Stage(WarmCity.Id) < WarmCity.Boss) Quests.Set(WarmCity.Id, WarmCity.Boss, lead);
             _flying = false;
             SaveSystem.Save(true);
             StartFinaleBoss(ending);
@@ -172,6 +176,7 @@ namespace DnD.Game
             rider.Hud.Push(screen);
             foreach (var p in Players.Where(p => p.IsReady && p != rider)) p.Hud.Narrate(pass.Text);
             while (picked == null && rider.IsReady) yield return null;
+            if (!rider.IsReady) yield break; // the rider left: no roll
             if (picked == null) picked = pass.Options[0];
 
             var pc = rider.Character;
@@ -179,7 +184,8 @@ namespace DnD.Game
             D20Result res = null;
             rider.Hud.Dice.RollD20(pass.Title, $"{picked.Skill} · DC {picked.Dc}", () => Dice.RollD20(AdvantageState.Normal, terms), picked.Dc, true, r => res = r);
             while (res == null && rider.IsReady) yield return null;
-            while (rider.Hud.Dice.IsOpen) yield return null;
+            while (rider.IsReady && rider.Hud.Dice.IsOpen) yield return null;
+            if (!rider.IsReady) yield break;
             bool ok = res != null && res.Total >= picked.Dc;
             if (ok)
             {

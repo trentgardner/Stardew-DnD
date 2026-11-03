@@ -70,6 +70,19 @@ namespace RulesTests
                 for (int i = 1; i < d.Phases.Count; i++) Check(d.Phases[i].At < d.Phases[i - 1].At, id + ": phases in descending order");
             }
 
+            // BanishmentCantSkipPhases (final review): a full minute of Banishment makes most creatures vanish for good,
+            // but a phased boss comes back, so its phases and their scenes still play.
+            var banishedKing = new Monster(MonstersDb.Get("king_regalia"), false);
+            var ban = EffectLibrary.Create("banished", banishedKing);
+            banishedKing.AddEffect(ban);
+            Encounter.EffectEnded(banishedKing, ban, true, new List<string>());
+            Check(!banishedKing.IsDead, "a phased boss banished for a full minute comes back");
+            var ogre = new Monster(MonstersDb.Get("ogre"), false);
+            var ban2 = EffectLibrary.Create("banished", ogre);
+            ogre.AddEffect(ban2);
+            Encounter.EffectEnded(ogre, ban2, true, new List<string>());
+            Check(ogre.IsDead, "an ordinary monster still vanishes");
+
             FinaleBossesLastLongEnough();
         }
 

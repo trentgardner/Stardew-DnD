@@ -664,7 +664,9 @@ namespace DnD.Rules
                 log?.Add($"A wave of lethargy sweeps over {c.Name}.");
             }
             // Banished for the whole minute: a creature from elsewhere doesn't come back (and in this world, nothing banished does).
-            if (e.Banished && fullDuration && e.Power >= 0) c.Vanish(log);
+            // A phased boss (the Act III finales) always comes back: its phases and their scenes must still play.
+            if (e.Banished && fullDuration && e.Power >= 0 && !(c is Monster m && m.Def.Phases.Count > 0)) c.Vanish(log);
+            else if (e.Banished && fullDuration && c is Monster) log?.Add($"{c.Name} tears its way back from wherever it was sent.");
         }
     }
 }
