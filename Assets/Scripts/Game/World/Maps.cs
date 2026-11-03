@@ -604,6 +604,40 @@ namespace DnD.Game
         };
 
         // Act II Phase 6: the Emberhorn. The Throat (Dark): in from the road at (0, 11-12), on to the Heart at (39, 11-12); the Ring Chamber to the north.
+        public static readonly string[] Undergate =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXX:P:PXXXXXXXXXX:P:PXXXXXXXXXX::::XXX",
+            "X:XXXXPXP:::::X:XXXXPXP:::::X:XXXXPX::::::XX",
+            "X:::::::::::::P:P:P:::::::::P:P:P::::::::::X",
+            "X::::::::::::::::::::::::::::::::::::::::::X",
+            "X::::::::::::::q::::::RRRRRRRR:::::::::::::X",
+            "X:::::::::::::::::::::RRRRRRRR:::::::::::::X",
+            "X::::B:B:B:B::::::::::RRRRRRRR:::::::::::::X",
+            "X::::::::::::xx:::::::RRRRRRRR:::::::::::::X",
+            "X::::B:B:B:B::::::::::WWwWWwWW:::::::::::::X",
+            "X:::::::::::::::::::::WWWDWWWW::::::::xx:::X",
+            "X::l::::::F::::::::::l::::::::l:::::::::l::X",
+            "X:::::::::::::::::::::s::::::::::::::::::::X",
+            ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,VX",
+            ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,VX",
+            "X::::::::::::::::::::::::::::::::::::::::::X",
+            "X::l::::::::::::::::::::::::::::::::::::l::X",
+            "X::::NaaaaaaaaaN::::::::::::::::::::::x::::X",
+            "X:::x:::::::::::::::::::::::::::,::::::::::X",
+            "X::::::::::::::::::::::::::l:::::::::l:::::X",
+            "X::::LLLLLLLLLL:::::::::::::r:r:r:r:r::::::X",
+            "X::::::::::::::::::::::::::::::::::::::::::X",
+            "X:::::::::::::::::::::::::::r:r:r:r:r::::::X",
+            "X::::::::::::::::::::::::::::::::::::::::::X",
+            "X::::::::::::::X:::::::::::::::::::X:::::::X",
+            "XXX::X:::::::::XXXX:X:::::::::XXXXXX:::::::X",
+            "XXXXXXX:::XXXXXXXXXXXXX::X::XXXXXXXXXXXXX::X",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        };
+
         public static readonly string[] EmberhornThroat =
         {
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",

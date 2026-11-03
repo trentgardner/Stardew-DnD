@@ -148,6 +148,8 @@ namespace DnD.Game
         public bool DragonStays;
         /// <summary>What the narrator says when the dragon won't follow in ("{name}" = the dragon); null = the old stairs line.</summary>
         public string DragonStaysText;
+        /// <summary>No music at all here, not even in a fight (Act III Phase 4: a quiet room).</summary>
+        public bool Silent;
         /// <summary>The act this place opens in (Act II places are behind gated warps; the Act I XP audit skips them).</summary>
         public int Act = 1;
         /// <summary>Lit by its own magic: nights here are a soft violet glow, not dark (the Academy's wards).</summary>
@@ -432,6 +434,7 @@ namespace DnD.Game
             BuildRoots();
             BuildPalaceAndHalls();
             BuildCapitalPeople();
+            BuildLair();
 
             var shop = new ZoneDef { Id = "shop", Name = "Ironkettle General Goods", Map = Maps.Shop, Indoors = true, DefaultSpawn = new Vector2Int(6, 7),
                 EnterNarration = "The shop smells of lamp oil and leather. Every shelf is organized with terrifying dwarven precision.", ShopCounter = new Vector2Int(6, 3) };

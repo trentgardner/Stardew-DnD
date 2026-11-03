@@ -32,16 +32,25 @@ namespace DnD.Game
             bool first = !World.Flag("carriage_ridden");
             World.SetFlag("carriage_ridden");
             if (zone == "capital") World.SetFlag(CarriageInCapital); else World.ClearFlag(CarriageInCapital);
-            int i = 0;
+            GatherAt(zone, pos);
             foreach (var p in Players.Where(p => p.IsReady && p.Avatar != null).ToList())
             {
-                p.Hud.CloseAll();
-                Warp(p, zone, pos + new Vector2Int(i++, 0), false);
                 p.Hud.Narrate(zone == "capital"
                     ? first
                         ? "Two days up the King's Road, through passes white with early snow. Then the carriage tops a ridge and the whole party goes quiet. A city fills the valley inside the mountains' ring, and every window in it is lit."
                         : "Two days up the King's Road, the snow deeper every mile, until Aurelhold glows up out of the valley like a hearth."
                     : "Two days down the King's Road, and the warmth goes out of the air a mile at a time. Thistledown looks small and grey and very dear.", true);
+            }
+        }
+
+        /// <summary>Every ready player (with their companions and the dragon) warps to `zone`, side by side from `pos`. No checks, no text.</summary>
+        public void GatherAt(string zone, Vector2Int pos)
+        {
+            int i = 0;
+            foreach (var p in Players.Where(p => p.IsReady && p.Avatar != null).ToList())
+            {
+                p.Hud.CloseAll();
+                Warp(p, zone, pos + new Vector2Int(i++, 0), false);
             }
         }
 

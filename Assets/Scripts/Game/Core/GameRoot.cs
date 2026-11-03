@@ -445,8 +445,9 @@ namespace DnD.Game
         public string WantedMusic()
         {
             if (MusicOverride != null) return MusicOverride;
-            if (AnyInCombat) return "music_fight";
             var lead = Players.FirstOrDefault(p => p.IsReady);
+            if (lead?.Zone != null && lead.Zone.Def.Silent) return null;
+            if (AnyInCombat) return "music_fight";
             if (lead == null) return null;
             var z = lead.Zone.Def;
             if (z.Id == "town" && World.IsLocked(Festival.Lock)) return "music_festival";

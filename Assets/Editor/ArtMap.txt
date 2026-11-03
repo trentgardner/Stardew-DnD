@@ -1612,3 +1612,6 @@ actor npc_glass "Actor/Character/Master/SpriteSheet.png"
 actor npc_dray "Actor/Character/OldMan3/SpriteSheet.png"
 tint item_potion_superior_healing item_potion_healing 40 1.2 1.0
 paint item_pageant_sash cloak k=4a1010 a=c62828 b=e57373 c=ffd54a
+
+# Act III Phase 4: below Aurelhold
+audio music_undergate "Audio/Musics/21 - Dungeon.ogg"

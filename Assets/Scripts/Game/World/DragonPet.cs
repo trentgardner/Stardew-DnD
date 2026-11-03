@@ -216,6 +216,14 @@ namespace DnD.Game
             return null;
         }
 
+        /// <summary>A scripted walk (Act III: the dragon goes to someone on its own). Busy while it walks.</summary>
+        public IEnumerator GoTo(Vector3 target, float near)
+        {
+            Busy = true;
+            yield return RunTo(() => target, near);
+            Busy = false;
+        }
+
         IEnumerator RunTo(Func<Vector3> target, float near)
         {
             var actor = _agent.Actor;

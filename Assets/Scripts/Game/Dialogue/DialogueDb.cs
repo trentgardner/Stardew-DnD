@@ -15,7 +15,7 @@ namespace DnD.Game
         public static Dialogue Get(string id)
         {
             if (Cache.TryGetValue(id, out var d)) return d;
-            d = AcademyDialogue(id) ?? ForcesDialogue(id) ?? BlightDialogue(id) ?? VolcanoDialogue(id) ?? PlacesDialogue(id) ?? CapitalDialogue(id);
+            d = AcademyDialogue(id) ?? ForcesDialogue(id) ?? BlightDialogue(id) ?? VolcanoDialogue(id) ?? PlacesDialogue(id) ?? CapitalDialogue(id) ?? LairDialogue(id);
             if (d != null) { AddAcademyLines(id, d); AddForceLines(id, d); AddBlightLines(id, d); Cache[id] = d; return d; }
             switch (id)
             {

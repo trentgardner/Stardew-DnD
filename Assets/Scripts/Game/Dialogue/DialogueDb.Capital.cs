@@ -170,7 +170,13 @@ namespace DnD.Game
                 c => c.G.Quests.Stage(DeepShift.Id) >= DeepShift.Below
                     ? "You again. I told you what I know. Now let me work, before somebody up top hears I've been talking."
                     : "Foundation Works. Dig, shore, haul, repeat. Mind the crates, mind the crane, mind the dragon off my scaffolds.")
+                .Say("Open the Undergate for us.", "undergate", show: c => c.G.Quests.Stage(DeepShift.Id) >= DeepShift.Below && c.G.Quests.Stage(WarmCity.Id) == WarmCity.Below)
                 .Bye("Carry on.");
+            d.Node("undergate", who,
+                c => "...You know, don't you. Not what's down there. Nobody knows that. But you know there's a down there.",
+                c => "He takes a key from round his neck on a bootlace: black iron, heavy, warm from his skin. \"I've the key. I've always had the key. God help me, I've never once used it.\"")
+                .Say("(Take the key and open the Undergate.)", doIt: c => c.G.Quests.Set(WarmCity.Id, WarmCity.Opened, c.P), end: true)
+                .Bye("Not yet.");
             d.Node("ask", who,
                 c => "Bran Tolley? Deep shift. Can't talk about the deep shift. Royal warrant. Get out of my yard.",
                 c => "He doesn't look at the Undergate when he says it. He very carefully doesn't look at the Undergate.",

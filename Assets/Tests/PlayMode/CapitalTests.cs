@@ -256,7 +256,7 @@ namespace DnD.Tests
 
         // ============================================================ Task 3: the Roots and the Deep Shift
 
-        static DCtx Ctx(PlayerSlot p) => new DCtx { P = p };
+        internal static DCtx Ctx(PlayerSlot p) => new DCtx { P = p };
         static DOption Opt(string dialogue, string node, Skill skill) => DialogueDb.Get(dialogue).Nodes[node].Options.First(o => o.Check == skill);
 
         [UnityTest]
@@ -351,7 +351,8 @@ namespace DnD.Tests
             ActThree(g, 25);
             yield return Frames(2);
             var roots = WorldDb.Zones["roots"];
-            Assert.IsFalse(roots.Warps.Any(w => w.At == new Vector2Int(52, 20) || w.At == new Vector2Int(52, 21)), "no way through yet");
+            foreach (var at in new[] { new Vector2Int(52, 20), new Vector2Int(52, 21) })
+                Assert.IsFalse(roots.Warps.Find(w => w.At == at).Open(g.World), "shut until everything points down");
             StringAssert.Contains("King's own seal", roots.Signs[new Vector2Int(51, 23)]);
             Assert.AreEqual('D', roots.Map[20][52]);
         }
@@ -553,7 +554,7 @@ namespace DnD.Tests
 
         // ============================================================ Task 6: the golden path
 
-        static SecretInteractable SecretIn(string id) => Object.FindObjectsByType<SecretInteractable>(FindObjectsSortMode.None).Single(x => x.Def.Id == id);
+        internal static SecretInteractable SecretIn(string id) => Object.FindObjectsByType<SecretInteractable>(FindObjectsSortMode.None).Single(x => x.Def.Id == id);
 
         [UnityTest]
         public IEnumerator CapitalGoldenPath()
