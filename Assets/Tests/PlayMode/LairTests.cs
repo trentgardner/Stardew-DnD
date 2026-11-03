@@ -804,7 +804,7 @@ namespace DnD.Tests
             g.LoadGame(path);
             yield return Frames(5);
             p = g.Players[0];
-            Assert.AreEqual(WarmCity.Door, g.Quests.Stage(WarmCity.Id));
+            Assert.AreEqual(WarmCity.Called, g.Quests.Stage(WarmCity.Id), "coming back up, the city is waiting (Phase 5)");
             Assert.AreEqual(DeepShift.Home, g.Quests.Stage(DeepShift.Id));
             foreach (var f in new[] { WorldDb.MetHer, WorldDb.OathThird, "promised_her", "ring_link", "seal_understood", "her_truth", "knocked_back" }) Assert.IsTrue(g.World.Flag(f), f);
             Assert.GreaterOrEqual(LoreDb.All.Values.Count(l => g.World.LoreFound.Contains(l.Id) && LoreDb.Revealed(l, g.World)), 2, "found entries read differently now");

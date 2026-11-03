@@ -205,6 +205,20 @@ namespace DnD.Tests
             }
         }
 
+        /// <summary>Act III Phase 5: the turn's four files are exempt and gated the same way.</summary>
+        [Test]
+        public void TurnFilesAreGated()
+        {
+            var root = Path.Combine(Application.dataPath, "Scripts");
+            foreach (var name in new[] { "WorldDb.TheTurn.AfterTheDoor.cs", "DialogueDb.TheTurn.AfterTheDoor.cs", "TurnDb.AfterTheDoor.cs", "GameRoot.TheTurn.AfterTheDoor.cs" })
+            {
+                var files = Directory.GetFiles(root, name, SearchOption.AllDirectories);
+                Assert.AreEqual(1, files.Length, name + " exists");
+                StringAssert.Contains("MetHer", File.ReadAllText(files[0]), name + " is gated on meeting her");
+                Assert.IsFalse(GuardScans(name));
+            }
+        }
+
         /// <summary>Act III Phase 4: the lair's text before the door is read by the guard.</summary>
         [Test]
         public void LairFilesAreScannedBySecretGuard()
