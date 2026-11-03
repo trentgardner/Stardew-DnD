@@ -14,6 +14,7 @@ namespace DnD.Game
             switch (id)
             {
                 case "grey_door": return GreyDoorChoices();
+                case "gaoler_parley": return GaolerParley();
                 case "bran": return Bran();
                 case "hap_mossy": return HapMossy();
                 case "deep_shift_1": return DeepShiftHand("deep_shift_1", "Lew Carrow",
@@ -35,6 +36,30 @@ namespace DnD.Game
                 .Say("Knock.", doIt: c => Knock(c), end: true)
                 .Say("Open the door.", doIt: c => c.G.OpenGreyDoor(c.P), end: true)
                 .Bye("Not yet.");
+            return d;
+        }
+
+        static Dialogue GaolerParley()
+        {
+            const string tried = "gaoler_deceive";
+            var d = new Dialogue("gaoler_parley", c => "face");
+            void Fight(DCtx c) { c.Screen?.Close(); c.G.StartGroupCombat("gaoler", c.P); }
+            void Kneel(DCtx c) { c.Screen?.Close(); c.G.PacifyGroup("gaoler", c.P); }
+            void BackAway(DCtx c) { c.G.World.ClearFlag("parley:gaoler"); c.G.CalmGroup("gaoler"); }
+            d.Node("face", "The Iron Gaoler",
+                c => "HOLD.",
+                c => "The word comes out of it like a bell rung underwater. It takes one step toward you, and the whole floor feels it.")
+                .Roll(Skill.Deception, 18, "(Deception) Speak as the King: \"Stand aside.\"", "kneels", "unconvinced",
+                      onFailure: c => c.G.World.Lock(tried, 24 * 60), show: c => !c.G.World.IsLocked(tried))
+                .Say("(Draw your weapon)", doIt: Fight, end: true)
+                .Say("(Back away, slowly)", doIt: BackAway, end: true);
+            d.Node("kneels", "The Iron Gaoler", c => "...HOLD.",
+                c => "You give the order in the King's own cadence. The Gaoler's head turns, slowly, to the door, and back to you. Then it kneels, the way it must have knelt a thousand times, and is still.")
+                .Say("(Walk past it)", doIt: Kneel, end: true);
+            d.Node("unconvinced", "The Iron Gaoler", c => "HOLD.",
+                c => "It has heard one voice for a thousand years, and that wasn't it. The chains on its arms begin to unwind.")
+                .Say("(Draw your weapon)", doIt: Fight, end: true)
+                .Say("(Back away, fast)", doIt: BackAway, end: true);
             return d;
         }
 

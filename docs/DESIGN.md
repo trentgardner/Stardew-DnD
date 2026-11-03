@@ -136,6 +136,25 @@ Eldritch Blast fires two beams at 5 (2024) instead of one bigger one.
 | 13 | rogue 24.1 | monk 22.9, fighter 20.6, barbarian 16.8, ranger 15.7, paladin 13.8 | 22.9 | druid 13.6, sorcerer/wizard 12.4, cleric 10.8, bard 8.4 |
 The paladin's number leaves out Radiant Strikes (+1d8 on every melee hit) and smites; every martial and the warlock stay above half the leader.
 
+## The lair (Act III Phase 4)
+- **Zones** (all `Act = 3`, `Dark`, `BlightWeight = 0`): `undergate` (the works below the Roots), `iron_vaults` (beam puzzle), `royal_crypts`
+  (lid puzzle, the Third Ideal, a stair up to capital (6,14) once `crypt_stair_open`), `the_deep` (the Gaoler, the grey door) and
+  `beyond_the_door` (`Indoors`, `Silent`).
+- **Map chars**: `1` a Great One's stone head (solid, drawn 2x, reads `Signs`), `2` a chain on the floor (walkable), `0` the grey door (`GreyDoor`
+  interactable: the `grey_door` dialogue, Knock / Open / Not yet).
+- **Engine**: `ZoneDef.Silent` (no music, not even in a fight), `GameRoot.GatherAt` (the carriage's group warp), `DragonPet.GoTo` and
+  `DragonPet.StaysPut`, `NpcDef.Glow`, `MessageScreen.Body`, `DialogueScreen.NodeId`, `GameRoot.OpenGreyDoor` / `ThroughTheDoor`.
+- **Quests**: warm_city 5 Opened (2000, sets `undergate_open`), 6 Deep (4000, on entering `the_deep`), 7 Door (6000); stage 8 is Phase 5's.
+  deep_shift 4 Home (3000, `bran_home`). The main quest alone reaches level 12 by the door.
+- **The Iron Gaoler** (`iron_gaoler`): AC 19, 24d10+120 HP, CR 12, Slam x2 (+11, 3d8+7), Chain (reach 15), Binding Chains (30-ft line, 6d8
+  force, STR 17, recharge 5-6, telegraphed), 2 legendary actions (Chain Lash, Ward Pulse), phase two at half HP. Not fire-immune. Balance:
+  median 5.2 rounds vs level-12 parties of four. Its parley (`gaoler_parley`): Deception 18 to speak as the King (retry the next day).
+- **The Third Ideal**: `PlayerCharacter.ThirdIdeal`, set by `GameRoot.ApplyIdeals` while `oath_third` is set (players only); once per
+  long rest, damage that would drop you to 0 leaves you at 1 (`third_ideal_used`). Massive damage still kills.
+- **The secret**: everything about her is in `WorldDb.AfterTheDoor.cs`, `DialogueDb.AfterTheDoor.cs`, `LoreDb.AfterTheDoor.cs` and
+  `GameRoot.AfterTheDoor.cs` (exempt from the guard, each gated on `WorldDb.MetHer`). `ThroughTheDoor` sets `MetHer` and saves before
+  anything is shown. Flags for Phase 5: `met_her`, `her_truth`, `seal_understood`, `ring_link`, `knocked_back`, `promised_her`, `meeting_seen`.
+
 ## Aurelhold, the capital (Act III Phase 3)
 - **Zones** (all `Act = 3`, `BlightWeight = 0`): `capital` (64x48, `WarmLit`), `roots` (56x40, `WarmLit` + `Shadowed`: a steady warm dimness),
   `steamhouse`, `throne_room` and `royal_archive` (`DragonStays`, each with its own `DragonStaysText`), `capital_inn` (rest via `RentRoom`).

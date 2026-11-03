@@ -195,7 +195,7 @@ namespace DnD.Game
             var gaoler = new EnemyGroupDef
             {
                 Id = "gaoler", Style = EncounterStyle.Talk, TalkSkill = Rules.Skill.Deception, TalkDC = 18, ScareDC = 99, Label = "the Iron Gaoler", Unique = true, SightTiles = 9,
-                ResolvedFlag = "gaoler_resolved",
+                ResolvedFlag = "gaoler_resolved", ParleyDialogue = "gaoler_parley",
                 Spotted = "Before the grey door, something moves that you took for part of the wall: a figure of black iron three times your height, chains wound round its arms. Its face is a blank iron plate with one word cut into it. HOLD.",
                 Befriended = "You give the order in the King's own cadence. The Gaoler's head turns, slowly, to the door, and back to you. Then it kneels, the way it must have knelt a thousand times, and is still.",
             };

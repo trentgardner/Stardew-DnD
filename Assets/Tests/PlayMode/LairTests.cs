@@ -462,6 +462,10 @@ namespace DnD.Tests
             yield return Into(g, p, "the_deep");
             var def = WorldDb.Zones["the_deep"].EnemyGroups.Single(x => x.Id == "gaoler");
             Assert.AreEqual(Skill.Deception, def.TalkSkill, "you can speak as the King");
+            Assert.AreEqual("gaoler_parley", def.ParleyDialogue, "it has its own few words");
+            var parley = DialogueDb.Get("gaoler_parley");
+            Assert.IsTrue(parley.Nodes["face"].Options.Any(o => o.Check == Skill.Deception && o.Show(Ctx(p))), "speak as the King");
+            Assert.IsFalse(parley.Nodes.Values.Any(n => n.Options.Any(o => o.Check == Skill.Persuasion)), "no sweet-talking an iron giant");
             Assert.AreEqual(18, def.TalkDC);
             int fightXp = def.Members.Sum(m => MonstersDb.Get(m.MonsterId).XP);
             Assert.AreEqual(8400, fightXp);
@@ -719,6 +723,148 @@ namespace DnD.Tests
             yield return Frames(6);
             Assert.IsFalse(g.World.Flag(WorldDb.MetHer), "a save from before the door knows nothing");
             Assert.AreEqual(WarmCity.Deep, g.Quests.Stage(WarmCity.Id));
+        }
+
+        // ============================================================ Task 6: the golden path and screenshots
+
+        [UnityTest]
+        public IEnumerator LairGoldenPath()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 70, "paladin", "crown");
+            yield return Frames(2);
+            g.World.LoreFound.Add("shared_dream"); // read back in Act II, as a played game would have it
+            foreach (int st in new[] { WarmCity.Arrived, WarmCity.Audience, WarmCity.Below }) g.Quests.Set(WarmCity.Id, st, p);
+            g.Quests.Start(DeepShift.Id, p);
+            g.Quests.Set(DeepShift.Id, DeepShift.Below, p);
+
+            // Crale's key.
+            var crale = DialogueDb.Get("crale");
+            var key = crale.Nodes[crale.Nodes[crale.Start(Ctx(p))].Options.First(o => o.Text.Contains("Open the Undergate")).Next];
+            key.Options.First(o => o.Do != null).Do(Ctx(p));
+            Assert.AreEqual(WarmCity.Opened, g.Quests.Stage(WarmCity.Id));
+
+            // The works: the Keepers stand aside, Bran goes home.
+            yield return Into(g, p, "undergate");
+            g.PacifyGroup("undergate_keepers", p);
+            Opt("bran", "start", Skill.Persuasion).OnSuccess(Ctx(p));
+            Assert.AreEqual(DeepShift.Home, g.Quests.Stage(DeepShift.Id));
+
+            // The vaults: the beam, the sentinels, the guardian.
+            yield return Into(g, p, "iron_vaults");
+            g.World.SetFlag("puzzlehint:iron_vaults:mirror_1");
+            foreach (var m in new[] { "mirror_1", "mirror_2", "mirror_3" }) PieceIn(p.Zone, m).Interact(p);
+            Assert.IsTrue(p.Zone.IsWalkable(new Vector2Int(33, 13)));
+            g.PacifyGroup("vault_sentinels", p);
+            g.PacifyGroup("vault_guardian", p);
+
+            // The crypts: the lids, the Third Ideal.
+            yield return Into(g, p, "royal_crypts");
+            var z = p.Zone;
+            g.World.SetFlag("puzzlehint:royal_crypts:lid_1");
+            foreach (var (lid, x) in new[] { ("lid_1", 10), ("lid_2", 26) })
+            {
+                p.Avatar.PlaceAt(z, new Vector2Int(x, 13)); yield return Frames(1);
+                PieceIn(z, lid).Interact(p);
+                p.Avatar.PlaceAt(z, new Vector2Int(x, 12)); yield return Frames(1);
+                PieceIn(z, lid).Interact(p);
+            }
+            Assert.IsTrue(z.IsWalkable(new Vector2Int(18, 20)));
+            SecretIn("third_ideal_history").Resolve(p, CheckOutcome.Success);
+            p.Hud.CloseAll(); // read it, close it
+
+            // The Deep: knock, then speak as the King.
+            var down = WorldDb.Zones["royal_crypts"].Warps.Find(w => w.ToZone == "the_deep");
+            yield return StepOnto(g, p, "royal_crypts", down.At, down.At + Vector2Int.up);
+            Assert.AreEqual(WarmCity.Deep, g.Quests.Stage(WarmCity.Id));
+            DialogueDb.Get("grey_door").Nodes["door"].Options.First(o => o.Text.Contains("Knock")).Do(Ctx(p));
+            g.PacifyGroup("gaoler", p);
+            p.Hud.CloseAll();
+
+            // The door.
+            g.Warp(p, "the_deep", BeforeTheDoor, false);
+            yield return Frames(3);
+            g.OpenGreyDoor(p);
+            yield return Frames(4);
+            yield return PlayTheScene(g, p);
+            g.World.LoreFound.Add("the_kings_ring");
+            CapitalTests.Opt("edda", "him", Skill.History).OnSuccess(Ctx(p));
+            CapitalTests.Opt("edda", "fire", Skill.Arcana).OnSuccess(Ctx(p));
+            CapitalTests.Opt("edda", "fire", Skill.Insight).OnSuccess(Ctx(p));
+            DialogueDb.Get("edda").Nodes["leave"].Options.First(o => o.Text.Contains("promise")).Do(Ctx(p));
+            p.Hud.CloseAll();
+
+            // Back up through the cathedral, the short way.
+            yield return Into(g, p, "royal_crypts");
+            var up = WorldDb.Zones["royal_crypts"].Warps.Find(w => w.ToZone == "capital");
+            yield return StepOnto(g, p, "royal_crypts", up.At, up.At + Vector2Int.right);
+            Assert.AreEqual("capital", p.Zone.Def.Id);
+
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(5);
+            p = g.Players[0];
+            Assert.AreEqual(WarmCity.Door, g.Quests.Stage(WarmCity.Id));
+            Assert.AreEqual(DeepShift.Home, g.Quests.Stage(DeepShift.Id));
+            foreach (var f in new[] { WorldDb.MetHer, WorldDb.OathThird, "promised_her", "ring_link", "seal_understood", "her_truth", "knocked_back" }) Assert.IsTrue(g.World.Flag(f), f);
+            Assert.GreaterOrEqual(LoreDb.All.Values.Count(l => g.World.LoreFound.Contains(l.Id) && LoreDb.Revealed(l, g.World)), 2, "found entries read differently now");
+            Assert.GreaterOrEqual(p.Character.XP, PlayerCharacter.XpThresholds[12], "level 12 by the door");
+            Assert.IsTrue(p.Character.ThirdIdeal);
+
+            // Buoy, still the best boy.
+            yield return Into(g, p, "town", WorldDb.TownCarriageStop);
+            var buoy = Object.FindObjectsByType<TownDog>(FindObjectsSortMode.None).Single();
+            p.Character.HeroicInspiration = false;
+            buoy.PetHim(p);
+            Assert.IsTrue(p.Character.HeroicInspiration);
+        }
+
+        [UnityTest]
+        public IEnumerator CaptureLair()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 91, "wizard");
+            yield return Frames(2);
+            g.Quests.Set(WarmCity.Id, WarmCity.Opened, p, 0f);
+            IEnumerator At(string zone, int x, int y, string shot)
+            {
+                g.Warp(p, zone, new Vector2Int(x, y), false);
+                yield return Frames(40);
+                p.Hud.CloseAll();
+                p.Hud.HideNarration();
+                yield return Frames(5);
+                AcademyTests.Shot(shot);
+            }
+            yield return At("undergate", 10, 15, "act4_undergate_camp");
+            yield return At("undergate", 30, 16, "act4_keepers_and_cairns");
+            g.World.SetFlag("puzzlehint:iron_vaults:mirror_1");
+            yield return At("iron_vaults", 26, 13, "act4_vault_chamber");
+            foreach (var m in new[] { "mirror_1", "mirror_2", "mirror_3" }) PieceIn(p.Zone, m).Interact(p);
+            yield return At("iron_vaults", 26, 13, "act4_vault_beam");
+            yield return At("royal_crypts", 18, 12, "act4_crypt_hall");
+            yield return At("the_deep", 24, 22, "act4_the_deep");
+            yield return At("the_deep", 24, 11, "act4_the_gaoler");
+            g.World.SetFlag("gaoler_resolved");
+            g.Warp(p, "the_deep", BeforeTheDoor, false);
+            yield return Frames(5);
+            p.Hud.CloseAll();
+            g.OpenGreyDoor(p);
+            yield return Frames(30);
+            AcademyTests.Shot("act4_beat1");
+            Beat(p)?.Close();
+            yield return Frames(30);
+            AcademyTests.Shot("act4_beat2");
+            Beat(p)?.Close();
+            for (int t = 0; t < 300 && Beat(p) == null; t++) yield return null;
+            yield return Frames(10);
+            AcademyTests.Shot("act4_beat3");
+            Beat(p)?.Close();
+            yield return Frames(20);
+            AcademyTests.Shot("act4_she_speaks");
+            p.Hud.CloseAll();
+            p.Hud.HideNarration();
+            yield return Frames(20);
+            AcademyTests.Shot("act4_her_room");
         }
 
         [UnityTest]
