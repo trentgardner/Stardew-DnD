@@ -15,6 +15,8 @@ namespace DnD.Game
     {
         /// <summary>What the passes won; the boss fight reads and clears these.</summary>
         public static readonly List<FlightEffect> FlightResults = new List<FlightEffect>();
+        /// <summary>What the last flight won (kept after the boss fight uses FlightResults up).</summary>
+        public static readonly List<FlightEffect> LastFlightWon = new List<FlightEffect>();
 
         /// <summary>Every player's camera follows this while it's set (the dragon, in the air).</summary>
         Transform _flightCam;
@@ -23,7 +25,7 @@ namespace DnD.Game
 
         public bool Flying => _flying;
 
-        void ResetFlight() { _flying = false; _riderCandidate = -1; _flightCam = null; FlightResults.Clear(); }
+        void ResetFlight() { _flying = false; _riderCandidate = -1; _flightCam = null; FlightResults.Clear(); LastFlightWon.Clear(); }
 
         string DragonCalled => World.EggHatched ? World.DragonName : "the dragon";
 
@@ -195,10 +197,5 @@ namespace DnD.Game
             yield return new WaitForSeconds(0.6f);
         }
 
-        /// <summary>The last fight (Task 6 builds it).</summary>
-        public void StartFinaleBoss(string ending)
-        {
-            foreach (var p in Players.Where(p => p.IsReady)) p.Hud.Narrate("The last fight for Aurelhold begins.");
-        }
     }
 }

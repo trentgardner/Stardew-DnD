@@ -624,7 +624,7 @@ namespace DnD.Tests
                 if (Choice(p) is ChoiceScreen cs) foreach (var pass in route.Passes) if (cs.Title == pass.Title) cs.Choose(pass.Options[0].Label);
             }
             Assert.IsTrue(sawTray, "the rider's rolls go through the dice tray");
-            CollectionAssert.AreEquivalent(new[] { route.Passes[0].Options[0].OnSuccess, route.Passes[1].Options[0].OnSuccess }, GameRoot.FlightResults);
+            CollectionAssert.AreEquivalent(new[] { route.Passes[0].Options[0].OnSuccess, route.Passes[1].Options[0].OnSuccess }, GameRoot.LastFlightWon, "what the flight won reached the boss fight");
         }
 
         [UnityTest]
@@ -637,7 +637,7 @@ namespace DnD.Tests
             p.Character.HP = 4;
             Dice.Rng = new ScriptedRandom(Enumerable.Repeat(1, 400).ToArray());
             yield return RideOut(g, p, Turn.End, 1);
-            Assert.AreEqual(0, GameRoot.FlightResults.Count, "nothing won");
+            Assert.AreEqual(0, GameRoot.LastFlightWon.Count, "nothing won");
             Assert.AreEqual(1, p.Character.HP, "scorched down to 1 HP, never 0");
         }
 
@@ -670,6 +670,196 @@ namespace DnD.Tests
                 g.QuitToTitle();
                 yield return Frames(3);
             }
+        }
+
+        // ================================================================== Task 6: the three boss fights
+
+        static readonly System.Collections.Generic.Dictionary<string, string> BossOf = new System.Collections.Generic.Dictionary<string, string>
+        { [Turn.End] = "ashen_queen", [Turn.Seal] = "king_regalia", [Turn.Save] = "crowned_fire" };
+
+        /// <summary>Straight to the landing (the flight is Task 5's): flown, standing at the landing, the boss fight paused at initiative.</summary>
+        static IEnumerator AtTheBoss(GameRoot g, PlayerSlot p, string ending, params FlightEffect[] won)
+        {
+            yield return ToTheChoice(g, p);
+            g.ChooseEnding(p, ending);
+            yield return CloseAll(g);
+            foreach (var f in new[] { Finale.Started, Finale.StreetDone(1), Finale.StreetDone(2), Finale.StreetDone(3), Finale.Flown }) g.World.SetFlag(f);
+            g.World.ClearFlag(Finale.StreetOpen(1)); // the streets are won (their groups leave on the next warp)
+            g.World.ClearFlag(Finale.DragonWaits);
+            g.Quests.Set(WarmCity.Id, WarmCity.Boss, p, 0f);
+            var route = FinaleDb.Route(ending, g.World);
+            if (p.Input is RollerInput r) r.PressWhen = () => false; // the fight waits at initiative: the test drives it
+            g.GatherAt(route.LandingZone, route.LandingSpot);
+            yield return Frames(2);
+            GameRoot.FlightResults.Clear();
+            GameRoot.FlightResults.AddRange(won);
+            g.StartFinaleBoss(ending);
+            yield return Frames(3);
+        }
+
+        static CombatInstance BossFightOf(GameRoot g, string ending)
+        {
+            var c = g.Combats.SingleOrDefault(x => x.GroupId == Finale.BossGroup(ending) && !x.Finished);
+            if (c != null) foreach (var u in c.Units) if (u.Cb == null) u.Cb = new Combatant(u.C);
+            return c;
+        }
+
+        static Unit BossUnit(CombatInstance c, string ending) => c.Units.Single(u => u.C is Monster m && m.Def.Id == BossOf[ending]);
+
+        /// <summary>Hits the boss through every phase (closing the beats), then knocks it down.</summary>
+        static IEnumerator BeatTheBoss(GameRoot g, PlayerSlot p, CombatInstance c, string ending)
+        {
+            var boss = BossUnit(c, ending);
+            for (int i = 0; i < 6 && !boss.C.IsDown; i++)
+            {
+                c.DebugDamage(boss, 99999);
+                yield return Frames(2);
+                for (int k = 0; k < 8 && c.BeatsPlaying; k++) { var b = Beat(p); if (b != null) b.Close(); yield return Frames(3); }
+            }
+            foreach (var f in c.Units.Where(u => u.C.Team == Team.Enemies && !u.C.IsDown).ToList()) c.DebugDamage(f, 99999);
+            c.DebugEndCheck();
+            yield return Frames(3);
+        }
+
+        [UnityTest]
+        public IEnumerator EachBossStartsWhereItLands()
+        {
+            var g = GameRoot.I;
+            foreach (var (ending, side) in new[] { (Turn.End, "hunters"), (Turn.Seal, "academy"), (Turn.Save, "fae") })
+            {
+                var p = Roller(g, side);
+                yield return Frames(2);
+                yield return AtTheBoss(g, p, ending);
+                var c = BossFightOf(g, ending);
+                Assert.IsNotNull(c, ending + ": the last fight has begun");
+                Assert.AreEqual(FinaleDb.Route(ending, g.World).LandingZone, c.Zone.Def.Id, ending);
+                Assert.IsNotNull(BossUnit(c, ending), ending + ": the boss is in it");
+                if (ending == Turn.Seal) Assert.AreEqual(2, c.Units.Count(u => u.C is Monster m && m.Def.Id == "crown_knight" && u.C.Team == Team.Enemies), "the Ring-knights");
+                Assert.AreEqual(FinaleDb.Allies(ending, g.World).Count, c.Units.Count(u => u.Ally), ending + ": whoever stands with you is here");
+                g.QuitToTitle();
+                yield return Frames(3);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator FlightEffectsApply()
+        {
+            var g = GameRoot.I;
+            var p = Roller(g, "fae");
+            yield return Frames(2);
+            yield return AtTheBoss(g, p, Turn.Save, FlightEffect.BossWounded, FlightEffect.NoLegendaryFirstRound, FlightEffect.AddsScattered, FlightEffect.PartyInspired);
+            var c = BossFightOf(g, Turn.Save);
+            var m = (Monster)BossUnit(c, Turn.Save).C;
+            Assert.AreEqual(m.MaxHP - m.MaxHP / 10, m.HP, "it starts 10% down");
+            Assert.AreEqual(0, m.LegendaryLeft, "no legendary actions in the first round");
+            Assert.IsFalse(m.IsCharged(m.Def.Abilities[0]), "its breath starts spent");
+            Assert.IsTrue(p.Character.HeroicInspiration, "the party is inspired");
+            Assert.AreEqual(0, GameRoot.FlightResults.Count, "the results are used up");
+        }
+
+        [UnityTest]
+        public IEnumerator AddsScatteredOnTheSealMeansOneFewerKnight()
+        {
+            var g = GameRoot.I;
+            var p = Roller(g, "academy");
+            yield return Frames(2);
+            yield return AtTheBoss(g, p, Turn.Seal, FlightEffect.AddsScattered);
+            var c = BossFightOf(g, Turn.Seal);
+            Assert.AreEqual(1, c.Units.Count(u => u.C is Monster m && m.Def.Id == "crown_knight" && u.C.Team == Team.Enemies));
+        }
+
+        [UnityTest]
+        public IEnumerator SealHoldsForSevenRounds()
+        {
+            var g = GameRoot.I;
+            var p = Roller(g, "academy");
+            yield return Frames(2);
+            yield return AtTheBoss(g, p, Turn.Seal);
+            var c = BossFightOf(g, Turn.Seal);
+            Assert.AreEqual(0, g.SealProgress);
+            Assert.IsTrue(Object.FindObjectsByType<Actor>(FindObjectsSortMode.None).Any(a => a.name == "Ashby" && a.Zone == c.Zone), "Ashby is at the door");
+            int finishedAt = -1;
+            for (int r = 2; r <= 20 && !c.Finished; r++)
+            {
+                g.OnCombatRound(c, r);
+                yield return Frames(2);
+                if (c.Finished) { finishedAt = r; break; }
+                if (r == 3)
+                {
+                    // The King reaches his phase: he hauls on the chains and the seal slips back one.
+                    var king = BossUnit(c, Turn.Seal);
+                    c.DebugDamage(king, 99999);
+                    yield return Frames(2);
+                    while (c.BeatsPlaying) { var b = Beat(p); if (b != null) b.Close(); yield return Frames(3); }
+                    Assert.AreEqual(1, g.SealProgress, "the chains pull it back");
+                }
+            }
+            // Seven rounds of progress from round 2's start, plus the one the chains cost.
+            Assert.AreEqual(Finale.SealRounds + 2, finishedAt, "the seal closes a round late");
+            Assert.AreEqual(Finale.SealRounds, g.SealProgress);
+            Assert.IsTrue(g.World.Flag(Finale.Won));
+        }
+
+        [UnityTest]
+        public IEnumerator BeatingTheKingAlsoSeals()
+        {
+            var g = GameRoot.I;
+            var p = Roller(g, "academy");
+            yield return Frames(2);
+            yield return AtTheBoss(g, p, Turn.Seal);
+            var c = BossFightOf(g, Turn.Seal);
+            yield return BeatTheBoss(g, p, c, Turn.Seal);
+            Assert.IsTrue(c.Finished);
+            Assert.IsTrue(g.World.Flag(Finale.Won));
+        }
+
+        [UnityTest]
+        public IEnumerator TheWinIsSavedAndAnnounced()
+        {
+            var g = GameRoot.I;
+            var p = Roller(g, "hunters");
+            yield return Frames(2);
+            yield return AtTheBoss(g, p, Turn.End);
+            var c = BossFightOf(g, Turn.End);
+            yield return BeatTheBoss(g, p, c, Turn.End);
+            Assert.IsTrue(g.World.Flag(Finale.Won));
+            Assert.AreEqual(WarmCity.Won, g.Quests.Stage(WarmCity.Id));
+            Assert.IsFalse(g.Quests.Active(WarmCity.Id), "the quest is complete");
+            MessageScreen card = null;
+            var seen = new System.Collections.Generic.List<string>();
+            for (int i = 0; i < 40 && card == null; i++)
+            {
+                yield return new WaitForSecondsRealtime(0.2f);
+                var b = Beat(p);
+                if (b == null) continue;
+                if (b.Title == "To Be Continued") card = b; else { seen.Add(b.Body); b.Close(); }
+            }
+            Assert.IsNotNull(card, "the placeholder card for Phase 7");
+            CollectionAssert.IsSubsetOf(FinaleDb.Victory(Turn.End, g.World), seen, "the victory beats played first");
+        }
+
+        [UnityTest]
+        public IEnumerator BossWipeRetriesAtTheLanding()
+        {
+            var g = GameRoot.I;
+            var p = Roller(g, "academy");
+            yield return Frames(2);
+            yield return AtTheBoss(g, p, Turn.Seal);
+            var c = BossFightOf(g, Turn.Seal);
+            g.OnCombatRound(c, 2);
+            Assert.AreEqual(1, g.SealProgress);
+            foreach (var u in c.Units.Where(u => u.C.Team == Team.Players && !u.Ally)) u.C.HP = 0;
+            c.DebugEndCheck();
+            yield return new WaitForSecondsRealtime(2.5f);
+            yield return Frames(3);
+            var route = FinaleDb.Route(Turn.Seal, g.World);
+            Assert.AreEqual(route.LandingZone, p.Zone.Def.Id, "you come to in the Deep");
+            Assert.LessOrEqual(Vector2.Distance(p.MapPos, route.LandingSpot), 3f);
+            Assert.IsTrue(g.World.Flag(Finale.Flown), "no second flight");
+            Assert.AreEqual(0, g.SealProgress, "Ashby starts the seal again");
+            Assert.IsTrue(Spawned(Finale.BossGroup(Turn.Seal)), "the King is waiting");
+            var king = Object.FindObjectsByType<EnemyAgent>(FindObjectsSortMode.None).First(a => a.Monster.Def.Id == "king_regalia");
+            Assert.AreEqual(king.Monster.MaxHP, king.Monster.HP, "at full strength");
         }
     }
 }

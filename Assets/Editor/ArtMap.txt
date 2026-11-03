@@ -1693,3 +1693,22 @@ tint  npc_edda_up_0 npc_edda_src_up_0 0 0.3 1.12
 tint  npc_edda_up_1 npc_edda_src_up_1 0 0.3 1.12
 tint  npc_edda_up_2 npc_edda_src_up_2 0 0.3 1.12
 tint  npc_edda_up_3 npc_edda_src_up_3 0 0.3 1.12
+
+# ================================================================ Act III Phase 6: the finales (Ninja Adventure, tinted)
+tint  mon_ashen_queen_0 mon_ashmaw_src_0 282 1.6 1.3
+tint  mon_ashen_queen_1 mon_ashmaw_src_1 282 1.6 1.3
+strip mon_king_regalia_src "Actor/Boss/GiantRedSamurai/Idle.png" 2 48
+tint  mon_king_regalia_0 mon_king_regalia_src_0 30 0.3 0.7
+tint  mon_king_regalia_1 mon_king_regalia_src_1 30 0.3 0.7
+strip mon_crowned_fire_src "Actor/Boss/GiantFlam/Idle.png" 2 50
+tint  mon_crowned_fire_0 mon_crowned_fire_src_0 20 0.6 1.4
+tint  mon_crowned_fire_1 mon_crowned_fire_src_1 20 0.6 1.4
+still mon_wyrmwatch_hunter_src "Actor/Character/Hunter/SpriteSheet.png"
+tint  mon_wyrmwatch_hunter_0 mon_wyrmwatch_hunter_src_0 25 0.7 0.8
+tint  mon_wyrmwatch_hunter_1 mon_wyrmwatch_hunter_src_1 25 0.7 0.8
+still mon_fae_knight_src "Actor/Character/Knight/SpriteSheet.png"
+tint  mon_fae_knight_0 mon_fae_knight_src_0 120 0.8 1.15
+tint  mon_fae_knight_1 mon_fae_knight_src_1 120 0.8 1.15
+still mon_academy_warden_src "Actor/Character/SorcererBlack/SpriteSheet.png"
+tint  mon_academy_warden_0 mon_academy_warden_src_0 215 1.4 1.3
+tint  mon_academy_warden_1 mon_academy_warden_src_1 215 1.4 1.3

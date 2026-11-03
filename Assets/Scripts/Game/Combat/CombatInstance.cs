@@ -163,6 +163,8 @@ namespace DnD.Game
                 {
                     // Lair actions (initiative count 20): the floor erupts at the start of each round in a boss's second phase.
                     lairRound = Enc.Round;
+                    G.OnCombatRound(this, Enc.Round); // the seal counts the rounds
+                    if (Finished) break;
                     var erupt = PickEruptionTiles(new System.Random());
                     if (erupt.Count > 0) { yield return Erupt(erupt); if (CheckEnd()) break; }
                 }
@@ -312,6 +314,8 @@ namespace DnD.Game
         public bool DebugPlayersUp => PlayersUp;
         /// <summary>Tests: run the end-of-fight check now.</summary>
         public bool DebugEndCheck() => CheckEnd();
+        /// <summary>Ends the fight now if one side is out (a story win that knocked the rest out).</summary>
+        public bool CheckEndNow() => CheckEnd();
 
         /// <summary>A dragon that ran off scared leaves the grid (it no longer blocks a tile or takes turns).</summary>
         void PurgeScaredDragon() => Units.RemoveAll(u => u.C is Dragonling && u.C.IsDown);

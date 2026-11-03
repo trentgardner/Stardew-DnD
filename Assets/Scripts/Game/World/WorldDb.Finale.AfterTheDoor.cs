@@ -19,6 +19,16 @@ namespace DnD.Game
                     Label = "the fighting in " + FinaleDb.StreetTitle(n).Replace("The ", "the "),
                 });
             }
+            foreach (var (ending, zone, label) in new[] { (Turn.End, "capital", "the Ashen Queen"), (Turn.Seal, "the_deep", "the King"), (Turn.Save, "capital", "the Crowned Fire") })
+            {
+                var g = new EnemyGroupDef
+                {
+                    Id = Finale.BossGroup(ending), Style = EncounterStyle.None, Unique = true, SightTiles = 10,
+                    RequiresFlag = Finale.BossOpen(ending), Label = label,
+                };
+                g.Members.AddRange(FinaleDb.BossMembers(ending, false));
+                Zones[zone].EnemyGroups.Add(g);
+            }
         }
     }
 }

@@ -31,8 +31,16 @@ namespace DnD.Rules.Content
                 },
                 Phases =
                 {
-                    new BossPhaseDef { At = 0.66, RechargeMin = 4, LairEruptions = 2, Beats = new[] { "The fire roars." } },
-                    new BossPhaseDef { At = 0.33, RechargeMin = 4, LairEruptions = 4, LegendaryPerRound = 4, Beats = new[] { "The fire screams." } },
+                    new BossPhaseDef { At = 0.66, RechargeMin = 4, LairEruptions = 2, Beats = new[]
+                    {
+                        "Every dark lamp in Aurelhold lights again at once, all of them the same deep red, and the thing in the square stands up taller.",
+                        "\"I AM THE ASHEN QUEEN,\" it says, in a voice like a forest burning. The name from the statues. The name from the rhymes. It has had a thousand years to learn it.",
+                    } },
+                    new BossPhaseDef { At = 0.33, RechargeMin = 4, LairEruptions = 4, LegendaryPerRound = 4, Beats = new[]
+                    {
+                        "For one breath, the roaring stops. Out of the middle of the fire, very small, a voice asks where everybody went.",
+                        "Then the fire answers for it, and the roar comes back twice as loud. It isn't her. It never was. But it remembers her, and it is so, so angry.",
+                    } },
                 },
             };
             All["ashen_queen"].Attacks.Add(Melee("Tail", 14, "2d8+8", DamageType.Bludgeoning, 15));
@@ -51,7 +59,11 @@ namespace DnD.Rules.Content
                 Abilities = { new MonsterAbilityDef { Name = "Chains of the Ring", Shape = TargetShape.Sphere, AreaFt = 20, Dice = DiceExpr.Parse("4d8"), DamageType = DamageType.Force, SaveAbility = Ability.STR, SaveDC = 18, RechargeMin = 5 } },
                 LegendaryPerRound = 2,
                 LegendaryActions = { new LegendaryActionDef { Name = "Sceptre", Cost = 1, Kind = LegendaryKind.Attack, Attack = "Sceptre", RangeFt = 5 } },
-                Phases = { new BossPhaseDef { At = 0.5, RechargeMin = 4, Beats = new[] { "The King hauls on the chains." } } },
+                Phases = { new BossPhaseDef { At = 0.5, RechargeMin = 4, Beats = new[]
+                    {
+                        "\"Every lamp in this city is hers,\" King Aldric says. He isn't shouting. \"Every hearth. Every warm room. Do you know what it costs to keep a kingdom warm?\"",
+                        "He hauls on the nearest chain, and the circle Ashby is drawing flickers. \"Faster,\" Ashby says, through his teeth. \"Faster, faster.\"",
+                    } } },
             };
 
             // Save her: the King takes the fire drawn out of her, and the fire takes the King.
@@ -73,8 +85,16 @@ namespace DnD.Rules.Content
                 },
                 Phases =
                 {
-                    new BossPhaseDef { At = 0.66, LairEruptions = 3, Beats = new[] { "The lamps flare." } },
-                    new BossPhaseDef { At = 0.33, RechargeMin = 4, LairEruptions = 4, Beats = new[] { "The fire stops obeying." } },
+                    new BossPhaseDef { At = 0.66, LairEruptions = 3, Beats = new[]
+                    {
+                        "\"Hold the line,\" says the voice in the fire. \"Guards. Guards!\" There are no guards. It goes on giving orders anyway.",
+                        "All round the square the lamps lean toward it and go out, one by one, as it drinks them.",
+                    } },
+                    new BossPhaseDef { At = 0.33, RechargeMin = 4, LairEruptions = 4, Beats = new[]
+                    {
+                        "The fire stops listening to him. You can see it happen: the crown slips, and the shape inside the blaze goes small and grey and frightened.",
+                        "\"It was mine,\" the King's voice says, from very far inside. \"It was always mine.\" The fire doesn't think so.",
+                    } },
                 },
             };
 

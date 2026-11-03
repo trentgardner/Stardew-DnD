@@ -28,6 +28,13 @@ namespace DnD.Game
         /// <summary>The flight is over and the party has landed for the last fight.</summary>
         public const string Flown = "finale_flown";
         public static string RiderFlag(int playerIndex) => "finale_rider_" + playerIndex;
+        /// <summary>The last fight for each ending.</summary>
+        public static string BossGroup(string ending) => Prefix + "boss_" + ending;
+        public static string BossOpen(string ending) => Prefix + "boss_open_" + ending;
+        /// <summary>The last fight is won (Phase 7's endings begin here).</summary>
+        public const string Won = "finale_won";
+        /// <summary>Seal her: Ashby needs this many rounds at the door.</summary>
+        public const int SealRounds = 7;
 
         /// <summary>1..3 = the first stage not yet won (open or about to be); 4 = all won; 0 = the fight hasn't begun.</summary>
         public static int CurrentStreet(WorldState w)
@@ -168,6 +175,40 @@ namespace DnD.Game
 
     public static partial class FinaleDb
     {
+        /// <summary>Who waits at the landing. Seal: the King and his Ring-knights (one fewer if the flight scattered them).</summary>
+        public static List<EnemySpawn> BossMembers(string ending, bool scattered)
+        {
+            if (ending == Turn.End) return new List<EnemySpawn> { new EnemySpawn("ashen_queen", 31, 25) };
+            if (ending == Turn.Save) return new List<EnemySpawn> { new EnemySpawn("crowned_fire", 31, 12) };
+            var list = new List<EnemySpawn> { new EnemySpawn("king_regalia", 24, 9), new EnemySpawn("crown_knight", 22, 10) };
+            if (!scattered) list.Add(new EnemySpawn("crown_knight", 26, 10));
+            return list;
+        }
+
+        /// <summary>Where Ashby works at the grey door while you hold the King off.</summary>
+        public static readonly Vector2Int AshbyAtTheDoor = new Vector2Int(24, 6);
+
+        /// <summary>The beats after the last fight is won. Phase 7 writes what comes after.</summary>
+        public static string[] Victory(string ending, WorldState w)
+        {
+            string name = Cap(w != null && w.EggHatched ? w.DragonName : "the dragon");
+            if (ending == Turn.End) return new[]
+            {
+                "The fire goes out of it all at once, like a candle pinched between two fingers. What's left falls in on itself, and is ash, and the Great Square is very, very quiet.",
+                $"{name} creeps forward and noses at the ashes, very gently, as if it's looking for someone. Then it lies down beside them, and won't get up.",
+            };
+            if (ending == Turn.Seal) return new[]
+            {
+                "Ashby closes the last circle. The grey door shuts with a sound like a sigh, and every chain in the Deep pulls tight at once.",
+                "Behind the door, very faintly, someone knocks. Once. Then nothing. The King's regalia goes dark and cold, and so, far above you, do the lamps of Aurelhold.",
+            };
+            return new[]
+            {
+                "The fire tears itself out of the King and goes up, and out, and round: into the twelve Great Ones lying in their ring. All the way round the Wyrmback, the mountains begin to glow.",
+                "What's left on the Sunstair is an old man without a crown, blinking at the sky. And far below, behind a grey door that's standing open, a little girl wakes up warm, and isn't afraid.",
+            };
+        }
+
         /// <summary>The landing spots: the Great Square before the statue, the Deep before the grey door, the foot of the Sunstair.</summary>
         public static readonly Vector2Int EndLanding = new Vector2Int(31, 20), SealLanding = new Vector2Int(24, 14), SaveLanding = new Vector2Int(31, 16);
 

@@ -49,3 +49,13 @@ Task 4: complete (commits 8fe4e79..HEAD, tests: FinaleTests;TurnTests;LoreTests;
 - Task 5: bug found + fixed: CombatInstance's initiative loop rolled for a player whose HUD was destroyed (dropped out) or kept waiting after the fight ended — it now stops once Finished and auto-rolls for a player who left.
 - Task 5: tests: FinaleTests;CoopTests;VolcanoTests → 65/65.
 Task 5: complete (commits 9077da3..HEAD, tests: FinaleTests;CoopTests;VolcanoTests → 65/65)
+
+## Task 6
+- Task 6: Ruling: AddsScattered off the seal path makes the boss start with its breath spent (must recharge) instead of "one fewer lair eruption" — eruption counts come from the def per phase; a spent breath is the same size of edge and simpler — cost if wrong: a different flavour of edge.
+- Task 6: Ruling: the seal's progress line is narrated each round ("The seal: n/7") rather than a persistent HUD widget — cost if wrong: less glanceable.
+- Task 6: Ruling: at 7/7 the remaining foes "yield" by being knocked to 0 HP, so the normal victory path (XP, OnGroupResolved, FinaleWon) runs — cost if wrong: full XP for a seal win (same as beating them).
+- Task 6: Ruling: the round hook is a direct G.OnCombatRound(this, round) call in the combat loop (then `if (Finished) break`), not a static event; the King's chain pull listens on CombatInstance.PhaseEntered (hooked once, routed to GameRoot.I).
+- Task 6: Ruling: LastFlightWon keeps a copy of the flight's effects after StartFinaleBoss uses FlightResults up (the flight tests read it).
+- Task 6: art: Ashen Queen = ashmaw sheet tinted ember red (hue 282, sat 1.6, val 1.3); King = GiantRedSamurai idle strip in iron/gold; Crowned Fire = GiantFlam strip gold-white; soldiers = Hunter/Knight/SorcererBlack tints. Import clean for the new lines (the Edda tint warnings at ArtMap 1687-1695 predate this phase).
+- Task 6: RED was a compile failure (Finale.BossGroup/SealProgress/OnCombatRound absent). Tests: FinaleTests;LoreTests;ArtTests → 50/50.
+Task 6: complete (commits 75b927a..HEAD, tests: FinaleTests;LoreTests;ArtTests → 50/50)
