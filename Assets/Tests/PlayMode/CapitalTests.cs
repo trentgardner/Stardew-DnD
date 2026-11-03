@@ -171,6 +171,29 @@ namespace DnD.Tests
             Assert.AreEqual("town", WorldDb.Current(WorldDb.Npcs["quell"], 12, 0, g.World).Zone, "and Quell with it");
         }
 
+        /// <summary>Review fix: the carriage never pulls a player out of a fight somewhere else.</summary>
+        [UnityTest]
+        public IEnumerator CarriageWaitsForAFight()
+        {
+            var g = GameRoot.I;
+            var p1 = ActThree(g, 17);
+            yield return Frames(2);
+            var p2 = g.DebugStart(Still(18), "fighter", "dwarf");
+            yield return Frames(2);
+            p2.Hud.CloseAll();
+            g.Warp(p1, "town", WorldDb.TownCarriageStop, false);
+            g.Warp(p2, "forest", new Vector2Int(34, 8), false);
+            yield return Frames(3);
+            g.StartGroupCombat("forest_wolves", p2);
+            yield return Frames(2);
+            Assert.IsTrue(p2.InCombat, "P2 is fighting wolves in the forest");
+            g.RideCarriage(p1, "capital", WorldDb.CapitalCarriageStop);
+            yield return Frames(3);
+            Assert.AreEqual("town", p1.Zone.Def.Id, "the carriage waits");
+            Assert.AreEqual("forest", p2.Zone.Def.Id, "nobody is pulled out of a fight");
+            Assert.IsTrue(p1.Hud.LogLines.Any(l => l.Contains("won't leave")), "and Quell says why");
+        }
+
         [UnityTest]
         public IEnumerator QuellOnlyInActThree()
         {

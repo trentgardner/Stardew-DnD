@@ -17,6 +17,11 @@ namespace DnD.Game
         /// </summary>
         public void RideCarriage(PlayerSlot by, string zone, Vector2Int pos)
         {
+            if (Players.Any(p => p.IsReady && p.InCombat))
+            {
+                by.Hud.Narrate("Quell won't leave anyone behind mid-fight. \"When everyone's here and nobody's bleeding, we'll go.\"");
+                return;
+            }
             foreach (var p in Players.Where(p => p.IsReady)) p.Hud.CloseAll();
             StartCoroutine(Ride(zone, pos));
         }

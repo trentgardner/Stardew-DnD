@@ -26,10 +26,18 @@ namespace DnD.Game
             // Doors to the palace, the Hall of Records and the Gilded Wyvern come with their interiors; the Roots stair with the Roots.
 
             z.DoorSigns[new Vector2Int(31, 9)] = new BuildingSign("The Palace of Aurelhold", "THE PALACE OF AURELHOLD\n\nThe King receives petitioners from nine bells to five.\nBy order of the Crown, long may it keep the flame.");
+            z.DoorSigns[new Vector2Int(32, 9)] = z.DoorSigns[new Vector2Int(31, 9)];
             z.DoorSigns[new Vector2Int(54, 10)] = new BuildingSign("The Hall of Records", "THE HALL OF RECORDS\nThe Royal Annals of Aurelhold\n\nScholars by appointment. Ink by permission. Food never.");
             z.DoorSigns[new Vector2Int(53, 22)] = new BuildingSign("The Gilded Wyvern", "THE GILDED WYVERN\nFine Rooms, Finer Ale\n\nDragons welcome in the yard. Dragons NOT welcome in the cellar.");
             z.DoorSigns[new Vector2Int(9, 10)] = new BuildingSign("The Lantern Cathedral", "THE LANTERN CATHEDRAL\nof the Dawnmother\n\nServices at dawn and dusk. The doors are closed between, for the choir's sake.");
 
+            // The upper city's homes (doors without a way in are locked; every door has its sign).
+            z.DoorSigns[new Vector2Int(7, 37)] = new BuildingSign("The Hollins House", "THE HOLLINS HOUSE\n\nWindow boxes, polished knocker, a brass plate: PAGEANT COMMITTEE (DECORATIONS SUB-COMMITTEE).");
+            z.DoorSigns[new Vector2Int(16, 37)] = new BuildingSign("Guild of Lamp-Polishers", "THE WORSHIPFUL GUILD OF LAMP-POLISHERS\n\nEst. Year 4 of the Crown. Members only.\n(Membership: Wenna.)");
+            z.DoorSigns[new Vector2Int(23, 38)] = new BuildingSign("The Gilt House", "THE GILT HOUSE\n\nA very grand door. A very small sign: NO CALLERS. NO DRAGONS. NO EXCEPTIONS.");
+            z.DoorSigns[new Vector2Int(39, 38)] = new BuildingSign("The Widow Ashmore's", "MRS ASHMORE\n\nPiano lessons, Coinday and Leafday.\nPlease knock softly. The piano is nervous.");
+            z.DoorSigns[new Vector2Int(48, 37)] = new BuildingSign("Pageant Costume Store", "PROPERTY OF THE THOUSANDTH PAGEANT\nCOSTUMES & SCENERY\n\nThe paper Queen's spare left wing is NOT a toboggan. - F.G.");
+            z.DoorSigns[new Vector2Int(57, 38)] = new BuildingSign("The Royal Post", "THE ROYAL POST\n\nLetters to every corner of the realm, sealed and sure.\nDeep-shift post in the red box only.");
             z.Signs[new Vector2Int(31, 23)] = "A knight of the Crown stands on a plinth of white stone, sword raised high. Under her boot, half-sunk in carved flames, is a great crowned shape with its wings broken.\n\nThe crowned shape has been worn smooth by a thousand years of hands. Nobody rubs this one's nose.";
             z.Signs[new Vector2Int(28, 16)] = "THE THOUSANDTH PAGEANT!\n\nOne month hence, in the Great Square: THE FALL OF THE QUEEN, with music, fireworks and a cast of hundreds.\n\nPerformers wanted. DRAGONS ESPECIALLY WANTED.\n(Enquire F. Glass, Pageant-Master, the Square.)";
             z.Signs[new Vector2Int(57, 29)] = "DOWN: THE ROOTS\n\nWorks, Steamhouse, Lower Market.\nMind the steps. Mind the steam. Mind your purse.";
@@ -55,18 +63,22 @@ namespace DnD.Game
             var quell = new NpcDef { Id = "quell", Name = "Royal Courier Bertram Quell", Title = "The King's carriage", Look = "npc_quell", Dialogue = "quell" };
             quell.Schedule.Add(new ScheduleEntry(0, "town", TownCarriageStop.x + 1, TownCarriageStop.y, "waiting by the King's carriage, stamping his feet") { RequiresFlag = a3, ForbidFlag = "quell_in_capital" });
             quell.Schedule.Add(new ScheduleEntry(0, "capital", 33, 42, "by the King's carriage, brushing down the horses") { RequiresFlag = "quell_in_capital" });
+            quell.Schedule.Add(new ScheduleEntry(0, "capital", 34, 41, "polishing the carriage's crest (Hearthday)", Hearthday) { RequiresFlag = "quell_in_capital" });
+            quell.Schedule.Add(new ScheduleEntry(0, "town", TownCarriageStop.x + 2, TownCarriageStop.y, "feeding the horses Thistledown apples (Hearthday)", Hearthday) { RequiresFlag = a3, ForbidFlag = "quell_in_capital" });
             Npcs[quell.Id] = quell;
 
             var wenna = new NpcDef { Id = "wenna", Name = "Wenna Brightwick", Title = "Lamplighter of the Great Square", Look = "npc_wenna", Dialogue = "wenna" };
             wenna.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
             wenna.Schedule.Add(new ScheduleEntry(7, "capital", 30, 25, "polishing a lamp that doesn't need polishing"));
             wenna.Schedule.Add(new ScheduleEntry(19, null, 0, 0, "at home"));
+            wenna.Schedule.Add(new ScheduleEntry(7, "roots", 25, 11, "visiting her sister Tilly in the Roots (Hearthday)", Hearthday));
             Npcs[wenna.Id] = wenna;
 
             var hesketh = new NpcDef { Id = "hesketh", Name = "Hesketh", Title = "Baker, the Grand Market", Look = "npc_hesketh", Dialogue = "hesketh" };
             hesketh.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep (bakers sleep early)"));
             hesketh.Schedule.Add(new ScheduleEntry(6, "capital", 8, 22, "selling buns from a tray"));
             hesketh.Schedule.Add(new ScheduleEntry(15, null, 0, 0, "asleep (bakers sleep early)"));
+            hesketh.Schedule.Add(new ScheduleEntry(6, "capital", 33, 26, "selling Pageant buns in the square (market day)", Coinday));
             Npcs[hesketh.Id] = hesketh;
 
             var merriwether = new NpcDef { Id = "merriwether", Name = "Bandmaster Merriwether", Title = "The Pageant Band", Look = "npc_merriwether", Dialogue = "merriwether" };
@@ -74,12 +86,14 @@ namespace DnD.Game
             merriwether.Schedule.Add(new ScheduleEntry(10, "capital", 33, 20, "rehearsing the band (they need it)"));
             merriwether.Schedule.Add(new ScheduleEntry(18, "capital", 51, 24, "at the Gilded Wyvern's yard tables"));
             merriwether.Schedule.Add(new ScheduleEntry(22, null, 0, 0, "asleep"));
+            merriwether.Schedule.Add(new ScheduleEntry(10, "capital", 51, 24, "nursing a sore head (no rehearsal on Hearthday)", Hearthday));
             Npcs[merriwether.Id] = merriwether;
 
             for (int i = 0; i < 2; i++)
             {
                 var guard = new NpcDef { Id = "gate_guard_" + i, Name = "Crown guard", Title = "The Gate of Wings", Look = "npc_crown_soldier", Dialogue = "capital_guard" };
                 guard.Schedule.Add(new ScheduleEntry(0, "capital", i == 0 ? 29 : 34, 43, "standing guard at the Gate of Wings"));
+                guard.Schedule.Add(new ScheduleEntry(0, "capital", i == 0 ? 30 : 33, 42, "on the Gate of Wings, stamping for warmth out of habit (Dawnday)", Dawnday));
                 Npcs[guard.Id] = guard;
             }
         }
@@ -105,6 +119,14 @@ namespace DnD.Game
 
             z.Signs[new Vector2Int(5, 4)] = "UP: THE GREAT SQUARE\n\nTwo hundred and twelve steps. Somebody has counted. Somebody has written the number on the wall, with feeling.";
             z.Signs[new Vector2Int(51, 23)] = "A gate of black iron twice the height of a house, set straight into the mountain. It's barred from this side with a beam as thick as a tree, and sealed with the King's own seal, in red wax the size of a dinner plate.\n\nThe iron is warm.\n\nPainted on the rock beside it: THE UNDERGATE. DEEP SHIFT ONLY. BY ROYAL WARRANT.";
+            foreach (var (at, who) in new[] { (new Vector2Int(10, 5), "the Tolleys"), (new Vector2Int(16, 5), "the Dunns"), (new Vector2Int(22, 5), "Old Fen"),
+                                              (new Vector2Int(32, 5), "the Brightwicks (Tilly)"), (new Vector2Int(39, 5), "the Okafors") })
+                z.DoorSigns[at] = new BuildingSign("Terrace: " + who, "A terrace house cut half into the rock. Chalked on the door: " + who.ToUpperInvariant() + ".\n\nThe step is scrubbed white. Down here, that's a point of pride.");
+            z.DoorSigns[new Vector2Int(33, 15)] = new BuildingSign("Works Bunkhouse", "FOUNDATION WORKS BUNKHOUSE\n\nDay shift sleeps by night. Night shift sleeps by day. Deep shift does not sleep here.");
+            z.DoorSigns[new Vector2Int(33, 22)] = new BuildingSign("Lower Market Stores", "LOWER MARKET STORES\n\nSecond-hand anything. Third-hand most things.");
+            var undergate = new BuildingSign("The Undergate", "The Undergate: black iron, twice the height of a house, barred and sealed with the King's own seal. It does not open.\n\nThe iron is warm.");
+            z.DoorSigns[new Vector2Int(52, 20)] = undergate;
+            z.DoorSigns[new Vector2Int(52, 21)] = undergate;
             z.DoorSigns[new Vector2Int(20, 27)] = new BuildingSign("The Steamhouse", "THE STEAMHOUSE\n\nHot baths, one copper. Hotter baths, two.\nThe water comes up from below. Don't ask where. We don't.");
             z.DoorSigns[new Vector2Int(50, 17)] = new BuildingSign("Foreman's Office", "FOUNDATION WORKS\nForeman's Office\n\nKnock. Wait. Knock again. Go away.");
 
@@ -158,18 +180,21 @@ namespace DnD.Game
             mags.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
             mags.Schedule.Add(new ScheduleEntry(8, "roots", 21, 30, "wringing out washing by the Steamhouse"));
             mags.Schedule.Add(new ScheduleEntry(20, null, 0, 0, "at home, writing a letter"));
+            mags.Schedule.Add(new ScheduleEntry(8, "roots", 11, 26, "at the shrine, lighting a candle for Bran", Hearthday));
             Npcs[mags.Id] = mags;
 
             var crale = new NpcDef { Id = "crale", Name = "Foreman Crale", Title = "The Foundation Works", Look = "npc_crale", Dialogue = "crale" };
             crale.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
             crale.Schedule.Add(new ScheduleEntry(6, "roots", 44, 21, "shouting at the works crew"));
             crale.Schedule.Add(new ScheduleEntry(18, null, 0, 0, "at the Gilded Wyvern, drinking alone"));
+            crale.Schedule.Add(new ScheduleEntry(6, "roots", 47, 23, "staring at the Undergate (the works rest on Hearthday)", Hearthday));
             Npcs[crale.Id] = crale;
 
             var tilly = new NpcDef { Id = "tilly", Name = "Tilly Brightwick", Title = "Lamplighter of the Roots", Look = "npc_tilly", Dialogue = "tilly" };
             tilly.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
             tilly.Schedule.Add(new ScheduleEntry(8, "roots", 24, 11, "filling the oil lamps"));
             tilly.Schedule.Add(new ScheduleEntry(22, null, 0, 0, "asleep"));
+            tilly.Schedule.Add(new ScheduleEntry(8, "capital", 31, 26, "up top, helping Wenna polish (Coinday)", Coinday));
             Npcs[tilly.Id] = tilly;
         }
 
@@ -223,16 +248,19 @@ namespace DnD.Game
             king.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "in his private apartments (the King is not receiving)"));
             king.Schedule.Add(new ScheduleEntry(9, "throne_room", 14, 4, "receiving petitioners on the dais"));
             king.Schedule.Add(new ScheduleEntry(17, null, 0, 0, "in his private apartments (the King is not receiving)"));
+            king.Schedule.Add(new ScheduleEntry(9, "throne_room", 15, 4, "at prayer before the empty throne (Hearthday)", Hearthday));
             Npcs[king.Id] = king;
 
             var oare = new NpcDef { Id = "oare", Name = "Archivist-Royal Delphine Oare", Title = "The Hall of Records", Look = "npc_oare", Dialogue = "oare" };
             oare.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
             oare.Schedule.Add(new ScheduleEntry(8, "royal_archive", 11, 10, "cataloguing at the long desk"));
             oare.Schedule.Add(new ScheduleEntry(18, null, 0, 0, "at home"));
+            oare.Schedule.Add(new ScheduleEntry(8, "royal_archive", 4, 15, "dusting the Annals, one by one (Dawnday)", Dawnday));
             Npcs[oare.Id] = oare;
 
             var keeper = new NpcDef { Id = "marigold", Name = "Marigold Penn", Title = "Keeper of the Gilded Wyvern", Look = "npc_marigold", Dialogue = "marigold" };
             keeper.Schedule.Add(new ScheduleEntry(0, "capital_inn", 5, 4, "behind the bar, as ever"));
+            keeper.Schedule.Add(new ScheduleEntry(0, "capital_inn", 9, 6, "counting the takings at a table (Hearthday)", Hearthday));
             Npcs[keeper.Id] = keeper;
         }
 
@@ -256,6 +284,7 @@ namespace DnD.Game
                 n.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
                 n.Schedule.Add(new ScheduleEntry(8, zone, x, y, doing));
                 n.Schedule.Add(new ScheduleEntry(20, null, 0, 0, "asleep"));
+                n.Schedule.Add(new ScheduleEntry(8, "capital", 32 + id.Length % 5, 22, "in the Great Square watching the Pageant rehearse (Coinday)", Coinday));
                 Npcs[id] = n;
             }
             Leader("marsh_capital", "marsh", "Lady-Commander Isaine Marsh", "The King's Household Guard", "npc_marsh", "capital", 26, 12, "inspecting the guard at the foot of the Sunstair");
@@ -266,14 +295,16 @@ namespace DnD.Game
             var glass = new NpcDef { Id = "glass", Name = "Pageant-Master Fennimore Glass", Title = "The Thousandth Pageant", Look = "npc_glass", Dialogue = "glass" };
             glass.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep, dreaming of fireworks"));
             glass.Schedule.Add(new ScheduleEntry(9, "capital", 34, 24, "rehearsing the Pageant (loudly)"));
-            glass.Schedule.Add(new ScheduleEntry(18, "capital_inn", 4, 9, "drawing stage plans on a napkin"));
+            glass.Schedule.Add(new ScheduleEntry(18, "capital_inn", 6, 10, "drawing stage plans on a napkin"));
             glass.Schedule.Add(new ScheduleEntry(23, null, 0, 0, "asleep, dreaming of fireworks"));
+            glass.Schedule.Add(new ScheduleEntry(9, "capital", 47, 38, "counting costumes at the costume store (Hearthday)", Hearthday));
             Npcs[glass.Id] = glass;
 
             var dray = new NpcDef { Id = "dray", Name = "Corwin Dray", Title = "Apothecary, the Grand Market", Look = "npc_dray", Dialogue = "dray", ShopId = "capital_market" };
             dray.Schedule.Add(new ScheduleEntry(0, null, 0, 0, "asleep"));
             dray.Schedule.Add(new ScheduleEntry(8, "capital", 6, 24, "minding the apothecary's stall"));
             dray.Schedule.Add(new ScheduleEntry(19, null, 0, 0, "asleep"));
+            dray.Schedule.Add(new ScheduleEntry(8, "roots", 13, 15, "selling cheap remedies in the Lower Market (Leafday)", Leafday));
             Npcs[dray.Id] = dray;
         }
     }
