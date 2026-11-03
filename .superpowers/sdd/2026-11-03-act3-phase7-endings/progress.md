@@ -35,3 +35,10 @@ Task 3: complete (tests: RulesTests 1420/1420; EndingTests 16/16)
 - Task 4: screenshots reviewed (act7_*): Her, Thistledown, slides (opaque now), credits and dedication. Fix: Buoy placed at TownCarriageStop+(1,4) so the beat window doesn't hide him.
 - Task 4: minor (deferred): a stale "Round 1" tracker bar and the "Victory!" narration can still be on screen behind the first ending scene (existing combat UI).
 - Task 4: docs: DESIGN "The endings (Act III Phase 7)", PLAYTEST (the game is complete + checklist), README (complete).
+
+## Final review
+- Final review: self-review (no subagent dispatched; the session only spawns agents when the user asks) — weaker than a fresh reviewer.
+- Checked: resume after finale_won (replays from "Her"), completed save (one note, free roam), ResetWorld clears EndingPlaying/flight/music, Esc on slides and credits advances (never skips), screens ignore their opening frame's press, co-op lead hand-off in PlayBeats/PlaySlides/RollCredits, the dedication is excluded from the scroll and shown alone. No Critical/Important findings.
+- Final: minor (deferred): a player left on the dedication screen stays there until a press (intended: it waits for you).
+- Final: minor (deferred): ending_seen is recorded but nothing reads it yet (resume always replays the whole ending until game_complete).
+- Final: full suite 507/507, RulesTests 1418/1418, Build OK (exe + zip).
