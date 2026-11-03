@@ -152,6 +152,7 @@ namespace DnD.Game
             int lairRound = 0;
             while (!Finished)
             {
+                yield return WhileBeats(); // a boss's phase beats are on screen: the story first
                 var cur = Current;
                 if (cur == null) { Enc.Advance(); continue; }
                 if (Enc.Round != lairRound)

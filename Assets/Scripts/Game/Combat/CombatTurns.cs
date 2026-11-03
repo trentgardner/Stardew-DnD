@@ -978,8 +978,41 @@ namespace DnD.Game
             return true;
         }
 
+        /// <summary>True while a boss's phase beats are on screen: the AI, legendary actions and the round loop wait (Act III finales).</summary>
+        public bool BeatsPlaying;
+
+        /// <summary>Raised after a phase's beats have played (the boss, the phase). The seal fight listens for the King's.</summary>
+        public static event Action<Monster, BossPhaseDef> PhaseEntered;
+
+        /// <summary>Waits while a phase's beats are on screen.</summary>
+        IEnumerator WhileBeats() { while (BeatsPlaying) yield return null; }
+
+        IEnumerator PhaseBeats(Unit target, Monster boss, BossPhaseDef phase)
+        {
+            BeatsPlaying = true;
+            Log($"{target.Name}: phase {boss.PhaseIndex + 1}!");
+            target.A.Popup("PHASE " + (boss.PhaseIndex + 1), UIKit.DamageRed);
+            var lead = Humans.FirstOrDefault() ?? G.Players.FirstOrDefault(p => p.IsReady);
+            if (lead != null && phase.Beats != null && phase.Beats.Length > 0) yield return G.PlayBeats(lead, phase.Beats);
+            BeatsPlaying = false;
+            PhaseEntered?.Invoke(boss, phase);
+        }
+
+        /// <summary>Tests: deal this much damage to a unit through the fight's damage path (phases, popups, defeat).</summary>
+        public int DebugDamage(Unit target, int amount)
+        {
+            int lost = target.C.TakeDamage(amount, DamageType.Force, false, new List<string>());
+            OnDamaged(target);
+            return lost;
+        }
+
         public void OnDamaged(Unit target)
         {
+            if (target.C is Monster phased && !phased.IsDown)
+            {
+                var phase = phased.TakePendingPhase();
+                if (phase != null) G.StartCoroutine(PhaseBeats(target, phased, phase));
+            }
             if (target.C is Monster boss && !boss.IsDown)
             {
                 string phase = boss.CheckPhaseTwo();
@@ -1752,7 +1785,9 @@ namespace DnD.Game
 
         IEnumerator AiTurn(Unit u)
         {
+            yield return WhileBeats();
             yield return new WaitForSeconds(0.35f);
+            yield return WhileBeats();
             var turn = u.Cb.Turn;
             var foes = Units.Where(o => Hostile(u, o) && o.Active && !Spares(u, o)).ToList();
             if (foes.Count == 0) yield break;
@@ -2022,6 +2057,7 @@ namespace DnD.Game
         /// <summary>After another creature's turn: each legendary monster may take one legendary action.</summary>
         public IEnumerator LegendaryOpportunities(Unit justActed)
         {
+            yield return WhileBeats();
             foreach (var u in Units.ToList())
             {
                 if (u == justActed || !u.Active || !(u.C is Monster m) || m.Def.LegendaryPerRound <= 0 || m.LegendaryLeft <= 0) continue;

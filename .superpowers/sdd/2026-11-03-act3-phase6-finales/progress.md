@@ -16,3 +16,9 @@ Executor: executing-plans (inline), branch act3/phase6-finales. Spec: docs/super
 - Task 1: Ruling: boss HP raised past the plan's dice (Queen 28d12+196 = 378, King 30d10+150 = 315, Crowned Fire 32d12+160 = 368) — the plan's values gave 3.8-4.8 rounds, under the spec's floor — cost if wrong: long fights; Phase 7's balance table can trim.
 - Task 1: Ruling: Chains of the Ring deals force damage only (no restrained) — the only restrain effect ("entangle") needs concentration on the caster — cost if wrong: the King's area attack is plainer.
 - Task 1: Ruling: lair eruptions now read Monster.LairEruptionsNow (CombatTurns), so phases drive them; the Warden keeps PhaseTwo behaviour. Ally/foe XP values chosen from SRD CR.
+Task 1: complete (commits 1fa4251..9b2d189, tests: bash -c 'cd tools/RulesTests && dotnet run 2>&1 | tail -1 | grep ' 0 failed'' → 1406 passed, 0 failed)
+
+## Task 2
+- Task 2: Ruling: the tests read the top open MessageScreen (Hud.Top, skipping closed ones) instead of Hud.Find — closed screens aren't removed while the initiative dice is open (PlayerHud.Update) — cost if wrong: none (test helper only).
+- Task 2: note: in real play a phase beat pushed while the dice tray is open waits for the tray to close before it can be dismissed (existing Hud rule). Acceptable.
+- Task 2: green: FinaleTests+VolcanoTests 24/24.
