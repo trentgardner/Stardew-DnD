@@ -21,3 +21,10 @@ Task 1: complete (tests: EndingTests;LoreTests → 22/22)
 - Task 2: Ruling: ending music = "music_home" for the scenes and slides, "music_title" for the credits (via MusicOverride). Buoy is placed beside the carriage stop for the Thistledown scene rather than walking there.
 - Task 2: tests: EndingTests;FinaleTests → 47/47.
 Task 2: complete (tests: EndingTests;FinaleTests → 47/47)
+
+## Task 3
+- Task 3: ActThreeBalanceTable (RulesTests): 10 street compositions at level 13, medians 1.4-7.7 rounds (biggest: Save s2 with Academy + Wyrmwatch against, 7.7). No tuning needed. RulesTests 1420/1420.
+- Task 3: Ruling: the seal fight is lit by a LightSource (radius 7, cool blue) on Ashby's actor at the door. SealFightIsLit was written before the fix but its RED wasn't run separately (the light didn't exist; the assertion can't pass without it) — cost if wrong: weaker proof.
+- Task 3: Ashen Queen retinted ash-grey with an ember tinge (hue 282, sat 0.45, val 0.95) so she reads differently from the red grown dragon.
+- Task 3: tests: EndingTests → 16/16.
+Task 3: complete (tests: RulesTests 1420/1420; EndingTests 16/16)

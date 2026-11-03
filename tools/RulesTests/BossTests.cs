@@ -43,12 +43,54 @@ namespace RulesTests
             WardenIsABossNotAWall();
             GaolerIsABossNotAWall();
             ActTwoBalanceTable();
+            ActThreeBalanceTable();
         }
 
         /// <summary>
         /// Act II's set-piece fights at the level a party should be when it meets them: the median 4-class party needs more
         /// than a round and no more than 8 rounds of at-will damage (talking them down pays the same, but fighting must be fair).
         /// </summary>
+        /// <summary>
+        /// Act III Phase 7: the finale's street fights at level 13 (FinaleDb.StreetMembers' compositions, copied here): the median
+        /// 4-class party needs more than a round and no more than 8 rounds of at-will damage.
+        /// </summary>
+        static void ActThreeBalanceTable()
+        {
+            var fights = new (string name, (string id, int n)[] members)[]
+            {
+                ("End s1 (the fire)", new[] { ("cinder_hound", 2) }),
+                ("End s1 + Fae", new[] { ("cinder_hound", 2), ("fae_knight", 1) }),
+                ("End s2", new[] { ("fire_elemental", 1), ("cinder_hound", 2) }),
+                ("End s3", new[] { ("fire_elemental", 2), ("salamander", 1) }),
+                ("Seal/Save s1", new[] { ("crown_knight", 2) }),
+                ("Seal/Save s2", new[] { ("crown_knight", 2), ("crown_battlemage", 1) }),
+                ("Seal/Save s3", new[] { ("crown_champion", 1), ("crown_knight", 2) }),
+                ("Save s2, Academy + Wyrmwatch against", new[] { ("crown_knight", 2), ("crown_battlemage", 1), ("stone_guardian", 1), ("wyrmwatch_hunter", 2) }),
+                ("Save s1, Academy against", new[] { ("crown_knight", 2), ("academy_warden", 1) }),
+                ("Seal s3, Fae against", new[] { ("crown_champion", 1), ("crown_knight", 2), ("thorn_guardian", 1) }),
+            };
+            string[] pool = { "fighter", "rogue", "cleric", "wizard", "ranger", "paladin", "bard", "druid" };
+            PlayerCharacter.LevelCap = PlayerCharacter.ActThreeLevelCap;
+            try
+            {
+                foreach (var f in fights)
+                {
+                    double hp = 0, acSum = 0; int count = 0;
+                    foreach (var (id, n) in f.members) { var m = MonstersDb.Get(id); hp += m.HitDice.Average * n; acSum += m.AC * n; count += n; }
+                    int ac = (int)Math.Round(acSum / count);
+                    var dpr = pool.ToDictionary(c => c, c => DamagePerRound(AtLevel(c, 13), ac));
+                    var rounds = new List<double>();
+                    for (int a = 0; a < pool.Length; a++) for (int b = a + 1; b < pool.Length; b++) for (int c = b + 1; c < pool.Length; c++) for (int d = c + 1; d < pool.Length; d++)
+                        rounds.Add(hp / (dpr[pool[a]] + dpr[pool[b]] + dpr[pool[c]] + dpr[pool[d]]));
+                    rounds.Sort();
+                    double median = rounds[rounds.Count / 2];
+                    Console.WriteLine($"  {f.name,-40} L13: {hp,5:0} HP, AC {ac}: median {median:0.0} rounds");
+                    Check(median >= 1.0 && median <= 8.0, $"Act III balance: {f.name} takes {median:0.0} rounds at level 13");
+                }
+            }
+            finally { PlayerCharacter.LevelCap = PlayerCharacter.ActOneLevelCap; }
+        }
+
         static void ActTwoBalanceTable()
         {
             var fights = new (string name, int level, (string id, int n)[] members)[]

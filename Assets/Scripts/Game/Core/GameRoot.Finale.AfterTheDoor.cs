@@ -214,7 +214,11 @@ namespace DnD.Game
             {
                 SealProgress = 0;
                 _sealPulled = false;
-                if (_ashbyAtTheDoor == null) _ashbyAtTheDoor = Actor.Spawn<Actor>("Ashby", "npc_ashby", true, zone, FinaleDb.AshbyAtTheDoor);
+                if (_ashbyAtTheDoor == null)
+                {
+                    _ashbyAtTheDoor = Actor.Spawn<Actor>("Ashby", "npc_ashby", true, zone, FinaleDb.AshbyAtTheDoor);
+                    LightSource.Attach(_ashbyAtTheDoor.gameObject, 7f, new Color(0.75f, 0.85f, 1f)); // the circle glows: the fight can be seen
+                }
             }
             if (!_phaseHooked) { CombatInstance.PhaseEntered += (m, ph) => I?.OnBossPhase(m); _phaseHooked = true; }
         }

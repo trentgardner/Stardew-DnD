@@ -325,5 +325,30 @@ namespace DnD.Tests
             AcademyTests.Shot("act7_slide_ponder");
             e.Close();
         }
+
+        // ================================================================== Task 3
+
+        [UnityTest]
+        public IEnumerator SealFightIsLit()
+        {
+            var g = GameRoot.I;
+            var p = FinaleTests.Roller(g, "academy");
+            yield return FinaleTests.Frames(2);
+            yield return FinaleTests.AtTheBoss(g, p, Turn.Seal);
+            var deep = g.Zones["the_deep"];
+            var at = deep.ToWorld(FinaleDb.AshbyAtTheDoor);
+            Assert.IsTrue(LightSource.All.Any(l => l != null && l.On && l.Radius >= 5f && Vector2.Distance(l.transform.position, at) <= 3f), "Ashby's circle lights the Deep");
+        }
+
+        [UnityTest]
+        public IEnumerator LevelCapHoldsThroughTheEnd()
+        {
+            var g = GameRoot.I;
+            var p = FinaleTests.Roller(g, "fae");
+            yield return FinaleTests.Frames(2);
+            yield return WinTheFinale(g, p, Turn.Save);
+            Assert.AreEqual(PlayerCharacter.ActThreeLevelCap, PlayerCharacter.LevelCap, "still 13 after the last fight");
+            Assert.AreEqual(13, PlayerCharacter.ActThreeLevelCap);
+        }
     }
 }
