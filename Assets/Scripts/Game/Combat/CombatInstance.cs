@@ -16,6 +16,8 @@ namespace DnD.Game
         public PlayerSlot Owner;          // a human player's own character
         public EnemyAgent Enemy;
         public CompanionAgent Comp;
+        /// <summary>A force's soldier fighting beside the party (Act III finales): AI-driven, not a party member, no XP.</summary>
+        public bool Ally;
         public Combatant Cb;
         public CombatInstance Fight;
         public int DeathRound = -1;
@@ -303,7 +305,11 @@ namespace DnD.Game
         }
 
         /// <summary>Who keeps a fight going on the players' side. The hatchling doesn't: it can't win a fight alone.</summary>
-        bool PlayersUp => Units.Any(u => u.C.Team == Team.Players && u.Active && !(u.C is Dragonling));
+        bool PlayersUp => Units.Any(u => u.C.Team == Team.Players && u.Active && !(u.C is Dragonling) && !u.Ally);
+        /// <summary>Tests: whether the party (not the dragon, not allies) still has someone standing.</summary>
+        public bool DebugPlayersUp => PlayersUp;
+        /// <summary>Tests: run the end-of-fight check now.</summary>
+        public bool DebugEndCheck() => CheckEnd();
 
         /// <summary>A dragon that ran off scared leaves the grid (it no longer blocks a tile or takes turns).</summary>
         void PurgeScaredDragon() => Units.RemoveAll(u => u.C is Dragonling && u.C.IsDown);

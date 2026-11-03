@@ -22,3 +22,10 @@ Task 1: complete (commits 1fa4251..9b2d189, tests: bash -c 'cd tools/RulesTests 
 - Task 2: Ruling: the tests read the top open MessageScreen (Hud.Top, skipping closed ones) instead of Hud.Find — closed screens aren't removed while the initiative dice is open (PlayerHud.Update) — cost if wrong: none (test helper only).
 - Task 2: note: in real play a phase beat pushed while the dice tray is open waits for the tray to close before it can be dismissed (existing Hud rule). Acceptable.
 - Task 2: green: FinaleTests+VolcanoTests 24/24.
+Task 2: complete (commits 9b2d189..74d547d, tests: unity-test.sh FinaleTests;VolcanoTests → 24/24 pass)
+
+## Task 3
+- Task 3: Ruling: PlayersUp excludes allies (Unit.Ally) — otherwise a wiped party with a standing ally would never lose — cost if wrong: none.
+- Task 3: Ruling: Marsh's Household Guard is listed first (before the With forces) so it survives the 3-ally cap — she is the spec's named defector — cost if wrong: one fewer force soldier in a 4-way-With save run.
+- Task 3: Ruling: RED for the Task 3 tests was a compile failure (FinaleDb/FinaleAlly/Unit.Ally absent) — not run separately; the first real run failed on a test-baseline bug (zone-discovery XP), fixed in the test.
+Task 3: complete (commits 74d547d..HEAD, tests: unity-test.sh FinaleTests;ActThreeFightTests → 7/7 pass)

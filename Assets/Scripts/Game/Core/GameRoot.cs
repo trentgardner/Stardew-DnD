@@ -834,6 +834,7 @@ namespace DnD.Game
         public void OnCombatRetreat(CombatInstance c)
         {
             Combats.Remove(c);
+            RemoveFinaleAllies(c);
             DragonBackOut();
             if (c.GroupId != null) CalmGroup(c.GroupId);
             foreach (var h in c.Humans) h.Hud.Narrate("You got away! They've lost track of you for now. Rest up, then finish this however you like.");
@@ -897,6 +898,7 @@ namespace DnD.Game
                         c.AddUnit(comp.Character, comp.Actor, comp: comp);
             }
             AddDragonTo(c, false);
+            AddFinaleAllies(c);
             ApplyWardenBoons(c);
             if (!c.Units.Any(u => u.Owner != null))
             {
@@ -911,6 +913,7 @@ namespace DnD.Game
         public void OnCombatFinished(CombatInstance c, bool victory)
         {
             Combats.Remove(c);
+            RemoveFinaleAllies(c);
             if (victory && c.Units.Any(u => u.C is Dragonling)) { DragonPet.AddBond(c.Humans.FirstOrDefault(), 1, "a fight won together"); DragonAgent?.GetComponent<DragonPet>()?.ShowOff(); }
             DragonBackOut();
             if (c.Brawl) { EndBrawl(c, victory); return; }

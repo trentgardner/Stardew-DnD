@@ -1024,6 +1024,14 @@ namespace DnD.Game
                 }
             }
             if (target.C.IsDead && target.DeathRound < 0) target.DeathRound = Enc.Round;
+            if (target.Ally && target.C.IsDown)
+            {
+                // A force's soldier who drops is carried off by their own: never one of the party's fallen.
+                Log($"{target.Name} falls back, hurt.");
+                foreach (var h in Humans) h.Hud.Narrate($"{target.Name} falls back, hurt.");
+                if (target.A) target.A.gameObject.SetActive(false);
+                return;
+            }
             if (target.C is PlayerCharacter shaped) WildShapeFx.Sync(target.A, shaped);
             if (target.C is Dragonling && target.C.IsDown) { ScareOffDragon(target); return; }
             if (target.C.IsDown && target.C.Team == Team.Enemies) { target.A.Popup("Defeated!", UIKit.Gold); }

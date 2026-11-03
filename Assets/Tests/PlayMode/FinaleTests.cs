@@ -127,5 +127,105 @@ namespace DnD.Tests
             yield return Frames(3);
             Assert.IsFalse(c.BeatsPlaying);
         }
+
+        // ================================================================== Task 3: allies
+
+        static WorldState Chosen(string ending, params string[] flags)
+        {
+            var w = new WorldState();
+            w.SetFlag(WorldDb.MetHer);
+            w.SetFlag(Turn.EndingFlag(ending));
+            w.SetFlag(Turn.Chosen);
+            foreach (var f in flags) w.SetFlag(f);
+            return w;
+        }
+
+        [Test]
+        public void AlliesTableFollowsReactions()
+        {
+            var end = FinaleDb.Allies(Turn.End, Chosen(Turn.End)).Select(a => a.monsterId).ToList();
+            CollectionAssert.Contains(end, "crown_knight", "the Crown stands with you if you end her");
+            CollectionAssert.Contains(end, "wyrmwatch_hunter", "and so does Wyrmwatch");
+            var save = FinaleDb.Allies(Turn.Save, Chosen(Turn.Save, "banner_fae"));
+            CollectionAssert.Contains(save.Select(a => a.monsterId).ToList(), "fae_knight");
+            Assert.IsFalse(save.Any(a => a.name == "Household Guard"), "Marsh only defects if she's yours");
+            var marsh = FinaleDb.Allies(Turn.Save, Chosen(Turn.Save, "banner_fae", "banner_crown"));
+            Assert.IsTrue(marsh.Any(a => a.name == "Household Guard"), "Marsh's Household Guard comes with her");
+            foreach (var e in Turn.Endings)
+                Assert.LessOrEqual(FinaleDb.Allies(e, Chosen(e, "banner_crown", "banner_fae", "banner_academy", "banner_hunters", "swayed_academy", "swayed_fae", "swayed_hunters")).Count, 3);
+        }
+
+        void SetUpFinaleTestGroup()
+        {
+            var grp = new EnemyGroupDef { Id = Finale.Prefix + "test", Style = EncounterStyle.None, Unique = true };
+            grp.Members.Add(new EnemySpawn("crown_knight", BossAt.x, BossAt.y));
+            grp.Members.Add(new EnemySpawn("crown_knight", BossAt.x + 1, BossAt.y));
+            WorldDb.Zones[Arena].EnemyGroups.Add(grp);
+        }
+
+        CombatInstance FinaleTestFight(GameRoot g, PlayerSlot p, string ending)
+        {
+            g.World.SetFlag(WorldDb.MetHer); g.World.SetFlag(Turn.EndingFlag(ending)); g.World.SetFlag(Turn.Chosen);
+            g.Warp(p, Arena, HeroAt, false);
+            g.StartGroupCombat(Finale.Prefix + "test", p);
+            var c = g.Combats.Single();
+            foreach (var u in c.Units) if (u.Cb == null) u.Cb = new Combatant(u.C);
+            return c;
+        }
+
+        [UnityTest]
+        public IEnumerator AlliesFightForYouAndLeave()
+        {
+            SetUpFinaleTestGroup();
+            try
+            {
+                var g = GameRoot.I;
+                var p = g.DebugStart(Still(3), "fighter", "dwarf");
+                yield return Frames(3);
+                var c = FinaleTestFight(g, p, Turn.End);
+                int xpBefore = p.Character.XP; // after the warp (discovering the arena pays 15)
+                var allies = c.Units.Where(u => u.Ally).ToList();
+                Assert.AreEqual(2, allies.Count, "the Crown and Wyrmwatch each send someone");
+                Assert.IsTrue(allies.All(a => a.C.Team == Team.Players && a.Ctrl == null));
+                var foe = c.Units.First(u => u.C.Team == Team.Enemies);
+                foreach (var a in allies) { a.A.PlaceAt(c.Zone, foe.Pos + Vector2Int.left); break; }
+                int heroHp = p.Character.HP, foeHp = foe.C.HP;
+                for (int i = 0; i < 6 && foe.C.HP == foeHp; i++) yield return c.DebugAiTurn(allies[0]);
+                Assert.Less(foe.C.HP, foeHp, "an ally attacks the enemy");
+                Assert.AreEqual(heroHp, p.Character.HP, "and never you");
+                foreach (var f in c.Units.Where(u => u.C.Team == Team.Enemies).ToList()) c.DebugDamage(f, 9999);
+                c.DebugEndCheck();
+                yield return Frames(5);
+                Assert.IsTrue(c.Finished);
+                Assert.AreEqual(0, Object.FindObjectsByType<FinaleAlly>(FindObjectsSortMode.None).Length, "allies leave when the fight ends");
+                Assert.AreEqual(xpBefore + GameRoot.EncounterShare(1400, 1), p.Character.XP, "XP from the foes only");
+                Assert.IsFalse(g.CompanionsOf(p).Any(cm => allies.Any(a => a.C == cm.Character)), "allies aren't companions");
+            }
+            finally { WorldDb.Zones[Arena].EnemyGroups.RemoveAll(e => e.Id == Finale.Prefix + "test"); }
+        }
+
+        [UnityTest]
+        public IEnumerator AllyDownIsNotAWipe()
+        {
+            SetUpFinaleTestGroup();
+            try
+            {
+                var g = GameRoot.I;
+                var p = g.DebugStart(Still(4), "fighter", "dwarf");
+                yield return Frames(3);
+                var c = FinaleTestFight(g, p, Turn.End);
+                foreach (var a in c.Units.Where(u => u.Ally).ToList()) c.DebugDamage(a, 9999);
+                c.DebugEndCheck();
+                yield return Frames(3);
+                Assert.IsFalse(c.Finished, "the fight goes on");
+                Assert.IsTrue(c.LogLines.Any(l => l.Contains("falls back")), "the ally falls back");
+                // And when every player is down, allies still standing don't keep the fight going.
+                var ally2 = c.Units.Where(u => u.Ally).ToList();
+                foreach (var a in ally2) { a.C.HP = a.C.MaxHP; }
+                p.Character.HP = 0;
+                Assert.IsFalse(c.DebugPlayersUp, "allies don't count as the party");
+            }
+            finally { WorldDb.Zones[Arena].EnemyGroups.RemoveAll(e => e.Id == Finale.Prefix + "test"); }
+        }
     }
 }
