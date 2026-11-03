@@ -119,17 +119,19 @@ namespace DnD.Game
             // Initiative: humans roll their own d20s, everyone else rolls on the ticker.
             foreach (var u in Units.ToList())
             {
+                if (Finished) yield break; // ended before everyone had rolled (a forced end, a player who left)
                 var adv = u.C.InitiativeAdvantage ? AdvantageState.Advantage : AdvantageState.Normal;
                 if (_surprise && u.C.Team == Team.Players) adv = Dice.Combine(adv == AdvantageState.Advantage, true);
                 if (_enemiesSurprised && u.C.Team == Team.Enemies) adv = Dice.Combine(adv == AdvantageState.Advantage, true);
                 var terms = new List<RollTerm> { new RollTerm("initiative", u.C.InitiativeBonus) };
                 if (u.C.D20Penalty != 0) terms.Add(new RollTerm("exhaustion", u.C.D20Penalty));
-                if (u.IsHuman)
+                if (u.IsHuman && u.Ctrl.Hud != null && u.Ctrl.IsReady) // a player who just left rolls on the ticker
                 {
                     D20Result res = null;
                     u.Ctrl.Hud.Dice.RollD20(u.Owner != null ? "Initiative!" : $"Initiative: {u.Name}", $"DEX {AbilityUtil.Fmt(u.C.InitiativeBonus)}{(adv == AdvantageState.Disadvantage ? " · surprised (Disadvantage)" : adv == AdvantageState.Advantage ? " · Advantage" : "")}",
                         () => Dice.RollD20(adv, terms), null, false, r => res = r);
-                    while (res == null) yield return null;
+                    while (res == null && !Finished && u.Ctrl != null && u.Ctrl.Hud != null) yield return null;
+                    if (res == null) { if (Finished) yield break; res = Dice.RollD20(adv, terms); }
                     u.Cb = Enc.Add(u.C);
                     u.Cb.InitiativeRoll = res;
                 }

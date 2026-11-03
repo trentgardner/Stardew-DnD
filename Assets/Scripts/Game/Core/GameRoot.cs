@@ -232,6 +232,7 @@ namespace DnD.Game
             foreach (var c in Combats) c.Finished = true;
             Combats.Clear();
             StopAllCoroutines();
+            ResetFlight(); // a flight cut short by quitting must not block the next one
             if (_worldRoot) Destroy(_worldRoot.gameObject);
             Zones.Clear(); _npcs.Clear(); _groups.Clear(); Companions.Clear(); Dragon = null; MusicOverride = null; _recruitAgents.Clear(); TavernRecruits.Clear();
             _deathTime.Clear(); _sleeping.Clear(); _lastLongRest.Clear(); _parley.Clear(); _pendingPlayers.Clear();
@@ -394,6 +395,7 @@ namespace DnD.Game
         void Update()
         {
             if (!InGame) return;
+            FlightTick();
             Music.Play(WantedMusic());
             ApplyIdeals();
 
@@ -434,6 +436,7 @@ namespace DnD.Game
             {
                 if (p.Avatar == null) continue;
                 var target = p.Avatar.transform.position;
+                if (_flightCam != null) target = _flightCam.position; // the flight: everyone watches the dragon
                 var cur = p.InCombat ? p.Combat.Current : null;
                 // Watch whoever is acting: a monster, or a companion you're commanding.
                 if (cur != null && cur.A != null && cur.A != p.Avatar) target = Vector3.Lerp(target, cur.A.transform.position, 0.5f);

@@ -52,6 +52,8 @@ namespace DnD.Tests
             MonstersDb.All.Remove("test_phased");
             SaveSystem.OverrideRoot = null;
             if (Directory.Exists(_tempSaves)) Directory.Delete(_tempSaves, true);
+            Dice.Rng = new SystemRandom();
+            GameRoot.FlightResults.Clear();
         }
 
         static FuzzInput Still(int seed) => new FuzzInput(seed) { ConfirmChance = 0, CancelChance = 0, MenuChance = 0, EndTurnChance = 0 };
@@ -276,9 +278,9 @@ namespace DnD.Tests
         {
             g.Quests.Set(WarmCity.Id, WarmCity.Called, p, 0f);
             foreach (var f in new[] { WorldDb.MetHer, "meeting_seen", Turn.Questioning, Turn.BeatsSeen }.Concat(flags)) g.World.SetFlag(f);
-            g.Warp(p, "capital", WorldDb.SunstairSpot, false);
+            g.GatherAt("capital", WorldDb.SunstairSpot); // everyone ready
             yield return Frames(3);
-            p.Hud.CloseAll();
+            foreach (var q in g.Players.Where(x => x.IsReady)) q.Hud.CloseAll();
         }
 
         /// <summary>Closes beats (untitled break beats and titled stage intros) until none is left.</summary>
@@ -441,6 +443,232 @@ namespace DnD.Tests
                 Assert.AreEqual(1, files.Length, name + " exists");
                 StringAssert.Contains("MetHer", File.ReadAllText(files[0]), name + " is gated on meeting her");
                 Assert.IsFalse(LoreTests.GuardScans(name));
+            }
+        }
+
+        // ================================================================== Task 5: the rider and the flight
+
+        /// <summary>An Act III character whose input presses the dice tray whenever a roll waits (and does nothing else).</summary>
+        static PlayerSlot Roller(GameRoot g, string side, string cls = "fighter")
+        {
+            var input = new RollerInput();
+            var p = g.DebugStart(input, cls, "human");
+            input.PressWhen = () => p.Hud != null && p.Hud.Dice.IsOpen;
+            g.ApplyActThreeStart(p, side);
+            p.Hud.CloseAll();
+            p.Character.HeroicInspiration = false; // no reroll offers in the tray
+            return p;
+        }
+
+        /// <summary>From the choice through all three streets: the dragon is coming down for a rider.</summary>
+        static IEnumerator ToTheFlight(GameRoot g, PlayerSlot p, string ending)
+        {
+            yield return ToTheChoice(g, p);
+            g.ChooseEnding(p, ending);
+            yield return CloseAll(g);
+            for (int n = 1; n <= Finale.Stages; n++) { yield return WinStreet(g, p, n); if (n < Finale.Stages) yield return CloseAll(g); }
+        }
+
+        /// <summary>Closes every player's beats (not choices) for a while.</summary>
+        static IEnumerator CloseAll(GameRoot g, int rounds = 12)
+        {
+            for (int i = 0; i < rounds; i++)
+            {
+                yield return Frames(4);
+                bool any = false;
+                foreach (var q in g.Players.Where(x => x.IsReady)) { var b = Beat(q); if (b != null) { b.Close(); any = true; } }
+                if (!any) { yield return Frames(4); if (g.Players.All(q => !q.IsReady || Beat(q) == null)) yield break; }
+            }
+        }
+
+        /// <summary>Rides it out: closes beats, picks option `pick` on each pass, until the party has landed.</summary>
+        static IEnumerator RideOut(GameRoot g, PlayerSlot rider, string ending, int pick, System.Collections.Generic.List<string> titles = null)
+        {
+            var route = FinaleDb.Route(ending, g.World);
+            float start = Time.realtimeSinceStartup;
+            while (!g.World.Flag(Finale.Flown) && Time.realtimeSinceStartup - start < 90f)
+            {
+                yield return Frames(3);
+                foreach (var q in g.Players.Where(x => x.IsReady)) { var b = Beat(q); if (b != null) b.Close(); }
+                if (rider.Hud.Top is ChoiceScreen cs && !cs.Closed)
+                {
+                    titles?.Add(cs.Title);
+                    foreach (var pass in route.Passes) if (cs.Title == pass.Title) cs.Choose(pass.Options[pick].Label);
+                }
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator SoloRidesWithoutAPrompt()
+        {
+            var g = GameRoot.I;
+            var p = Roller(g, "academy");
+            yield return Frames(2);
+            yield return ToTheFlight(g, p, Turn.Seal);
+            var titles = new System.Collections.Generic.List<string>();
+            yield return RideOut(g, p, Turn.Seal, 0, titles);
+            Assert.IsFalse(titles.Any(t => t.StartsWith("Who rides")), "solo: no prompt");
+            Assert.IsTrue(g.World.Flag(Finale.RiderFlag(p.Index)), "the one player rides");
+            Assert.IsTrue(g.World.Flag(Finale.Flown));
+        }
+
+        static ChoiceScreen Choice(PlayerSlot p) => p.Hud.Top is ChoiceScreen c && !c.Closed ? c : null;
+
+        [UnityTest]
+        public IEnumerator CoopRiderPromptHandsOverInOnePress()
+        {
+            var g = GameRoot.I;
+            var p1 = Roller(g, "academy");
+            yield return Frames(2);
+            var p2 = g.DebugStart(Still(31), "cleric", "dwarf");
+            yield return Frames(2);
+            p2.Hud.CloseAll();
+            yield return ToTheFlight(g, p1, Turn.Seal);
+            yield return CloseAll(g);
+            Assert.IsTrue(g.World.Flag(Finale.RiderPending));
+            StringAssert.StartsWith("Who rides", Choice(p1)?.Title, "P1 is asked");
+            StringAssert.StartsWith("Who rides", Choice(p2)?.Title, "and so is P2");
+            var dragonAt = g.DragonAgent.Actor.transform.position;
+            Choice(p1).Choose(p1.Character.Name); // the wrong player triggered it
+            yield return Frames(3);
+            StringAssert.StartsWith("Ride", Choice(p1)?.Title);
+            Assert.IsTrue(Choice(p1).Choose("Let " + p2.Character.Name), "one press hands it over");
+            yield return Frames(3);
+            StringAssert.StartsWith("Ride", Choice(p2)?.Title, "now P2 is asked to confirm");
+            Assert.IsFalse(g.Flying || g.World.Flag(Finale.Flown), "nothing has started");
+            Assert.AreEqual(dragonAt, g.DragonAgent.Actor.transform.position, "the dragon hasn't moved");
+            Choice(p2).Choose("Take the reins");
+            yield return Frames(3);
+            Assert.IsTrue(g.World.Flag(Finale.RiderFlag(p2.Index)), "P2 rides");
+            Assert.IsFalse(g.World.Flag(Finale.RiderFlag(p1.Index)));
+            Assert.IsTrue(g.Flying);
+        }
+
+        [UnityTest]
+        public IEnumerator RiderPromptSurvivesADrop()
+        {
+            var g = GameRoot.I;
+            var p1 = Roller(g, "academy");
+            yield return Frames(2);
+            var p2 = g.DebugStart(Still(32), "cleric", "dwarf");
+            yield return Frames(2);
+            p2.Hud.CloseAll();
+            yield return ToTheFlight(g, p1, Turn.Seal);
+            yield return CloseAll(g);
+            Choice(p1).Choose(p2.Character.Name);
+            yield return Frames(3);
+            g.DropOut(p2);
+            yield return Frames(5);
+            Assert.IsTrue(g.World.Flag(Finale.RiderFlag(p1.Index)) || Choice(p1) != null, "the flight goes to whoever is left");
+            Assert.IsTrue(g.World.Flag(Finale.RiderFlag(p1.Index)), "alone now: P1 rides");
+        }
+
+        [UnityTest]
+        public IEnumerator EscOnThePromptNeverLosesTheFlight()
+        {
+            var g = GameRoot.I;
+            var p1 = Roller(g, "academy");
+            yield return Frames(2);
+            var p2 = g.DebugStart(Still(33), "cleric", "dwarf");
+            yield return Frames(2);
+            p2.Hud.CloseAll();
+            yield return ToTheFlight(g, p1, Turn.Seal);
+            yield return CloseAll(g);
+            Choice(p1).Close();
+            Choice(p2).Close();
+            yield return Frames(3);
+            Assert.IsTrue(g.World.Flag(Finale.RiderPending), "still waiting for a rider");
+            Assert.IsFalse(g.Flying);
+            StringAssert.StartsWith("Ride", g.DragonAgent.PromptText(p1));
+            g.DragonAgent.Interact(p1);
+            yield return Frames(2);
+            StringAssert.StartsWith("Who rides", Choice(p1)?.Title, "the dragon asks again");
+        }
+
+        [UnityTest]
+        public IEnumerator LoadAtRiderPromptReoffersIt()
+        {
+            var g = GameRoot.I;
+            var p = Roller(g, "academy");
+            yield return Frames(2);
+            yield return ToTheFlight(g, p, Turn.Save);
+            string path = SaveSystem.Save(false); // after the streets, before the dragon came
+            g.QuitToTitle();
+            yield return Frames(2);
+            g.LoadGame(path);
+            yield return Frames(5);
+            p = g.Players.First();
+            var roller = new RollerInput(); var me = p; roller.PressWhen = () => me.Hud != null && me.Hud.Dice.IsOpen;
+            p.Input = roller; // a loaded game takes the default device: put the dice-presser back
+            Assert.IsFalse(g.World.Flag(Finale.Flown));
+            yield return RideOut(g, p, Turn.Save, 1);
+            Assert.IsTrue(g.World.Flag(Finale.Flown), "the dragon came back down, and you flew");
+        }
+
+        [UnityTest]
+        public IEnumerator FlightRollsAreVisibleAndCount()
+        {
+            var g = GameRoot.I;
+            var p = Roller(g, "hunters");
+            yield return Frames(2);
+            yield return ToTheFlight(g, p, Turn.End);
+            Dice.Rng = new ScriptedRandom(Enumerable.Repeat(20, 400).ToArray());
+            bool sawTray = false;
+            var route = FinaleDb.Route(Turn.End, g.World);
+            float start = Time.realtimeSinceStartup;
+            while (!g.World.Flag(Finale.Flown) && Time.realtimeSinceStartup - start < 90f)
+            {
+                yield return Frames(2);
+                sawTray |= p.Hud.Dice.IsOpen;
+                var b = Beat(p); if (b != null) b.Close();
+                if (Choice(p) is ChoiceScreen cs) foreach (var pass in route.Passes) if (cs.Title == pass.Title) cs.Choose(pass.Options[0].Label);
+            }
+            Assert.IsTrue(sawTray, "the rider's rolls go through the dice tray");
+            CollectionAssert.AreEquivalent(new[] { route.Passes[0].Options[0].OnSuccess, route.Passes[1].Options[0].OnSuccess }, GameRoot.FlightResults);
+        }
+
+        [UnityTest]
+        public IEnumerator FailedPassesScorchButNeverKill()
+        {
+            var g = GameRoot.I;
+            var p = Roller(g, "hunters");
+            yield return Frames(2);
+            yield return ToTheFlight(g, p, Turn.End);
+            p.Character.HP = 4;
+            Dice.Rng = new ScriptedRandom(Enumerable.Repeat(1, 400).ToArray());
+            yield return RideOut(g, p, Turn.End, 1);
+            Assert.AreEqual(0, GameRoot.FlightResults.Count, "nothing won");
+            Assert.AreEqual(1, p.Character.HP, "scorched down to 1 HP, never 0");
+        }
+
+        [UnityTest]
+        public IEnumerator FlightLandsEveryone()
+        {
+            var g = GameRoot.I;
+            foreach (var (ending, side, coop) in new[] { (Turn.End, "hunters", false), (Turn.Seal, "academy", true), (Turn.Save, "fae", false) })
+            {
+                var p1 = Roller(g, side);
+                yield return Frames(2);
+                PlayerSlot p2 = null;
+                if (coop) { p2 = g.DebugStart(Still(34), "cleric", "dwarf"); yield return Frames(2); p2.Hud.CloseAll(); }
+                yield return ToTheFlight(g, p1, ending);
+                yield return CloseAll(g);
+                if (coop) { Choice(p1).Choose(p1.Character.Name); yield return Frames(3); Choice(p1).Choose("Take the reins"); }
+                yield return RideOut(g, p1, ending, 0);
+                var route = FinaleDb.Route(ending, g.World);
+                Assert.IsTrue(g.World.Flag(Finale.Flown), ending + ": landed");
+                Assert.AreEqual(WarmCity.Boss, g.Quests.Stage(WarmCity.Id), ending);
+                foreach (var q in g.Players.Where(x => x.IsReady))
+                {
+                    Assert.AreEqual(route.LandingZone, q.Zone.Def.Id, $"{ending}: {q.Character.Name} is at the landing");
+                    Assert.LessOrEqual(Vector2.Distance(q.MapPos, route.LandingSpot), 3f, ending);
+                    Assert.IsTrue(q.Avatar.enabled, ending + ": control is back");
+                }
+                Assert.AreEqual(route.LandingZone, g.DragonAgent.Actor.Zone.Def.Id, ending + ": the dragon landed too");
+                Assert.LessOrEqual(Vector2.Distance(g.DragonAgent.Actor.MapPos, route.LandingSpot), 3f, ending);
+                Assert.IsFalse(g.DragonAgent.Waiting, ending + ": the dragon is back with you");
+                g.QuitToTitle();
+                yield return Frames(3);
             }
         }
     }

@@ -45,6 +45,7 @@ namespace DnD.Game
 
         /// <summary>The prompt's body text.</summary>
         public string Body => _text;
+        public string Title => _title;
 
         public ChoiceScreen(string title, string text, List<(string, Action)> options, bool cancellable = true)
         { _title = title; _text = text; _opts = options; _cancellable = cancellable; }

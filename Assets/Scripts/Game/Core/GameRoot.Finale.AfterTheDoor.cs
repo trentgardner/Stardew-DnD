@@ -130,12 +130,6 @@ namespace DnD.Game
             }
         }
 
-        /// <summary>The flight (Task 5 builds it). For now: the dragon comes.</summary>
-        public void BeginFlight(PlayerSlot by, string ending)
-        {
-            by.Hud.Narrate("The dragon comes.");
-        }
-
         /// <summary>On load: replay the break if its beats weren't seen, or put the finale back as it was.</summary>
         public void CheckTheFinale()
         {
@@ -148,6 +142,12 @@ namespace DnD.Game
             ApplyDragonWaits();
             int n = Finale.CurrentStreet(World);
             if (n >= 1 && n <= Finale.Stages) { World.SetFlag(Finale.StreetOpen(n)); SpawnStreet(n); }
+            else if (n > Finale.Stages && !World.Flag(Finale.Flown))
+            {
+                // Saved between the streets and the landing: the dragon comes back down for a rider.
+                if (World.Flag(Finale.RiderPending)) StartCoroutine(OfferRiderSoon());
+                else BeginFlight(by, ending);
+            }
         }
 
         /// <summary>
@@ -172,5 +172,7 @@ namespace DnD.Game
             SpawnStreet(Finale.CurrentStreet(World));
             return true;
         }
+
+        IEnumerator OfferRiderSoon() { yield return null; yield return null; OfferRider(); }
     }
 }

@@ -38,3 +38,14 @@ Task 3: complete (commits 74d547d..HEAD, tests: unity-test.sh FinaleTests;ActThr
 - Task 4: Ruling: TheBreak made internal so CheckTheFinale can replay it after a load (fixes Phase 5's deferred "load during the break's beats").
 - Task 4: tests: FinaleTests+TurnTests 38/39 then TurnTests fix → Turn+Lore+Quest 70/70 (FinaleTests all green in the first run; RED was compile).
 Task 4: complete (commits 8fe4e79..HEAD, tests: FinaleTests;TurnTests;LoreTests;QuestTests → green)
+
+## Task 5
+- Task 5: Ruling: TDD order broken: GameRoot.Flight.AfterTheDoor.cs was drafted before its tests; tests were then written against the spec/plan behaviours and the first run caught two real bugs (below) — cost if wrong: weaker proof than test-first for paths the tests don't hit.
+- Task 5: Ruling: FinaleDb.Route takes (ending, WorldState) — the beats use the dragon's name — cost if wrong: none.
+- Task 5: Ruling: every pass option is a rider skill check (d20 + skill vs DC 15/17, in the dice tray); a failure's 3d6 fire is narrated with its breakdown rather than rolled in the tray — cost if wrong: the scorch is less "visible" than the check.
+- Task 5: Ruling: Esc on a pass picks its first option (the flight can't stall); Esc on the rider prompt leaves RiderPending, and "Ride {dragon}" on the dragon reopens it.
+- Task 5: Ruling: the dragon flies by moving its actor's transform (Waiting + StaysPut hold it), not a DragonPet.FlyTo; the rider's controller is disabled and their avatar rides on the dragon (YSort offset +40); every camera follows the dragon via _flightCam.
+- Task 5: bug found + fixed: _flying leaked across QuitToTitle/LoadGame (StopAllCoroutines killed Fly mid-air) so no later flight could start — ResetWorld now calls ResetFlight().
+- Task 5: bug found + fixed: CombatInstance's initiative loop rolled for a player whose HUD was destroyed (dropped out) or kept waiting after the fight ended — it now stops once Finished and auto-rolls for a player who left.
+- Task 5: tests: FinaleTests;CoopTests;VolcanoTests → 65/65.
+Task 5: complete (commits 9077da3..HEAD, tests: FinaleTests;CoopTests;VolcanoTests → 65/65)
