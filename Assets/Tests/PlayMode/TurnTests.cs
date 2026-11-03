@@ -572,6 +572,7 @@ namespace DnD.Tests
             Assert.IsTrue(g.World.Flag(Turn.Chosen));
             Assert.IsTrue(g.World.Flag(Turn.EndingFlag(Turn.End)));
             Assert.AreEqual(WarmCity.Break, g.Quests.Stage(WarmCity.Id));
+            Assert.IsTrue(g.Quests.Active(WarmCity.Id), "the break isn't the end of warm_city; the finale is");
         }
 
         [UnityTest]

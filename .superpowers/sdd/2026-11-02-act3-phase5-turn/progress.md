@@ -17,3 +17,9 @@ Executed natively (inline) on branch act3/phase5-turn. Tasks 1-4 landed in 8d66d
 - The dialogue box's empty hearts row (♡♡♡) overlaps the ✕ for the King, as it does for every NPC. Existing UI, not Phase 5.
 - `lantern_eyes` (an Act II hook) isn't used in the reaction table. Phase 7's epilogue can use it.
 - Tests were written right after the code, not before it (they all ran and pass).
+
+## Final verification (2026-11-03)
+- Added warm_city stage 10 (Finale placeholder) so the break reads "Quest updated"; TurnTests asserts the quest is still active after the break.
+- Full suite: 453/455. Fixed EveryNpcHasAWeeklyVariation (the five *_q speakers get a Hearthday entry at the same spot).
+- AcademyGoldenPath failed once in the full run (library→restricted warp left the player in the library) but passes in isolation
+  (Academy+Quest+Turn rerun 77/77). Phase 5 code doesn't run there (CheckTheTurn needs MetHer). Logged as a flaky test to watch.

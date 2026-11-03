@@ -28,6 +28,8 @@ namespace DnD.Game
                 var o = Npcs[original];
                 var n = new NpcDef { Id = id, Name = o.Name, Title = o.Title, Look = o.Look, Dialogue = "questioning" };
                 n.Schedule.Add(new ScheduleEntry(0, "capital", x, y, doing) { RequiresFlag = Turn.Questioning, ForbidFlag = Turn.Chosen });
+                // Same spot every day (nobody leaves the Sunstair until you answer); on Hearthday the cathedral bells ring over it.
+                n.Schedule.Add(new ScheduleEntry(0, "capital", x, y, doing + ", under the Hearthday bells", Hearthday) { RequiresFlag = Turn.Questioning, ForbidFlag = Turn.Chosen });
                 Npcs[id] = n;
                 o.GoneFlag = Turn.Questioning; // (none of the five had a GoneFlag in Act III; MetHer comes first)
             }
