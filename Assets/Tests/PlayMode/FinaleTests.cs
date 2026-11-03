@@ -56,10 +56,10 @@ namespace DnD.Tests
             GameRoot.FlightResults.Clear();
         }
 
-        static FuzzInput Still(int seed) => new FuzzInput(seed) { ConfirmChance = 0, CancelChance = 0, MenuChance = 0, EndTurnChance = 0 };
-        static IEnumerator Frames(int n) { for (int i = 0; i < n; i++) yield return null; }
+        internal static FuzzInput Still(int seed) => new FuzzInput(seed) { ConfirmChance = 0, CancelChance = 0, MenuChance = 0, EndTurnChance = 0 };
+        internal static IEnumerator Frames(int n) { for (int i = 0; i < n; i++) yield return null; }
         /// <summary>The beat on top of the stack (closed screens linger while the initiative dice is open, so skip them).</summary>
-        static MessageScreen Beat(PlayerSlot p) => p.Hud.Top is MessageScreen m && !m.Closed ? m : null;
+        internal static MessageScreen Beat(PlayerSlot p) => p.Hud.Top is MessageScreen m && !m.Closed ? m : null;
 
         /// <summary>A fight with the phased test boss, paused at initiative (Still input never rolls it): the test drives it.</summary>
         static CombatInstance PhasedFight(GameRoot g, PlayerSlot p, out Unit boss, out Unit hero)
@@ -132,7 +132,7 @@ namespace DnD.Tests
 
         // ================================================================== Task 3: allies
 
-        static WorldState Chosen(string ending, params string[] flags)
+        internal static WorldState Chosen(string ending, params string[] flags)
         {
             var w = new WorldState();
             w.SetFlag(WorldDb.MetHer);
@@ -274,7 +274,7 @@ namespace DnD.Tests
         }
 
         /// <summary>Met her, questioned, standing at the foot of the Sunstair: ready to choose.</summary>
-        static IEnumerator ToTheChoice(GameRoot g, PlayerSlot p, params string[] flags)
+        internal static IEnumerator ToTheChoice(GameRoot g, PlayerSlot p, params string[] flags)
         {
             g.Quests.Set(WarmCity.Id, WarmCity.Called, p, 0f);
             foreach (var f in new[] { WorldDb.MetHer, "meeting_seen", Turn.Questioning, Turn.BeatsSeen }.Concat(flags)) g.World.SetFlag(f);
@@ -299,7 +299,7 @@ namespace DnD.Tests
         static bool Spawned(string groupId) => Object.FindObjectsByType<EnemyAgent>(FindObjectsSortMode.None).Any(a => a.Group.Id == groupId && !a.Monster.IsDown);
 
         /// <summary>Fights stage n and wins it at once.</summary>
-        static IEnumerator WinStreet(GameRoot g, PlayerSlot p, int n)
+        internal static IEnumerator WinStreet(GameRoot g, PlayerSlot p, int n)
         {
             p.Hud.CloseAll();
             g.StartGroupCombat(Finale.StreetGroup(n), p);
@@ -449,7 +449,7 @@ namespace DnD.Tests
         // ================================================================== Task 5: the rider and the flight
 
         /// <summary>An Act III character whose input presses the dice tray whenever a roll waits (and does nothing else).</summary>
-        static PlayerSlot Roller(GameRoot g, string side, string cls = "fighter")
+        internal static PlayerSlot Roller(GameRoot g, string side, string cls = "fighter")
         {
             var input = new RollerInput();
             var p = g.DebugStart(input, cls, "human");
@@ -461,7 +461,7 @@ namespace DnD.Tests
         }
 
         /// <summary>From the choice through all three streets: the dragon is coming down for a rider.</summary>
-        static IEnumerator ToTheFlight(GameRoot g, PlayerSlot p, string ending)
+        internal static IEnumerator ToTheFlight(GameRoot g, PlayerSlot p, string ending)
         {
             yield return ToTheChoice(g, p);
             g.ChooseEnding(p, ending);
@@ -470,7 +470,7 @@ namespace DnD.Tests
         }
 
         /// <summary>Closes every player's beats (not choices) for a while.</summary>
-        static IEnumerator CloseAll(GameRoot g, int rounds = 12)
+        internal static IEnumerator CloseAll(GameRoot g, int rounds = 12)
         {
             for (int i = 0; i < rounds; i++)
             {
@@ -482,7 +482,7 @@ namespace DnD.Tests
         }
 
         /// <summary>Rides it out: closes beats, picks option `pick` on each pass, until the party has landed.</summary>
-        static IEnumerator RideOut(GameRoot g, PlayerSlot rider, string ending, int pick, System.Collections.Generic.List<string> titles = null)
+        internal static IEnumerator RideOut(GameRoot g, PlayerSlot rider, string ending, int pick, System.Collections.Generic.List<string> titles = null)
         {
             var route = FinaleDb.Route(ending, g.World);
             float start = Time.realtimeSinceStartup;
@@ -519,7 +519,7 @@ namespace DnD.Tests
             return $"waiting={V("_waitingPress")} flow={V("_flowRunning")} prompt='{V("_prompt")}' choices={V("_choices")} confirm={q.Input.Confirm}";
         }
 
-        static ChoiceScreen Choice(PlayerSlot p) => p.Hud.Top is ChoiceScreen c && !c.Closed ? c : null;
+        internal static ChoiceScreen Choice(PlayerSlot p) => p.Hud.Top is ChoiceScreen c && !c.Closed ? c : null;
 
         [UnityTest]
         public IEnumerator CoopRiderPromptHandsOverInOnePress()
@@ -706,11 +706,11 @@ namespace DnD.Tests
 
         // ================================================================== Task 6: the three boss fights
 
-        static readonly System.Collections.Generic.Dictionary<string, string> BossOf = new System.Collections.Generic.Dictionary<string, string>
+        internal static readonly System.Collections.Generic.Dictionary<string, string> BossOf = new System.Collections.Generic.Dictionary<string, string>
         { [Turn.End] = "ashen_queen", [Turn.Seal] = "king_regalia", [Turn.Save] = "crowned_fire" };
 
         /// <summary>Straight to the landing (the flight is Task 5's): flown, standing at the landing, the boss fight paused at initiative.</summary>
-        static IEnumerator AtTheBoss(GameRoot g, PlayerSlot p, string ending, params FlightEffect[] won)
+        internal static IEnumerator AtTheBoss(GameRoot g, PlayerSlot p, string ending, params FlightEffect[] won)
         {
             yield return ToTheChoice(g, p);
             g.ChooseEnding(p, ending);
@@ -729,17 +729,17 @@ namespace DnD.Tests
             yield return Frames(3);
         }
 
-        static CombatInstance BossFightOf(GameRoot g, string ending)
+        internal static CombatInstance BossFightOf(GameRoot g, string ending)
         {
             var c = g.Combats.SingleOrDefault(x => x.GroupId == Finale.BossGroup(ending) && !x.Finished);
             if (c != null) foreach (var u in c.Units) if (u.Cb == null) u.Cb = new Combatant(u.C);
             return c;
         }
 
-        static Unit BossUnit(CombatInstance c, string ending) => c.Units.Single(u => u.C is Monster m && m.Def.Id == BossOf[ending]);
+        internal static Unit BossUnit(CombatInstance c, string ending) => c.Units.Single(u => u.C is Monster m && m.Def.Id == BossOf[ending]);
 
         /// <summary>Hits the boss through every phase (closing the beats), then knocks it down.</summary>
-        static IEnumerator BeatTheBoss(GameRoot g, PlayerSlot p, CombatInstance c, string ending)
+        internal static IEnumerator BeatTheBoss(GameRoot g, PlayerSlot p, CombatInstance c, string ending)
         {
             var boss = BossUnit(c, ending);
             for (int i = 0; i < 6 && !boss.C.IsDown; i++)
@@ -864,9 +864,9 @@ namespace DnD.Tests
                 yield return new WaitForSecondsRealtime(0.2f);
                 var b = Beat(p);
                 if (b == null) continue;
-                if (b.Title == "To Be Continued") card = b; else { seen.Add(b.Body); b.Close(); }
+                if (b.Title == "Her") card = b; else { seen.Add(b.Body); b.Close(); }
             }
-            Assert.IsNotNull(card, "the placeholder card for Phase 7");
+            Assert.IsNotNull(card, "the ending begins (Phase 7)");
             CollectionAssert.IsSubsetOf(FinaleDb.Victory(Turn.End, g.World), seen, "the victory beats played first");
         }
 
@@ -961,9 +961,9 @@ namespace DnD.Tests
                 yield return new WaitForSecondsRealtime(0.15f);
                 var b = Beat(p1);
                 if (b == null) continue;
-                if (b.Title == "To Be Continued") card = b; else { beats.Add(b.Body); b.Close(); }
+                if (b.Title == "Her") card = b; else { beats.Add(b.Body); b.Close(); }
             }
-            Assert.IsNotNull(card, ending + ": the placeholder card");
+            Assert.IsNotNull(card, ending + ": the ending begins");
 
             // Every beat, in order: the break, the three stage intros, the takeoff, the landing, each phase, the victory.
             var expected = new System.Collections.Generic.List<string>();
@@ -1081,7 +1081,7 @@ namespace DnD.Tests
                     yield return new WaitForSecondsRealtime(0.15f);
                     var b = Beat(p1);
                     if (b == null) continue;
-                    if (b.Title == "To Be Continued") { AcademyTests.Shot($"act6_{ending}_tbc"); break; }
+                    if (b.Title == "Her") { AcademyTests.Shot($"act6_{ending}_tbc"); break; }
                     AcademyTests.Shot($"act6_{ending}_victory{i}");
                     b.Close();
                 }

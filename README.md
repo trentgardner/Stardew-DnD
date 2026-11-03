@@ -5,6 +5,8 @@ where **you roll the dice**. Stardew Valley's heart, with BG3's tactics.
 
 > Proprietary. All rights reserved. See `LICENSE` and `NOTICE.md`.
 
+**The story is complete:** three acts, levels 1-13, and three endings. Play from Thistledown to the credits.
+
 ## Quick links
 - **Play it:** `docs/PLAYTEST.md`
 - **Design decisions:** `docs/DESIGN.md`

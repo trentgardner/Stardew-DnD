@@ -141,6 +141,7 @@ namespace DnD.Game
             var by = Players.FirstOrDefault(p => p.IsReady);
             if (ending == null || by == null) return;
             PrepareFinale();
+            if (ResumeTheEnding()) return; // after the last fight: the ending (or, once told, a quiet note)
             if (!World.Flag(Finale.Started)) { StartCoroutine(TheBreak(by, ending)); return; }
             ApplyDragonWaits();
             int n = Finale.CurrentStreet(World);
@@ -213,7 +214,11 @@ namespace DnD.Game
             {
                 SealProgress = 0;
                 _sealPulled = false;
-                if (_ashbyAtTheDoor == null) _ashbyAtTheDoor = Actor.Spawn<Actor>("Ashby", "npc_ashby", true, zone, FinaleDb.AshbyAtTheDoor);
+                if (_ashbyAtTheDoor == null)
+                {
+                    _ashbyAtTheDoor = Actor.Spawn<Actor>("Ashby", "npc_ashby", true, zone, FinaleDb.AshbyAtTheDoor);
+                    LightSource.Attach(_ashbyAtTheDoor.gameObject, 7f, new Color(0.75f, 0.85f, 1f)); // the circle glows: the fight can be seen
+                }
             }
             if (!_phaseHooked) { CombatInstance.PhaseEntered += (m, ph) => I?.OnBossPhase(m); _phaseHooked = true; }
         }
@@ -302,9 +307,7 @@ namespace DnD.Game
             if (lead == null) yield break;
             yield return PlayBeats(lead, FinaleDb.Victory(ending, World));
             if (_ashbyAtTheDoor) { Destroy(_ashbyAtTheDoor.gameObject); _ashbyAtTheDoor = null; }
-            // Placeholder until Phase 7 builds the endings.
-            foreach (var p in Players.Where(x => x.IsReady))
-                p.Hud.Push(new MessageScreen("To Be Continued", "The fight for Aurelhold is won. What comes after is in the next update. Everything you chose is saved."));
+            yield return PlayEnding(Lead ?? lead, ending); // Phase 7: the endings
         }
     }
 }
