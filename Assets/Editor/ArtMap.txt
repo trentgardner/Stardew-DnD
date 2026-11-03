@@ -1615,3 +1615,6 @@ paint item_pageant_sash cloak k=4a1010 a=c62828 b=e57373 c=ffd54a
 
 # Act III Phase 4: below Aurelhold
 audio music_undergate "Audio/Musics/21 - Dungeon.ogg"
+actor npc_bran "Actor/Character/Villager4/SpriteSheet.png"
+actor npc_hap_mossy "Actor/Character/OldMan2/SpriteSheet.png"
+actor npc_deep_shift "Actor/Character/Villager5/SpriteSheet.png"

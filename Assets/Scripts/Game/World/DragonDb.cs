@@ -25,6 +25,10 @@ namespace DnD.Game
             ["wenna"] = DragonFeeling.Fond,      // lets it sniff the lamps
             ["gate_guard_0"] = DragonFeeling.Wary,
             ["gate_guard_1"] = DragonFeeling.Wary,
+            ["bran"] = DragonFeeling.Fond,       // it lies down by him and he leans on it like a warm wall
+            ["hap_mossy"] = DragonFeeling.Fond,
+            ["deep_shift_1"] = DragonFeeling.Neutral,
+            ["deep_shift_2"] = DragonFeeling.Neutral,
             ["mags"] = DragonFeeling.Fond,       // she talks to it like it's one of her own
             ["crale"] = DragonFeeling.Wary,
             ["king_aldric"] = DragonFeeling.Distrust, // it won't come in, and it watches the palace door

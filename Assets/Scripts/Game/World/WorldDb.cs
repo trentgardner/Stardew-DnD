@@ -694,6 +694,7 @@ namespace DnD.Game
             BuildPlacesNpcs();
             BuildAcademyNpcs();
             BuildCapitalNpcs();
+            BuildLairNpcs();
         }
 
         /// <summary>The South Lane folk (Phase 4). Names are side content pending lore approval.</summary>

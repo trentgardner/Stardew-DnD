@@ -146,6 +146,108 @@ namespace DnD.Tests
             Assert.AreEqual(6000, q.StageXp[WarmCity.Door]);
         }
 
+        // ============================================================ Task 2: the Undergate Works, the Keepers, Bran
+
+        static DOption Opt(string dialogue, string node, Skill skill) => CapitalTests.Opt(dialogue, node, skill);
+
+        /// <summary>An Act III game with the Undergate open and the party standing at the foot of its stair.</summary>
+        static IEnumerator Below(GameRoot g, PlayerSlot p)
+        {
+            g.Quests.Set(WarmCity.Id, WarmCity.Opened, p, 0f);
+            g.Warp(p, "undergate", WorldDb.Zones["undergate"].DefaultSpawn, false);
+            yield return Frames(3);
+            p.Hud.CloseAll();
+        }
+
+        [UnityTest]
+        public IEnumerator UndergateWorksReachable()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 10);
+            yield return Frames(2);
+            yield return Below(g, p);
+            var z = p.Zone;
+            AcademyTests.AssertAllReachable(g, z, z.Def.DefaultSpawn);
+            Assert.IsTrue(AcademyTests.CanReachBeside(z, z.Def.DefaultSpawn, new Vector2Int(42, 14)), "the stair down");
+            foreach (var id in new[] { "bran", "hap_mossy", "deep_shift_1", "deep_shift_2" })
+                foreach (int h in new[] { 3, 10, 21 })
+                    foreach (int day in new[] { 0, 6 })
+                    {
+                        var at = WorldDb.Current(WorldDb.Npcs[id], h, day, g.World);
+                        if (at?.Zone != "undergate") continue;
+                        Assert.IsTrue(AcademyTests.CanReachBeside(z, z.Def.DefaultSpawn, at.Pos), $"{id} at {h}:00 day {day}");
+                    }
+        }
+
+        [UnityTest]
+        public IEnumerator KeepersTalkOrFight()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 11);
+            yield return Frames(2);
+            yield return Below(g, p);
+            var keepers = WorldDb.Zones["undergate"].EnemyGroups.Single(x => x.Id == "undergate_keepers");
+            Assert.AreEqual("banner_crown", keepers.VouchFlag);
+            int fightXp = keepers.Members.Sum(m => MonstersDb.Get(m.MonsterId).XP);
+            int xp = p.Character.XP;
+            g.PacifyGroup("undergate_keepers", p);
+            Assert.AreEqual(xp + fightXp, p.Character.XP, "talking them round pays the same as winning");
+            Assert.IsTrue(g.World.Flag("keepers_resolved"));
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(4);
+            Assert.IsTrue(g.World.Flag("keepers_resolved"), "they stay stood aside");
+            Assert.IsTrue(g.World.PacifiedGroups.Contains("undergate_keepers"));
+        }
+
+        [UnityTest]
+        public IEnumerator BranComesHomeEveryWay()
+        {
+            var g = GameRoot.I;
+            for (int way = 0; way < 3; way++)
+            {
+                var p = ActThree(g, 12 + way);
+                yield return Frames(2);
+                yield return Below(g, p);
+                var d = DialogueDb.Get("bran");
+                g.Quests.Start(DeepShift.Id, p);
+                g.Quests.Set(DeepShift.Id, DeepShift.Below, p, 0f);
+                Assert.AreEqual("start", d.Start(Ctx(p)));
+                int xp = p.Character.XP;
+                if (way == 0) Opt("bran", "start", Skill.Persuasion).OnSuccess(Ctx(p));
+                if (way == 1)
+                {
+                    Opt("bran", "start", Skill.Insight).OnSuccess?.Invoke(Ctx(p));
+                    var home = d.Nodes["homesick"].Options.First(o => o.Text.Contains("marry the money"));
+                    home.Do(Ctx(p));
+                }
+                if (way == 2)
+                {
+                    g.World.SetFlag("keepers_resolved");
+                    var free = d.Nodes["start"].Options.First(o => o.Text.Contains("no one left to stop you"));
+                    Assert.IsTrue(free.Show(Ctx(p)));
+                    free.Do(Ctx(p));
+                }
+                Assert.AreEqual(DeepShift.Home, g.Quests.Stage(DeepShift.Id), $"way {way}");
+                Assert.AreEqual(xp + 3000, p.Character.XP, $"way {way} pays");
+                Assert.IsTrue(g.World.Flag("bran_home"));
+                var at = WorldDb.Current(WorldDb.Npcs["bran"], 10, 0, g.World);
+                Assert.AreEqual("roots", at.Zone, "Bran is home in the Roots");
+                Assert.AreEqual(new Vector2Int(10, 6), at.Pos);
+                var mags = DialogueDb.Get("mags");
+                Assert.AreEqual("home", mags.Start(Ctx(p)), "and Mags knows it");
+                g.QuitToTitle();
+                yield return Frames(2);
+            }
+            // Before the deep shift is known about, Bran's options never show.
+            var q = ActThree(g, 20);
+            yield return Frames(2);
+            yield return Below(g, q);
+            var bran = DialogueDb.Get("bran");
+            Assert.AreEqual("stranger", bran.Start(Ctx(q)));
+            Assert.IsFalse(bran.Nodes["stranger"].Options.Any(o => o.Check != null), "no rolls for a stranger");
+        }
+
         [UnityTest]
         public IEnumerator GatherAtBringsEveryone()
         {

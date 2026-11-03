@@ -611,6 +611,11 @@ namespace DnD.Game
                 World.SetFlag("dragon_capital_intro");
                 p.Hud.Narrate($"{World.DragonName} has to duck under the Gate of Wings. A baker drops an entire tray of buns. {World.DragonName}, after some thought, helps.");
             }
+            if (zoneId == "undergate" && Dragon != null && !World.Flag("dragon_undergate_intro"))
+            {
+                World.SetFlag("dragon_undergate_intro");
+                p.Hud.Narrate($"{World.DragonName} sniffs the warm pipes, and goes very still, and then won't go near them.");
+            }
             if (zoneId == "town" && Dragon != null && !World.Flag("dragon_town_intro"))
             {
                 World.SetFlag("dragon_town_intro");

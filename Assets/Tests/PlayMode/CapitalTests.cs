@@ -257,7 +257,7 @@ namespace DnD.Tests
         // ============================================================ Task 3: the Roots and the Deep Shift
 
         internal static DCtx Ctx(PlayerSlot p) => new DCtx { P = p };
-        static DOption Opt(string dialogue, string node, Skill skill) => DialogueDb.Get(dialogue).Nodes[node].Options.First(o => o.Check == skill);
+        internal static DOption Opt(string dialogue, string node, Skill skill) => DialogueDb.Get(dialogue).Nodes[node].Options.First(o => o.Check == skill);
 
         [UnityTest]
         public IEnumerator DeepShiftEveryWay()
