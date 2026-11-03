@@ -248,6 +248,158 @@ namespace DnD.Tests
             Assert.IsFalse(bran.Nodes["stranger"].Options.Any(o => o.Check != null), "no rolls for a stranger");
         }
 
+        // ============================================================ Task 3: the Iron Vaults, the Royal Crypts, the Third Ideal
+
+        static PuzzlePieceObject PieceIn(Zone z, string id) => Object.FindObjectsByType<PuzzlePieceObject>(FindObjectsSortMode.None).Single(x => x.Room.Zone == z && x.Piece.Id == id);
+
+        static IEnumerator Into(GameRoot g, PlayerSlot p, string zone, Vector2Int? at = null)
+        {
+            g.Warp(p, zone, at ?? WorldDb.Zones[zone].DefaultSpawn, false);
+            yield return Frames(3);
+            p.Hud.CloseAll();
+        }
+
+        [UnityTest]
+        public IEnumerator VaultBeamOpensTheGate()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 30);
+            yield return Frames(2);
+            g.Quests.Set(WarmCity.Id, WarmCity.Opened, p, 0f);
+            yield return Into(g, p, "iron_vaults");
+            var z = p.Zone;
+            var room = z.GetComponent<PuzzleRoom>();
+            Assert.IsFalse(room.IsOn("crystal"), "dark to begin with");
+            Assert.IsFalse(z.IsWalkable(new Vector2Int(33, 13)), "the far door is shut");
+            g.World.SetFlag("puzzlehint:iron_vaults:mirror_1");
+
+            // Half-turned, then leave: it all goes back.
+            PieceIn(z, "mirror_1").Interact(p);
+            Assert.AreEqual(1, room.DirOf("mirror_1"));
+            yield return Into(g, p, "undergate");
+            yield return Into(g, p, "iron_vaults");
+            z = p.Zone; room = z.GetComponent<PuzzleRoom>();
+            Assert.AreEqual(0, room.DirOf("mirror_1"), "an unfinished puzzle resets when you leave");
+
+            foreach (var m in new[] { "mirror_1", "mirror_2", "mirror_3" }) PieceIn(z, m).Interact(p);
+            Assert.IsTrue(room.IsOn("crystal"), "the beam reaches the crystal");
+            Assert.IsTrue(z.IsWalkable(new Vector2Int(33, 13)), "and the far door opens");
+            Assert.IsTrue(g.World.Flag("puzzle:iron_vaults:vault_gate"), "for good");
+
+            yield return Into(g, p, "undergate");
+            yield return Into(g, p, "iron_vaults");
+            Assert.IsTrue(p.Zone.IsWalkable(new Vector2Int(33, 13)), "still open after leaving");
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(4);
+            p = g.Players[0];
+            yield return Into(g, p, "iron_vaults");
+            Assert.IsTrue(p.Zone.IsWalkable(new Vector2Int(33, 13)), "and after a reload");
+        }
+
+        [UnityTest]
+        public IEnumerator CryptLidsOpenTheStairDown()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 31);
+            yield return Frames(2);
+            yield return Into(g, p, "royal_crypts");
+            var z = p.Zone;
+            var room = z.GetComponent<PuzzleRoom>();
+            var gate = new Vector2Int(18, 20);
+            Assert.IsFalse(z.IsWalkable(gate));
+            g.World.SetFlag("puzzlehint:royal_crypts:lid_1");
+
+            // Shove a lid the wrong way, leave, come back: it's back where it started.
+            p.Avatar.PlaceAt(z, new Vector2Int(9, 12));
+            yield return Frames(1);
+            PieceIn(z, "lid_1").Interact(p);
+            Assert.AreEqual(new Vector2Int(11, 12), room.PosOf("lid_1"));
+            yield return Into(g, p, "iron_vaults");
+            yield return Into(g, p, "royal_crypts");
+            z = p.Zone; room = z.GetComponent<PuzzleRoom>();
+            Assert.AreEqual(new Vector2Int(10, 12), room.PosOf("lid_1"), "the lid is back by its plinth");
+
+            foreach (var (lid, x) in new[] { ("lid_1", 10), ("lid_2", 26) })
+            {
+                p.Avatar.PlaceAt(z, new Vector2Int(x, 13));
+                yield return Frames(1);
+                PieceIn(z, lid).Interact(p);
+                p.Avatar.PlaceAt(z, new Vector2Int(x, 12));
+                yield return Frames(1);
+                PieceIn(z, lid).Interact(p);
+                Assert.AreEqual(new Vector2Int(x, 10), room.PosOf(lid), lid + " back on its plinth");
+            }
+            Assert.IsTrue(z.IsWalkable(gate), "the stair down opens");
+            Assert.IsTrue(g.World.Flag("puzzle:royal_crypts:crypt_gate"));
+        }
+
+        [UnityTest]
+        public IEnumerator CryptStairIsAShortcutBothWays()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 32);
+            yield return Frames(2);
+            var stair = new Vector2Int(6, 14);
+            var down = WorldDb.Zones["capital"].Warps.Find(w => w.At == stair);
+            Assert.IsNotNull(down, "the cathedral crypt stair is a way down");
+            yield return StepOnto(g, p, "capital", stair, stair + Vector2Int.right + Vector2Int.down);
+            Assert.AreEqual("capital", p.Zone.Def.Id, "sealed from above at first");
+            Assert.GreaterOrEqual(Count(p, "doesn't open from this side"), 1);
+
+            yield return Into(g, p, "royal_crypts");
+            Assert.IsTrue(g.World.Flag("crypt_stair_open"), "the crypts open the way up");
+            var up = WorldDb.Zones["royal_crypts"].Warps.Find(w => w.ToZone == "capital");
+            Assert.IsNotNull(up);
+            yield return StepOnto(g, p, "royal_crypts", up.At, up.At + Vector2Int.right);
+            Assert.AreEqual("capital", p.Zone.Def.Id, "the stair comes up in the cathedral yard");
+            Assert.LessOrEqual(Vector2Int.Distance(p.MapPos, stair), 1.5f);
+            yield return StepOnto(g, p, "capital", stair, stair + Vector2Int.right + Vector2Int.down);
+            Assert.AreEqual("royal_crypts", p.Zone.Def.Id, "and goes back down");
+        }
+
+        [UnityTest]
+        public IEnumerator ThirdIdealGrantsItsBoon()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 33, "paladin");
+            yield return Frames(2);
+            yield return Into(g, p, "royal_crypts");
+            Assert.IsFalse(p.Character.ThirdIdeal);
+            SecretIn("third_ideal_history").Resolve(p, CheckOutcome.Success);
+            Assert.IsTrue(g.World.Flag(WorldDb.OathThird));
+            Assert.IsTrue(g.World.LoreFound.Contains("third_ideal"));
+            Assert.IsTrue(p.Character.ThirdIdeal, "the Third Ideal holds you up now");
+            StringAssert.Contains(WorldDb.ThirdIdeal, LoreDb.Get("third_ideal").Text);
+            Assert.IsFalse(SecretIn("third_ideal_religion").Available(p) && !g.World.Flag(WorldDb.OathSecond), "the kneeling way needs the Second Ideal");
+
+            string path = SaveSystem.Save(false);
+            g.LoadGame(path);
+            yield return Frames(4);
+            Assert.IsTrue(g.Players[0].Character.ThirdIdeal, "after a reload too");
+            var p2 = g.DebugStart(Still(34), "rogue", "dwarf");
+            yield return Frames(3);
+            Assert.IsTrue(p2.Character.ThirdIdeal, "and for a player who joins later");
+        }
+
+        [UnityTest]
+        public IEnumerator VaultsAndCryptsReachable()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 35);
+            yield return Frames(2);
+            g.World.SetFlag("puzzle:iron_vaults:vault_gate");
+            g.World.SetFlag("puzzle:royal_crypts:crypt_gate");
+            foreach (var (zone, extra) in new[] { ("iron_vaults", new[] { new Vector2Int(38, 13), new Vector2Int(21, 8), new Vector2Int(29, 8), new Vector2Int(29, 20) }),
+                                                  ("royal_crypts", new[] { new Vector2Int(1, 2), new Vector2Int(18, 23), new Vector2Int(10, 12), new Vector2Int(26, 12) }) })
+            {
+                yield return Into(g, p, zone);
+                var z = p.Zone;
+                AcademyTests.AssertAllReachable(g, z, z.Def.DefaultSpawn);
+                foreach (var t in extra) Assert.IsTrue(AcademyTests.CanReachBeside(z, z.Def.DefaultSpawn, t), $"{zone}: {t}");
+            }
+        }
+
         [UnityTest]
         public IEnumerator GatherAtBringsEveryone()
         {

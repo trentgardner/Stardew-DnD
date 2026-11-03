@@ -638,6 +638,68 @@ namespace DnD.Game
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
         };
 
+        public static readonly string[] IronVaults =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXX@XXXXXXXXXXXXXXXXXX",
+            "XX:::::::X::::::::XX:::::::::::::XXXXXXX",
+            "XX:+:::+:X:+::q:+:XX:::::::::::::XXXXXXX",
+            "XX:::::::X::::::::XX::::+::::::+:XXXXXXX",
+            "XX:::x:::X:::x::::XX:::::::::::::XXXXXXX",
+            "XX:::::::X::::::::XX:::::::::::::XXXXXXX",
+            "XX:+x::+:X:+x:::+:XX:/:::::::/:::XXXXXXX",
+            "XX:::::::X::::::::XX:::::::::::::XXXXXXX",
+            "XXXXX:XXXXXXX:XXXXXX:::::::::::::XXXXXXX",
+            "XXXXX:XXXXXXX:XXXXXX:::::+:::::::XXXXXXX",
+            "X::P:::P:::P:::P:::::::::::::::::XXXXXXX",
+            ",::::::::::::::::::::::::::::::::Z::::VX",
+            ",::::::::::::::::::::::::::::::::X::::VX",
+            "X::P:::P:::P:::P:::::::::::::::::XXXXXXX",
+            "XXXXX:XXXXXXX:XXXXXX:::::+:::::::XXXXXXX",
+            "XXXXX:XXXXXXX:XXXXXX:::::::::::::XXXXXXX",
+            "XX:::::::X::::::::XX:::::::::::::XXXXXXX",
+            "XX:+:::+:X:+::::+:XX:::::::::::::XXXXXXX",
+            "XX:::::::X::::::::XX:::%:::::/:::XXXXXXX",
+            "XX:::x:::X:::x::::XX:::::::::::::XXXXXXX",
+            "XX:::::::X::::::::XX:::::::::::::XXXXXXX",
+            "XX:+:::+:X:+::::+:XX::::+::::::+:XXXXXXX",
+            "XX:::::::X::::::::XX:::::::::::::XXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        };
+
+        public static readonly string[] RoyalCrypts =
+        {
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX::A::XX",
+            "XV:::XXXXXXXXXXXXXXXXXXXXXXXX:q:q:XX",
+            "X::::XXXXXXXXXXXXXXXXXXXXXXXX:::::XX",
+            "X:::::::::::::::::::::::::::::::::XX",
+            "X::::::A:::A:::A:::A:::A:::A::::::XX",
+            "XX::::::::::::::::::::::::::::::::XX",
+            "XX::q:::::::::::::::::::::::::::::XX",
+            "XX:::P:::P:::P:::P:::P:::P:::P::::XX",
+            "XX::::::::::::::::::::::::::::::::XX",
+            "XX::::::::Q:::::::::::::::Q:::::::XX",
+            "XX::::::::::::::::::::::::::::::::XX",
+            "XX::::::::J:::::::::::::::J::::::::,",
+            "XX:::::::::::::::::::::::::::::::::,",
+            "XX::::::::::::::::::::::::::::::::XX",
+            "XX:::P:::P:::P:::P:::P:::P:::P::::XX",
+            "XX::::::::::::::::::::::::::::::::XX",
+            "XX::::::::::::::::::::::::::::::::XX",
+            "XX:::::A:::A:::A:::A:::A:::A::::::XX",
+            "XX::::::::::::::::::::::::::::::::XX",
+            "XXXXXXXXXXXXXXXXXXZXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXX:::XXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXX:::XXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXX:V:XXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        };
+
         public static readonly string[] EmberhornThroat =
         {
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",

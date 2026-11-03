@@ -101,6 +101,9 @@ namespace DnD.Rules
         public bool Stable;
         /// <summary>A nonlethal fight (a bar brawl): at 0 HP you're knocked out, unconscious and stable (2024 knockout rule). No death saves, no massive-damage death.</summary>
         public bool Nonlethal;
+        /// <summary>The Third Ideal (Act III): once per long rest, a blow that would drop you to 0 HP leaves you at 1. Set by the game from the world flag; not saved.</summary>
+        public bool ThirdIdeal;
+        public const string ThirdIdealKey = "third_ideal_used";
         public bool HeroicInspiration;
 
         /// <summary>Bardic Inspiration die held from an ally (0 = none).</summary>
@@ -596,6 +599,14 @@ namespace DnD.Rules
                         return;
                     }
                     log?.Add($"Relentless Rage fails (CON {save.Total} vs DC {dc}).");
+                }
+                // The Third Ideal: once per long rest (a long rest clears ResourcesUsed).
+                if (ThirdIdeal && !ResourcesUsed.ContainsKey(ThirdIdealKey))
+                {
+                    ResourcesUsed[ThirdIdealKey] = 1;
+                    HP = 1;
+                    log?.Add($"The Third Ideal holds {Name} up. (1 HP)");
+                    return;
                 }
                 Stable = false;
                 DeathSuccesses = DeathFailures = 0;

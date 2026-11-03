@@ -392,6 +392,7 @@ namespace DnD.Game
         {
             if (!InGame) return;
             Music.Play(WantedMusic());
+            ApplyIdeals();
 
             // Drop-in: an unassigned controller (or the keyboard) presses Start / Enter.
             TryDropIn();
@@ -611,6 +612,7 @@ namespace DnD.Game
                 World.SetFlag("dragon_capital_intro");
                 p.Hud.Narrate($"{World.DragonName} has to duck under the Gate of Wings. A baker drops an entire tray of buns. {World.DragonName}, after some thought, helps.");
             }
+            if (zoneId == "royal_crypts") World.SetFlag("crypt_stair_open"); // the cathedral stair opens from below
             if (zoneId == "undergate" && Dragon != null && !World.Flag("dragon_undergate_intro"))
             {
                 World.SetFlag("dragon_undergate_intro");

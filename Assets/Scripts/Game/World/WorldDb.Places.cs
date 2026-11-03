@@ -11,6 +11,9 @@ namespace DnD.Game
         /// <summary>The Second Ideal, carved at the Oathbound waystation on the Emberhorn Road (Act II).</summary>
         public const string SecondIdeal = "I will stand where the dark is deepest, so that none need stand there alone.";
         public const string OathSecond = "oath_second";
+        /// <summary>The Third Ideal, scratched on the last Oathbound knight's tomb in the Royal Crypts (Act III).</summary>
+        public const string ThirdIdeal = "No one is born a monster. I will judge none by the story told of them.";
+        public const string OathThird = "oath_third";
 
         static void BuildWatchtower()
         {

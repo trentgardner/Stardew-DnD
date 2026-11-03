@@ -43,6 +43,13 @@ namespace DnD.Game
             }
         }
 
+        /// <summary>The Third Ideal's boon follows the world flag: every player character has it while it's set (after a load, for joiners too).</summary>
+        public void ApplyIdeals()
+        {
+            bool third = World != null && World.Flag(WorldDb.OathThird);
+            foreach (var p in Players) if (p.Character != null) p.Character.ThirdIdeal = third;
+        }
+
         /// <summary>Every ready player (with their companions and the dragon) warps to `zone`, side by side from `pos`. No checks, no text.</summary>
         public void GatherAt(string zone, Vector2Int pos)
         {

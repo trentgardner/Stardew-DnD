@@ -105,6 +105,12 @@ namespace DnD.Game
                 "Under the Roots, fat iron pipes run up the rock toward the city: to the ever-lamps, the Steamhouse, the palace hearths. None of them comes from a furnace. They come out of the stone, from somewhere below, warm as a hand. The deep shift tends them and never asks what's on the other end.", 3);
             Add("deep_shift_rest", "The Deep Shift's Rest", Records,
                 "Forty cairns below the Undergate, each with a name chalked on a flat stone and touched up so often the chalk is an inch thick. Hap Mossy keeps them. 'They went peaceful, mostly,' he says. 'Old age. It's a long shift.'", 3);
+            Add("ward_stones", "The Ward-Stones", Places,
+                "In the Iron Vaults below the Undergate, black ward-stones are set into every wall, each carved over and over with one word in a script older than the Crown: HOLD. The wards are strong and old, and every one of them faces the same way: inward, and down. Nothing there was built to keep anyone out.", 3);
+            Add("kings_path", "The Kings' Path", Records,
+                "In the Royal Crypts the dust lies a year thick, except for one clean path. It comes down the cathedral stair, runs past every King's tomb without stopping, and goes on down. One pair of feet, once a year, for a very long time.", 3);
+            Add("third_ideal", "The Third Ideal", Pact,
+                "Scratched on the tomb of the last of the Oathbound, in the crypt of the Kings she served: \"" + WorldDb.ThirdIdeal + "\" Nobody knows why she was buried there, or who let her be.", 3);
             Add("missing_pages", "Missing Pages", Records,
                 "A parish ledger, swollen with damp, left on the mill's shelf by some long-gone clerk. Births, harvests and tithes, year after year in a careful hand, until the century the legends talk about. Those pages have been cut out, neatly, close to the spine. The record picks up again eighty years later as if nothing had happened.");
         }
