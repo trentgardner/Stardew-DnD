@@ -59,3 +59,10 @@ Task 5: complete (commits 9077da3..HEAD, tests: FinaleTests;CoopTests;VolcanoTes
 - Task 6: art: Ashen Queen = ashmaw sheet tinted ember red (hue 282, sat 1.6, val 1.3); King = GiantRedSamurai idle strip in iron/gold; Crowned Fire = GiantFlam strip gold-white; soldiers = Hunter/Knight/SorcererBlack tints. Import clean for the new lines (the Edda tint warnings at ArtMap 1687-1695 predate this phase).
 - Task 6: RED was a compile failure (Finale.BossGroup/SealProgress/OnCombatRound absent). Tests: FinaleTests;LoreTests;ArtTests → 50/50.
 Task 6: complete (commits 75b927a..HEAD, tests: FinaleTests;LoreTests;ArtTests → 50/50)
+
+## Task 7
+- Task 7: golden paths End/Seal/Save solo + CoopSave (P2 rides) green: every beat in order (break, 3 intros, takeoff, landing, phases, victory), no window left open between stages, the card.
+- Task 7: Ruling: the golden paths wait for the dice tray (a fight's initiative still tumbling) before asserting "nothing open" — closed screens are only removed once the tray closes (PlayerHud.Update); a timing artifact of forced wins, not a game bug.
+- Task 7: Ruling: the test input taps on alternate frames (RollerInput.PressWhen ... frameCount % 2) so back-to-back rolls each get a press.
+- Task 7: screenshots reviewed (54 PNGs in %TEMP%/embers_screenshots/act6_*): stage intros/fights, rider prompt on both split screens, flight with rider on the dragon, passes, landings, phase beats, the seal line, victory and the card. Text fits. The bosses were behind the initiative tray in the first set; added act6_<e>_boss_field (initiative rolled) for the full-suite run.
+- Task 7: observed (not fixed, existing UI): the narrator box at the bottom overlaps the bottom edge of tall choice/beat windows; a stale "Roll for initiative!" banner can linger after a fight ends.

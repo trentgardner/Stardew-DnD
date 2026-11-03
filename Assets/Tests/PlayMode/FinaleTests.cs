@@ -437,7 +437,7 @@ namespace DnD.Tests
         public void FinaleFilesAreGated()
         {
             var root = Application.dataPath;
-            foreach (var name in new[] { "FinaleDb.AfterTheDoor.cs", "GameRoot.Finale.AfterTheDoor.cs", "WorldDb.Finale.AfterTheDoor.cs", "MonstersDb.Finale.AfterTheDoor.cs" })
+            foreach (var name in new[] { "FinaleDb.AfterTheDoor.cs", "GameRoot.Finale.AfterTheDoor.cs", "GameRoot.Flight.AfterTheDoor.cs", "WorldDb.Finale.AfterTheDoor.cs", "MonstersDb.Finale.AfterTheDoor.cs" })
             {
                 var files = Directory.GetFiles(root, name, SearchOption.AllDirectories);
                 Assert.AreEqual(1, files.Length, name + " exists");
@@ -453,7 +453,7 @@ namespace DnD.Tests
         {
             var input = new RollerInput();
             var p = g.DebugStart(input, cls, "human");
-            input.PressWhen = () => p.Hud != null && p.Hud.Dice.IsOpen;
+            input.PressWhen = () => p.Hud != null && p.Hud.Dice.IsOpen && Time.frameCount % 2 == 0;
             g.ApplyActThreeStart(p, side);
             p.Hud.CloseAll();
             p.Character.HeroicInspiration = false; // no reroll offers in the tray
@@ -510,6 +510,13 @@ namespace DnD.Tests
             Assert.IsFalse(titles.Any(t => t.StartsWith("Who rides")), "solo: no prompt");
             Assert.IsTrue(g.World.Flag(Finale.RiderFlag(p.Index)), "the one player rides");
             Assert.IsTrue(g.World.Flag(Finale.Flown));
+        }
+
+        static string TrayState(PlayerSlot q)
+        {
+            var d = q.Hud.Dice; var t = d.GetType(); var F = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+            string V(string f) { var fi = t.GetField(f, F); var v = fi?.GetValue(d); return v is UnityEngine.UI.Text tx ? tx.text : v?.ToString() ?? "null"; }
+            return $"waiting={V("_waitingPress")} flow={V("_flowRunning")} prompt='{V("_prompt")}' choices={V("_choices")} confirm={q.Input.Confirm}";
         }
 
         static ChoiceScreen Choice(PlayerSlot p) => p.Hud.Top is ChoiceScreen c && !c.Closed ? c : null;
@@ -598,7 +605,7 @@ namespace DnD.Tests
             g.LoadGame(path);
             yield return Frames(5);
             p = g.Players.First();
-            var roller = new RollerInput(); var me = p; roller.PressWhen = () => me.Hud != null && me.Hud.Dice.IsOpen;
+            var roller = new RollerInput(); var me = p; roller.PressWhen = () => me.Hud != null && me.Hud.Dice.IsOpen && Time.frameCount % 2 == 0;
             p.Input = roller; // a loaded game takes the default device: put the dice-presser back
             Assert.IsFalse(g.World.Flag(Finale.Flown));
             yield return RideOut(g, p, Turn.Save, 1);
@@ -860,6 +867,200 @@ namespace DnD.Tests
             Assert.IsTrue(Spawned(Finale.BossGroup(Turn.Seal)), "the King is waiting");
             var king = Object.FindObjectsByType<EnemyAgent>(FindObjectsSortMode.None).First(a => a.Monster.Def.Id == "king_regalia");
             Assert.AreEqual(king.Monster.MaxHP, king.Monster.HP, "at full strength");
+        }
+
+        // ================================================================== Task 7: golden paths and screenshots
+
+        /// <summary>
+        /// From the choice to the To Be Continued card: the three streets, the rider, both passes, the landing, every phase beat
+        /// and the victory. Collects every beat's text in order. No window may be left open between stages.
+        /// </summary>
+        IEnumerator GoldenPath(string ending, string side, bool coop, bool p2Rides)
+        {
+            var g = GameRoot.I;
+            var p1 = Roller(g, side);
+            yield return Frames(2);
+            PlayerSlot p2 = null;
+            if (coop) { p2 = g.DebugStart(Still(40), "cleric", "dwarf"); yield return Frames(2); p2.Hud.CloseAll(); }
+            ((RollerInput)p1.Input).PressWhen = () => p1.Hud != null && p1.Hud.Dice.IsOpen && Time.frameCount % 2 == 0 && !g.World.Flag(Finale.Flown); // the boss fight waits at initiative
+            var beats = new System.Collections.Generic.List<string>();
+            yield return ToTheChoice(g, p1);
+            g.ChooseEnding(p1, ending);
+            for (int n = 1; n <= Finale.Stages; n++)
+            {
+                for (int i = 0; i < 16; i++) { yield return Frames(4); var b = Beat(p1); if (b != null) { beats.Add(b.Body); b.Close(); } else if (i > 3) break; }
+                // A roll still tumbling in the tray (a fight's initiative) holds closed screens until it's done.
+                for (float t0 = Time.realtimeSinceStartup; g.Players.Any(x => x.IsReady && x.Hud.Dice.IsOpen) && Time.realtimeSinceStartup - t0 < 6f;) yield return null;
+                yield return Frames(3);
+                for (int i = 0; i < 8; i++) { var b = Beat(p1); if (b == null) break; beats.Add(b.Body); b.Close(); yield return Frames(4); }
+                foreach (var q in g.Players.Where(x => x.IsReady)) Assert.IsNull(q.Hud.Top, $"{ending}: nothing left open before stage {n}: top={q.Hud.Top?.GetType().Name} title='{(q.Hud.Top as MessageScreen)?.Title}' body='{(q.Hud.Top as MessageScreen)?.Body}' closed={q.Hud.Top?.Closed} dice={q.Hud.Dice.IsOpen} tray={TrayState(q)} combats={g.Combats.Count}");
+                yield return WinStreet(g, p1, n);
+            }
+            // The takeoff beats, then the rider.
+            for (int i = 0; i < 16 && Choice(p1) == null && !g.Flying; i++) { yield return Frames(4); var b = Beat(p1); if (b != null) { beats.Add(b.Body); b.Close(); } }
+            var rider = p1;
+            if (coop)
+            {
+                StringAssert.StartsWith("Who rides", Choice(p1)?.Title);
+                rider = p2Rides ? p2 : p1;
+                Choice(p1).Choose(rider.Character.Name);
+                yield return Frames(3);
+                Choice(rider).Choose("Take the reins");
+                if (rider == p2) { var roller = new RollerInput(); roller.PressWhen = () => p2.Hud != null && p2.Hud.Dice.IsOpen && Time.frameCount % 2 == 0 && !g.World.Flag(Finale.Flown); p2.Input = roller; }
+            }
+            var route = FinaleDb.Route(ending, g.World);
+            float start = Time.realtimeSinceStartup;
+            while (!g.World.Flag(Finale.Flown) && Time.realtimeSinceStartup - start < 90f)
+            {
+                yield return Frames(3);
+                foreach (var q in g.Players.Where(x => x.IsReady)) { var b = Beat(q); if (b != null) { if (q == rider) beats.Add(b.Body); b.Close(); } }
+                if (Choice(rider) is ChoiceScreen cs) foreach (var pass in route.Passes) if (cs.Title == pass.Title) cs.Choose(pass.Options[1].Label);
+            }
+            Assert.IsTrue(g.World.Flag(Finale.RiderFlag(rider.Index)), ending + ": the chosen player rode");
+            yield return Frames(3);
+            var c = BossFightOf(g, ending);
+            Assert.IsNotNull(c, ending + ": the last fight began on landing");
+            var boss = BossUnit(c, ending);
+            var def = ((Monster)boss.C).Def;
+            for (int i = 0; i < 6 && !boss.C.IsDown; i++)
+            {
+                c.DebugDamage(boss, 99999);
+                yield return Frames(2);
+                for (int k = 0; k < 10 && c.BeatsPlaying; k++) { var b = Beat(p1); if (b != null) { beats.Add(b.Body); b.Close(); } yield return Frames(3); }
+            }
+            foreach (var f in c.Units.Where(u => u.C.Team == Team.Enemies && !u.C.IsDown).ToList()) c.DebugDamage(f, 99999);
+            c.DebugEndCheck();
+            MessageScreen card = null;
+            for (int i = 0; i < 60 && card == null; i++)
+            {
+                yield return new WaitForSecondsRealtime(0.15f);
+                var b = Beat(p1);
+                if (b == null) continue;
+                if (b.Title == "To Be Continued") card = b; else { beats.Add(b.Body); b.Close(); }
+            }
+            Assert.IsNotNull(card, ending + ": the placeholder card");
+
+            // Every beat, in order: the break, the three stage intros, the takeoff, the landing, each phase, the victory.
+            var expected = new System.Collections.Generic.List<string>();
+            expected.AddRange(GameRoot.BreakBeats(ending, g.World));
+            for (int n = 1; n <= Finale.Stages; n++) expected.AddRange(FinaleDb.StreetIntro(n, ending, g.World));
+            expected.AddRange(route.Takeoff);
+            expected.AddRange(route.Landing);
+            foreach (var ph in def.Phases) expected.AddRange(ph.Beats);
+            expected.AddRange(FinaleDb.Victory(ending, g.World));
+            int at = 0;
+            foreach (var e in expected)
+            {
+                int found = beats.IndexOf(e, at);
+                Assert.GreaterOrEqual(found, 0, $"{ending}: missing or out of order: \"{e.Substring(0, System.Math.Min(60, e.Length))}...\"");
+                at = found + 1;
+            }
+            Assert.AreEqual(WarmCity.Won, g.Quests.Stage(WarmCity.Id));
+            Assert.IsTrue(g.World.Flag(Finale.Won));
+        }
+
+        [UnityTest, Timeout(400000)] public IEnumerator FinaleGoldenPathEnd() => GoldenPath(Turn.End, "hunters", false, false);
+        [UnityTest, Timeout(400000)] public IEnumerator FinaleGoldenPathSeal() => GoldenPath(Turn.Seal, "academy", false, false);
+        [UnityTest, Timeout(400000)] public IEnumerator FinaleGoldenPathSave() => GoldenPath(Turn.Save, "fae", false, false);
+        [UnityTest, Timeout(400000)] public IEnumerator FinaleGoldenPathCoopSave() => GoldenPath(Turn.Save, "fae", true, true);
+
+        [UnityTest, Timeout(600000)]
+        public IEnumerator CaptureFinale()
+        {
+            var g = GameRoot.I;
+            foreach (var (ending, side) in new[] { (Turn.End, "hunters"), (Turn.Seal, "academy"), (Turn.Save, "fae") })
+            {
+                var p1 = Roller(g, side, "wizard");
+                yield return Frames(2);
+                PlayerSlot p2 = null;
+                if (ending == Turn.Save) { p2 = g.DebugStart(Still(41), "cleric", "dwarf"); yield return Frames(2); p2.Hud.CloseAll(); }
+                ((RollerInput)p1.Input).PressWhen = () => p1.Hud != null && p1.Hud.Dice.IsOpen && Time.frameCount % 2 == 0 && !g.World.Flag(Finale.Flown);
+                g.Clock.Minutes = 12 * 60;
+                yield return ToTheChoice(g, p1);
+                g.ChooseEnding(p1, ending);
+                for (int n = 1; n <= Finale.Stages; n++)
+                {
+                    for (int i = 0; i < 16; i++)
+                    {
+                        yield return Frames(6);
+                        var b = Beat(p1);
+                        if (b == null) { if (i > 3) break; continue; }
+                        if (b.Title == FinaleDb.StreetTitle(n)) { AcademyTests.Shot($"act6_{ending}_street{n}_intro"); }
+                        b.Close();
+                    }
+                    if (n == 1 || ending != Turn.Save)
+                    {
+                        p1.Hud.CloseAll(); p1.Hud.HideNarration();
+                        g.StartGroupCombat(Finale.StreetGroup(n), p1);
+                        yield return Frames(30);
+                        AcademyTests.Shot($"act6_{ending}_street{n}_fight");
+                    }
+                    yield return WinStreet(g, p1, n);
+                }
+                for (int i = 0; i < 16 && Choice(p1) == null && !g.Flying; i++)
+                {
+                    yield return Frames(6);
+                    var b = Beat(p1);
+                    if (b != null) { if (i < 2) AcademyTests.Shot($"act6_{ending}_takeoff{i}"); b.Close(); }
+                }
+                if (p2 != null)
+                {
+                    yield return Frames(5);
+                    AcademyTests.Shot($"act6_{ending}_who_rides");
+                    Choice(p1).Choose(p1.Character.Name);
+                    yield return Frames(5);
+                    AcademyTests.Shot($"act6_{ending}_ride_confirm");
+                    Choice(p1).Choose("Take the reins");
+                }
+                var route = FinaleDb.Route(ending, g.World);
+                float start = Time.realtimeSinceStartup;
+                bool midShot = false;
+                int pass = 0;
+                while (!g.World.Flag(Finale.Flown) && Time.realtimeSinceStartup - start < 90f)
+                {
+                    yield return Frames(3);
+                    if (!midShot && g.Flying && Time.realtimeSinceStartup - start > 1.2f) { AcademyTests.Shot($"act6_{ending}_flight"); midShot = true; }
+                    foreach (var q in g.Players.Where(x => x.IsReady)) { var b = Beat(q); if (b != null) { AcademyTests.Shot($"act6_{ending}_landing_{q.Index}"); b.Close(); } }
+                    if (Choice(p1) is ChoiceScreen cs)
+                        foreach (var ps in route.Passes)
+                            if (cs.Title == ps.Title) { yield return Frames(4); AcademyTests.Shot($"act6_{ending}_pass{pass++}"); cs.Choose(ps.Options[0].Label); }
+                }
+                yield return Frames(30);
+                p1.Hud.HideNarration();
+                AcademyTests.Shot($"act6_{ending}_boss");
+                // Roll initiative so the tray closes, and look at the boss on the field (the party can't fall for this shot).
+                foreach (var q in g.Players.Where(x => x.IsReady)) q.Character.TempHP = 999;
+                ((RollerInput)p1.Input).PressWhen = () => p1.Hud != null && p1.Hud.Dice.IsOpen && Time.frameCount % 2 == 0;
+                for (float t0 = Time.realtimeSinceStartup; Time.realtimeSinceStartup - t0 < 4f;) { if (p2 != null) { var b2 = Beat(p2); if (b2 != null) b2.Close(); } yield return null; }
+                p1.Hud.HideNarration();
+                AcademyTests.Shot($"act6_{ending}_boss_field");
+                var c = BossFightOf(g, ending);
+                var boss = BossUnit(c, ending);
+                c.DebugDamage(boss, 99999);
+                yield return Frames(8);
+                AcademyTests.Shot($"act6_{ending}_phase1");
+                while (c.BeatsPlaying) { Beat(p1)?.Close(); yield return Frames(4); }
+                if (ending == Turn.Seal) { g.OnCombatRound(c, 2); yield return Frames(5); AcademyTests.Shot("act6_seal_progress"); }
+                for (int i = 0; i < 6 && !boss.C.IsDown; i++)
+                {
+                    c.DebugDamage(boss, 99999);
+                    yield return Frames(2);
+                    while (c.BeatsPlaying) { Beat(p1)?.Close(); yield return Frames(4); }
+                }
+                foreach (var f in c.Units.Where(u => u.C.Team == Team.Enemies && !u.C.IsDown).ToList()) c.DebugDamage(f, 99999);
+                c.DebugEndCheck();
+                for (int i = 0; i < 60; i++)
+                {
+                    yield return new WaitForSecondsRealtime(0.15f);
+                    var b = Beat(p1);
+                    if (b == null) continue;
+                    if (b.Title == "To Be Continued") { AcademyTests.Shot($"act6_{ending}_tbc"); break; }
+                    AcademyTests.Shot($"act6_{ending}_victory{i}");
+                    b.Close();
+                }
+                g.QuitToTitle();
+                yield return Frames(3);
+            }
         }
     }
 }

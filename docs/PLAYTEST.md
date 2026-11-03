@@ -52,7 +52,23 @@ character. You can go anywhere independently; if one of you starts a fight, the 
   the game tells you exactly what's missing and where to get it. "Not yet" lets you walk away, sort it out, and come back to any of the
   five. **In co-op, both players have to say yes.** Either player saying "Not yet" cancels it.
 - **The break**: who stands with you and who doesn't depends on your Act II side, the leaders you won over, and some Act II choices
-  (the dragon's bell, the wyvern egg, Marsh and Ashby's letters, the Fae clause). Then a **To Be Continued** card: the fights come next update.
+  (the dragon's bell, the wyvern egg, Marsh and Ashby's letters, the Fae clause).
+- **The fight for Aurelhold** (new): three fights through the city: the Great Square, the Wyvern Yard, then the head of the Roots stair.
+  Whoever stands with you sends someone to fight beside you, and whoever doesn't is in the way. End her and the fire comes up out of the
+  Roots instead, and your dragon won't fight for it. If the party falls, you come to behind a barricade nearby. No lost day, no fee.
+- **"Who rides {dragon}?"** (for your fiancée!): after the streets, the dragon comes down for one rider. Both players see the prompt and
+  either can pick. If the wrong one picked, **"Let ... ride"** hands it over in one press. Nothing starts until the rider presses
+  **"Take the reins"**. Closed it by accident? Walk up to the dragon and choose **Ride**. Then a flight over the city with two choices,
+  each a roll. Good rolls make the last fight easier.
+- **The last fight**: a different big boss for each ending, with story scenes as it changes (they always play, however hard you hit).
+  On the seal path, keep the King off Ashby for seven rounds, or beat him. Then a **To Be Continued** card: the endings come next update.
+
+### The fight for Aurelhold checklist
+- [ ] Did the three street fights feel different from each other? Too many, too few?
+- [ ] Was the rider prompt clear? Was handing it over really one press?
+- [ ] Did the flight feel big? Were the two choices worth making?
+- [ ] Did the boss feel like the biggest fight in the game? Did its scenes land? Did it go on too long?
+- [ ] Seal path: was it clear what you had to do while Ashby worked?
 
 ### Back to the capital checklist
 - [ ] Did the questioning feel like a real scene, not one button? Too long, too short?
