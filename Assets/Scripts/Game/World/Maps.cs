@@ -741,6 +741,20 @@ namespace DnD.Game
             "XXXXXXXXXXXXXXXXXXXXXXX,,XXXXXXXXXXXXXXXXXXXXXXX",
         };
 
+        public static readonly string[] BeyondTheDoor =
+        {
+            "XXXXXXXXXXXXXX",
+            "XWWWWWWWWWWWWX",
+            "XW==========WX",
+            "XW=B======__WX",
+            "XW==_______=WX",
+            "XW==_______=WX",
+            "XW==========WX",
+            "XW==========WX",
+            "XWWWWW==WWWWWX",
+            "XXXXXX,,XXXXXX",
+        };
+
         public static readonly string[] EmberhornThroat =
         {
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",

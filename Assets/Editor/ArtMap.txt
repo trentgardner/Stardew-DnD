@@ -1680,3 +1680,16 @@ end
 paint obj_great_one_head a4_head k=2c2c30 s=7a7a80 b=3a3a40 n=5c5c62
 paint obj_chain a4_chain k=1e1e22 a=5a5a62
 paint obj_grey_door a4_door k=2a2a2e g=8a8a90 s=6e6e74
+actor npc_edda_src "Actor/Character/Child/SpriteSheet.png"
+tint  npc_edda_down_0 npc_edda_src_down_0 0 0.3 1.12
+tint  npc_edda_down_1 npc_edda_src_down_1 0 0.3 1.12
+tint  npc_edda_down_2 npc_edda_src_down_2 0 0.3 1.12
+tint  npc_edda_down_3 npc_edda_src_down_3 0 0.3 1.12
+tint  npc_edda_side_0 npc_edda_src_side_0 0 0.3 1.12
+tint  npc_edda_side_1 npc_edda_src_side_1 0 0.3 1.12
+tint  npc_edda_side_2 npc_edda_src_side_2 0 0.3 1.12
+tint  npc_edda_side_3 npc_edda_src_side_3 0 0.3 1.12
+tint  npc_edda_up_0 npc_edda_src_up_0 0 0.3 1.12
+tint  npc_edda_up_1 npc_edda_src_up_1 0 0.3 1.12
+tint  npc_edda_up_2 npc_edda_src_up_2 0 0.3 1.12
+tint  npc_edda_up_3 npc_edda_src_up_3 0 0.3 1.12

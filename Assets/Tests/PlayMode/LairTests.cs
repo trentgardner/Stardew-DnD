@@ -488,6 +488,239 @@ namespace DnD.Tests
             Assert.AreEqual(2, MonstersDb.Get("iron_gaoler").LegendaryPerRound, "with legendary actions");
         }
 
+        // ============================================================ Task 5: beyond the door
+
+        static readonly string[] RevealIds = { "shared_dream", "warden_last_words", "thirteenth_bell", "iron_ring", "altered_annals", "royal_annals", "sealing_work",
+            "ashen_queen", "skipping_rhyme", "primer_ashen_age", "victory_statue", "ever_lamps", "the_kings_ring", "sealed_crypt", "works_ledger", "great_ones_statue" };
+
+        /// <summary>A party standing before the grey door with the Gaoler past.</summary>
+        static IEnumerator AtTheDoor(GameRoot g, PlayerSlot p)
+        {
+            g.Quests.Set(WarmCity.Id, WarmCity.Deep, p, 0f);
+            g.World.SetFlag("gaoler_resolved");
+            yield return Into(g, p, "the_deep", BeforeTheDoor);
+        }
+
+        static MessageScreen Beat(PlayerSlot p) => p.Hud.Find<MessageScreen>();
+
+        /// <summary>Closes the triggering player's beat screens one by one until the scene is over.</summary>
+        static IEnumerator PlayTheScene(GameRoot g, PlayerSlot by, List<string> seen = null)
+        {
+            for (int i = 0; i < 6 && !g.World.Flag("meeting_seen"); i++)
+            {
+                var b = Beat(by);
+                if (b != null) { seen?.Add(b.Body); b.Close(); }
+                yield return Frames(4);
+                for (int t = 0; t < 300 && Beat(by) == null && !g.World.Flag("meeting_seen"); t++) yield return null; // the dragon's walk
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator HerNothingBeforeTheDoor()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 50);
+            yield return Frames(2);
+            foreach (var f in new[] { "gaoler_resolved", "knocked_back", "keepers_resolved", "bran_home", WorldDb.OathThird, WorldDb.UndergateOpen }) g.World.SetFlag(f);
+            g.Quests.Set(WarmCity.Id, WarmCity.Deep, p, 0f);
+            Assert.IsTrue(WorldDb.Npcs.ContainsKey("edda"));
+            for (int day = 0; day < 7; day++)
+                for (int h = 0; h < 24; h++)
+                    Assert.IsNull(WorldDb.Current(WorldDb.Npcs["edda"], h, day, g.World)?.Zone, $"nobody is there at {h}:00 on day {day}, as far as anyone knows");
+            foreach (var id in RevealIds) { g.World.LoreFound.Add(id); Assert.IsFalse(LoreDb.Revealed(LoreDb.Get(id), g.World), id); }
+            var j = new JournalScreen();
+            p.Hud.Push(j);
+            yield return Frames(2);
+            j.ShowLore(true);
+            StringAssert.DoesNotContain("Read again", j.Text);
+        }
+
+        [UnityTest]
+        public IEnumerator ThroughTheDoorTakesEveryone()
+        {
+            var g = GameRoot.I;
+            var p1 = ActThree(g, 51);
+            yield return Frames(2);
+            var p2 = g.DebugStart(Still(52), "cleric", "dwarf");
+            yield return Frames(2);
+            p2.Hud.CloseAll();
+            yield return AtTheDoor(g, p1);
+            g.Warp(p2, "forest", new Vector2Int(34, 8), false);
+            yield return Frames(3);
+            g.StartGroupCombat("forest_wolves", p2);
+            yield return Frames(2);
+            Assert.IsTrue(p2.InCombat);
+            g.OpenGreyDoor(p1);
+            yield return Frames(3);
+            Assert.AreEqual("the_deep", p1.Zone.Def.Id, "not with a fight still going");
+            Assert.IsFalse(g.World.Flag(WorldDb.MetHer));
+            Assert.GreaterOrEqual(Count(p1, "Not with a fight still going"), 1);
+
+            foreach (var c in g.Combats.ToList()) c.Finished = true;
+            g.Combats.Clear();
+            yield return Frames(3);
+            g.Warp(p2, "town", WorldDb.TownCarriageStop, false);
+            yield return Frames(3);
+            p2.Hud.Push(new InventoryScreen(null, null));
+            yield return Frames(2);
+            g.OpenGreyDoor(p1);
+            yield return Frames(4);
+            Assert.AreEqual("beyond_the_door", p1.Zone.Def.Id);
+            Assert.AreEqual("beyond_the_door", p2.Zone.Def.Id, "nobody is left behind");
+            Assert.IsNull(p2.Hud.Find<InventoryScreen>(), "P2's menu closed");
+            Assert.IsTrue(g.World.Flag(WorldDb.MetHer));
+            Assert.AreEqual(WarmCity.Door, g.Quests.Stage(WarmCity.Id));
+            Assert.IsNull(g.WantedMusic(), "no music. Just the room.");
+            Assert.IsNotNull(Beat(p1), "P1 sees the first beat");
+            Assert.IsNotNull(Beat(p2), "and so does P2");
+            StringAssert.Contains("The door opens onto a room", Beat(p2).Body);
+        }
+
+        [UnityTest]
+        public IEnumerator MeetingSceneNeverSkipsABeat()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 53);
+            yield return Frames(2);
+            yield return AtTheDoor(g, p);
+            g.OpenGreyDoor(p);
+            yield return Frames(4);
+            var seen = new List<string>();
+            yield return PlayTheScene(g, p, seen);
+            Assert.AreEqual(3, seen.Count, "three beats");
+            StringAssert.Contains("The door opens onto a room", seen[0]);
+            StringAssert.Contains("Behind the bed", seen[1]);
+            StringAssert.Contains(g.World.DragonName, seen[2]);
+            Assert.IsTrue(g.World.Flag("meeting_seen"));
+            var her = Object.FindObjectsByType<NpcAgent>(FindObjectsSortMode.None).Single(n => n.Def.Id == "edda");
+            var dragon = g.DragonAgent;
+            Assert.IsNotNull(dragon);
+            Assert.LessOrEqual(Vector2.Distance(dragon.transform.position, her.transform.position), 1.6f, "the dragon goes to her first");
+            var talk = p.Hud.Find<DialogueScreen>();
+            Assert.IsNotNull(talk, "then she speaks");
+            Assert.AreEqual("edda", talk.DialogueId);
+            Assert.AreEqual("start", talk.NodeId);
+            yield return Frames(30);
+            Assert.LessOrEqual(Vector2.Distance(dragon.transform.position, her.transform.position), 1.6f, "and it stays with her");
+        }
+
+        [UnityTest]
+        public IEnumerator HerDialogueEveryPath()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 54);
+            yield return Frames(2);
+            g.World.SetFlag(WorldDb.MetHer);
+            var d = DialogueDb.Get("edda");
+            Assert.AreEqual("start", d.Start(Ctx(p)));
+            foreach (var n in d.Nodes.Values)
+            {
+                string t = n.Text(Ctx(p)) + " " + (n.Narration?.Invoke(Ctx(p)) ?? "");
+                Assert.IsFalse(t.Contains("{name}"), n.Id + " fills in the dragon's name");
+                Assert.IsNotEmpty(t.Trim(), n.Id + " says something");
+            }
+            var here = d.Nodes["here"];
+            Assert.IsFalse(here.Options.Any(o => o.Next == "knock" && o.Show(Ctx(p))), "no 'that was us' unless you knocked");
+            g.World.SetFlag("knocked_back");
+            Assert.IsTrue(here.Options.Any(o => o.Next == "knock" && o.Show(Ctx(p))));
+            var him = d.Nodes["him"];
+            Assert.IsFalse(him.Options.Any(o => o.Check == Skill.History && o.Show(Ctx(p))), "the King's ring only if you noticed it");
+            g.World.LoreFound.Add("the_kings_ring");
+            Assert.IsTrue(him.Options.Any(o => o.Check == Skill.History && o.Show(Ctx(p))));
+            CapitalTests.Opt("edda", "him", Skill.History).OnSuccess(Ctx(p));
+            CapitalTests.Opt("edda", "fire", Skill.Arcana).OnSuccess(Ctx(p));
+            CapitalTests.Opt("edda", "fire", Skill.Insight).OnSuccess(Ctx(p));
+            foreach (var f in new[] { "ring_link", "seal_understood", "her_truth" }) Assert.IsTrue(g.World.Flag(f), f);
+            d.Nodes["leave"].Options.First(o => o.Text.Contains("promise")).Do(Ctx(p));
+            Assert.IsTrue(g.World.Flag("promised_her"));
+            Assert.AreEqual("again", d.Start(Ctx(p)));
+            Assert.IsTrue(d.Nodes.ContainsKey("queen"));
+            StringAssert.Contains("Who's that?", d.Nodes["queen"].Text(Ctx(p)));
+        }
+
+        [UnityTest]
+        public IEnumerator ReadAgainAfterTheMeeting()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 55);
+            yield return Frames(2);
+            int with = LoreDb.All.Values.Count(l => l.RevealText != null);
+            Assert.GreaterOrEqual(with, 14, "the reframes are written");
+            foreach (var id in RevealIds) Assert.IsNotNull(LoreDb.Get(id)?.RevealText, id + " reads differently after the door");
+            g.World.LoreFound.Add("shared_dream");
+            yield return AtTheDoor(g, p);
+            g.OpenGreyDoor(p);
+            yield return Frames(4);
+            yield return PlayTheScene(g, p);
+            p.Hud.CloseAll();
+            var j = new JournalScreen();
+            p.Hud.Push(j);
+            yield return Frames(2);
+            j.ShowLore(true);
+            StringAssert.Contains("Read again", j.Text);
+            StringAssert.Contains(LoreDb.Get("shared_dream").RevealText, j.Text);
+            StringAssert.DoesNotContain(LoreDb.Get("thirteenth_bell").RevealText, j.Text, "only for entries you've found");
+            p.Hud.CloseAll();
+
+            var exit = WorldDb.Zones["beyond_the_door"].Warps.First();
+            yield return StepOnto(g, p, "beyond_the_door", exit.At, exit.At + Vector2Int.up);
+            Assert.AreEqual("the_deep", p.Zone.Def.Id);
+            Assert.AreEqual(1, Count(p, "reads differently now"), "the journal nudge, once");
+            g.OpenGreyDoor(p);
+            yield return Frames(4);
+            p.Hud.CloseAll();
+            yield return StepOnto(g, p, "beyond_the_door", exit.At, exit.At + Vector2Int.up);
+            Assert.AreEqual(1, Count(p, "reads differently now"), "and not again");
+        }
+
+        [UnityTest]
+        public IEnumerator ReturningIsQuiet()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 56);
+            yield return Frames(2);
+            yield return AtTheDoor(g, p);
+            g.OpenGreyDoor(p);
+            yield return Frames(4);
+            yield return PlayTheScene(g, p);
+            p.Hud.CloseAll();
+            yield return Into(g, p, "the_deep", BeforeTheDoor);
+            g.OpenGreyDoor(p);
+            yield return Frames(4);
+            Assert.AreEqual("beyond_the_door", p.Zone.Def.Id);
+            Assert.IsNull(Beat(p), "no scene the second time");
+            Assert.GreaterOrEqual(Count(p, "swinging her feet"), 1, "she waves");
+        }
+
+        [UnityTest]
+        public IEnumerator MeetingSurvivesSaveLoad()
+        {
+            var g = GameRoot.I;
+            var p = ActThree(g, 57);
+            yield return Frames(2);
+            yield return AtTheDoor(g, p);
+            string before = SaveSystem.Save(false) + ".before.json"; // saves are named by the second: keep this one apart
+            File.Copy(before.Substring(0, before.Length - ".before.json".Length), before, true);
+            g.OpenGreyDoor(p);
+            yield return Frames(4);
+            Assert.IsNotNull(Beat(p), "mid-scene");
+            string during = SaveSystem.Save(false);
+
+            g.LoadGame(during);
+            yield return Frames(6);
+            p = g.Players[0];
+            Assert.IsTrue(g.World.Flag(WorldDb.MetHer));
+            Assert.AreEqual(WarmCity.Door, g.Quests.Stage(WarmCity.Id));
+            Assert.AreEqual("beyond_the_door", p.Zone.Def.Id);
+            Assert.IsNull(Beat(p), "no beat pops up by itself after a load");
+            Assert.AreEqual("beyond_the_door", WorldDb.Current(WorldDb.Npcs["edda"], 10, 0, g.World)?.Zone, "she's there");
+
+            g.LoadGame(before);
+            yield return Frames(6);
+            Assert.IsFalse(g.World.Flag(WorldDb.MetHer), "a save from before the door knows nothing");
+            Assert.AreEqual(WarmCity.Deep, g.Quests.Stage(WarmCity.Id));
+        }
+
         [UnityTest]
         public IEnumerator GatherAtBringsEveryone()
         {

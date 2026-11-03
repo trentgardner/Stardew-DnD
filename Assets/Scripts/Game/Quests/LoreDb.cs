@@ -17,7 +17,7 @@ namespace DnD.Game
     /// Lore for the journal (Act II). The legend is told the way the world tells it. Records that are missing are just
     /// missing: no culprit is ever implied here. (The secret-leak test checks every line that names the Queen.)
     /// </summary>
-    public static class LoreDb
+    public static partial class LoreDb
     {
         public const string Legend = "The Legend", Records = "Records", Pact = "The Pact", Places = "Places";
         public const int FindXp = 25;
@@ -117,6 +117,7 @@ namespace DnD.Game
                 "The door from the valley's dream, real, at the bottom of everything: grey, warm, and knocked on from the other side.", 3);
             Add("missing_pages", "Missing Pages", Records,
                 "A parish ledger, swollen with damp, left on the mill's shelf by some long-gone clerk. Births, harvests and tithes, year after year in a careful hand, until the century the legends talk about. Those pages have been cut out, neatly, close to the spine. The record picks up again eighty years later as if nothing had happened.");
+            RegisterReveals(); // the "Read again" lines (LoreDb.AfterTheDoor.cs), shown only once the party has met her
         }
 
         public static LoreDef Get(string id) => id != null && All.TryGetValue(id, out var l) ? l : null;

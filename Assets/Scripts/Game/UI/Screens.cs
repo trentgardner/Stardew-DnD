@@ -15,6 +15,8 @@ namespace DnD.Game
         readonly string _title, _text;
         readonly Action _onClose;
         public MessageScreen(string title, string text, Action onClose = null) { _title = title; _text = text; _onClose = onClose; }
+        public string Title => _title;
+        public string Body => _text;
         public override bool ShowCloseButton => false; // any key or click closes it
 
         public override void Build()

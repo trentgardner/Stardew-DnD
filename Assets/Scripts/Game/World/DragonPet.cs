@@ -17,6 +17,8 @@ namespace DnD.Game
         float _emoteUntil, _still, _lastZ;
         /// <summary>Busy with a game of fetch: the follow logic leaves it alone.</summary>
         public bool Busy { get; private set; }
+        /// <summary>The dragon has chosen to stay where it is (it won't follow) until the party leaves this place.</summary>
+        public bool StaysPut;
         public bool Napping { get; private set; }
 
         static GameRoot G => GameRoot.I;

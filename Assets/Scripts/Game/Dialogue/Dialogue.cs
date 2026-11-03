@@ -126,6 +126,9 @@ namespace DnD.Game
             _aboutCompanion = (object)comp != null;
         }
 
+        public string DialogueId => _dialogueId;
+        public string NodeId => _node?.Id;
+
         /// <summary>Facing hostiles you must pick something (talk, sneak, fight...), so there's no walking away mid-standoff.</summary>
         public override bool ShowCloseButton => _ctx.Group == null;
 

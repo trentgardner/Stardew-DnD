@@ -24,6 +24,7 @@ namespace DnD.Game
         /// <summary>The people of the deep shift (called after the capital's people).</summary>
         static void BuildLairNpcs()
         {
+            BuildBeyondTheDoorNpcs();
             var bran = new NpcDef { Id = "bran", Name = "Bran Tolley", Title = "The Deep Shift", Look = "npc_bran", Dialogue = "bran" };
             bran.Schedule.Add(new ScheduleEntry(0, "undergate", 6, 9, "asleep in a bunk, still in his boots") { ForbidFlag = "bran_home" });
             bran.Schedule.Add(new ScheduleEntry(6, "undergate", 8, 17, "at the long table, oiling rags") { ForbidFlag = "bran_home" });

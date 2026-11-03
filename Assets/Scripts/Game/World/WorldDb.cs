@@ -216,6 +216,8 @@ namespace DnD.Game
         public bool Romanceable;
         /// <summary>Once this world flag is set the NPC is gone from their usual places (Act III: the leaders went to the capital).</summary>
         public string GoneFlag;
+        /// <summary>A faint glow around them (an ArcaneHalo in this colour), or null.</summary>
+        public Color? Glow;
     }
 
     public static partial class WorldDb
@@ -435,6 +437,7 @@ namespace DnD.Game
             BuildPalaceAndHalls();
             BuildCapitalPeople();
             BuildLair();
+            BuildBeyondTheDoor();
 
             var shop = new ZoneDef { Id = "shop", Name = "Ironkettle General Goods", Map = Maps.Shop, Indoors = true, DefaultSpawn = new Vector2Int(6, 7),
                 EnterNarration = "The shop smells of lamp oil and leather. Every shelf is organized with terrifying dwarven precision.", ShopCounter = new Vector2Int(6, 3) };
