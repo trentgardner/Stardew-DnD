@@ -13,3 +13,11 @@ Executor: executing-plans (inline), branch act3/phase7-endings. Spec: docs/super
 - Task 1: Ruling: "The King" is its own scene (so an ending with no companions still has 6 scenes: Her, the dragon, Aurelhold, the King, the Road Home, Thistledown); the last slide is titled "Afterwards".
 - Task 1: Ruling: RED was a compile failure (EndingDb absent); the implementation was written before running it. EndingTests;LoreTests → 22/22.
 Task 1: complete (tests: EndingTests;LoreTests → 22/22)
+
+## Task 2
+- Task 2: the dedication is GameRoot.Dedication = "To my beautiful fiancée Lauren, this game is dedicated. I love you forever." (pinned by DedicationIsInTheCredits); CreditsScreen scrolls, then shows it alone, centred, gold italic, held until a press (>= 1.5 s). Screenshot act7_credits_dedication shown to the user.
+- Task 2: bug found + fixed: EndingPlaying leaked across QuitToTitle/LoadGame (StopAllCoroutines killed PlayEnding) so a resumed ending refused to start — ResetWorld clears it (EndingResumesAfterLoad, EpilogueSurvivesALeadDrop RED→GREEN).
+- Task 2: Ruling: EscAdvancesButNeverSkips folded into EndingPlaysScenesSlidesAndCredits (every slide is closed one by one and the seen list must equal Slides) — cost if wrong: none.
+- Task 2: Ruling: ending music = "music_home" for the scenes and slides, "music_title" for the credits (via MusicOverride). Buoy is placed beside the carriage stop for the Thistledown scene rather than walking there.
+- Task 2: tests: EndingTests;FinaleTests → 47/47.
+Task 2: complete (tests: EndingTests;FinaleTests → 47/47)

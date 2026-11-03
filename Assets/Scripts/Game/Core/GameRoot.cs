@@ -233,6 +233,7 @@ namespace DnD.Game
             Combats.Clear();
             StopAllCoroutines();
             ResetFlight(); // a flight cut short by quitting must not block the next one
+            EndingPlaying = false; // and nor must an ending
             if (_worldRoot) Destroy(_worldRoot.gameObject);
             Zones.Clear(); _npcs.Clear(); _groups.Clear(); Companions.Clear(); Dragon = null; MusicOverride = null; _recruitAgents.Clear(); TavernRecruits.Clear();
             _deathTime.Clear(); _sleeping.Clear(); _lastLongRest.Clear(); _parley.Clear(); _pendingPlayers.Clear();
