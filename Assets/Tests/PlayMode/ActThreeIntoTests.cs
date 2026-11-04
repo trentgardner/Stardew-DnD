@@ -173,5 +173,54 @@ namespace DnD.Tests
             Assert.AreEqual(10, p2.Character.Level, "the partner arrives at level 10");
             Assert.GreaterOrEqual(p2.Character.XP, PlayerCharacter.XpThresholds[11], "with level 11 to choose");
         }
+
+        /// <summary>The title screen's later-act starts drop the new character into that act's own area, not at home.</summary>
+        static PlayerSlot TitleStart(GameRoot g, int seed, bool actTwo = false, string actThreeSide = null)
+        {
+            g.StartNewGame(Still(seed), Difficulty.Normal, actTwo, actThreeSide);
+            var p = g.Players.Single();
+            p.Hud.CloseAll(); // the creation screen
+            g.FinishCreation(p, CharacterFactory.Create(CharacterFactory.DefaultChoices("fighter", "human", "Tester")));
+            return p;
+        }
+
+        [UnityTest]
+        public IEnumerator StartAtActThreeBeginsInTheCapital()
+        {
+            var g = GameRoot.I;
+            var p = TitleStart(g, 21, actThreeSide: "crown");
+            yield return Frames(3);
+            Assert.AreEqual(3, g.World.Act);
+            Assert.AreEqual("capital", p.Zone.Def.Id, "Act III starts in Aurelhold, not at home");
+            Assert.AreEqual("capital", g.DragonAgent.Actor.Zone.Def.Id, "and the dragon came too");
+            Assert.IsTrue(g.World.Flag(GameRoot.CarriageInCapital), "Quell's carriage waits in the capital");
+            Assert.GreaterOrEqual(g.Quests.Stage(WarmCity.Id), WarmCity.Arrived, "the party has arrived");
+        }
+
+        [UnityTest]
+        public IEnumerator StartAtActTwoBeginsOnTheLanternRoad()
+        {
+            var g = GameRoot.I;
+            var p = TitleStart(g, 22, actTwo: true);
+            yield return Frames(3);
+            Assert.AreEqual(2, g.World.Act);
+            Assert.AreEqual("lantern_road", p.Zone.Def.Id, "Act II starts on the Lantern Road, not at home");
+        }
+
+        [UnityTest]
+        public IEnumerator GrownDragonNeverStandsOnItsRider()
+        {
+            var g = GameRoot.I;
+            var p = TitleStart(g, 23, actThreeSide: "academy");
+            yield return Frames(3);
+            p.Hud.CloseAll();
+            yield return new WaitForSeconds(1.5f); // the player stands still; the dragon settles into its spot
+            var dragon = g.DragonAgent.Actor.transform;
+            float scale = dragon.localScale.x;
+            Assert.AreEqual(GameRoot.GrownDragonScale, scale, 0.01f);
+            Assert.LessOrEqual(scale, 1.5f, "the grown dragon isn't huge on screen");
+            float dist = Vector2.Distance(dragon.position, p.Avatar.transform.position);
+            Assert.GreaterOrEqual(dist, (1f + scale) / 2f, $"the dragon's body clears the player's (it is {dist:0.00} tiles away)");
+        }
     }
 }

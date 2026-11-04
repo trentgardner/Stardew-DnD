@@ -118,7 +118,7 @@ namespace DnD.Game
             if (DragonAgent != null) DragonAgent.Actor.name = World.DragonName;
         }
 
-        public const float TeenDragonScale = 1.4f;
+        public const float TeenDragonScale = 1.2f;
 
         /// <summary>The dragon's body catches up with its stage: a teenager is bigger and a deeper red.</summary>
         void DragonGrew()

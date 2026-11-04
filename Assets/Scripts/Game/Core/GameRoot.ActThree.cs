@@ -7,7 +7,7 @@ namespace DnD.Game
     /// <summary>Moving from Act II into Act III: two weeks after the Warden, a grown dragon and a royal summons.</summary>
     public partial class GameRoot
     {
-        public const float GrownDragonScale = 1.8f;
+        public const float GrownDragonScale = 1.4f;
         /// <summary>Set while the King's carriage (and Quell) stands in the capital rather than in Thistledown.</summary>
         public const string CarriageInCapital = "quell_in_capital";
 

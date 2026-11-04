@@ -535,6 +535,7 @@ namespace DnD.Tests
             Assert.IsTrue(g.World.Flag(Finale.RiderPending));
             StringAssert.StartsWith("Who rides", Choice(p1)?.Title, "P1 is asked");
             StringAssert.StartsWith("Who rides", Choice(p2)?.Title, "and so is P2");
+            for (float t = 0; t < 2f && g.DragonAgent.Actor.Moving; t += Time.deltaTime) yield return null; // let it finish stepping out to its side
             var dragonAt = g.DragonAgent.Actor.transform.position;
             Choice(p1).Choose(p1.Character.Name); // the wrong player triggered it
             yield return Frames(3);

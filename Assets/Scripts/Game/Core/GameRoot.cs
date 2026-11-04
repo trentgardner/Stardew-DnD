@@ -341,19 +341,36 @@ namespace DnD.Game
 
         void BeginCreation(PlayerSlot slot)
         {
-            slot.Hud.Push(new CharacterCreationScreen(pc =>
+            slot.Hud.Push(new CharacterCreationScreen(pc => FinishCreation(slot, pc)));
+        }
+
+        /// <summary>A freshly made character steps into the world: at home for Act I, or straight into a later act's area.</summary>
+        public void FinishCreation(PlayerSlot slot, PlayerCharacter pc)
+        {
+            SpawnPlayer(slot, pc, null);
+            if (Players.Count == 1 && _startActTwo) { _startActTwo = false; ApplyActTwoStart(slot); PlaceAtActStart(slot); }
+            else if (Players.Count == 1 && _startActThree != null) { var side = _startActThree; _startActThree = null; ApplyActThreeStart(slot, side); PlaceAtActStart(slot); }
+            else if (World.Act >= 3) { GiveActThreeKit(slot); slot.Hud.Narrate($"{pc.Name} joins the adventure!"); }
+            else if (World.Act >= 2) { GiveActTwoKit(slot); slot.Hud.Narrate($"{pc.Name} joins the adventure!"); }
+            else if (Players.Count == 1)
+                slot.Hud.Push(new MessageScreen("The Fallen Star",
+                    "Last night, a star fell over Thistledown. It streaked green-gold across the sky and vanished into the Wyrmback Mountains, and for a moment the whole valley hummed, like a plucked string.\n\nThis morning, the chickens are missing.",
+                    () => slot.Hud.Narrate("You wake in your cottage. Somewhere outside, Captain Vale is shouting about chickens. (Tip: talk to people with E / A. Your journal is J / LT.)")));
+            else slot.Hud.Narrate($"{pc.Name} joins the adventure!");
+        }
+
+        /// <summary>
+        /// A game started at a later act begins in that act's own area, not at home: Act II on the Lantern Road
+        /// (where its main quest points first), Act III at the carriage stop in Aurelhold, as if Quell had already driven them up.
+        /// </summary>
+        void PlaceAtActStart(PlayerSlot p)
+        {
+            if (World.Act >= 3)
             {
-                SpawnPlayer(slot, pc, null);
-                if (Players.Count == 1 && _startActTwo) { _startActTwo = false; ApplyActTwoStart(slot); }
-                else if (Players.Count == 1 && _startActThree != null) { var side = _startActThree; _startActThree = null; ApplyActThreeStart(slot, side); }
-                else if (World.Act >= 3) { GiveActThreeKit(slot); slot.Hud.Narrate($"{pc.Name} joins the adventure!"); }
-                else if (World.Act >= 2) { GiveActTwoKit(slot); slot.Hud.Narrate($"{pc.Name} joins the adventure!"); }
-                else if (Players.Count == 1)
-                    slot.Hud.Push(new MessageScreen("The Fallen Star",
-                        "Last night, a star fell over Thistledown. It streaked green-gold across the sky and vanished into the Wyrmback Mountains, and for a moment the whole valley hummed, like a plucked string.\n\nThis morning, the chickens are missing.",
-                        () => slot.Hud.Narrate("You wake in your cottage. Somewhere outside, Captain Vale is shouting about chickens. (Tip: talk to people with E / A. Your journal is J / LT.)")));
-                else slot.Hud.Narrate($"{pc.Name} joins the adventure!");
-            }));
+                World.SetFlag("met_quell"); World.SetFlag("carriage_ridden"); World.SetFlag(CarriageInCapital);
+                Warp(p, "capital", WorldDb.CapitalCarriageStop, false);
+            }
+            else if (World.Act >= 2) Warp(p, "lantern_road", Zones["lantern_road"].Def.DefaultSpawn, false);
         }
 
         void SpawnPlayer(PlayerSlot slot, PlayerCharacter pc, PcData saved)

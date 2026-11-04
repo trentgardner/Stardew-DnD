@@ -560,7 +560,7 @@ namespace DnD.Game
             var leader = Leader.Avatar.transform.position;
             Vector2 f = Leader.Avatar.Facing.sqrMagnitude > 0.01f ? Leader.Avatar.Facing.normalized : Vector2.down;
             var side = new Vector2(-f.y, f.x);
-            if (IsDragon) return leader + (Vector3)(side * 0.7f + f * 0.2f);
+            if (IsDragon) return DragonSpot(leader, f, side);
             var squad = new List<CompanionAgent>();
             foreach (var c in GameRoot.I.CompanionsOf(Leader)) if (!c.IsDragon && !c.Waiting && c.TakePoint == TakePoint) squad.Add(c);
             int i = Mathf.Max(0, squad.IndexOf(this)), n = Mathf.Max(1, squad.Count);
@@ -571,6 +571,25 @@ namespace DnD.Game
             if (!Leader.Zone.IsWalkable(Leader.Zone.ToMap(spot))) spot = leader - (Vector3)(f * (1.2f + i * 0.8f));
             return spot;
         }
+
+        /// <summary>
+        /// The dragon walks at your side and a little behind, far enough out that its body (which grows with each stage)
+        /// never covers yours. If that side is a wall it takes the other side, then falls in behind.
+        /// </summary>
+        Vector3 DragonSpot(Vector3 leader, Vector2 f, Vector2 side)
+        {
+            float gap = DragonGap(transform.localScale.x);
+            var zone = Leader.Zone;
+            foreach (var off in new[] { side * gap - f * 0.3f, -side * gap - f * 0.3f, -f * gap })
+            {
+                var spot = leader + (Vector3)off;
+                if (zone.IsWalkable(zone.ToMap(spot))) return spot;
+            }
+            return leader - (Vector3)(f * gap);
+        }
+
+        /// <summary>How far (in tiles) the dragon keeps from its leader's centre: half of each body plus a little air.</summary>
+        public static float DragonGap(float scale) => 0.3f + 0.7f * scale;
 
         public override string PromptText(PlayerSlot p) => IsDragon && GameRoot.I.World.Flag(Finale.RiderPending) ? $"Ride {GameRoot.I.World.DragonName}"
             : IsDragon ? $"Play with {GameRoot.I.World.DragonName}" : $"Talk to {Character.Name}";
