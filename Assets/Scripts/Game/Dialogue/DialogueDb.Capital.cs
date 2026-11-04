@@ -200,8 +200,11 @@ namespace DnD.Game
                 c => "He says 'as far as I know' like a man who has decided, very firmly, not to know any further.")
                 .Bye("Thank you, Crale.");
             d.Node("refused", who, c => "No. Out. And don't come back without a warrant of your own.").Bye("We'll be back.");
-            d.Node("men", who, c => "Right. LADS! These folk want to learn some manners!", c => "Three of the biggest men in the Roots put down their shovels.")
-                .Say("(Fists up.)", doIt: c => { c.Screen.Close(); c.G.SpawnAndFight("crale_men", c.P); }, end: true);
+            bool CrewBeaten(DCtx c) => c.G.World.DefeatedGroups.Contains("crale_men") || c.G.World.PacifiedGroups.Contains("crale_men");
+            d.Node("men", who, c => CrewBeaten(c) ? "Right. Lads... lads?" : "Right. LADS! These folk want to learn some manners!",
+                    c => CrewBeaten(c) ? "Nobody comes. His crew are still nursing their bruises from last time. Crale deflates, and points at the gate." : "Three of the biggest men in the Roots put down their shovels.")
+                .Say("(Fists up.)", doIt: c => { c.Screen.Close(); c.G.SpawnAndFight("crale_men", c.P); }, end: true, show: c => !CrewBeaten(c))
+                .Say("(Leave him be.)", end: true, show: CrewBeaten);
             return d;
         }
 

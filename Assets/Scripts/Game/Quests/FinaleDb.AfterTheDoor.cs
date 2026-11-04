@@ -72,7 +72,7 @@ namespace DnD.Game
         // ------------------------------------------------------------------ the streets
 
         static readonly Vector2Int[] Spots = { new Vector2Int(31, 19), new Vector2Int(52, 25), new Vector2Int(55, 30) };
-        static readonly Vector2Int[] Retries = { new Vector2Int(31, 15), new Vector2Int(44, 24), new Vector2Int(49, 28) };
+        static readonly Vector2Int[] Retries = { new Vector2Int(44, 15), new Vector2Int(44, 24), new Vector2Int(49, 28) };
         static readonly Vector2Int[] Spread = { new Vector2Int(0, 0), new Vector2Int(1, 0), new Vector2Int(-1, 0), new Vector2Int(0, 1), new Vector2Int(1, 1), new Vector2Int(-1, 1) };
         static readonly string[] Titles = { "The Great Square", "The Wyvern Yard", "The Head of the Roots Stair" };
 

@@ -138,6 +138,10 @@ namespace DnD.Game
         public int Index;
         public RectTransform Root;
         public int RowHeight = 20;
+        /// <summary>Rows wrap long text and grow to fit it (dialogue options), instead of one line that runs out of the box.</summary>
+        public bool WrapRows;
+        /// <summary>The rows' total height after Build (with WrapRows, each row is as tall as its text needs).</summary>
+        public float TotalHeight { get; private set; }
         public int FontSize = 13;
         public Action<Entry> OnHover;
         public bool Wrap = true;
@@ -165,6 +169,7 @@ namespace DnD.Game
         {
             UIKit.Clear(Root);
             int visible = Mathf.Min(VisibleRows, Entries.Count);
+            float y = 0f;
             for (int i = 0; i < Entries.Count; i++)
             {
                 var e = Entries[i];
@@ -174,9 +179,19 @@ namespace DnD.Game
                 e.Bg = UIKit.Image(e.Rect, new Color(0, 0, 0, 0));
                 e.Label = UIKit.Label(e.Rect, e.Text, FontSize, UIKit.Ink, TextAnchor.MiddleLeft);
                 e.Label.rectTransform.offsetMin = new Vector2(6, 0);
-                e.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
+                e.Label.horizontalOverflow = WrapRows ? HorizontalWrapMode.Wrap : HorizontalWrapMode.Overflow;
+                if (WrapRows && show)
+                {
+                    e.Label.text = "▶ " + e.Text; // measured with the selection mark it may wear
+                    float h = Mathf.Max(RowHeight, e.Label.preferredHeight + 4f);
+                    e.Rect.offsetMin = new Vector2(0, -y - h);
+                    e.Rect.offsetMax = new Vector2(0, -y);
+                    y += h;
+                }
+                else if (show) y += RowHeight;
                 e.Rect.gameObject.SetActive(show);
             }
+            TotalHeight = y;
             Refresh();
         }
 

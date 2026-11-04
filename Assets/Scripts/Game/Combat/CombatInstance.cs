@@ -260,6 +260,7 @@ namespace DnD.Game
             p.Hud.Narrate($"You rush into the fight! (Initiative {u.Cb.Initiative})");
             if (!Brawl) foreach (var c in G.CompanionsOf(p)) if (c.Character != null) { var cu = AddUnit(c.Character, c.Actor, comp: c); cu.Cb = Enc.Join(c.Character); }
             G.AddDragonTo(this, true);
+            G.ApplyWardenWard(this); // Ashby's ward covers whoever rushes in late, too
             DrawGrid(true);
             RefreshTracker();
         }
@@ -365,6 +366,8 @@ namespace DnD.Game
         public void Retreat()
         {
             Finished = true;
+            foreach (var u in Units)
+                if (u.C is Monster dm && dm.Charging != null) { dm.Charging = null; if (u.A) u.A.Sr.color = Color.white; } // the breath is wasted
             DrawGrid(false);
             ClearHighlights();
             ClearZoneFx();

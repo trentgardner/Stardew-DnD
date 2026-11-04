@@ -20,7 +20,7 @@ namespace DnD.Game
                 var go = new GameObject("Sfx");
                 Object.DontDestroyOnLoad(go);
                 _src = go.AddComponent<AudioSource>();
-                if (Object.FindAnyObjectByType<AudioListener>() == null) go.AddComponent<AudioListener>();
+                if (Object.FindAnyObjectByType<AudioListener>(FindObjectsInactive.Include) == null) go.AddComponent<AudioListener>(); // GameRoot normally has it
             }
             var clip = Get(id);
             if (clip != null) _src.PlayOneShot(clip, volume * Volume);

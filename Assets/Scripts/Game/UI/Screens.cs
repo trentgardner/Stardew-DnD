@@ -23,13 +23,26 @@ namespace DnD.Game
         {
             Window(new Vector2(340, 170), _title);
             var rt = UIKit.Rect(Root, "Text", Vector2.zero, Vector2.one, new Vector2(14, 26), new Vector2(-14, -30));
-            UIKit.Label(rt, _text, 11, UIKit.Ink);
+            _lbl = UIKit.Label(rt, _text, 11, UIKit.Ink);
+            Grow();
             var f = UIKit.Rect(Root, "Foot", new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 4), new Vector2(0, 20));
             UIKit.Label(f, In.UsesMouse ? "[E] / click to close" : "(A) to close", 9, UIKit.Dim, TextAnchor.MiddleCenter);
         }
 
+        Text _lbl;
+
+        /// <summary>A long beat gets a taller window rather than spilling past its bottom edge (up to nearly the whole screen).</summary>
+        void Grow()
+        {
+            if (_lbl == null || Root == null) return;
+            Canvas.ForceUpdateCanvases();
+            float need = _lbl.preferredHeight + 26 + 30 + _lbl.fontSize * 1.6f; // a line of headroom (measured before pixel rounding)
+            if (need > Root.sizeDelta.y) Root.sizeDelta = new Vector2(Root.sizeDelta.x, Mathf.Min(need, Hud.Root.rect.height - 16));
+        }
+
         public override void Tick()
         {
+            Grow(); // again once it's laid out
             if (In.Confirm || In.Cancel || In.MouseLeft) { Close(); }
         }
 
@@ -387,6 +400,20 @@ namespace DnD.Game
 
     public class CharacterSheetScreen : GameScreen
     {
+        /// <summary>The sheet's Features line: every feature once, repeats counted (×n).</summary>
+        public static IEnumerable<string> FeatureNames(PlayerCharacter pc)
+        {
+            var feats = new List<string>();
+            foreach (var f in pc.Class.Features) if (f.Level <= pc.Level) feats.Add(f.Name);
+            if (pc.Level >= 3 && pc.Class.Subclass != null) foreach (var f in pc.Class.Subclass.Features) if (f.Level <= pc.Level) feats.Add(f.Name);
+            foreach (var t in pc.Species.Traits) feats.Add(t.Split(':')[0]);
+            feats.Add(pc.Background.OriginFeat);
+            // Ability Score Improvements: count them from the level-up rules (the level-4 one isn't listed as a class feature).
+            feats.RemoveAll(n => n == "Ability Score Improvement");
+            for (int l = 1; l <= pc.Level; l++) if (pc.AsiLevel(l)) feats.Add("Ability Score Improvement");
+            return feats.GroupBy(n => n).Select(gr => gr.Count() > 1 ? $"{gr.Key} ×{gr.Count()}" : gr.Key).ToList();
+        }
+
         Text _left, _skills, _feats;
         MenuList _menu;
 
@@ -430,12 +457,7 @@ namespace DnD.Game
                 + "\n<size=8>" + string.Join(" · ", SkillUtil.All.Where(s => !pc.IsProficient(s)).Select(Sk)) + "</size>";
             var sk = new System.Text.StringBuilder();
             // Features as one wrapped paragraph (a level 10 character has ~20 of them), repeats counted once.
-            var feats = new List<string>();
-            foreach (var f in pc.Class.Features) if (f.Level <= pc.Level) feats.Add(f.Name);
-            if (pc.Level >= 3 && pc.Class.Subclass != null) foreach (var f in pc.Class.Subclass.Features) if (f.Level <= pc.Level) feats.Add(f.Name);
-            foreach (var t in pc.Species.Traits) feats.Add(t.Split(':')[0]);
-            feats.Add(pc.Background.OriginFeat);
-            var named = feats.GroupBy(n => n).Select(gr => gr.Count() > 1 ? $"{gr.Key} ×{gr.Count()}" : gr.Key);
+            var named = FeatureNames(pc);
             sk.AppendLine("<b>Features</b>");
             sk.Append("<size=8>").Append(string.Join(" · ", named)).Append("</size>");
             _feats.text = sk.ToString();

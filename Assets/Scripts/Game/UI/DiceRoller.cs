@@ -94,9 +94,16 @@ namespace DnD.Game
             _ticker.gameObject.SetActive(true);
             _ticker.SetAsLastSibling();
             _tickerText.text = text;
-            // Sits just under the combat turn-order strip (which is lower on half-width screens).
-            _ticker.anchoredPosition = new Vector2(0, _hud.Root.rect.width >= 600 ? -26 : -90);
+            PlaceTicker();
             _tickerTimer = seconds;
+        }
+
+        /// <summary>The ticker goes where the HUD has room for it (under the tracker, clear of the status column and the clock).</summary>
+        void PlaceTicker()
+        {
+            var (y, w) = _hud.TickerSlot();
+            _ticker.anchoredPosition = new Vector2(0, y);
+            _ticker.sizeDelta = new Vector2(w, _ticker.sizeDelta.y);
         }
 
         public void Update()
@@ -106,6 +113,10 @@ namespace DnD.Game
                 _tickerTimer -= Time.unscaledDeltaTime;
                 if (_tickerTimer <= 0) _ticker.gameObject.SetActive(false);
             }
+            if (_ticker.gameObject.activeSelf) PlaceTicker();
+            // The roll tray has the stage: the ticker's line would sit on the tray's title (it's in the log either way).
+            bool wantTicker = _tickerTimer > 0 && !IsOpen;
+            if (_ticker.gameObject.activeSelf != wantTicker) _ticker.gameObject.SetActive(wantTicker);
             if (!IsOpen) return;
             var input = _hud.Slot.Input;
             if (_waitingPress && (input.Confirm || input.MouseLeft || input.EndTurn || _hud.Slot.StalledByDisconnect)) _pressed = true;
