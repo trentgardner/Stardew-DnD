@@ -115,6 +115,9 @@ namespace DnD.Game
 
         PlayerSlot _endingOfferedBy;
 
+        /// <summary>Quitting to the title forgets any ending confirm that was waiting for answers.</summary>
+        void ResetTurnOffer() { _endingOffered = null; _endingOfferedBy = null; _endingYes.Clear(); }
+
         void PushEndingConfirm(PlayerSlot p, PlayerSlot by, string ending)
         {
             var me = p;
@@ -132,7 +135,7 @@ namespace DnD.Game
         void OnPlayerJoinedMidScene(PlayerSlot p)
         {
             if (World == null || !p.IsReady) return;
-            if (_endingOffered != null && !World.Flag(Turn.Chosen)) { PushEndingConfirm(p, _endingOfferedBy ?? p, _endingOffered); return; }
+            if (_endingOffered != null && World.Flag(Turn.Questioning) && !World.Flag(Turn.Chosen)) { PushEndingConfirm(p, _endingOfferedBy ?? p, _endingOffered); return; }
             if (World.Flag(Finale.RiderPending) && !Flying) OfferRider();
         }
 

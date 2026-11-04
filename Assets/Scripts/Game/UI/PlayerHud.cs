@@ -209,6 +209,7 @@ namespace DnD.Game
             var nRt = UIKit.Rect(_narrator, "Text", Vector2.zero, Vector2.one, new Vector2(10, 6), new Vector2(-10, -6));
             _narratorText = UIKit.Label(nRt, "", 10, UIKit.Ink, TextAnchor.MiddleLeft);
             _narratorText.fontStyle = FontStyle.Italic;
+            _narratorText.resizeTextForBestFit = true; _narratorText.resizeTextMinSize = 7; _narratorText.resizeTextMaxSize = 10; // a long line in a narrow half
             _narrator.gameObject.SetActive(false);
 
             // Toasts (right)
@@ -302,8 +303,118 @@ namespace DnD.Game
                 ((RectTransform)_toastItems[i].t.transform.parent).anchoredPosition = new Vector2(0, -i * 20);
         }
 
+        float _toastW = 170f;
+        bool _statusTight;
+
+        /// <summary>
+        /// Fits the HUD to its width (a full screen is 640 wide; a split-screen half 290-320 on a TV or laptop, 240 on a 4:3 one).
+        /// Top: the status card and party on the left, the clock on the right, toasts in the column under the clock (never over the
+        /// status column). Bottom, from the edge up: hotbar · item label · interaction prompt · narrator, each in its own band.
+        /// </summary>
+        void Layout()
+        {
+            float w = Root.rect.width;
+            if (w <= 0) return;
+            const float edge = 6f, gap = 6f, statusW = 170f;
+            // The clock gives way first, down to 96 wide; past that the status card narrows too.
+            float clockW = Mathf.Clamp(w - statusW - 2 * edge - gap, 96f, 120f);
+            float statusFit = Mathf.Min(statusW, w - clockW - 2 * edge - gap);
+            _clock.sizeDelta = new Vector2(clockW, _clock.sizeDelta.y);
+            _status.sizeDelta = new Vector2(statusFit, _status.sizeDelta.y);
+            _party.sizeDelta = new Vector2(statusFit, _party.sizeDelta.y);
+            bool tight = statusFit < statusW;
+            _statusTight = tight;
+            _statusText.horizontalOverflow = tight ? HorizontalWrapMode.Wrap : HorizontalWrapMode.Overflow;
+            _statusText.resizeTextForBestFit = tight; _statusText.resizeTextMinSize = 7; _statusText.resizeTextMaxSize = 10;
+            foreach (var tx in new[] { _statusText, _statsText, _hpText })
+                if (tx != null)
+                {
+                    tx.resizeTextForBestFit = tight; tx.resizeTextMinSize = 6; tx.resizeTextMaxSize = tx.fontSize;
+                    tx.horizontalOverflow = tight ? HorizontalWrapMode.Wrap : tx.horizontalOverflow;
+                    tx.verticalOverflow = tight ? VerticalWrapMode.Truncate : tx.verticalOverflow; // shrink, and never spill onto the bar below
+                }
+            FitLog();
+            // Toasts: the right-hand column, as wide as the room beside the status column allows.
+            _toastW = Mathf.Min(170f, w - edge - statusFit - gap - edge);
+            // Under the clock; in a fight, under the round tracker too.
+            float toastTop = -56f;
+            float trackerBottom = TrackerBottom();
+            if (!float.IsNaN(trackerBottom)) toastTop = Mathf.Min(toastTop, trackerBottom - 4f);
+            _toasts.anchoredPosition = new Vector2(-6f, toastTop);
+            // A narrow fight has no room for toast boxes beside the ticker and tracker: their lines go to the combat log instead.
+            _toasts.gameObject.SetActive(!(Slot.InCombat && w < 600));
+            _toasts.sizeDelta = new Vector2(_toastW, _toasts.sizeDelta.y);
+            foreach (var (t, _) in _toastItems) if (t != null) ((RectTransform)t.transform.parent).sizeDelta = new Vector2(_toastW, 18);
+            // The hotbar: twelve slots, shrunk to fit a narrow half.
+            float step = Mathf.Min(22f, (w - 2 * edge - 8f) / 12f);
+            _hotbar.sizeDelta = new Vector2(12 * step + 8f, _hotbar.sizeDelta.y);
+            for (int i = 0; i < _hotSlots.Count; i++)
+            {
+                var sl = (RectTransform)_hotSlots[i].transform;
+                sl.sizeDelta = new Vector2(step - 2f, step - 2f);
+                sl.anchoredPosition = new Vector2(5f + i * step, 0);
+            }
+            // The key reminder only beside the bar when there's room for it.
+            float hintRoom = (w - _hotbar.sizeDelta.x) / 2f - edge;
+            _hotHint.transform.parent.gameObject.SetActive(hintRoom >= 112f && !Slot.InCombat);
+            ((RectTransform)_hotHint.transform.parent).anchoredPosition = new Vector2(_hotbar.sizeDelta.x / 2f + 4f + 55f, 6f);
+            // The bottom bands.
+            _prompt.anchoredPosition = new Vector2(0, 56f);
+            _prompt.sizeDelta = new Vector2(Mathf.Min(220f, w - 2 * edge), _prompt.sizeDelta.y);
+            _narrator.anchoredPosition = new Vector2(0, 78f);
+            _narrator.sizeDelta = new Vector2(Mathf.Min(360f, w - 2 * edge), _narrator.sizeDelta.y);
+            _hotLabelBox.sizeDelta = new Vector2(Mathf.Min(150f, w - 2 * edge), _hotLabelBox.sizeDelta.y);
+        }
+
+        /// <summary>The lowest point of these elements' drawn content, measured down from the HUD's top (0 if none is showing).</summary>
+        float BottomOf(params RectTransform[] items)
+        {
+            float lowest = 0f;
+            var c = new Vector3[4];
+            foreach (var t in items)
+            {
+                if (t == null || !t.gameObject.activeInHierarchy) continue;
+                foreach (var gr in t.GetComponentsInChildren<Graphic>(false))
+                {
+                    if (!gr.enabled || gr.color.a < 0.02f) continue;
+                    gr.rectTransform.GetWorldCorners(c);
+                    lowest = Mathf.Min(lowest, Root.InverseTransformPoint(c[0]).y - Root.rect.yMax);
+                }
+            }
+            return lowest;
+        }
+
+        /// <summary>
+        /// Where the combat ticker (the DM's line in a fight) goes: on a full screen, between the status column and the clock just
+        /// under the round tracker; on a narrow half, full width, just under the status card, the party and the tracker.
+        /// </summary>
+        public (float y, float width) TickerSlot()
+        {
+            float w = Root.rect.width;
+            float tb = TrackerBottom();
+            if (w >= 600)
+            {
+                float side = 6f + _status.sizeDelta.x + 6f;
+                return (float.IsNaN(tb) ? -26f : tb - 4f, Mathf.Min(330f, w - 2 * side));
+            }
+            var tracker = Root.Find("CombatHud/Tracker") as RectTransform;
+            float below = BottomOf(_status, _party, tracker);
+            return (below - 4f, w - 12f);
+        }
+
+        /// <summary>The bottom of the combat round tracker, measured down from the HUD's top (NaN when there's no fight).</summary>
+        float TrackerBottom()
+        {
+            var tracker = Slot != null && Slot.InCombat ? Root.Find("CombatHud/Tracker") as RectTransform : null;
+            if (tracker == null || !tracker.gameObject.activeInHierarchy) return float.NaN;
+            var c = new Vector3[4];
+            tracker.GetWorldCorners(c);
+            return Root.InverseTransformPoint(c[0]).y - Root.rect.yMax;
+        }
+
         void RefreshHud()
         {
+            Layout();
             var pc = Slot.Character;
             var g = GameRoot.I;
             bool show = pc != null && g != null && g.InGame;
@@ -329,7 +440,7 @@ namespace DnD.Game
             string slots = slotParts.Count > 0 ? "   Slots " + string.Join(" · ", slotParts) : "";
             // The torch goes on the second line with conditions: the first line is full (AC, XP, slots).
             if (Slot.Avatar != null && Slot.Avatar.TorchMinutes > 0) cond = $" Torch {Mathf.CeilToInt(Slot.Avatar.TorchMinutes)}m" + cond;
-            _statusText.text = $"<b>{pc.Name}</b>  <color=#c8b48c>Lv{pc.Level} {pc.Class.Name}</color>"
+            _statusText.text = (_statusTight ? $"<b>{pc.Name}</b>  <color=#c8b48c>Lv{pc.Level}</color>" : $"<b>{pc.Name}</b>  <color=#c8b48c>Lv{pc.Level} {pc.Class.Name}</color>")
                 + (pc.WildShape != null ? $"  <color=#7ed957>❦ {pc.WildShape.Name}</color>" : "");
             _hpText.text = $"{pc.HP} / {pc.EffectiveMaxHP}{(pc.TempHP > 0 ? $"  <color=#9dff7a>+{pc.TempHP}</color>" : "")}";
             int next = pc.Level < PlayerCharacter.XpThresholds.Length - 1 ? PlayerCharacter.XpThresholds[pc.Level + 1] : 0;
@@ -409,7 +520,9 @@ namespace DnD.Game
                 row.hp.text = c.IsDead ? "fallen" : c.IsDown ? "DOWN" : $"{c.HP}/{c.EffectiveMaxHP}";
             }
             // Half-width combat: the turn-order strip sits under the status panel, so the party goes below it.
-            float y = -6 - statusH - 2 - (Slot.InCombat && Root.rect.width < 600 ? 20 : 0);
+            float y = -6 - statusH - 2;
+            float tb = TrackerBottom();
+            if (!float.IsNaN(tb) && tb - 4f < y && Root.rect.width < 600) y = tb - 4f; // under the round tracker in a narrow fight
             _party.anchoredPosition = new Vector2(6, y);
         }
 
@@ -423,6 +536,59 @@ namespace DnD.Game
         }
 
         /// <summary>The DM speaks. Stays up a few seconds (longer for longer text).</summary>
+        /// <summary>
+        /// Where every visible HUD element sits, in the HUD's own space (tests: nothing overlaps, nothing runs off the screen).
+        /// The persistent panels, plus the combat HUD's tracker and action bar while a fight is on. Bounds come from what's
+        /// actually drawn (visible images and non-empty text), so an empty container takes no room.
+        /// </summary>
+        public List<(string name, Rect rect)> LayoutBounds()
+        {
+            var list = new List<(string, Rect)>();
+            void Add(string name, RectTransform t)
+            {
+                if (t == null || !t.gameObject.activeInHierarchy) return;
+                bool any = false; Vector2 min = Vector2.positiveInfinity, max = Vector2.negativeInfinity;
+                var corners = new Vector3[4];
+                foreach (var gr in t.GetComponentsInChildren<UnityEngine.UI.Graphic>(false))
+                {
+                    if (!gr.enabled || gr.color.a < 0.02f) continue;
+                    if (gr is Text tx && string.IsNullOrWhiteSpace(tx.text)) continue;
+                    gr.rectTransform.GetWorldCorners(corners);
+                    foreach (var c in corners) { var l = (Vector2)Root.InverseTransformPoint(c); min = Vector2.Min(min, l); max = Vector2.Max(max, l); }
+                    any = true;
+                }
+                if (any) list.Add((name, Rect.MinMaxRect(min.x, min.y, max.x, max.y)));
+            }
+            foreach (var n in new[] { "Status", "Party", "Clock", "Hotbar", "HotLabel", "HotHint", "Prompt", "Narrator", "Toasts", "Log", "RollTicker" })
+                Add(n, Root.Find(n) as RectTransform);
+            var combat = Root.Find("CombatHud") as RectTransform;
+            if (combat != null && combat.gameObject.activeInHierarchy)
+                foreach (var n in new[] { "Tracker", "ActionBar" }) Add(n, combat.Find(n) as RectTransform);
+            return list;
+        }
+
+        /// <summary>HUD text that is bigger than its box (tests): one that would spill sideways or downwards.</summary>
+        public List<string> OverflowingTexts()
+        {
+            var list = new List<string>();
+            foreach (var n in new[] { "Status", "Party", "Clock", "Hotbar", "HotLabel", "HotHint", "Prompt", "Narrator", "Toasts", "Log" })
+            {
+                var t = Root.Find(n);
+                if (t == null || !t.gameObject.activeInHierarchy) continue;
+                foreach (var tx in t.GetComponentsInChildren<Text>(false))
+                {
+                    if (string.IsNullOrWhiteSpace(tx.text) || tx.resizeTextForBestFit) continue;
+                    var r = tx.rectTransform.rect;
+                    if (tx.horizontalOverflow == HorizontalWrapMode.Overflow && tx.preferredWidth > r.width + 2) list.Add($"{n}/{tx.name}: \"{tx.text}\" is {tx.preferredWidth:0} wide in {r.width:0}");
+                    if (tx.verticalOverflow == VerticalWrapMode.Overflow && tx.preferredHeight > r.height + 2) list.Add($"{n}/{tx.name}: \"{tx.text}\" is {tx.preferredHeight:0} tall in {r.height:0}");
+                }
+            }
+            return list;
+        }
+
+        /// <summary>The HUD's own rectangle (its half of the screen in split-screen).</summary>
+        public Rect HudRect => Root.rect;
+
         /// <summary>Whether the narrator's box is on screen (tests).</summary>
         public bool NarratorVisible => _narrator != null && _narrator.gameObject.activeSelf;
 
@@ -459,7 +625,7 @@ namespace DnD.Game
                 AddLog(text);
                 return;
             }
-            var box = UIKit.Box(_toasts, "Toast", new Vector2(1, 1), new Vector2(170, 18), Vector2.zero);
+            var box = UIKit.Box(_toasts, "Toast", new Vector2(1, 1), new Vector2(_toastW, 18), Vector2.zero);
             UIKit.Panel(box, true);
             var t = UIKit.Label(box, text, 9, color ?? UIKit.Parchment, TextAnchor.MiddleCenter);
             t.resizeTextForBestFit = true; t.resizeTextMinSize = 6; t.resizeTextMaxSize = 9;
@@ -477,7 +643,22 @@ namespace DnD.Game
         {
             _logLines.Add(line);
             while (_logLines.Count > 9) _logLines.RemoveAt(0);
-            _logText.text = string.Join("\n", _logLines);
+            FitLog();
+        }
+
+        /// <summary>The log box shows the newest lines that fit in it (older ones would otherwise spill up over the HUD).</summary>
+        void FitLog()
+        {
+            if (_logText == null) return;
+            float room = _logText.rectTransform.rect.height;
+            var shown = new List<string>();
+            for (int i = _logLines.Count - 1; i >= 0; i--)
+            {
+                shown.Insert(0, _logLines[i]);
+                _logText.text = string.Join("\n", shown);
+                if (room > 0 && _logText.preferredHeight > room - 4 && shown.Count > 1) { shown.RemoveAt(0); break; }
+            }
+            _logText.text = string.Join("\n", shown);
         }
 
         public void ShowLog(bool on) => _log.gameObject.SetActive(on);

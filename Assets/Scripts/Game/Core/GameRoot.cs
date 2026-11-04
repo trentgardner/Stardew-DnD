@@ -106,6 +106,9 @@ namespace DnD.Game
 
         // ================================================================== title & sessions
 
+        /// <summary>The camera the title screen uses (its backdrop drifts it over Thistledown).</summary>
+        public Camera TitleCamera => _idleCam;
+
         void ShowTitle()
         {
             InGame = false;
@@ -234,6 +237,7 @@ namespace DnD.Game
             StopAllCoroutines();
             ResetFlight(); // a flight cut short by quitting must not block the next one
             EndingPlaying = false; // and nor must an ending
+            ResetTurnOffer(); // or a half-answered ending confirm
             if (_worldRoot) Destroy(_worldRoot.gameObject);
             Zones.Clear(); _npcs.Clear(); _groups.Clear(); Companions.Clear(); Dragon = null; MusicOverride = null; _recruitAgents.Clear(); TavernRecruits.Clear();
             _deathTime.Clear(); _sleeping.Clear(); _lastLongRest.Clear(); _parley.Clear(); _pendingPlayers.Clear();
@@ -243,7 +247,7 @@ namespace DnD.Game
             Clock = new GameClock();
             Clock.HourChanged += OnHourChanged;
             foreach (var p in Players) { if (p.Avatar) Destroy(p.Avatar.gameObject); p.Avatar = null; p.Character = null; p.Combat = null; }
-            if (_title) { Destroy(_title.gameObject); _title = null; }
+            if (_title) { if (_title.Backdrop) DestroyImmediate(_title.Backdrop.gameObject); Destroy(_title.gameObject); _title = null; } // the title town goes now, before the real one is built
         }
 
         void BuildWorld()
