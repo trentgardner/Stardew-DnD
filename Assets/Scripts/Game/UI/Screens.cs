@@ -23,13 +23,26 @@ namespace DnD.Game
         {
             Window(new Vector2(340, 170), _title);
             var rt = UIKit.Rect(Root, "Text", Vector2.zero, Vector2.one, new Vector2(14, 26), new Vector2(-14, -30));
-            UIKit.Label(rt, _text, 11, UIKit.Ink);
+            _lbl = UIKit.Label(rt, _text, 11, UIKit.Ink);
+            Grow();
             var f = UIKit.Rect(Root, "Foot", new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 4), new Vector2(0, 20));
             UIKit.Label(f, In.UsesMouse ? "[E] / click to close" : "(A) to close", 9, UIKit.Dim, TextAnchor.MiddleCenter);
         }
 
+        Text _lbl;
+
+        /// <summary>A long beat gets a taller window rather than spilling past its bottom edge (up to nearly the whole screen).</summary>
+        void Grow()
+        {
+            if (_lbl == null || Root == null) return;
+            Canvas.ForceUpdateCanvases();
+            float need = _lbl.preferredHeight + 26 + 30 + _lbl.fontSize * 1.6f; // a line of headroom (measured before pixel rounding)
+            if (need > Root.sizeDelta.y) Root.sizeDelta = new Vector2(Root.sizeDelta.x, Mathf.Min(need, Hud.Root.rect.height - 16));
+        }
+
         public override void Tick()
         {
+            Grow(); // again once it's laid out
             if (In.Confirm || In.Cancel || In.MouseLeft) { Close(); }
         }
 

@@ -49,6 +49,8 @@ namespace DnD.Game
                 var t = UIKit.Rect(Root, "Title", new Vector2(0, 1), new Vector2(1, 1), new Vector2(10, -24), new Vector2(-10, -4));
                 var lbl = UIKit.Label(t, title, 15, UIKit.Ink, TextAnchor.MiddleCenter);
                 lbl.fontStyle = FontStyle.Bold;
+                lbl.resizeTextForBestFit = true; lbl.resizeTextMinSize = 9; lbl.resizeTextMaxSize = 15; // a long title shrinks onto one line
+                lbl.verticalOverflow = VerticalWrapMode.Truncate;
             }
             AddCloseButton();
             return Root;

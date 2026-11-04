@@ -88,6 +88,8 @@ namespace DnD.Game
         {
             Auras.Source = new FightAuras(this);
             I = this;
+            // The one ear in the scene: it lives as long as the game does (the title camera and the players' cameras come and go).
+            if (FindAnyObjectByType<AudioListener>(FindObjectsInactive.Include) == null) gameObject.AddComponent<AudioListener>();
             Application.targetFrameRate = 60;
             QualitySettings.vSyncCount = 1;
             Clock.HourChanged += OnHourChanged;
@@ -121,7 +123,6 @@ namespace DnD.Game
                 _idleCam.orthographic = true;
                 _idleCam.backgroundColor = new Color32(30, 22, 26, 255);
                 _idleCam.clearFlags = CameraClearFlags.SolidColor;
-                go.AddComponent<AudioListener>();
             }
             _idleCam.gameObject.SetActive(true);
             _title = TitleScreen.Create(this);

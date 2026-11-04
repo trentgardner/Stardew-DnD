@@ -152,7 +152,8 @@ namespace DnD.Game
             var line = UIKit.Rect(Root, "Line", new Vector2(0, 1), new Vector2(1, 1), new Vector2(10, -100), new Vector2(-10, -56));
             _line = UIKit.Label(line, "", 11, UIKit.Ink, TextAnchor.UpperLeft);
             var opts = UIKit.Rect(Root, "Options", new Vector2(0, 0), new Vector2(1, 0), new Vector2(8, 6), new Vector2(-8, 90));
-            _menu = new MenuList(opts) { RowHeight = 16, FontSize = 10 };
+            _menu = new MenuList(opts) { RowHeight = 16, FontSize = 10, WrapRows = true };
+            _opts = opts;
             AddCloseButton();
             if (_ctx.Group == null) GameRoot.I.World.MetToday(_ctx.NpcId);
             Goto(_d.Start(_ctx));
@@ -200,6 +201,43 @@ namespace DnD.Game
                 _menu.Add(next != null ? "Continue..." : "(Leave)", () => { if (next != null) Goto(next); else Close(); });
             }
             _menu.Build();
+            Fit();
+        }
+
+        RectTransform _opts;
+
+        /// <summary>
+        /// The box fits its screen's width (a split-screen half is narrow) and grows upward to hold the speaker, the narration,
+        /// the line and every option at its real height, up to most of the screen; past that, the line shrinks to fit.
+        /// </summary>
+        void Fit()
+        {
+            if (Root == null || _opts == null) return;
+            float screenW = Hud.Root.rect.width, screenH = Hud.Root.rect.height;
+            Root.sizeDelta = new Vector2(Mathf.Min(420f, screenW - 12f), Root.sizeDelta.y);
+            _menu.Build(); // re-measure the option rows at this width
+            float optsH = _menu.TotalHeight;
+            // One line of headroom each: the measure is taken before the text is rounded to the screen's pixels, which can wrap a word more.
+            float narrH = string.IsNullOrEmpty(_narr.text) ? 0f : _narr.preferredHeight + _narr.fontSize * 1.3f;
+            _line.resizeTextForBestFit = false;
+            float lineH = string.IsNullOrEmpty(_line.text) ? 0f : _line.preferredHeight + _line.fontSize * 1.3f;
+            const float top = 22f, gapBelowLine = 6f, bottomPad = 6f;
+            float maxH = screenH - 40f - 8f;
+            float want = top + narrH + lineH + gapBelowLine + optsH + bottomPad + 4f;
+            if (want > maxH)
+            {
+                // Too much for the screen: the line gives way (shrinks) so the options always show in full.
+                lineH = Mathf.Max(24f, maxH - (top + narrH + gapBelowLine + optsH + bottomPad + 4f));
+                _line.resizeTextForBestFit = true; _line.resizeTextMinSize = 7; _line.resizeTextMaxSize = 11;
+                want = maxH;
+            }
+            float h = Mathf.Max(120f, want);
+            Root.sizeDelta = new Vector2(Root.sizeDelta.x, h);
+            var narr = _narr.transform.parent as RectTransform;
+            narr.offsetMax = new Vector2(-10, -top); narr.offsetMin = new Vector2(10, -top - narrH);
+            var line = _line.transform.parent as RectTransform;
+            line.offsetMax = new Vector2(-10, -top - narrH); line.offsetMin = new Vector2(10, -top - narrH - lineH);
+            _opts.offsetMin = new Vector2(8, bottomPad); _opts.offsetMax = new Vector2(-8, bottomPad + optsH);
         }
 
         void Choose(DOption o)
